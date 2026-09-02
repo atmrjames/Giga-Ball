@@ -1784,4 +1784,47 @@ final class EndlessIIFrameCostTests: XCTestCase {
     }
 
 
+    /// What a Laser Beam costs on the frame it fires.
+    ///
+    /// §12.0 has carried this as "still open, and deliberately not changed" since round 258:
+    /// the beam destroys a *column per ball* through the full destroy path, with Exploding
+    /// bricks free to cascade, which is more bricks in one frame than any of the three
+    /// pile-ups that round fixed. It was left alone on the judgement that a hitch at the
+    /// moment a beam burns the field reads as impact rather than as jank.
+    ///
+    /// **That judgement was never given a number**, which is what round 291 showed is worth
+    /// doing before deciding anything: the ring HUD turned out to cost 185% of a frame while
+    /// everyone was looking at the shaped paddle. This does not change the decision - nobody
+    /// has reported a stutter with Laser Beam in the ring - it prices it, so the next person
+    /// to weigh "reads as impact" against a cost is weighing it against a measurement.
+    func testWhatALaserBeamCostsOnTheFrameItFires() {
+        func cost(balls: Int) -> Double {
+            var total = 0.0
+            var runs = 0
+            for _ in 0..<8 {
+                let scene = loadedField()
+                scene.endlessIIExtraBalls.removeAll()
+                for index in 1..<max(balls, 1) {
+                    let extra = SKSpriteNode(color: .white, size: CGSize(width: 14, height: 14))
+                    extra.position = CGPoint(x: -140 + 70*CGFloat(index), y: 200)
+                    scene.addChild(extra)
+                    scene.endlessIIExtraBalls.append(extra)
+                }
+                let started = Date.timeIntervalSinceReferenceDate
+                scene.endlessIIFireLaserBeams()
+                total += Date.timeIntervalSinceReferenceDate - started
+                runs += 1
+            }
+            return total/Double(runs)
+        }
+
+        for balls in [1, 4] {
+            let each = cost(balls: balls)
+            print(String(format: "  Laser Beam, %d ball(s)      %7.3f ms   %5.1f%% of a frame",
+                         balls, each*1000, each/frame*100))
+        }
+        // Printed rather than asserted. A threshold here would be a bar invented in a test for
+        // a decision that belongs to a play test - see §12.0's note
+    }
+
 }

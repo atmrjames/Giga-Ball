@@ -4560,3 +4560,223 @@ final class BrickPageRound293Tests: XCTestCase {
                        + "name stay as they are, because those are save keys and files")
     }
 }
+
+/// However a ball is caught, the queue holds its position in the same unit.
+///
+/// **Round 293 changed what `endlessIIHeldOffsets` means** - from a distance in points to a
+/// fraction of the paddle's half-width, so a held ball rides a resize - and converted the two
+/// catches in `EndlessIIStickyPaddle`. It missed the third, in `EndlessIIAimedSticky`, and a
+/// fourth in `EndlessIISafetyPaddle`. The aimed one was a live bug of the worst kind: the tick
+/// multiplies the stored number by the half-width, so an extra caught forty points from the
+/// centre was placed twenty-four hundred points out - off screen, on the very next frame,
+/// every time an Aimed Sticky caught a second ball.
+///
+/// Nothing failed. Every test of the aimed catch stopped at the catch, and every test of the
+/// tick used a ball caught the ordinary way. **So this asks the question of every catch there
+/// is**: whichever door a ball comes in by, one frame later it is still on the paddle.
+final class EveryCatchLeavesTheBallOnThePaddleTests: XCTestCase {
+
+    private func mayhem() -> GameScene {
+        let scene = GameScene(size: CGSize(width: 402, height: 874))
+        scene.gameMode = .endlessII
+        scene.totalStatsArray = [TotalStats()]
+        scene.layoutUnit = 40
+        scene.ballSize = 14
+        scene.paddleWidth = 120
+        scene.gameWidth = 400
+        scene.ballSpeedLimit = 600
+        scene.paddle.size = CGSize(width: 120, height: 12)
+        scene.paddle.position = CGPoint(x: 0, y: -300)
+        scene.addChild(scene.paddle)
+        scene.ball.size = CGSize(width: 14, height: 14)
+        scene.ball.physicsBody = SKPhysicsBody(circleOfRadius: 7)
+        scene.addChild(scene.ball)
+        return scene
+    }
+
+    private func extra(_ scene: GameScene, x: CGFloat) -> SKSpriteNode {
+        let extra = SKSpriteNode(color: .white, size: CGSize(width: 14, height: 14))
+        extra.position = CGPoint(x: x, y: scene.paddle.position.y + 12)
+        extra.physicsBody = SKPhysicsBody(circleOfRadius: 7)
+        scene.addChild(extra)
+        scene.endlessIIExtraBalls.append(extra)
+        return extra
+    }
+
+    /// The one that was broken: an extra caught by Aimed Sticky.
+    func testAnExtraCaughtByAnAimedStickyStaysOnThePaddle() {
+        let scene = mayhem()
+        scene.endlessIICollectAimedSticky()
+        let subject = extra(scene, x: 40)
+
+        XCTAssertTrue(scene.endlessIIAimedCatch(subject, isExtra: true))
+        scene.tickEndlessIIHeldBalls()
+
+        XCTAssertEqual(subject.position.x, 40, accuracy: 1,
+                       "it stays where it landed - the offset went in as a share, so the tick "
+                       + "must not read it as points and multiply it up")
+        XCTAssertLessThanOrEqual(abs(subject.position.x - scene.paddle.position.x),
+                                 scene.endlessIIPaddleHalfWidth,
+                                 "and it is somewhere on the paddle at all")
+    }
+
+    /// And it rides a resize like every other held ball.
+    func testAnAimedCatchRidesAResizeToo() {
+        let scene = mayhem()
+        scene.endlessIICollectAimedSticky()
+        let subject = extra(scene, x: 54)
+        scene.endlessIIAimedCatch(subject, isExtra: true)
+
+        scene.paddle.xScale = 1.5
+        scene.tickEndlessIIHeldBalls()
+        XCTAssertEqual(subject.position.x, 81, accuracy: 1)
+    }
+
+    /// The ordinary sticky catch, which round 293 did convert.
+    func testAnExtraCaughtByAPlainStickyStaysOnThePaddle() {
+        let scene = mayhem()
+        scene.stickyPaddleCatches = 3
+        let subject = extra(scene, x: 40)
+
+        XCTAssertTrue(scene.endlessIICatchExtraBall(subject))
+        scene.tickEndlessIIHeldBalls()
+        XCTAssertEqual(subject.position.x, 40, accuracy: 1)
+    }
+
+    /// A ball on the safety bar is left where it landed, whatever the paddle then does.
+    func testABallOnTheSafetyBarStaysOnTheBar() {
+        let scene = mayhem()
+        scene.brickHeight = 20
+        scene.finalBrickRowHeight = 100
+        scene.stickyPaddleCatches = 3
+        scene.endlessIICollectSafetyPaddle()
+        guard let bar = scene.childNode(withName: GameScene.endlessIISafetyPaddleName)
+                as? SKSpriteNode else { return XCTFail("a bar stands") }
+
+        let subject = extra(scene, x: 30)
+        subject.position.y = bar.position.y + 6
+        subject.physicsBody?.velocity = CGVector(dx: 0, dy: -400)
+        scene.endlessIISafetyPaddleHit(subject)
+        XCTAssertTrue(scene.endlessIIIsHeldOnSafetyBar(subject))
+
+        let landed = subject.position
+        scene.paddle.position.x += 80
+        scene.paddle.xScale = 1.5
+        scene.tickEndlessIIHeldBalls()
+        XCTAssertEqual(subject.position.x, landed.x, accuracy: 0.01,
+                       "the bar does not move, so neither does what is resting on it")
+    }
+
+    /// Every entry in the queue is a share, so no reader can pick the wrong unit.
+    ///
+    /// Said about the numbers rather than about the positions: a share is between -1 and 1 for
+    /// a ball on the surface that caught it, where a distance in points is tens or hundreds.
+    func testEveryQueuedOffsetIsAShareRatherThanADistance() {
+        let scene = mayhem()
+        scene.endlessIICollectAimedSticky()
+        scene.endlessIIAimedCatch(extra(scene, x: 40), isExtra: true)
+        scene.endlessIIAimedCatch(extra(scene, x: -50), isExtra: true)
+
+        XCTAssertEqual(scene.endlessIIHeldOffsets.count, 2)
+        for offset in scene.endlessIIHeldOffsets {
+            XCTAssertLessThanOrEqual(abs(offset), 1,
+                                     "\(offset) is a distance in points, not a share of the "
+                                     + "half-width - the tick multiplies this by the half-width")
+        }
+    }
+}
+
+/// Aimed Sticky reaches the safety bar, which closes the paddle-family parity list.
+///
+/// James, round 200: "the safety paddle, mirrored paddle, split paddle power ups should match
+/// power ups of the main paddle: shrink, expand, sticky, aimed sticky, portal paddle, lasers,
+/// ball spin grippy texture, different shaped paddles."
+///
+/// The bar caught for a plain Sticky from round 285 and refused for an aimed one, and that was
+/// not a decision: `endlessIICollectAimedSticky` sets `stickyPaddleCatches` to zero - the two
+/// are one power-up and only one may own a launch - so a guard asking about catches said no.
+/// The paddle never had the problem because its own aimed catch asks the clock instead.
+final class AimedStickyReachesTheSafetyBarTests: XCTestCase {
+
+    private func barScene() -> (GameScene, SKSpriteNode) {
+        let scene = GameScene(size: CGSize(width: 402, height: 874))
+        scene.gameMode = .endlessII
+        scene.totalStatsArray = [TotalStats()]
+        scene.layoutUnit = 40
+        scene.ballSize = 14
+        scene.paddleWidth = 120
+        scene.gameWidth = 400
+        scene.ballSpeedLimit = 600
+        scene.brickHeight = 20
+        scene.finalBrickRowHeight = 100
+        scene.paddle.size = CGSize(width: 120, height: 12)
+        scene.paddle.position = CGPoint(x: 0, y: -300)
+        scene.addChild(scene.paddle)
+        scene.ball.size = CGSize(width: 14, height: 14)
+        scene.ball.physicsBody = SKPhysicsBody(circleOfRadius: 7)
+        scene.addChild(scene.ball)
+        scene.endlessIICollectSafetyPaddle()
+        let bar = scene.childNode(withName: GameScene.endlessIISafetyPaddleName) as! SKSpriteNode
+        return (scene, bar)
+    }
+
+    private func land(_ scene: GameScene, _ bar: SKSpriteNode, x: CGFloat = 0) -> SKSpriteNode {
+        let subject = scene.ball
+        subject.position = CGPoint(x: x, y: bar.position.y + 6)
+        subject.physicsBody?.velocity = CGVector(dx: 0, dy: -400)
+        scene.endlessIISafetyPaddleHit(subject)
+        return subject
+    }
+
+    func testTheBarCatchesUnderAnAimedStickyWithNoPlainCatchesLeft() {
+        let (scene, bar) = barScene()
+        scene.endlessIICollectAimedSticky()
+        XCTAssertEqual(scene.stickyPaddleCatches, 0,
+                       "collecting an aimed sticky zeroes the plain catches, which is what "
+                       + "used to make the bar refuse")
+
+        let subject = land(scene, bar)
+        XCTAssertTrue(scene.endlessIIIsHeldOnSafetyBar(subject),
+                      "the bar holds it, as the paddle would")
+        XCTAssertTrue(scene.endlessIIAimHold, "and there is an aim to point")
+        XCTAssertTrue(subject === scene.endlessIIAimTarget,
+                      "the ball on the bar is what the arrow is drawn from")
+    }
+
+    /// And the shot goes where the arrow says.
+    func testTheAimedShotLeavesTheBarAtTheChosenAngle() {
+        let (scene, bar) = barScene()
+        scene.endlessIICollectAimedSticky()
+        let subject = land(scene, bar)
+
+        _ = scene.endlessIIAimMoved(to: CGPoint(x: 150, y: bar.position.y + 300))
+        XCTAssertTrue(scene.endlessIIAimLaunch())
+
+        XCTAssertGreaterThan(subject.physicsBody?.velocity.dy ?? 0, 0, "it went up")
+        XCTAssertGreaterThan(subject.physicsBody?.velocity.dx ?? 0, 0,
+                             "and to the right, which is where the arrow was pointed")
+        XCTAssertFalse(scene.endlessIIIsHeldOnSafetyBar(subject), "and it is off the bar")
+        XCTAssertFalse(scene.endlessIIAimHold)
+    }
+
+    /// An inert paddle holds nothing, on the bar as on the paddle.
+    func testAnInertPaddleStillCatchesNothingOnTheBar() {
+        let (scene, bar) = barScene()
+        scene.endlessIICollectAimedSticky()
+        scene.endlessIIInertPaddleClock.collect(turns: 5)
+
+        let subject = land(scene, bar)
+        XCTAssertFalse(scene.endlessIIIsHeldOnSafetyBar(subject),
+                       "with the launch taken over by the wall's own angle there is nothing "
+                       + "for an aim to choose")
+    }
+
+    /// The plain sticky catch is untouched.
+    func testAPlainStickyStillCatchesOnTheBar() {
+        let (scene, bar) = barScene()
+        scene.stickyPaddleCatches = 3
+        let subject = land(scene, bar)
+        XCTAssertTrue(scene.endlessIIIsHeldOnSafetyBar(subject))
+        XCTAssertFalse(scene.endlessIIAimHold, "and no arrow, because nothing is aiming")
+    }
+}

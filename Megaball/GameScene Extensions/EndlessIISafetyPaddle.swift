@@ -336,7 +336,23 @@ extension GameScene {
     /// the top face, and a ball meeting the very end of the bar has met the end of it.
     @discardableResult
     func endlessIISafetyPaddleCaught(_ subject: SKSpriteNode) -> Bool {
-        guard gameMode == .endlessII, stickyPaddleCatches != 0 else { return false }
+        guard gameMode == .endlessII else { return false }
+        let aiming = endlessIIAimedStickyClock.isRunning || endlessIIAimedStickyOwedTurn
+        guard stickyPaddleCatches != 0 || aiming else { return false }
+        guard aiming == false || endlessIIInertPaddleClock.isRunning == false else { return false }
+        // **Aimed Sticky catches here too** (round 295, closing James's round-200 parity list:
+        // "the safety paddle, mirrored paddle, split paddle power ups should match power ups of
+        // the main paddle: shrink, expand, sticky, **aimed sticky**, portal paddle, lasers...").
+        //
+        // The bar caught for a plain Sticky from round 285 and refused for an aimed one, and
+        // the reason was not a decision: `endlessIICollectAimedSticky` sets `stickyPaddleCatches`
+        // to zero, because the two are one power-up and only one of them may own a launch - so
+        // the guard above, which asks about catches, answered no. The paddle never had the
+        // problem, because its own aimed catch asks the clock instead.
+        //
+        // An inert paddle holds nothing, which is the same refusal `endlessIIAimedCatch` makes
+        // and for the same reason: with the launch taken over by the wall's own angle there is
+        // nothing for an aim to choose.
         guard let bar = childNode(withName: GameScene.endlessIISafetyPaddleName)
                 as? SKSpriteNode else { return false }
         guard endlessIIHeldBalls.contains(where: { $0 === subject }) == false else { return false }
@@ -347,11 +363,35 @@ extension GameScene {
         subject.physicsBody?.velocity = .zero
         subject.position.y = bar.position.y + bar.size.height/2 + subject.size.height/2
         endlessIIHeldBalls.append(subject)
-        endlessIIHeldOffsets.append(subject.position.x - bar.position.x)
+        endlessIIHeldOffsets.append(bar.size.width > 0
+            ? (subject.position.x - bar.position.x)/(bar.size.width/2) : 0)
+        // A share, like every other entry in this queue since round 293. Nothing reads this
+        // one - a bar-held ball is left where it landed and its launch angle is measured live
+        // by `endlessIISafetyBarOffset` - but an array whose entries mean two different things
+        // depending on which surface caught the ball is one waiting to be read by the wrong
+        // rule, which is exactly what happened to the aimed catch
         endlessIISafetyHeldBalls.insert(ObjectIdentifier(subject))
         // The offset is measured from the *bar* rather than the paddle, and only the launch
         // reads it - what makes this ball different from a paddle-held one is which surface's
         // width its spot is a fraction of
+
+        if aiming {
+            if endlessIIAimedStickyClock.isRunning == false {
+                endlessIIAimedStickyOwedTurn = false
+                endlessIIAimOwedHold = true
+            }
+            let arriving = ballStateBeforeStep[ObjectIdentifier(subject)]?.velocity
+                ?? subject.physicsBody?.velocity ?? .zero
+            endlessIIAimDefaultAngles[ObjectIdentifier(subject)] =
+                EndlessIIPaddleEffects.defaultLaunchAngle(arriving: arriving)
+            endlessIIBeginAimHold()
+            // The same three things the paddle's aimed catch does, in the same order: the last
+            // catch of an expired clock still catches, the arrow needs somewhere to point
+            // before the finger has said anything, and the hold is what everything downstream
+            // asks. Nothing else is needed - the aim's target is the head of the held queue,
+            // which this ball has just joined, and its launch goes out through
+            // `endlessIIReleasedFromPaddle` like any other
+        }
 
         endlessIIRefreshStickyPaddleLook()
         if soundsSetting { run(stickyPaddleHitSound) }

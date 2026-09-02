@@ -63,8 +63,19 @@ extension GameScene {
             subject.position.y = ballStartingPositionY
             if endlessIIHeldBalls.contains(where: { $0 === subject }) == false {
                 endlessIIHeldBalls.append(subject)
-                endlessIIHeldOffsets.append(subject.position.x - paddle.position.x)
+                endlessIIHeldOffsets.append(endlessIIHeldShare(of: subject))
+                setEndlessIIHeldBallRestsOnPaddle(true, for: subject)
             }
+            // **A share of the half-width, which is what the queue holds** (round 295). Round
+            // 293 changed `endlessIIHeldOffsets` from points to a fraction so a ball rides a
+            // resize, and converted the two catches in `EndlessIIStickyPaddle` - this third
+            // one, in another file, went on appending points. The tick then multiplied that
+            // number by the half-width, so an extra caught forty points out from the centre
+            // was placed twenty-four hundred points out: off the screen, on the next frame,
+            // every time an Aimed Sticky caught a second ball.
+            //
+            // The paddle also comes out of its collisions here, for round 291's reason - a
+            // held ball placed inside a shaped paddle's traced body slides down the slope
         } else {
             removeAction(forKey: "gameTimer")
             ballIsOnPaddle = true
