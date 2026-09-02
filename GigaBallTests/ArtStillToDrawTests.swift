@@ -223,6 +223,10 @@ final class ArtStillToDrawTests: XCTestCase {
         .dailyTheme: "ThemeTwistIcon",
         .alwaysOn: "AlwaysOnTwistIcon",
         .landslide: "LandslideTwistIcon",
+        .fullDeck: "FullDeckTwistIcon",
+        .levelPegging: "LevelPeggingTwistIcon",
+        // The two round 290 reported missing, delivered in round 294. They have no row in the
+        // twist matrix, which is why they were not in the first set of twenty
     ]
 
     /// The two that are furniture rather than twists: retired, kept only so a case name that
@@ -244,17 +248,18 @@ final class ArtStillToDrawTests: XCTestCase {
 
     /// Which live twists have no badge, asked rather than remembered.
     ///
-    /// James, round 290: "are there any I am missing from the set?" This is the answer, and it
-    /// keeps answering: a twist added tomorrow with no art fails here on the day it is added
-    /// rather than on the day somebody notices a violet placeholder on the briefing screen.
-    func testTheOnlyTwistsWithoutArtworkAreTheTwoDisclosureOnes() {
+    /// James, round 290: "are there any I am missing from the set?" The answer was Full Deck
+    /// and Level Pegging; he drew them in round 294 and this now says **none**. It keeps
+    /// answering either way: a twist added tomorrow with no art fails here on the day it is
+    /// added rather than on the day somebody notices a violet placeholder on the briefing
+    /// screen.
+    func testEveryLiveTwistHasItsBadge() {
         let missing = DailyTwist.allCases.filter {
             twistArt[$0] == nil && retiredTwists.contains($0) == false
         }
-        XCTAssertEqual(Set(missing), Set([.fullDeck, .levelPegging]),
-                       "Full Deck and Level Pegging are the two live twists still wearing a "
-                       + "drawing; anything else in this list is a twist that arrived without "
-                       + "a badge, and anything missing from it is one James has since drawn")
+        XCTAssertEqual(missing.map(\.displayName), [],
+                       "a live twist with no badge wears a violet placeholder among nineteen "
+                       + "drawings, which is how one gets missed")
     }
 
     func testTheRetiredTwistsAreTheTwoNobodyCanBeGiven() {

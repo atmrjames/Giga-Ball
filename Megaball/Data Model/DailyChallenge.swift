@@ -340,6 +340,42 @@ enum DailyTwist: String, CaseIterable, Codable {
         applies(to: mode) && activationKey <= key && key < retirementKey
     }
 
+    /// The Classic levels each twist would leave looking exactly as it found them.
+    ///
+    /// James, round 294: "for the daily challenge twists mirrored and upside down, don't have
+    /// these set for levels that are symmetrical and won't look different when flipped." A
+    /// twist that changes nothing is a wasted day - the briefing promises a rule change and the
+    /// level arrives identical to how it has always been.
+    ///
+    /// **Measured rather than judged** (`DailyLayoutFlipTests`). The levels are a hundred and
+    /// ten Swift functions placing bricks with `if` statements, so there is no table to read a
+    /// symmetry off; the test builds every one of them, applies the game's own transform, and
+    /// compares position, texture *and colour*. This is what it found, and it fails if a level
+    /// is ever edited into or out of the list.
+    ///
+    /// **Colour is part of the comparison and it earns its place.** Level 94 is mirror-symmetric
+    /// in shape and not in colour, so mirroring it does change what a player sees and it stays
+    /// in the pool. Three levels are symmetric in both.
+    ///
+    /// **Upside Down has no entries**, and that is the measurement's answer rather than an
+    /// omission: not one of the hundred and ten is unchanged by a vertical flip. The key is
+    /// here so the rule is stated for both twists James named, and so that the day a level
+    /// arrives which *is* symmetric, the test says so rather than nobody noticing.
+    static let levelsUnchangedBy: [DailyTwist: Set<Int>] = [
+        .mirrored: [62, 92, 104],
+        .upsideDown: [],
+    ]
+
+    /// Whether this twist would visibly do something on this day's level.
+    ///
+    /// True for everything that is not a layout flip, and for every day with no Classic level
+    /// to flip - the endless modes generate their own fields and have nothing fixed to be
+    /// symmetric about.
+    func changesSomething(onClassicLevel level: Int?) -> Bool {
+        guard let level, let unchanged = DailyTwist.levelsUnchangedBy[self] else { return true }
+        return unchanged.contains(level) == false
+    }
+
     // MARK: - Which twists may share a day
 
     /// The pairs the design refuses, exactly as James's twist matrix draws them.
@@ -636,6 +672,7 @@ enum DailyChallengeGenerator {
             let pool = DailyTwist.allCases.filter { candidate in
                 candidate.category == category && candidate.inPool(on: key, for: mode)
                     && twists.allSatisfy { $0.pairsWith(candidate) }
+                    && candidate.changesSomething(onClassicLevel: classicLevel)
             }
             guard pool.isEmpty == false else { continue }
             // **And nothing already drawn refuses it** (round 286). At most one twist per

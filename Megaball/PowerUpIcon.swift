@@ -733,12 +733,12 @@ enum PowerUpIcon {
     /// the twist's name on the briefing screen, the pause summary and the level intro.
     /// Lighter than the app's deep purple, which vanished against the dark menu blur.
     ///
-    /// **Eighteen of the twenty-three are James's artwork as of round 290**, and this colour is
-    /// what the remaining drawings match. The ones still drawn: Loaded and Sudden Death, which
-    /// are retired and are furniture in the save rather than twists anybody can be given; and
-    /// Full Deck and Level Pegging, the two `disclosure` twists, which are the only live ones
-    /// with no picture yet. Each icon asks `artwork` for its file and falls back to its
-    /// drawing, so a badge arriving later needs no code at all.
+    /// **Every live twist wears James's artwork as of round 294**, and this colour is what the
+    /// two remaining drawings match. Those two are Loaded and Sudden Death, which are retired -
+    /// furniture in the save rather than twists anybody can be given - so no picture is owed
+    /// for them. Full Deck and Level Pegging, the pair round 290 reported missing because they
+    /// have no row in the twist matrix, arrived in round 294. Each icon asks `artwork` for its
+    /// file and falls back to its drawing, so a badge arriving later needs no code at all.
     static let twist = #colorLiteral(red: 0.4235294118, green: 0.1843137255, blue: 0.6196078431, alpha: 1)
 
     /// One Life: a single ball, nothing behind it.
@@ -969,7 +969,7 @@ enum PowerUpIcon {
 
     /// Full Deck: four cards fanned out, all of them face up. Nothing left in the deck is
     /// the whole of the twist.
-    static let twistFullDeck: UIImage = badge(twist) { context, rect in
+    static let twistFullDeck: UIImage = artwork("FullDeckTwistIcon", twist) { context, rect in
         stroke(context, width: rect.width*0.055)
         let width = rect.width*0.20, height = rect.height*0.34
         for card in 0..<4 {
@@ -987,7 +987,7 @@ enum PowerUpIcon {
 
     /// Level Pegging: three bars of exactly the same height. Everything as likely as
     /// everything else, said as a flat line where a chart would rise.
-    static let twistLevelPegging: UIImage = badge(twist) { context, rect in
+    static let twistLevelPegging: UIImage = artwork("LevelPeggingTwistIcon", twist) { context, rect in
         stroke(context, width: rect.width*0.07)
         let height = rect.height*0.34
         for bar in 0..<3 {

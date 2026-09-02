@@ -636,7 +636,21 @@ must be *posted* inside the window, not merely earned in it. As shipped:
   node - James, round 284: "for the HUD, leave it, it doesn't need the filter" - which is
   also the cheaper arrangement, since a filter's cost goes with the area it covers.
 
-- ~~**Twist badges.**~~ **Delivered, round 290.** Eighteen of the live twists wear James's
+- **A flip that would change nothing is not offered** (round 294). James: "for the daily
+  challenge twists mirrored and upside down, don't have these set for levels that are
+  symmetrical and won't look different when flipped." Measured rather than judged - every level
+  built, flipped by the game's own transform, and compared on position, texture and colour:
+  **62, 92 and 104 are unchanged by Mirrored; nothing is unchanged by Upside Down.** Level 94 is
+  symmetric in shape and not in colour, which is the one case the colour comparison decides, and
+  it stays in the pool. `DailyTwist.levelsUnchangedBy` is the table and `DailyLayoutFlipTests`
+  re-measures it, so a level edited into or out of symmetry fails a test rather than quietly
+  costing somebody a twist.
+
+- ~~**Twist badges.**~~ **Delivered, round 290; completed round 294** - Full Deck and Level
+  Pegging, the two with no row in the twist matrix, arrived with updates to Classic Mayhem and
+  No Breaks. Every live twist wears its own artwork.
+
+  Original note: Eighteen of the live twists wear James's
   artwork; the two that do not are **Full Deck** and **Level Pegging**, the `disclosure` pair,
   which have no row in his twist matrix and so were not in the set. Retired twists (Loaded,
   Sudden Death) need none. Vanilla has its own badge now and no longer borrows the app icon -
