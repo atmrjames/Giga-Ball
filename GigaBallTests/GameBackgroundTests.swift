@@ -57,7 +57,7 @@ final class GameBackgroundTests: XCTestCase {
                 XCTAssertNotEqual(background, .classic)
                 XCTAssertNotNil(UIImage(named: named),
                                 "\(background.name) names an asset that is not in the bundle")
-            case .solid, .gradient, .glow, .clouds:
+            case .solid, .gradient, .glow, .clouds, .greenGradient:
                 XCTAssertNotEqual(background, .classic)
             }
         }

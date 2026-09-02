@@ -79,7 +79,6 @@ final class CatalogueDumpTests: XCTestCase {
                     "name": entry.name,
                     "description": entry.description,
                     "isNew": entry.isNew,
-                    "facts": entry.facts.map { ["label": $0.label, "value": $0.value] },
                 ])
             }
         }

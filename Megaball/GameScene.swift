@@ -8274,6 +8274,11 @@ laserTimer?.invalidate()
 			overlay.color = .clear
 			overlay.texture = gradientBackgroundTexture(size: overlay.size)
 			addBackgroundClouds(over: overlay)
+		case .greenGradient:
+			overlay.isHidden = false
+			overlay.colorBlendFactor = 0
+			overlay.color = .clear
+			overlay.texture = gradientBackgroundTexture(size: overlay.size, green: true)
 		}
 		background.isHidden = setting != .classic
 	}
@@ -8303,23 +8308,55 @@ laserTimer?.invalidate()
 	/// could only sit there. On its own node it swells and settles over eight seconds, which
 	/// is slow enough to be felt at the edge of the eye rather than watched.
 	private func addBackgroundHaze(over overlay: SKSpriteNode) {
-		guard let image = GameBackground.hazeImage(size: overlay.size) else { return }
-		let haze = SKSpriteNode(texture: SKTexture(image: image), size: overlay.size)
-		haze.anchorPoint = overlay.anchorPoint
-		haze.position = overlay.position
-		haze.zPosition = overlay.zPosition + 0.01
-		haze.alpha = 1
-		addChild(haze)
-		backgroundMotionLayers.append(haze)
-
 		let depth = GameBackground.glowBreathDepth
 		let half = GameBackground.glowBreath/2
-		haze.run(.repeatForever(.sequence([
-			.fadeAlpha(to: 1 - depth, duration: half),
-			.fadeAlpha(to: 1, duration: half),
-		])))
-		// A repeating action, which is fine here and forbidden on a brick: `countBricks()`
-		// gates row generation on bricks having no actions (§8.6), and this is scenery
+
+		for (index, drift) in GameBackground.hazeDrift.enumerated() {
+			guard index < GameBackground.glowPools.count,
+				  let image = GameBackground.hazeImage(size: overlay.size, only: index)
+			else { continue }
+
+			let haze = SKSpriteNode(texture: SKTexture(image: image), size: overlay.size)
+			haze.anchorPoint = overlay.anchorPoint
+			haze.position = overlay.position
+			haze.zPosition = overlay.zPosition + 0.01
+			haze.alpha = 1
+			addChild(haze)
+			backgroundMotionLayers.append(haze)
+
+			// **A pool per node, each on its own path** (James, round 297: "make the giga-ball
+			// yellow/green fuzzy hue dynamic, so it moves and evolves slowly behind the game,
+			// almost like a lava lamp"). As one baked picture the haze could only breathe in
+			// place; the two pools now drift independently, and because they drift at different
+			// rates the *shape* of the light between them changes as well as its position -
+			// which is the difference between a picture sliding about and something evolving.
+			let reach = CGPoint(x: overlay.size.width*drift.x, y: overlay.size.height*drift.y)
+			let across = SKAction.sequence([
+				.moveBy(x: reach.x, y: 0, duration: drift.across),
+				.moveBy(x: -reach.x, y: 0, duration: drift.across)])
+			let down = SKAction.sequence([
+				.moveBy(x: 0, y: reach.y, duration: drift.down),
+				.moveBy(x: 0, y: -reach.y, duration: drift.down)])
+			across.timingMode = .easeInEaseOut
+			down.timingMode = .easeInEaseOut
+			// Eased, because a pool that turns round at a constant speed reads as a mechanism
+
+			let swell = SKAction.sequence([
+				.scale(to: 1.09, duration: drift.swell),
+				.scale(to: 1, duration: drift.swell)])
+			swell.timingMode = .easeInEaseOut
+
+			let breath = SKAction.sequence([
+				.fadeAlpha(to: 1 - depth, duration: half),
+				.fadeAlpha(to: 1, duration: half)])
+
+			haze.run(.group([.repeatForever(across), .repeatForever(down),
+							 .repeatForever(swell), .repeatForever(breath)]))
+			// Four repeating actions, which is fine here and forbidden on a brick:
+			// `countBricks()` gates row generation on bricks having no actions (§8.6), and
+			// this is scenery. Their periods are all different, so the group as a whole has no
+			// short cycle to notice
+		}
 	}
 
 	/// The cloud layers, drifting at two speeds.
@@ -8347,6 +8384,26 @@ laserTimer?.invalidate()
 											 duration: layer.crossing)
 				let jump = SKAction.moveBy(x: overlay.size.width, y: 0, duration: 0)
 				cloud.run(.repeatForever(.sequence([travel, jump])))
+
+				// **And it swells and thins as it goes** (James, round 297, asking for the same
+				// treatment as the Glow). The drift alone is one picture on a conveyor: the
+				// shapes are identical every time round, and once the eye has the period it
+				// sees the loop rather than the sky.
+				//
+				// The evolution is *vertical only*, and that is not a stylistic choice. The
+				// horizontal wrap works because each strip is moved by exactly the field's
+				// width, so anything that changes a layer's width breaks the seam it is hiding.
+				// A `yScale` grows the strip downward from its top anchor, where there is
+				// nothing to expose, and the alpha costs nothing at all.
+				let swell = SKAction.sequence([
+					.scaleY(to: 1.11, duration: layer.evolving),
+					.scaleY(to: 1, duration: layer.evolving)])
+				swell.timingMode = .easeInEaseOut
+				let thin = SKAction.sequence([
+					.fadeAlpha(to: 0.72, duration: layer.evolving*0.71),
+					.fadeAlpha(to: 1, duration: layer.evolving*0.71)])
+				thin.timingMode = .easeInEaseOut
+				cloud.run(.group([.repeatForever(swell), .repeatForever(thin)]))
 			}
 			// Two copies of the strip, side by side, both travelling left: as one leaves the
 			// field the other is arriving, so there is always cloud on screen
@@ -8355,7 +8412,7 @@ laserTimer?.invalidate()
 
 	/// The borders' purple at the top, the Classic background's purple by the paddle, then
 	/// away to near black at the bottom of the playfield.
-	func gradientBackgroundTexture(size: CGSize) -> SKTexture? {
+	func gradientBackgroundTexture(size: CGSize, green: Bool = false) -> SKTexture? {
 		guard size.width > 0, size.height > 0 else { return nil }
 
 		// Where the paddle sits within the background, measured from its bottom.
@@ -8363,7 +8420,8 @@ laserTimer?.invalidate()
 		let paddleFraction = (paddlePositionY - bottom)/size.height
 
 		guard let image = GameBackground.gradientImage(size: size,
-													  paddleFraction: paddleFraction) else {
+													  paddleFraction: paddleFraction,
+													  green: green) else {
 			return nil
 		}
 		// Just the fade now: the Glow's haze and the Clouds' drift are nodes of their own,

@@ -363,7 +363,7 @@ final class GameBackgroundView: UIView {
         case .solid(let colour):
             colour.setFill()
             context.fill(area)
-        case .gradient, .glow, .clouds:
+        case .gradient, .glow, .clouds, .greenGradient:
             // Measured from the bottom of the background, which is where the scene measures
             // it from - the fade turns at the paddle rather than at the halfway mark
             let paddle = layout.topBarHeight + layout.topGap
@@ -376,6 +376,9 @@ final class GameBackgroundView: UIView {
                                                          paddleFraction: fraction)
             case .clouds: drawn = GameBackground.cloudsImage(size: area.size,
                                                              paddleFraction: fraction)
+            case .deepGreen: drawn = GameBackground.gradientImage(size: area.size,
+                                                                  paddleFraction: fraction,
+                                                                  green: true)
             default: drawn = GameBackground.gradientImage(size: area.size,
                                                           paddleFraction: fraction)
             }

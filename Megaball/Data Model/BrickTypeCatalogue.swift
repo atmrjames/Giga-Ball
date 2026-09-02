@@ -23,12 +23,6 @@ import SpriteKit
 
 enum BrickTypeCatalogue {
 
-    /// A line on an entry's detail page.
-    struct Fact {
-        let label: String
-        let value: String
-    }
-
     struct Entry {
         let name: String
         let description: String
@@ -37,7 +31,6 @@ enum BrickTypeCatalogue {
         /// Whether this is one of the things Endless 2.0 adds, rather than something the game
         /// has always had. §7.3 asks for the new material to be marked as such.
         let isNew: Bool
-        let facts: [Fact]
     }
 
     struct Section {
@@ -94,58 +87,27 @@ enum BrickTypeCatalogue {
         }
     }
 
-    /// What each state of a brick does when it is hit - the workbook's Classic Brick States
-    /// table, said on the entry the states belong to rather than as a section of its own.
-    ///
-    /// A separate section would have listed the same four bricks again to say four things
-    /// about them, when the entry already draws every state in a row above the words. The
-    /// count comes off `BrickTypeIcons.states`, which is the list that draws them, so a brick
-    /// that gains a state cannot be described here as having the old number.
-    static func states(of behaviour: EndlessIIBehaviour) -> String {
-        let count = BrickTypeIcons.states(of: behaviour).count
-        switch behaviour {
-        case .standard: return "1 - destroyed when hit"
-        case .multiHit: return "\(count) - each hit steps down to the next, the last destroys it"
-        case .indestructibleOnce, .indestructibleAlways:
-            return "\(count) - the first hit makes the wall, then a hit does nothing"
-        case .invisible: return "\(count) - it appears when struck, then it is Standard"
-        }
-    }
-
     private static var behaviours: [Entry] {
         [
             Entry(name: name(of: .standard),
                   description: "Destroyed by a single hit",
                   art: .behaviour(.standard),
-                  isNew: false,
-                  facts: [Fact(label: "States", value: states(of: .standard)),
-                          Fact(label: "Hits to destroy", value: "1"),
-                          Fact(label: "Found in", value: "Every mode")]),
+                  isNew: false),
 
             Entry(name: name(of: .multiHit),
                   description: "Takes multiple hits to destroy",
                   art: .behaviour(.multiHit),
-                  isNew: false,
-                  facts: [Fact(label: "States", value: states(of: .multiHit)),
-                          Fact(label: "Hits to destroy", value: "4"),
-                          Fact(label: "Found in", value: "Every mode")]),
+                  isNew: false),
 
             Entry(name: "Indestructible",
                   description: "Cannot be destroyed",
                   art: .behaviour(.indestructibleOnce),
-                  isNew: false,
-                  facts: [Fact(label: "States", value: states(of: .indestructibleOnce)),
-                          Fact(label: "Hits to destroy", value: "Cannot be destroyed"),
-                          Fact(label: "Cleared by", value: "Zap, Wrecking Ball, explosions"),
-                          Fact(label: "Found in", value: "Every mode")]),
+                  isNew: false),
 
             Entry(name: name(of: .invisible),
                   description: "Cannot be seen until hit",
                   art: .behaviour(.invisible),
-                  isNew: false,
-                  facts: [Fact(label: "States", value: states(of: .invisible)),
-                          Fact(label: "Hits to destroy", value: "1, after it appears"),
-                          Fact(label: "Found in", value: "Every mode")])
+                  isNew: false)
         ]
     }
 
@@ -257,50 +219,6 @@ enum BrickTypeCatalogue {
             return "Each face is angled"
         }
     }
-
-    /// Which behaviours a style can be applied to, in words.
-    ///
-    /// Read off `EndlessIIStyle.suits` rather than written down, so the page cannot disagree
-    /// with the game.
-    static func behaviours(carrying style: EndlessIIStyle) -> String {
-        if style == .portal {
-            // Portal does not look for an Indestructible brick, it makes one - being struck
-            // rather than damaged is part of what a Portal is
-            return "Always Indestructible ×2"
-        }
-        let suited = allBehaviours.filter { style.suits($0) }
-        guard suited.count < allBehaviours.count else { return "Any" }
-        return suited.map(name(of:)).joined(separator: ", ")
-    }
-
-    /// Which other styles can share a brick with this one.
-    ///
-    /// Said whichever way is shorter. Spinning stacks with seven of the nine, and naming all
-    /// seven is a line that reads as a list to work through rather than as a fact - where
-    /// "any but Moving and Directional" is one thing to remember. Which way round that falls
-    /// depends on the style, so it is measured rather than decided.
-    static func styles(stackingWith style: EndlessIIStyle) -> String {
-        let others = styleOrder.filter { $0 != style }
-        let partners = others.filter { style.stacksWith($0) }
-        guard partners.isEmpty == false else { return "Nothing - on its own" }
-        guard partners.count < others.count else { return "Any other style" }
-
-        let listed = partners.map(name(of:)).joined(separator: ", ")
-        let refused = others.filter { style.stacksWith($0) == false }.map(name(of:))
-        let excluded = "Any but " + refused.joined(separator: ", ")
-        return excluded.count < listed.count ? excluded : listed
-    }
-
-    /// The sizes a style can be applied at.
-    ///
-    /// Unlike the two above this is not derivable: the size rules live in the scene's
-    /// `endlessIICanTake`, which needs a live brick to answer. Written out here, and covered
-    /// by a test that every style says something.
-    static func sizes(carrying style: EndlessIIStyle) -> String {
-        let suited = BrickSize.allCases.filter { style.suits($0) }
-        guard suited.count < BrickSize.allCases.count else { return "Any" }
-        return suited.map(name(of:)).joined(separator: " and ")
-    }
     // **Read off `EndlessIIStyle.suits` rather than written down**, which is what the line
     // above this one has always claimed and this one did not do. It was a switch of hand-typed
     // sentences, and round 237 changed the rules and moved only the generator's copy - so the
@@ -332,11 +250,7 @@ enum BrickTypeCatalogue {
         Entry(name: name(of: style),
               description: description(of: style),
               art: .style(style),
-              isNew: true,
-              facts: [Fact(label: "Behaviours", value: behaviours(carrying: style)),
-                      Fact(label: "Sizes", value: sizes(carrying: style)),
-                      Fact(label: "Stacks with", value: styles(stackingWith: style)),
-                      Fact(label: "Found in", value: GameMode.endlessII.name)])
+              isNew: true)
     }
 
     // MARK: - Sizes
@@ -381,15 +295,6 @@ enum BrickTypeCatalogue {
         return "Any but " + refused.map(name(of:)).joined(separator: ", ")
     }
 
-    private static func occupies(_ size: BrickSize) -> String {
-        switch size {
-        case .tiny: return "A quarter cell"
-        case .normal: return "One cell"
-        case .big: return "2 × 2 cells"
-        case .square: return "1 × 2 cells"
-        }
-    }
-
     /// The power-up brick, which is its own thing rather than a style or a size.
     ///
     /// It sat at the head of the Styles section, because a section holding one entry would
@@ -399,11 +304,7 @@ enum BrickTypeCatalogue {
         Entry(name: "Power-Up",
               description: "Contains a power-up that activates when hit",
               art: .powerUpBrick,
-              isNew: true,
-              facts: [Fact(label: "Behaviours", value: "Its own"),
-                      Fact(label: "Sizes", value: "1 × 2 cells"),
-                      Fact(label: "Stacks with", value: "Nothing - on its own"),
-                      Fact(label: "Found in", value: GameMode.endlessII.name)])
+              isNew: true)
     }
 
     private static var sizes: [Entry] {
@@ -417,12 +318,8 @@ enum BrickTypeCatalogue {
         Entry(name: name(of: size),
               description: description(of: size),
               art: .size(size),
-              isNew: size != .normal,
-              facts: [Fact(label: "Occupies", value: occupies(size)),
-                      Fact(label: "Behaviours", value: "Any"),
-                      Fact(label: "Styles", value: styles(fitting: size)),
-                      Fact(label: "Found in",
-                           value: size == .normal ? "Every mode" : GameMode.endlessII.name)])
+              isNew: size != .normal
+)
     }
 }
 

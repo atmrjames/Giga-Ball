@@ -31,6 +31,11 @@ enum GameBackground: Int, CaseIterable {
     case deepBlue = 5
     case starrySky = 6
     case clouds = 7
+    /// James's diamond artwork (round 297), the same size and shape of thing as Deep Blue.
+    case prism = 8
+    /// The gradient in Giga-Ball green rather than purple - drawn, like the gradient it is a
+    /// sibling of, so it fits any screen without an asset per device.
+    case deepGreen = 9
 
     /// The setting as it is stored, falling back to Classic for a value that no longer names
     /// anything - which is what an older build's setting looks like after a background is
@@ -49,6 +54,8 @@ enum GameBackground: Int, CaseIterable {
         case .deepBlue: return "Deep Blue"
         case .starrySky: return "Starry Sky"
         case .clouds: return "Clouds"
+        case .prism: return "Prism"
+        case .deepGreen: return "Deep Green"
         }
     }
 
@@ -63,6 +70,8 @@ enum GameBackground: Int, CaseIterable {
         case .deepBlue: return "A deep blue night, darkening towards the paddle"
         case .starrySky: return "A black sky scattered with stars"
         case .clouds: return "Slow cloud, drifting behind the field"
+        case .prism: return "Cut glass, catching the light down the field"
+        case .deepGreen: return "Giga-Ball green at the top, black below the paddle"
         }
     }
 
@@ -86,6 +95,8 @@ enum GameBackground: Int, CaseIterable {
         case gradient
         /// The same fade with a speckled green haze over the upper part of it.
         case glow
+        /// A vertical fade like `gradient`, in Giga-Ball green rather than purple.
+        case greenGradient
         /// The fade with cloud drifting across it - two layers at two speeds.
         ///
         /// The only background that moves, which is the whole of it: everything else here is
@@ -104,6 +115,8 @@ enum GameBackground: Int, CaseIterable {
         case .deepBlue: return .picture("BackgroundBlue")
         case .starrySky: return .picture("BackgroundSpacePack")
         case .clouds: return .clouds
+        case .prism: return .picture("backgroundPrism")
+        case .deepGreen: return .greenGradient
         }
     }
 
@@ -128,6 +141,32 @@ enum GameBackground: Int, CaseIterable {
 
     /// The Giga-Ball green, which the glow is made of.
     static let glowGreen = UIColor(red: 210/255, green: 1, blue: 0, alpha: 1)
+
+    /// Deep Green's three stops.
+    ///
+    /// James, round 297: "similar in vein to the gradient and deep blue backgrounds but with the
+    /// giga-ball yellow/green colour. It should be dark so it doesn't clash with the game's
+    /// colours, and fade to black below the paddle."
+    ///
+    /// **Dark is the whole difficulty.** `glowGreen` is a near-fluorescent 210,255,0 - it is the
+    /// ball, the paddle's grip, the halo and half the power-up badges, and a background anywhere
+    /// near it would put the brightest colour in the game behind the brightest objects in the
+    /// game. So the hue is kept and almost all of the light taken out: the top is that green at
+    /// about a twelfth of its brightness, which reads as green without being able to compete
+    /// with anything, and it is already darker than the purple gradient's own top.
+    ///
+    /// The stops are placed exactly as the purple gradient's are - the middle pinned to the
+    /// paddle rather than to halfway - so the two read as the same background in two colours,
+    /// which is what "in the vein of" asks for.
+    static let deepGreenTop = UIColor(red: 20/255, green: 28/255, blue: 2/255, alpha: 1)
+    static let deepGreenMiddle = UIColor(red: 10/255, green: 15/255, blue: 1/255, alpha: 1)
+    static let deepGreenBottom = UIColor(red: 0, green: 0, blue: 0, alpha: 1)
+
+    static func greenGradientStops(paddleFraction: CGFloat)
+    -> (colours: [UIColor], locations: [CGFloat]) {
+        let fraction = min(max(paddleFraction, 0), 1)
+        return ([deepGreenTop, deepGreenMiddle, deepGreenBottom], [0, 1 - fraction, 1])
+    }
 
     // Where the haze sits is `glowPools` below. Off-centre on purpose (play-test round 21):
     // a glow in the middle of the field reads as a vignette and sits under every brick
@@ -155,7 +194,26 @@ enum GameBackground: Int, CaseIterable {
     /// cooler one low on the right - the single pool lit one corner and left the rest of the
     /// field flat, and a picture with one bright corner reads as a mistake rather than as
     /// light. The pair gives the field a diagonal, which is what the Classic artwork has.
-    static func hazeImage(size: CGSize) -> UIImage? {
+    /// How each pool drifts, once it is a node of its own.
+    ///
+    /// James, round 297: "is it possible to make the giga-ball yellow/green fuzzy hue dynamic,
+    /// so it moves and evolves slowly behind the game, almost like a lava lamp."
+    ///
+    /// **Two periods that do not divide into each other.** A pool moved on one loop retraces
+    /// the same line for ever, and the eye finds a repeat however slow it is. Moving x on one
+    /// period and y on another draws a Lissajous figure whose path only closes when the two
+    /// periods do - at 37 and 53 seconds that is half an hour, which is longer than a run, so
+    /// the haze never visibly repeats. The scale is a third period again.
+    ///
+    /// The distances are small on purpose: a few per cent of the field, over most of a minute.
+    /// A background that can be *watched* moving is a background competing with the game.
+    static let hazeDrift: [(x: CGFloat, y: CGFloat, across: TimeInterval,
+                            down: TimeInterval, swell: TimeInterval)] = [
+        (0.055, 0.045, 37, 53, 61),
+        (0.075, 0.035, 43, 29, 47),
+    ]
+
+    static func hazeImage(size: CGSize, only: Int? = nil) -> UIImage? {
         guard size.width > 0, size.height > 0 else { return nil }
 
         let format = UIGraphicsImageRendererFormat.default()
@@ -172,7 +230,11 @@ enum GameBackground: Int, CaseIterable {
                 return CGFloat((seed >> 33) % 100_000)/100_000
             }
 
-            for pool in glowPools {
+            for (index, pool) in glowPools.enumerated() {
+                if let only, index != only { continue }
+                // One pool per node when the scene asks for them separately, so each can drift
+                // on its own path - as one baked picture they could only move together, which
+                // is a picture sliding about rather than two lights in a lamp
                 let centre = CGPoint(x: size.width*pool.centre.x,
                                      y: size.height*pool.centre.y)
                 let reach = size.width*pool.radius
@@ -295,12 +357,16 @@ enum GameBackground: Int, CaseIterable {
     /// depth - and the near layer is the fainter of the two, or it would be the thing you
     /// were looking at.
     static let cloudLayers: [(seed: UInt64, blobs: Int, strength: CGFloat,
-                              crossing: TimeInterval, colour: UIColor)] = [
-        (0xD1B54A32D192ED03, 16, 0.26, 210,
+                              crossing: TimeInterval, evolving: TimeInterval,
+                              colour: UIColor)] = [
+        (0xD1B54A32D192ED03, 16, 0.26, 210, 67,
          UIColor(red: 120/255, green: 70/255, blue: 165/255, alpha: 1)),
-        (0x2545F4914F6CDD1D, 10, 0.13, 130,
+        (0x2545F4914F6CDD1D, 10, 0.13, 130, 41,
          UIColor(red: 165/255, green: 120/255, blue: 1, alpha: 1)),
     ]
+    // `evolving` is how long each layer takes to swell and thin once (round 297). Neither
+    // divides into its own crossing time or into the other's, so the two layers are never in
+    // the same state twice in a run - which is what stops a drift on a loop reading as a loop
     // The colours are lifted well off the background's own purple. Added light on a very
     // dark ground is nearly nothing: the first pass used the border's purple at a tenth
     // alpha and drew cloud nobody could see, which is the same as no cloud at all
@@ -324,10 +390,14 @@ enum GameBackground: Int, CaseIterable {
     ///
     /// UIKit's y runs down the image, so the stops above - measured from the top - are used
     /// as they are, and the paddle's fraction is what gets flipped.
-    static func gradientImage(size: CGSize, paddleFraction: CGFloat) -> UIImage? {
+    static func gradientImage(size: CGSize, paddleFraction: CGFloat,
+                              green: Bool = false) -> UIImage? {
         guard size.width > 0, size.height > 0 else { return nil }
 
-        let stops = gradientStops(paddleFraction: paddleFraction)
+        let stops = green ? greenGradientStops(paddleFraction: paddleFraction)
+                          : gradientStops(paddleFraction: paddleFraction)
+        // One builder for both, because they are the same picture in two colours - a second
+        // copy would be a second place to fix the day the stops move
         return UIGraphicsImageRenderer(size: size).image { context in
             guard let gradient = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(),
                                             colors: stops.colours.map(\.cgColor) as CFArray,

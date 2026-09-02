@@ -360,37 +360,47 @@ enum DailyTwist: String, CaseIterable, Codable {
     /// symmetry is the strictest case of the thing he is describing, and a strict subset is a
     /// measurement agreeing with a judgement rather than contradicting it.
     ///
-    /// So the numbers are his and `DailyLayoutFlipTests` holds the floor underneath them: any
-    /// level that is *exactly* unchanged by a flip must appear here, because that one is not a
-    /// matter of taste. A level added later that happens to be symmetric fails that test on the
-    /// day it arrives.
+    /// **And a measured bar underneath the judgement** (round 297): "for anything >=80% similar,
+    /// exclude from the mirrored and upside down twists." So the table is his list *plus*
+    /// every level where at least four bricks in five land on another of the same kind when the
+    /// level is flipped. `DailyLayoutFlipTests` measures that share and fails if any level over
+    /// the bar is missing from here, which turns "significantly different" from a judgement
+    /// that has to be re-made by hand into one made once with a number to hold it.
+    ///
+    /// The bar adds seven levels to Mirrored and none to Upside Down - the three at or above it
+    /// there were already on his list, and the next one down sits at 75%.
     ///
     /// Given per pack and recorded as global level numbers, which is what the generator draws:
     /// Classic starts at 1, Space at 11, Nature 21, City 31, Food 41, Computer 51, Body 61,
     /// World 71, Emoji 81, Numbers 91 and Challenge 101.
     static let levelsUnchangedBy: [DailyTwist: Set<Int>] = [
-        .mirrored: [1, 2, 5, 6, 7, 8, 9, 10,          // Classic 1, 2, 5-10
-                    11, 14, 15,                        // Space 1, 4, 5
-                    21, 24, 25, 27, 29, 30,            // Nature 1, 4, 5, 7, 9, 10
-                    32, 33, 39,                        // City 2, 3, 9
-                    41, 43, 45, 48,                    // Food 1, 3, 5, 8
-                    51, 54, 56, 57, 60,                // Computer 1, 4, 6, 7, 10
-                    62, 63, 65, 69,                    // Body 2, 3, 5, 9
-                    73, 79, 80,                        // World 3, 9, 10
-                    81, 83, 84, 89,                    // Emoji 1, 3, 4, 9
-                    92, 93, 98,                        // Numbers 2, 3, 8
+        .mirrored: [1, 2, 5, 6, 7, 8, 9, 10,           // Classic 1, 2, 5-10
+                    11, 14, 15,                         // Space 1, 4, 5
+                    21, 24, 25, 27, 29, 30,             // Nature 1, 4, 5, 7, 9, 10
+                    32, 33, 34, 39,                     // City 2, 3, 4*, 9
+                    41, 43, 45, 48,                     // Food 1, 3, 5, 8
+                    51, 52, 54, 56, 57, 60,             // Computer 1, 2*, 4, 6, 7, 10
+                    62, 63, 65, 66, 68, 69, 70,         // Body 2, 3, 5, 6*, 8*, 9, 10*
+                    73, 79, 80,                         // World 3, 9, 10
+                    81, 83, 84, 85, 89,                 // Emoji 1, 3, 4, 5*, 9
+                    92, 93, 98, 99,                     // Numbers 2, 3, 8, 9*
                     101, 103, 104, 105, 106, 107, 108, 109, 110],
-                                                       // Challenge 1, 3-10 except 2
-        .upsideDown: [1, 8, 9, 10,                     // Classic 1, 8, 9, 10
-                      14,                              // Space 4
-                      27, 29,                          // Nature 7, 9
-                      33,                              // City 3
-                      51, 55,                          // Computer 1, 5
-                      73,                              // World 3
-                      81, 82, 84,                      // Emoji 1, 2, 4
-                      98,                              // Numbers 8
-                      101, 106, 108, 109, 110],        // Challenge 1, 6, 8, 9, 10
+                                                        // Challenge 1, 3-10
+        .upsideDown: [1, 8, 9, 10,                      // Classic 1, 8, 9, 10
+                      14,                               // Space 4
+                      27, 29,                           // Nature 7, 9
+                      33,                               // City 3
+                      51, 55,                           // Computer 1, 5
+                      73,                               // World 3
+                      81, 82, 84,                       // Emoji 1, 2, 4
+                      98,                               // Numbers 8
+                      101, 106, 108, 109, 110],         // Challenge 1, 6, 8, 9, 10
     ]
+    // The seven marked `*` are the ones the **80% rule** adds to James's own review (round
+    // 297: "for anything >=80% similar, exclude from the mirrored and upside down twists").
+    // Nothing is added to Upside Down by it - the three levels at or above the bar there were
+    // already on his list, and the next one down is at 75%.
+
     // **The last pack is Challenge, and James's note said Space twice.** His list runs in pack
     // order - Classic, Space, Nature, City, Food, Computer, Body, World, Emoji, Numbers - and
     // the only pack it never names is Challenge, which is exactly where the second "Space Pack"

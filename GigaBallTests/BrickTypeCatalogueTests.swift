@@ -120,11 +120,7 @@ final class BrickTypeCatalogueTests: XCTestCase {
         for entry in BrickTypeCatalogue.allEntries {
             XCTAssertFalse(entry.name.isEmpty)
             XCTAssertFalse(entry.description.isEmpty, entry.name)
-            XCTAssertFalse(entry.facts.isEmpty, entry.name)
-            for fact in entry.facts {
-                XCTAssertFalse(fact.label.isEmpty, entry.name)
-                XCTAssertFalse(fact.value.isEmpty, "\(entry.name): \(fact.label)")
-            }
+            // A picture, a name and a description is the whole of an entry since round 297
         }
     }
 
@@ -135,125 +131,6 @@ final class BrickTypeCatalogueTests: XCTestCase {
         }
         for entry in BrickTypeCatalogue.sections[0].entries {
             XCTAssertFalse(entry.isNew, "\(entry.name) has always been in the game")
-        }
-    }
-
-    // MARK: - The derived lines
-
-    func testTheBehaviourLineFollowsTheGameRatherThanTheProse() {
-        // Flashing is the one style Invisible cannot take - both are about whether the brick
-        // can be seen - so its line has to name the four it can, not say "any"
-        let flashing = BrickTypeCatalogue.behaviours(carrying: .flashing)
-        XCTAssertFalse(flashing.contains("Invisible"))
-        XCTAssertTrue(flashing.contains("Standard"))
-        XCTAssertTrue(flashing.contains("Multi-Hit"))
-
-        XCTAssertEqual(BrickTypeCatalogue.behaviours(carrying: .rounded), "Any")
-        XCTAssertEqual(BrickTypeCatalogue.behaviours(carrying: .spinning), "Any")
-    }
-
-    func testDirectionalCannotDescribeABrickThatIsNeverDestroyed() {
-        let line = BrickTypeCatalogue.behaviours(carrying: .directional)
-        XCTAssertFalse(line.contains("Indestructible ×2"))
-        XCTAssertTrue(line.contains("Indestructible ×1"))
-    }
-
-    func testAPortalSaysWhatItActuallyIs() {
-        // Portal does not find an Indestructible brick, it makes one. Listing behaviours
-        // would say "Indestructible ×2" and imply the generator went looking for one
-        XCTAssertEqual(BrickTypeCatalogue.behaviours(carrying: .portal),
-                       "Always Indestructible ×2")
-    }
-
-    func testTheStackingLineMatchesTheCompatibilityGrid() {
-        for style in EndlessIIStyle.allCases {
-            let line = BrickTypeCatalogue.styles(stackingWith: style)
-            XCTAssertFalse(line.isEmpty, "\(style)")
-
-            // Never itself, whichever way round the line is put. Two of the same style on one
-            // brick is the second one doing nothing
-            XCTAssertFalse(line.contains(BrickTypeCatalogue.name(of: style)), "\(style)")
-
-            // Said either as the styles it works with or as the ones it does not, so the
-            // check is on whichever list the line is actually naming
-            let named = line.hasPrefix("Any but")
-                ? EndlessIIStyle.allCases.filter { style.stacksWith($0) == false && $0 != style }
-                : EndlessIIStyle.allCases.filter { style.stacksWith($0) }
-            guard line != "Any other style" else { continue }
-
-            for other in named {
-                XCTAssertTrue(line.contains(BrickTypeCatalogue.name(of: other)),
-                              "\(style) should name \(other) in \"\(line)\"")
-            }
-            for other in EndlessIIStyle.allCases where named.contains(other) == false && other != style {
-                XCTAssertFalse(line.contains(BrickTypeCatalogue.name(of: other)),
-                               "\(style) should not name \(other) in \"\(line)\"")
-            }
-        }
-    }
-
-    func testTheStackingLineIsSaidWhicheverWayIsShorter() {
-        // Rounded rewrites the brick's outline, so its only argument is with the styles that
-        // do the same - and naming those is shorter than naming the nine it takes
-        XCTAssertEqual(BrickTypeCatalogue.styles(stackingWith: .rounded),
-                       "Any but Convex, Concave, Wedge, Diamond, Breathing")
-        // Breathing since round 142: a face drawn once at the brick's size does not follow a
-        // brick that then changes size. Diamond since round 234, and it is the fourth shape
-        // rather than a new kind of exclusion - which is what this line is here to show: a
-        // shape added to the enum lands in this sentence without anybody writing it down
-
-        // Spinning went the other way in round 235, and the sentence turned round with it -
-        // which is the whole point of the rule this test is about. The workbook took four
-        // styles off it (Fixed, Gravity, Exploding, Spawner, all of which answer in cells,
-        // which a turning brick has left behind) and gave it back the four shapes and
-        // Directional, so naming what it *refuses* is now the shorter half
-        XCTAssertEqual(BrickTypeCatalogue.styles(stackingWith: .spinning),
-                       "Any but Moving, Gravity, Fixed, Exploding, Spawner")
-        // The five are the same five; the order is `styleOrder`'s, which round 270 changed when
-        // it split the actions into the ones you can see happening and the ones you cannot
-        // Breathing left that list in round 237 - the matrix says Spinning and Breathing go
-        // together, and the objection was never quite true: Spinning turns the node and
-        // touches no geometry at all
-
-        // A Portal is never damaged and never destroyed, so anything about being destroyed or
-        // about being solid has nothing to attach to - and there its exclusions are no shorter
-        // than its partners, so the partners are named
-        let portal = BrickTypeCatalogue.styles(stackingWith: .portal)
-        XCTAssertNotEqual(portal, "Any other style")
-        XCTAssertFalse(portal.hasPrefix("Any but"))
-        XCTAssertTrue(portal.contains(BrickTypeCatalogue.name(of: .rounded)),
-                      "asked of the catalogue rather than spelled out - the display name "
-                      + "became Round in round 293 and this line said Rounded")
-        XCTAssertFalse(portal.contains("Exploding"))
-    }
-
-    func testEveryStyleSaysWhichSizesItComesIn() {
-        for style in EndlessIIStyle.allCases {
-            XCTAssertFalse(BrickTypeCatalogue.sizes(carrying: style).isEmpty, "\(style)")
-        }
-        // **These were pinned to the wrong answers for three rounds**, which is the whole
-        // reason the sentence is derived now. Round 237 opened Fixed and Moving to any size and
-        // Gravity to everything but Tiny, and moved only the generator's copy of the rule - so
-        // the page went on saying "Normal" and this test went on agreeing with it
-        XCTAssertEqual(BrickTypeCatalogue.sizes(carrying: .gravity), "Any")
-        // Any size since round 244, when the fall stopped walking the occupancy map a row at a
-        // time and started measuring frames - which a quarter-cell brick can be measured by
-        XCTAssertEqual(BrickTypeCatalogue.sizes(carrying: .fixed), "Any")
-        XCTAssertEqual(BrickTypeCatalogue.sizes(carrying: .moving), "Any")
-
-        // A Big brick cannot spin: the clearance a full-size one needs to turn is already two
-        // cells in each direction
-        XCTAssertFalse(BrickTypeCatalogue.sizes(carrying: .spinning).contains("Big"))
-
-        // And the page's answer is the generator's answer, for every style and every size -
-        // which is the property that makes the two impossible to drift apart again
-        for style in EndlessIIStyle.allCases {
-            for size in BrickSize.allCases where style.suits(size) {
-                let sentence = BrickTypeCatalogue.sizes(carrying: style)
-                XCTAssertTrue(sentence == "Any"
-                              || sentence.contains(BrickTypeCatalogue.name(of: size)),
-                              "\(style) takes \(size) and the page does not say so")
-            }
         }
     }
 
@@ -272,32 +149,6 @@ final class BrickTypeCatalogueTests: XCTestCase {
     private let descriptionFont = UIFont.systemFont(ofSize: 18, weight: .semibold)
     private let descriptionWidth: CGFloat = 402 - 40
 
-    /// A one-line description is centred under the icon and the name; a paragraph is not.
-    ///
-    /// **No brick entry writes a paragraph any more** (round 291): every description on this
-    /// page is now the line from James's brick workbook, and the longest of them is a dozen
-    /// words. The rule this test guards is a property of the *page* rather than of the
-    /// catalogue, and the page still has to hold it - the power-ups page shares the layout, a
-    /// description can grow again, and the rule was written because centring every line of a
-    /// six-line block was legible and wrong.
-    ///
-    /// So it is asked of a paragraph rather than of the catalogue. The line that used to fail
-    /// here - "no entry writes a paragraph any more, check the rule still earns its keep" - was
-    /// the test saying in advance what it should become when this day came.
-    func testLongDescriptionsAreNotCentred() {
-        let paragraph = "Turns on the spot, and the bounce turns with it. The generator "
-            + "leaves the cells around it clear, because a brick twice as wide as it is tall "
-            + "needs the room to get round."
-        XCTAssertFalse(ItemsStatsViewController.descriptionIsCentred(
-            paragraph, font: descriptionFont, width: descriptionWidth),
-                       "a description long enough to wrap is left-aligned")
-
-        for entry in BrickTypeCatalogue.allEntries where entry.description.count > 120 {
-            XCTAssertFalse(ItemsStatsViewController.descriptionIsCentred(
-                entry.description, font: descriptionFont, width: descriptionWidth), entry.name)
-        }
-    }
-
     /// And every one of them is short enough to sit centred, which is what the workbook bought.
     func testTheWorkbooksDescriptionsAllFitOnALine() {
         for entry in BrickTypeCatalogue.allEntries {
@@ -305,15 +156,6 @@ final class BrickTypeCatalogueTests: XCTestCase {
                               "\(entry.name) is longer than James's workbook line - either the "
                               + "sheet says more than this, or a paragraph has grown back")
         }
-    }
-
-    func testShortDescriptionsAreCentred() {
-        XCTAssertTrue(ItemsStatsViewController.descriptionIsCentred(
-            "Gives you an extra ball", font: descriptionFont, width: descriptionWidth))
-        // Two lines still reads as the end of the heading; three is body text
-        XCTAssertTrue(ItemsStatsViewController.descriptionIsCentred(
-            "A brick that takes two hits before it breaks apart entirely",
-            font: descriptionFont, width: descriptionWidth))
     }
 
     /// Before the label has been laid out its width is zero, and a height measured against no

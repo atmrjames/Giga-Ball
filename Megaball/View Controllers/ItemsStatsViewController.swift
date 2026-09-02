@@ -120,8 +120,8 @@ class ItemsStatsViewController: UIViewController, UITableViewDelegate, UITableVi
     /// What `sender` is set to when this screen is showing a brick type.
     ///
     /// The brick types page reuses this screen rather than growing one of its own: an icon, a
-    /// name, a description and a short list of facts is exactly what it already draws, and a
-    /// second copy of it would be a second copy to keep looking the same.
+    /// name and a description is exactly what it already draws, and a second copy of it would
+    /// be a second copy to keep looking the same. It shows no table rows (round 297).
     static let brickTypesSender = "Brick Types"
 
     private var brickTypeEntry: BrickTypeCatalogue.Entry? {
@@ -134,8 +134,19 @@ class ItemsStatsViewController: UIViewController, UITableViewDelegate, UITableVi
     }
 
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        if let entry = brickTypeEntry {
-            return entry.facts.count
+        if brickTypeEntry != nil {
+            return 0
+            // **A brick's page is the picture, the name and the description** (James, round
+            // 297: "just show the images of the bricks as they are, the name of the brick and
+            // the description. The information in the table view for the bricks isn't needed").
+            //
+            // The rows were a short list of facts - which behaviours a style suits, which sizes
+            // it comes in, what it stacks with - derived from `EndlessIIStyle` so the page could
+            // not disagree with the game. They were right and they were more than the screen is
+            // for: a player opens this mid-run to find out what a brick does. The derivations
+            // went with them, and the rules they were reading are still checked directly by
+            // `EndlessIIStyleTests`, which is where a rule belongs rather than in a sentence
+            // about a rule
         }
         if sender == "Power-Ups" {
             return mayhemOnlyPowerUp ? 6 : 5
@@ -166,19 +177,9 @@ class ItemsStatsViewController: UIViewController, UITableViewDelegate, UITableVi
         // the detail views too) - the two pages print the same kind of fact and should not
         // print it at two sizes
 
-        if let entry = brickTypeEntry {
-            let fact = entry.facts[indexPath.row]
-            cell.statDescription.text = fact.label
-            cell.statValue.text = fact.value
-
-            // These values are sentences where a power-up's are numbers, and the two labels
-            // share the row's width - a long one pushed its own label out of the row and left
-            // a stat with no name on it
-            cell.statDescription.setContentCompressionResistancePriority(.required, for: .horizontal)
-            cell.statValue.adjustsFontSizeToFitWidth = true
-            cell.statValue.minimumScaleFactor = 0.6
-            return cell
-        }
+        if brickTypeEntry != nil { return cell }
+        // A brick's page has no rows since round 297, so nothing asks for one - this is the
+        // guard that says so rather than a branch that builds something
 
         if sender == "Power-Ups" {
             switch indexPath.row {

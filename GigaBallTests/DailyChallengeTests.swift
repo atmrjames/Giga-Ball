@@ -2355,7 +2355,11 @@ final class DailyLayoutFlipTests: XCTestCase {
                 }))
     }
 
-    func testEveryExactlySymmetricLevelIsExcluded() {
+    /// James, round 297: "for anything >=80% similar, exclude from the mirrored and upside
+    /// down twists."
+    static let alikeBar = 80
+
+    func testEveryLevelOverTheAlikenessBarIsExcluded() {
         let scene = levelScene()
         var exactMirror: Set<Int> = [], exactUpside: Set<Int> = []
         var rows: [(level: Int, mirrored: Int, upsideDown: Int)] = []
@@ -2365,8 +2369,8 @@ final class DailyLayoutFlipTests: XCTestCase {
             guard cells.isEmpty == false else { continue }
             let alike = likeness(cells)
             rows.append((level, alike.mirrored, alike.upsideDown))
-            if alike.mirrored == 100 { exactMirror.insert(level) }
-            if alike.upsideDown == 100 { exactUpside.insert(level) }
+            if alike.mirrored >= DailyLayoutFlipTests.alikeBar { exactMirror.insert(level) }
+            if alike.upsideDown >= DailyLayoutFlipTests.alikeBar { exactUpside.insert(level) }
         }
 
         for (twist, exact) in [(DailyTwist.mirrored, exactMirror),
@@ -2374,8 +2378,9 @@ final class DailyLayoutFlipTests: XCTestCase {
             let excluded = DailyTwist.levelsUnchangedBy[twist] ?? []
             XCTAssertTrue(exact.isSubset(of: excluded),
                           "\(twist.displayName): levels \(exact.subtracting(excluded).sorted()) "
-                          + "are identical when flipped and are still in the pool. Exact "
-                          + "symmetry is not a matter of taste - a level added or edited into "
+                          + "are at least \(DailyLayoutFlipTests.alikeBar)% the same when "
+                          + "flipped and are still in the pool. That bar is James's and it is "
+                          + "a number rather than a judgement, so a level added or edited over "
                           + "it has to join the table")
         }
 
@@ -2383,18 +2388,19 @@ final class DailyLayoutFlipTests: XCTestCase {
         // lots of other levels not mentioned here that are quite similar when either mirrored
         // or upside down." Whether a given one clears the bar is his call, so nothing here
         // asserts it - this is the data that call would be made from
+        print("\n  ALIKE>=80 mirrored:   \(rows.filter { $0.mirrored >= 80 }.map(\.level))")
+        print("  ALIKE>=80 upsideDown: \(rows.filter { $0.upsideDown >= 80 }.map(\.level))")
         let offered = rows.filter {
             DailyTwist.levelsUnchangedBy[.mirrored]?.contains($0.level) != true
         }.sorted { $0.mirrored > $1.mirrored }
-        print("\n  Still offered Mirrored, most alike first:")
+        print("  Still offered Mirrored, most alike first:")
         for row in offered.prefix(12) {
-            print(String(format: "    level %3d  %3d%% of its bricks land on themselves",
-                         row.level, row.mirrored))
+            print(String(format: "    level %3d  %3d%%", row.level, row.mirrored))
         }
         let upside = rows.filter {
             DailyTwist.levelsUnchangedBy[.upsideDown]?.contains($0.level) != true
         }.sorted { $0.upsideDown > $1.upsideDown }
-        print("\n  Still offered Upside Down, most alike first:")
+        print("  Still offered Upside Down, most alike first:")
         for row in upside.prefix(12) {
             print(String(format: "    level %3d  %3d%%", row.level, row.upsideDown))
         }

@@ -1827,4 +1827,55 @@ final class EndlessIIFrameCostTests: XCTestCase {
         // a decision that belongs to a play test - see §12.0's note
     }
 
+    /// The two backgrounds round 297 added, drawn so they can be looked at.
+    func testTheNewBackgroundsCanBeLookedAt() throws {
+        let panel = CGSize(width: 300, height: 640)
+        let display = SKScene(size: CGSize(width: panel.width*2 + 30, height: panel.height))
+        display.backgroundColor = .black
+
+        for (index, background) in [GameBackground.deepGreen, .prism].enumerated() {
+            let node: SKSpriteNode
+            switch background.paint {
+            case .greenGradient:
+                let image = try XCTUnwrap(GameBackground.gradientImage(
+                    size: panel, paddleFraction: 0.18, green: true))
+                node = SKSpriteNode(texture: SKTexture(image: image), size: panel)
+            case .picture(let named):
+                node = SKSpriteNode(texture: SKTexture(imageNamed: named), size: panel)
+            default:
+                continue
+            }
+            node.position = CGPoint(x: panel.width/2 + (panel.width + 30)*CGFloat(index),
+                                    y: panel.height/2)
+            display.addChild(node)
+
+            // A paddle and a couple of bricks, so the point of "dark so it doesn't clash" can
+            // actually be judged against the things it must not clash with
+            let paddle = SKSpriteNode(color: .white, size: CGSize(width: 90, height: 10))
+            paddle.position = CGPoint(x: node.position.x, y: panel.height*0.18)
+            display.addChild(paddle)
+            let ball = SKSpriteNode(color: GameBackground.glowGreen,
+                                    size: CGSize(width: 14, height: 14))
+            ball.position = CGPoint(x: node.position.x + 30, y: panel.height*0.30)
+            display.addChild(ball)
+            for row in 0..<3 {
+                for column in 0..<5 {
+                    let brick = SKSpriteNode(color: .systemPink,
+                                             size: CGSize(width: 46, height: 20))
+                    brick.position = CGPoint(x: node.position.x - 110 + 52*CGFloat(column),
+                                             y: panel.height*0.78 + 24*CGFloat(row))
+                    display.addChild(brick)
+                }
+            }
+        }
+
+        let view = SKView(frame: CGRect(origin: .zero, size: display.size))
+        let texture = try XCTUnwrap(view.texture(from: display))
+        let file = URL(fileURLWithPath: NSTemporaryDirectory())
+            .appendingPathComponent("round-297-backgrounds.png")
+        try XCTUnwrap(UIImage(cgImage: texture.cgImage()).pngData()).write(to: file)
+        print("\n  Round 297 backgrounds: \(file.path)")
+        print("  Deep Green, then Prism, each behind a field and a paddle\n")
+    }
+
 }
