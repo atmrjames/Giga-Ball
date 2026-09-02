@@ -48,7 +48,7 @@ enum GameBackground: Int, CaseIterable {
         switch self {
         case .classic: return "Classic"
         case .solid: return "Solid"
-        case .gradient: return "Gradient"
+        case .gradient: return "Deep Purple"
         case .black: return "Black"
         case .glow: return "Glow"
         case .deepBlue: return "Deep Blue"
@@ -64,7 +64,7 @@ enum GameBackground: Int, CaseIterable {
         switch self {
         case .classic: return "The original artwork, as the game has always looked"
         case .solid: return "One flat colour, so nothing competes with the bricks"
-        case .gradient: return "Light at the top, falling away below the paddle"
+        case .gradient: return "Deep purple at the top, falling away below the paddle"
         case .black: return "Black, for the most contrast the screen can give"
         case .glow: return "The gradient, with a haze of Giga-Ball green above the field"
         case .deepBlue: return "A deep blue night, darkening towards the paddle"
@@ -266,12 +266,92 @@ enum GameBackground: Int, CaseIterable {
         }
     }
 
+    /// One soft blob: a radial fade from the colour at its middle to nothing at its edge.
+    ///
+    /// **The unit both moving backgrounds are now made of** (James, round 299: "what I want is
+    /// the glow / cloud parts of the background to shift and move as natural shapes, floating
+    /// around in space gently and randomly, shifting positions and shapes gradually over time,
+    /// kind of like a lava lamp").
+    ///
+    /// Round 297 moved the *whole baked picture* instead, which is what he saw and rightly
+    /// rejected: every dot in it travelled together, so the haze slid about as one rigid object
+    /// and its shape never changed. A lava lamp is not one shape moving - it is several shapes
+    /// moving *independently*, and what makes it hypnotic is the merging and parting, which is
+    /// a property of the gaps between them rather than of any one blob.
+    ///
+    /// So the layers are built from these instead, a handful of nodes each, drifting on their
+    /// own paths. They are drawn once per colour and shared: a sprite can be scaled and tinted,
+    /// and re-rendering a gradient per blob would be a texture upload per blob for no
+    /// difference on screen (round 291's lesson about `SKTexture(image:)`).
+    static func softBlobImage(diameter: CGFloat, colour: UIColor) -> UIImage? {
+        guard diameter > 1 else { return nil }
+        let size = CGSize(width: diameter, height: diameter)
+        let format = UIGraphicsImageRendererFormat.default()
+        format.opaque = false
+        return UIGraphicsImageRenderer(size: size, format: format).image { context in
+            let centre = CGPoint(x: diameter/2, y: diameter/2)
+            let colours = [colour.withAlphaComponent(1).cgColor,
+                           colour.withAlphaComponent(0.55).cgColor,
+                           colour.withAlphaComponent(0).cgColor] as CFArray
+            guard let fade = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(),
+                                        colors: colours, locations: [0, 0.35, 1]) else { return }
+            context.cgContext.drawRadialGradient(fade, startCenter: centre, startRadius: 0,
+                                                 endCenter: centre, endRadius: diameter/2,
+                                                 options: [])
+            // Three stops rather than two: a straight linear fade to nothing reads as a disc
+            // with a soft edge, where holding most of the strength through the middle third and
+            // then falling away reads as light
+        }
+    }
+
+    /// A blob's own drift, worked out from its index so no two share a rhythm.
+    ///
+    /// **Everything here is derived rather than listed**, because the count is a knob: the
+    /// alternative is a table that has to grow whenever a layer gains a blob, and a table
+    /// somebody has to keep irrational-looking by hand.
+    ///
+    /// The three periods are seeded off the index by three different primes, so any two blobs
+    /// differ in all three and the whole field has no common cycle. Nothing lines up twice
+    /// inside a run, which is the only thing standing between "drifting" and "looping".
+    /// How many blobs each pool is made of, and how big each is against the pool's reach.
+    ///
+    /// Five is enough for the gaps between them to keep making new shapes and few enough that
+    /// the pool still reads as one light rather than as a handful of spots. They are drawn
+    /// wider than the spacing between them on purpose - a lamp is blobs that overlap.
+    static let hazeBlobsPerPool = 5
+    static let hazeBlobShare: CGFloat = 1.15
+    /// Each blob carries a share of the pool's strength, since several overlap everywhere.
+    ///
+    /// **A share, not a multiple.** The blobs blend additively, so three or four of them
+    /// overlap through the middle of a pool and their strengths sum - the first attempt gave
+    /// each one more than the whole pool used to have and produced a bright green mass rather
+    /// than a haze. About a third of the pool's figure puts the *summed* peak back where the
+    /// baked picture's was, which is where two hundred rounds of play-testing left it.
+    /// **Matched to the picture it replaces rather than chosen** (round 299). The baked haze
+    /// averaged 0.037 alpha across the field; five blobs at this figure average the same, which
+    /// is how the change keeps two hundred rounds of play-testing on the brightness while
+    /// changing everything about how it moves. 3.4 was tried first and made a bright green
+    /// mass, then 0.36 and made nothing at all - two guesses that the measurement would have
+    /// saved.
+    static let hazeBlobStrength: CGFloat = 1.55
+
+    static func blobDrift(index: Int, seed: UInt64) -> (across: TimeInterval, down: TimeInterval,
+                                                        swell: TimeInterval, phase: TimeInterval) {
+        var state = seed &+ UInt64(index) &* 0x9E3779B97F4A7C15
+        func next(_ range: ClosedRange<Double>) -> Double {
+            state = state &* 6364136223846793005 &+ 1442695040888963407
+            let unit = Double((state >> 33) % 100_000)/100_000
+            return range.lowerBound + unit*(range.upperBound - range.lowerBound)
+        }
+        return (next(29...53), next(31...61), next(37...67), next(0...20))
+    }
+
     /// The pools the haze is made of: where each sits, how far it reaches, and how strong.
     static let glowPools: [(centre: CGPoint, radius: CGFloat, strength: CGFloat,
-                            dots: Int, colour: UIColor)] = [
-        (CGPoint(x: 0.34, y: 0.24), 0.62, 0.085, 340, glowGreen),
+                            dots: Int, colour: UIColor, seed: UInt64)] = [
+        (CGPoint(x: 0.34, y: 0.24), 0.62, 0.085, 340, glowGreen, 0x9E3779B97F4A7C15),
         (CGPoint(x: 0.78, y: 0.62), 0.40, 0.05, 180,
-         UIColor(red: 120/255, green: 90/255, blue: 1, alpha: 1)),
+         UIColor(red: 120/255, green: 90/255, blue: 1, alpha: 1), 0xBF58476D1CE4E5B9),
         // The second is violet rather than more green: the same colour twice reads as one
         // pool that has been smeared, where two colours read as two lights
     ]

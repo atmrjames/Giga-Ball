@@ -1878,4 +1878,100 @@ final class EndlessIIFrameCostTests: XCTestCase {
         print("  Deep Green, then Prism, each behind a field and a paddle\n")
     }
 
+    /// The Glow's blobs at three moments, so the lava lamp can be judged as a lamp.
+    ///
+    /// A still picture cannot show drift, but it can show the thing round 299 was actually
+    /// asked for: that the *shape* of the light differs from moment to moment. Three frames
+    /// with the blobs at different points in their cycles - if the three look like one picture
+    /// slid sideways, the effect is still round 297's.
+    func testTheGlowsBlobsCanBeLookedAt() throws {
+        let panel = CGSize(width: 250, height: 480)
+        let display = SKScene(size: CGSize(width: panel.width*3 + 40, height: panel.height))
+        display.backgroundColor = UIColor(red: 0.09, green: 0.02, blue: 0.13, alpha: 1)
+
+        for frame in 0..<3 {
+            let originX = panel.width*CGFloat(frame) + 20*CGFloat(frame)
+            for (pool, drift) in zip(GameBackground.glowPools, GameBackground.hazeDrift) {
+                let reach = panel.width*pool.radius
+                let diameter = reach*GameBackground.hazeBlobShare
+                guard let image = GameBackground.softBlobImage(diameter: 256,
+                                                               colour: pool.colour) else { continue }
+                for index in 0..<GameBackground.hazeBlobsPerPool {
+                    let own = GameBackground.blobDrift(index: index, seed: pool.seed)
+                    let angle = CGFloat(index)/CGFloat(GameBackground.hazeBlobsPerPool)*2*CGFloat.pi
+                    let spread = reach*0.42
+
+                    // Where this blob would be `t` seconds in, evaluated rather than animated
+                    let t = Double(frame)*45 + own.phase
+                    let ax = CGFloat(sin(t/own.across*2*Double.pi))*panel.width*drift.x
+                    let ay = CGFloat(sin(t/own.down*2*Double.pi))*panel.height*drift.y
+                    let scale = 0.8 + CGFloat(0.5 + 0.5*sin(t/own.swell*2*Double.pi))*0.55
+
+                    let blob = SKSpriteNode(texture: SKTexture(image: image))
+                    blob.size = CGSize(width: diameter*scale, height: diameter*0.78*scale)
+                    blob.position = CGPoint(
+                        x: originX + panel.width*pool.centre.x + cos(angle)*spread + ax,
+                        y: panel.height*(1 - pool.centre.y) + sin(angle)*spread*0.72 + ay)
+                    blob.alpha = pool.strength*GameBackground.hazeBlobStrength
+                    blob.blendMode = .add
+                    display.addChild(blob)
+                }
+            }
+        }
+
+        // How bright the new stack is against the picture it replaces, so the per-blob
+        // strength is matched rather than guessed at. Round 299 tried 3.4 (a bright green
+        // mass) and 0.36 (invisible) before measuring, which is two guesses more than the
+        // measurement cost.
+        if let baked = GameBackground.hazeImage(size: panel) {
+            print(String(format: "  BAKED haze mean alpha %.4f", meanAlpha(baked)))
+        }
+        let stack = UIGraphicsImageRenderer(size: panel).image { context in
+            for (pool, _) in zip(GameBackground.glowPools, GameBackground.hazeDrift) {
+                let reach = panel.width*pool.radius
+                let diameter = reach*GameBackground.hazeBlobShare
+                guard let image = GameBackground.softBlobImage(diameter: 256,
+                                                               colour: pool.colour) else { continue }
+                context.cgContext.setBlendMode(.plusLighter)
+                for index in 0..<GameBackground.hazeBlobsPerPool {
+                    let angle = CGFloat(index)/CGFloat(GameBackground.hazeBlobsPerPool)*2*CGFloat.pi
+                    let spread = reach*0.42
+                    let centre = CGPoint(x: panel.width*pool.centre.x + cos(angle)*spread,
+                                         y: panel.height*pool.centre.y + sin(angle)*spread*0.72)
+                    image.draw(in: CGRect(x: centre.x - diameter/2,
+                                          y: centre.y - diameter*0.78/2,
+                                          width: diameter, height: diameter*0.78),
+                               blendMode: .plusLighter,
+                               alpha: pool.strength*GameBackground.hazeBlobStrength)
+                }
+            }
+        }
+        print(String(format: "  BLOB  haze mean alpha %.4f  (strength %.2f)",
+                     meanAlpha(stack), GameBackground.hazeBlobStrength))
+
+        let view = SKView(frame: CGRect(origin: .zero, size: display.size))
+        let texture = try XCTUnwrap(view.texture(from: display))
+        let file = URL(fileURLWithPath: NSTemporaryDirectory())
+            .appendingPathComponent("round-299-glow.png")
+        try XCTUnwrap(UIImage(cgImage: texture.cgImage()).pngData()).write(to: file)
+        print("\n  Round 299 glow: \(file.path)")
+        print("  the same pools at three moments, 45 seconds apart\n")
+    }
+
+    /// The mean alpha of an image, for comparing how strong two washes are.
+    private func meanAlpha(_ image: UIImage) -> Double {
+        guard let cg = image.cgImage else { return 0 }
+        let w = cg.width, h = cg.height
+        var pixels = [UInt8](repeating: 0, count: w*h*4)
+        guard let context = CGContext(data: &pixels, width: w, height: h,
+                                      bitsPerComponent: 8, bytesPerRow: w*4,
+                                      space: CGColorSpaceCreateDeviceRGB(),
+                                      bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)
+        else { return 0 }
+        context.draw(cg, in: CGRect(x: 0, y: 0, width: w, height: h))
+        var total = 0.0
+        for index in stride(from: 3, to: pixels.count, by: 4) { total += Double(pixels[index]) }
+        return total/Double(w*h)/255
+    }
+
 }

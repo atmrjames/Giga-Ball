@@ -2978,6 +2978,17 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		// Reset brick removal counter
 
 		endlessIIClearClusterBalls()
+		childNode(withName: GameScene.autoAimMarkerName)?.removeFromParent()
+		directionMarker.isHidden = true
+		// **The graphics that point at where the ball is going go with the ball** (James, round
+		// 299: "auto aim graphic needs to disappear immediately if the ball is lost whilst its
+		// visible. This is the same for any other new power-up graphic"). Each of these says
+		// something about the *next bounce*, and between losing a ball and serving the next one
+		// there is no next bounce - the marker was hanging over a brick for the whole of the
+		// lost-ball animation, pointing at a shot nobody was about to take.
+		//
+		// Removed here as well as being refused by the refresh, so it goes on the frame the
+		// ball is lost rather than on the next one to run.
 		// **The burst goes with the ball** (James, round 291: "cluster balls should disappear
 		// immediately if the ball is lost"). They are the ball's own shot - twelve pellets it
 		// released - and a life that has ended should not go on being played by the pellets
@@ -8308,54 +8319,59 @@ laserTimer?.invalidate()
 	/// could only sit there. On its own node it swells and settles over eight seconds, which
 	/// is slow enough to be felt at the edge of the eye rather than watched.
 	private func addBackgroundHaze(over overlay: SKSpriteNode) {
-		let depth = GameBackground.glowBreathDepth
-		let half = GameBackground.glowBreath/2
+		for (pool, drift) in zip(GameBackground.glowPools, GameBackground.hazeDrift) {
+			let reach = overlay.size.width*pool.radius
+			let diameter = reach*GameBackground.hazeBlobShare
+			guard let image = GameBackground.softBlobImage(diameter: 256,
+														   colour: pool.colour) else { continue }
+			let texture = SKTexture(image: image)
+			// One texture per pool, scaled per blob - see `softBlobImage`
 
-		for (index, drift) in GameBackground.hazeDrift.enumerated() {
-			guard index < GameBackground.glowPools.count,
-				  let image = GameBackground.hazeImage(size: overlay.size, only: index)
-			else { continue }
+			let centre = CGPoint(
+				x: overlay.position.x - overlay.size.width*(overlay.anchorPoint.x - pool.centre.x),
+				y: overlay.position.y - overlay.size.height*(overlay.anchorPoint.y - pool.centre.y))
 
-			let haze = SKSpriteNode(texture: SKTexture(image: image), size: overlay.size)
-			haze.anchorPoint = overlay.anchorPoint
-			haze.position = overlay.position
-			haze.zPosition = overlay.zPosition + 0.01
-			haze.alpha = 1
-			addChild(haze)
-			backgroundMotionLayers.append(haze)
+			for index in 0..<GameBackground.hazeBlobsPerPool {
+				let own = GameBackground.blobDrift(index: index, seed: pool.seed)
+				let angle = CGFloat(index)/CGFloat(GameBackground.hazeBlobsPerPool)*2*CGFloat.pi
+				let spread = reach*0.42
 
-			// **A pool per node, each on its own path** (James, round 297: "make the giga-ball
-			// yellow/green fuzzy hue dynamic, so it moves and evolves slowly behind the game,
-			// almost like a lava lamp"). As one baked picture the haze could only breathe in
-			// place; the two pools now drift independently, and because they drift at different
-			// rates the *shape* of the light between them changes as well as its position -
-			// which is the difference between a picture sliding about and something evolving.
-			let reach = CGPoint(x: overlay.size.width*drift.x, y: overlay.size.height*drift.y)
-			let across = SKAction.sequence([
-				.moveBy(x: reach.x, y: 0, duration: drift.across),
-				.moveBy(x: -reach.x, y: 0, duration: drift.across)])
-			let down = SKAction.sequence([
-				.moveBy(x: 0, y: reach.y, duration: drift.down),
-				.moveBy(x: 0, y: -reach.y, duration: drift.down)])
-			across.timingMode = .easeInEaseOut
-			down.timingMode = .easeInEaseOut
-			// Eased, because a pool that turns round at a constant speed reads as a mechanism
+				let blob = SKSpriteNode(texture: texture)
+				blob.size = CGSize(width: diameter, height: diameter*0.78)
+				// Squashed, so a pool lies across the field rather than sitting in it as a ball
+				blob.position = CGPoint(x: centre.x + cos(angle)*spread,
+										y: centre.y + sin(angle)*spread*0.72)
+				blob.alpha = pool.strength*GameBackground.hazeBlobStrength
+				blob.blendMode = .add
+				blob.zPosition = overlay.zPosition + 0.01
+				addChild(blob)
+				backgroundMotionLayers.append(blob)
 
-			let swell = SKAction.sequence([
-				.scale(to: 1.09, duration: drift.swell),
-				.scale(to: 1, duration: drift.swell)])
-			swell.timingMode = .easeInEaseOut
+				// **Each blob on its own path, which is the whole of the effect.** Round 297
+				// drifted the baked haze as one picture, so every part of it moved together and
+				// the shape never changed - James: "the whole background image is shifting as a
+				// static image. That is not what I meant." What makes a lava lamp is the
+				// *gaps*: blobs that drift at different rates merge, part and merge again, and
+				// the shape of the light is remade continuously without any one blob doing
+				// anything but wandering.
+				let across = SKAction.sequence([
+					.moveBy(x: overlay.size.width*drift.x, y: 0, duration: own.across),
+					.moveBy(x: -overlay.size.width*drift.x, y: 0, duration: own.across)])
+				let down = SKAction.sequence([
+					.moveBy(x: 0, y: overlay.size.height*drift.y, duration: own.down),
+					.moveBy(x: 0, y: -overlay.size.height*drift.y, duration: own.down)])
+				let swell = SKAction.sequence([
+					.scale(to: 1.35, duration: own.swell),
+					.scale(to: 0.8, duration: own.swell)])
+				for action in [across, down, swell] { action.timingMode = .easeInEaseOut }
 
-			let breath = SKAction.sequence([
-				.fadeAlpha(to: 1 - depth, duration: half),
-				.fadeAlpha(to: 1, duration: half)])
-
-			haze.run(.group([.repeatForever(across), .repeatForever(down),
-							 .repeatForever(swell), .repeatForever(breath)]))
-			// Four repeating actions, which is fine here and forbidden on a brick:
-			// `countBricks()` gates row generation on bricks having no actions (§8.6), and
-			// this is scenery. Their periods are all different, so the group as a whole has no
-			// short cycle to notice
+				blob.run(.sequence([.wait(forDuration: own.phase),
+									.group([.repeatForever(across), .repeatForever(down),
+											.repeatForever(swell)])]))
+				// Started at its own offset into the cycle, or every blob in a pool would set
+				// off in the same direction at the same moment and the pool would breathe as
+				// one thing again - which is the fault being fixed
+			}
 		}
 	}
 
@@ -8367,46 +8383,60 @@ laserTimer?.invalidate()
 	/// picture read as depth.
 	private func addBackgroundClouds(over overlay: SKSpriteNode) {
 		for layer in GameBackground.cloudLayers {
-			guard let image = GameBackground.cloudImage(size: overlay.size, seed: layer.seed,
-														blobs: layer.blobs, tint: layer.colour,
-														strength: layer.strength) else { continue }
+			guard let image = GameBackground.softBlobImage(diameter: 256,
+														   colour: layer.colour) else { continue }
 			let texture = SKTexture(image: image)
-			for copy in 0...1 {
-				let cloud = SKSpriteNode(texture: texture, size: overlay.size)
-				cloud.anchorPoint = overlay.anchorPoint
-				cloud.position = CGPoint(x: overlay.position.x + overlay.size.width*CGFloat(copy),
-										 y: overlay.position.y)
+
+			for index in 0..<layer.blobs {
+				let own = GameBackground.blobDrift(index: index, seed: layer.seed)
+				var state = layer.seed &+ UInt64(index) &* 0xD6E8FEB86659FD93
+				func next() -> CGFloat {
+					state = state &* 6364136223846793005 &+ 1442695040888963407
+					return CGFloat((state >> 33) % 100_000)/100_000
+				}
+
+				let width = overlay.size.width*(0.34 + next()*0.42)
+				let cloud = SKSpriteNode(texture: texture)
+				cloud.size = CGSize(width: width, height: width*(0.34 + next()*0.20))
+				cloud.alpha = layer.strength*(0.55 + next()*0.6)
+				cloud.blendMode = .add
 				cloud.zPosition = overlay.zPosition + 0.01
+
+				// Spread across a span one field wider than the field, so the gaps between them
+				// arrive as varied as the clouds do
+				let span = overlay.size.width*2
+				let left = overlay.position.x - overlay.size.width*overlay.anchorPoint.x
+				let top = overlay.position.y - overlay.size.height*overlay.anchorPoint.y
+				cloud.position = CGPoint(x: left + next()*span,
+										 y: top + overlay.size.height*(0.12 + next()*0.76))
 				addChild(cloud)
 				backgroundMotionLayers.append(cloud)
 
-				let travel = SKAction.moveBy(x: -overlay.size.width, y: 0,
-											 duration: layer.crossing)
-				let jump = SKAction.moveBy(x: overlay.size.width, y: 0, duration: 0)
-				cloud.run(.repeatForever(.sequence([travel, jump])))
+				// **Every cloud wraps itself**, which is what lets them differ. The old strips
+				// were two baked pictures moved by exactly the field's width, so the seam was
+				// hidden by the picture repeating - and a repeat is the one thing that makes a
+				// drift read as a loop. A blob that crosses the span and jumps back to the far
+				// side needs no seam at all, because there is no strip: the sky is the blobs.
+				let crossing = layer.crossing*(0.8 + next()*0.45)
+				cloud.run(.repeatForever(.sequence([
+					.moveBy(x: -span, y: 0, duration: crossing),
+					.moveBy(x: span, y: 0, duration: 0)])))
 
-				// **And it swells and thins as it goes** (James, round 297, asking for the same
-				// treatment as the Glow). The drift alone is one picture on a conveyor: the
-				// shapes are identical every time round, and once the eye has the period it
-				// sees the loop rather than the sky.
-				//
-				// The evolution is *vertical only*, and that is not a stylistic choice. The
-				// horizontal wrap works because each strip is moved by exactly the field's
-				// width, so anything that changes a layer's width breaks the seam it is hiding.
-				// A `yScale` grows the strip downward from its top anchor, where there is
-				// nothing to expose, and the alpha costs nothing at all.
+				// And it changes shape on the way over, on its own rhythm - clouds that keep
+				// their outline while they cross are a conveyor belt of stamps
 				let swell = SKAction.sequence([
-					.scaleY(to: 1.11, duration: layer.evolving),
-					.scaleY(to: 1, duration: layer.evolving)])
-				swell.timingMode = .easeInEaseOut
-				let thin = SKAction.sequence([
-					.fadeAlpha(to: 0.72, duration: layer.evolving*0.71),
-					.fadeAlpha(to: 1, duration: layer.evolving*0.71)])
-				thin.timingMode = .easeInEaseOut
-				cloud.run(.group([.repeatForever(swell), .repeatForever(thin)]))
+					.scaleX(to: 1.3, y: 0.8, duration: own.swell),
+					.scaleX(to: 0.85, y: 1.25, duration: own.swell)])
+				let bob = SKAction.sequence([
+					.moveBy(x: 0, y: overlay.size.height*0.05, duration: own.down),
+					.moveBy(x: 0, y: -overlay.size.height*0.05, duration: own.down)])
+				for action in [swell, bob] { action.timingMode = .easeInEaseOut }
+				cloud.run(.sequence([.wait(forDuration: own.phase),
+									 .group([.repeatForever(swell), .repeatForever(bob)])]))
+				// The stretch is on both axes and in opposite directions, so a blob widens as
+				// it flattens: that is a cloud being drawn out by the wind rather than a circle
+				// getting bigger
 			}
-			// Two copies of the strip, side by side, both travelling left: as one leaves the
-			// field the other is arriving, so there is always cloud on screen
 		}
 	}
 

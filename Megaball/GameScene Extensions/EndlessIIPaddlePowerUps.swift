@@ -631,23 +631,32 @@ extension GameScene {
     /// `endlessIIAimCanReach` keeps the marker's promise and the shot's delivery the same
     /// thing, which is why the marker and the redirect both choose through here.
     func endlessIIAutoAimTarget(from origin: CGPoint) -> CGPoint? {
-        var best: (position: CGPoint, distance: CGFloat)?
+        endlessIIAutoAimBrick(from: origin)?.position
+    }
+
+    /// The brick a free shot would be sent at, rather than only the point.
+    ///
+    /// The marker draws itself round the brick's own outline since round 299, so it needs the
+    /// node - and the shot needs the point, which is the node's position. One search either
+    /// way: two would be two chances to pick different bricks.
+    func endlessIIAutoAimBrick(from origin: CGPoint) -> SKSpriteNode? {
+        var best: (brick: SKSpriteNode, distance: CGFloat)?
         enumerateChildNodes(withName: BrickCategoryName) { node, _ in
             guard let brick = node as? SKSpriteNode else { return }
             guard self.endlessIIWorthAimingAt(brick) else { return }
             guard self.endlessIIAimCanReach(node.position, from: origin) else { return }
             let distance = abs(node.position.x - origin.x)
             if let current = best {
-                if node.position.y < current.position.y - 1
-                    || (abs(node.position.y - current.position.y) <= 1
+                if node.position.y < current.brick.position.y - 1
+                    || (abs(node.position.y - current.brick.position.y) <= 1
                         && distance < current.distance) {
-                    best = (node.position, distance)
+                    best = (brick, distance)
                 }
             } else {
-                best = (node.position, distance)
+                best = (brick, distance)
             }
         }
-        return best?.position
+        return best?.brick
     }
 
     /// Whether a shot from here can actually arrive there.
@@ -679,7 +688,13 @@ extension GameScene {
     ///   arrives at the underside. Left and right are left in: a brick up and to one side
     ///   can be met on its flank, so those shots are not wasted.
     func endlessIIWorthAimingAt(_ brick: SKSpriteNode) -> Bool {
-        guard brick.parent != nil, brick.isHidden == false else { return false }
+        guard brick.parent != nil else { return false }
+        // **An invisible brick is a target** (James, round 299: "auto aim should be able to aim
+        // at invisible bricks even if they are not visible"). `isHidden` on a brick means one
+        // thing in this game - an Invisible brick that has not been struck yet - and it is
+        // solid, scores, and is exactly the brick a free shot is most use against, because it
+        // is the one the player cannot aim at themselves. The body check below is what actually
+        // answers "is there a brick here".
         guard brick.endlessIIRole != .portal else { return false }
         guard brick.texture != brickIndestructible1Texture,
               brick.texture != brickIndestructible2Texture else { return false }
@@ -703,10 +718,17 @@ extension GameScene {
     func refreshEndlessIIAutoAimMarker() {
         let aiming = gameMode == .endlessII
             && (endlessIIAutoAimClock.isRunning || endlessIIAutoAimOwedTurn)
+            && ballIsOnPaddle == false && ballLostBool == false
+        // **Not while the ball is gone** (James, round 299: "auto aim graphic needs to
+        // disappear immediately if the ball is lost whilst its visible"). The marker says
+        // where the *next bounce* is going, and between losing a ball and serving the next one
+        // there is no next bounce - it was hanging over a brick through the whole lost-ball
+        // animation, pointing at a shot nobody was about to take
+
         let launch = CGPoint(x: paddle.position.x, y: paddleTopY + ball.size.height/2)
         // Where the next bounce will leave from - the reachability check needs a height as
         // well as an x, so the marker judges the shot from the same spot the shot takes
-        let target = aiming ? endlessIIAutoAimTarget(from: launch) : nil
+        let target = aiming ? endlessIIAutoAimBrick(from: launch) : nil
 
         guard let target else {
             childNode(withName: GameScene.autoAimMarkerName)?.removeFromParent()
@@ -717,18 +739,51 @@ extension GameScene {
         if let existing = childNode(withName: GameScene.autoAimMarkerName) as? SKShapeNode {
             marker = existing
         } else {
-            marker = SKShapeNode(circleOfRadius: brickHeight*0.55)
+            marker = SKShapeNode()
             marker.name = GameScene.autoAimMarkerName
             marker.strokeColor = GameScene.endlessIIHaloColour.withAlphaComponent(0.9)
             marker.lineWidth = 3
             marker.glowWidth = 3
             marker.fillColor = .clear
-            // Prominent on purpose (§12.0): at 0.55 alpha and a hairline the ring read as
-            // field dressing, and the one thing a free shot needs is a legible target
             marker.zPosition = 4
             addChild(marker)
         }
-        marker.position = target
+
+        // **The brick's own outline, not a ring on top of it** (James, round 299: "can we make
+        // it a glow outline around the brick, matching the shape of the brick it's aiming at").
+        // A circle over a brick says "somewhere here"; the brick's own silhouette says "this
+        // one", which is what a marker is for - and on a field of Diamonds and Wedges a circle
+        // was the one shape on screen that belonged to nothing.
+        //
+        // A shaped brick keeps its silhouette as the path of its face node, so the outline is
+        // that path where there is one and the brick's box where there is not. Copied rather
+        // than referenced: the path is in the brick's coordinates and the marker is a child of
+        // the scene, so it is the marker's position that carries it there.
+        let outline = endlessIIAutoAimOutline(of: target)
+        if marker.path != outline { marker.path = outline }
+        marker.position = target.position
+    }
+
+    /// The path to draw round a brick: its face's own silhouette, or its box.
+    func endlessIIAutoAimOutline(of brick: SKSpriteNode) -> CGPath {
+        if let face = brick.childNode(withName: GameScene.brickFaceName) as? SKShapeNode,
+           let path = face.path {
+            return path
+        }
+        if let rounded = brick.childNode(withName: GameScene.roundedBrickOutlineName)
+            as? SKShapeNode, let path = rounded.path {
+            return path
+        }
+        let cell = endlessIIFieldSize(of: brick)
+        let centre = endlessIIBrickCentre(of: brick)
+        return CGPath(roundedRect: CGRect(x: centre.x - cell.width/2,
+                                          y: centre.y - cell.height/2,
+                                          width: cell.width, height: cell.height),
+                      cornerWidth: min(cell.width, cell.height)*0.12,
+                      cornerHeight: min(cell.width, cell.height)*0.12,
+                      transform: nil)
+        // A Big or Square brick hangs off its node rather than being centred on it, which is
+        // what `endlessIIBrickCentre` knows and a plain `brick.frame` does not
     }
 
     static let autoAimMarkerName = "endlessIIAutoAimMarker"
@@ -1192,6 +1247,7 @@ extension GameScene {
         if let texture = GameScene.endlessIIHaloTexture {
             let sprite = SKSpriteNode(texture: texture)
             sprite.anchorPoint = CGPoint(x: 0.5, y: 0)
+            sprite.alpha = GameScene.endlessIIHaloAlpha
             node = sprite
             // **Anchored on its flat edge**, because that edge is the halo's centre. The
             // texture is the top half of James's square picture and the disc in it is centred
@@ -1228,6 +1284,19 @@ extension GameScene {
         path.closeSubpath()
         shape.path = path
     }
+
+    /// How solid the halo is drawn.
+    ///
+    /// James, round 299: "make the halo graphic slightly more transparent, say 50". Round 289
+    /// drew it at the artwork's own opacity, which is flat at 148 of 255 across its middle -
+    /// noticeably heavier than the `SKShapeNode` it replaced, which filled at 0.14 and stroked
+    /// at 0.45, and that round flagged this as the one number to turn if it read as obscuring
+    /// what it covers. It did.
+    ///
+    /// Half of the file's own opacity, so the glow lands at about 29% where it was 58%: still
+    /// twice the fill the old drawn shape had, and no longer competing with the bricks inside
+    /// it.
+    static let endlessIIHaloAlpha: CGFloat = 0.5
 
     /// How much of `Halo`'s canvas reads as glow, across its width.
     ///

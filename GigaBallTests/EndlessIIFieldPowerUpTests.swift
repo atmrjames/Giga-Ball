@@ -514,14 +514,30 @@ final class EndlessIIFieldPowerUpTests: XCTestCase {
         _ = lowFar
     }
 
-    func testAutoAimIgnoresHiddenBricksAndPortals() {
+    /// A Portal is never a target. An **invisible brick is**, since round 299.
+    ///
+    /// James: "auto aim should be able to aim at invisible bricks even if they are not
+    /// visible." `isHidden` means one thing on a brick in this game - an Invisible brick that
+    /// has not been struck - and it is solid, it scores, and it is precisely the brick a free
+    /// shot is most use against, because it is the one the player cannot aim at themselves.
+    ///
+    /// This test asserted the opposite until that round, which is why it is rewritten rather
+    /// than deleted: the Portal half of it was and is correct, and the hidden half was a
+    /// decision that has been reversed rather than a rule that was broken.
+    func testAutoAimIgnoresPortalsAndTakesInvisibleBricks() {
         let scene = fieldScene()
+        brick(in: scene, x: 20, y: 40, role: .portal)
+        let higher = brick(in: scene, x: -60, y: 90)
+
+        XCTAssertEqual(scene.endlessIIAutoAimTarget(from: .zero)?.x, higher.position.x,
+                       "a Portal is struck rather than destroyed, so aiming at one spends the "
+                       + "free shot on nothing")
+
         let hidden = brick(in: scene, x: 0, y: 50)
         hidden.isHidden = true
-        brick(in: scene, x: 20, y: 60, role: .portal)
-        let real = brick(in: scene, x: -60, y: 90)
-
-        XCTAssertEqual(scene.endlessIIAutoAimTarget(from: .zero)?.x, real.position.x)
+        XCTAssertEqual(scene.endlessIIAutoAimTarget(from: .zero)?.x, hidden.position.x,
+                       "and the invisible brick below it is now the better target, because it "
+                       + "is lower and it is a brick")
     }
 
     func testAutoAimSkipsABrickTheLaunchArcCannotReach() {

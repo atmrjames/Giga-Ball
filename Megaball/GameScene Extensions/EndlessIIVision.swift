@@ -285,10 +285,15 @@ extension GameScene {
 
                 FadingLine.lay(segment.core, from: head, to: tail,
                                thickness: core, blur: blur,
-                               alpha: max(0.06, 0.55*certainty))
+                               alpha: max(0.03, 0.275*certainty))
                 FadingLine.lay(segment.glow, from: head, to: tail,
                                thickness: core, blur: blur + core*1.6,
-                               alpha: max(0.05, 0.40*certainty))
+                               alpha: max(0.025, 0.20*certainty))
+                // **Half of what it was** (James, round 299: "make the ball trajectory line
+                // more transparent, maybe half of what it is now"). Both the core and the glow
+                // are halved rather than only the core, and the floors with them: the line is
+                // one thing made of two, and fading one of them changes what it *is* - a core
+                // at half strength over a glow at full is a soft band with a hole in it
                 // The glow is the same line drawn wider and fainter underneath. It reaches
                 // past the core by a share of the core's own width, so it opens out as the
                 // line widens rather than staying a fixed halo around a growing stroke

@@ -426,6 +426,23 @@ extension GameScene {
                                                    mirrored: brick.endlessIIFaceMirrored ?? false,
                                                    flipped: brick.endlessIIFaceFlipped ?? false)
         let origin = shape.position
+        // **The sprite hides behind the face and is not shrunk away** (round 299, and it was
+        // tried). James: "flashing diamond bricks have a small rectangle appear underneath them
+        // when they go transparent." The cause is understood - Flashing fades the brick *node*,
+        // a node's alpha is inherited by its children, so face and sprite fade together and
+        // where they overlap two translucent layers composite denser than either. On a Diamond
+        // that overlap is exactly this hiding rectangle.
+        //
+        // `brick.size = .zero` does stop the sprite drawing, and it breaks resume:
+        // `ResumeBrickCreation` recovers a shaped brick's offset from
+        // `(0.5 - anchorPoint) * size`, which is zero for a zero-sized sprite, so a saved
+        // Diamond comes back on its row centre instead of a cell below it.
+        // `testASquareDiamondSurvivesBeingSavedAndRebuilt` is what caught it. A rectangle
+        // during a flash is not worth a brick that moves when a game is resumed.
+        //
+        // The fix that would work is structural - the texture wants to live on a *child* of
+        // the brick, so it can be hidden independently of the node whose alpha is animated -
+        // and that is a round of its own. Queued in §12.0.
         brick.size = hide.size
         brick.anchorPoint = CGPoint(x: 0.5 - (origin.x + hide.midX)/hide.width,
                                     y: 0.5 - (origin.y + hide.midY)/hide.height)
