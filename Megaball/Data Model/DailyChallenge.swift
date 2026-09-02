@@ -1101,9 +1101,33 @@ final class DailyChallengeSession {
     static let testOffsetKey = "dailyChallengeTestDayOffset"
 
     /// How many days the test clock is wound forward or back. Zero is live.
+    ///
+    /// **Always zero in a release build** (round 298, closing the release-readiness item the
+    /// daily spec's header has carried). No screen has written this since round 19 and only
+    /// the tests set it, so a shipped app was already reading a default that nobody could move
+    /// - but "nobody writes it" is a fact about today's code, and the thing standing between a
+    /// stored integer and every player getting a different day was that fact rather than
+    /// anything structural. The getter is compiled out of release entirely, so a value that
+    /// arrived from anywhere at all - a future screen, a restored backup, a device somebody
+    /// has been at - moves nothing.
+    ///
+    /// The setter is kept under the same flag rather than removed, because the tests that wind
+    /// the clock are the reason the daily can be tested at all.
     var testDayOffset: Int {
-        get { UserDefaults.standard.integer(forKey: DailyChallengeSession.testOffsetKey) }
-        set { UserDefaults.standard.set(newValue, forKey: DailyChallengeSession.testOffsetKey) }
+        get {
+            #if DEBUG
+            return UserDefaults.standard.integer(forKey: DailyChallengeSession.testOffsetKey)
+            #else
+            return 0
+            #endif
+        }
+        set {
+            #if DEBUG
+            UserDefaults.standard.set(newValue, forKey: DailyChallengeSession.testOffsetKey)
+            #endif
+            // The flag is inside each accessor rather than around them: Swift will not let
+            // `#if` choose between two whole accessors of one property
+        }
     }
 
     var todayKey: String { DailyDay.key(for: today) }
