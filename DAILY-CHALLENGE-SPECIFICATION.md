@@ -656,6 +656,31 @@ must be *posted* inside the window, not merely earned in it. As shipped:
   `recordDailyResult()`, the same recorder a natural end uses, so a partial lands in the
   record, on the board and in the practice best by exactly the rules a finished run obeys -
   closed days and forfeits included.
+- **A post that landed but was never confirmed is recorded as a miss** (found round 302, not
+  fixed). `submitDailyScores` passes `error == nil` to a completion, and `confirmPosted` is
+  what turns `pendingPost` into `posted`. If the app dies between the submission and that
+  completion - a window of about a second - the confirmation is lost. The record stays pending,
+  which is correct and self-healing *while the day is open*, because `retryPendingPosts`
+  submits again and duplicate submissions are harmless. **Once the day rolls over it is not**:
+  `settlingMisses` clears `pendingPost` on every pending record that is not today's, so a score
+  Game Center actually accepted is written down as never posted, and `confirmPosted`'s
+  `record.isPending` guard means a late confirmation is dropped rather than acted on. The board
+  shows the score; the app says it never posted; and the day is excluded from the running total
+  in §7 for ever.
+
+  **Why it is written down rather than fixed.** The obvious repair - retry the submission when
+  settling - is wrong: the daily board is a *recurring* leaderboard, so a score submitted the
+  next day lands in the next day's window, which would post yesterday's run against today's
+  field. Relaxing `confirmPosted`'s guard to accept a late confirmation is defensible, since
+  landing is ground truth and the total board keeps the highest submission anyway, but it
+  changes what the app claims about a closed day and what the overall total counts - the same
+  kind of scoring decision as "does quitting post the partial", which James answered himself in
+  round 300. *Recommendation: relax the guard.* A confirmation only ever arrives because Game
+  Center accepted the score, so honouring it makes the record agree with the board, and the
+  total is self-healing by design. The frequency is low - the app has to be killed inside a
+  one-second window on the last day played, and not reopened before midnight - which is why
+  this is a decision worth making deliberately rather than a bug to rush.
+
 - **Monochrome performance** (§5, §4 Blackout). **Measured, round 284**, since James asked
   for it before deciding: a field of 121 bricks, four balls and a paddle costs 1.69ms to
   draw as it is and 3.08ms through a `CIPhotoEffectMono` on an `SKEffectNode` wrapping it -

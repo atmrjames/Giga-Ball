@@ -69,6 +69,21 @@ xcodebuild -project Megaball.xcodeproj -scheme Megaball \
   The tell that separates this from every other build problem: it never compiles a single
   file, and the same command worked earlier the same day.
 
+- **A milder version of that relaunch trap looks like a failing test with no assertion.**
+  Round 302 hit it three times in one night on iOS 18.5, across three unrelated classes
+  (`EndlessIIBrickTests`, `EndlessIIDensityStepTests`, and a batch of frame-cost tests). The
+  signature: `xcodebuild` prints **`Restarting after unexpected exit, crash, or test timeout;
+  summary will include totals from previous launches`**, the batch ends `** TEST FAILED **` and
+  names a test under `Failing tests:` that **never printed a `passed` or `failed` line and never
+  failed an assertion** - and the same summary can say `Executed 59 tests, with 0 failures`,
+  because the totals come from the relaunched run. **Every one of those classes passes when run
+  alone.** Unlike round 118 there were *no* crash reports in `~/Library/Logs/DiagnosticReports`
+  or `~/Library/Logs/CoreSimulator`, and it was rare - three in roughly 5,500 test executions -
+  rather than every fourth test.
+  So: a named failing test with no assertion behind it is not a failure, it is this. Re-run
+  that class alone before believing it, and do not go looking for the bug in the code it names.
+  Adding an app-side guard is not the answer - round 118 established the fix is on the Mac.
+
 - **Stale derived data has twice hidden a new file from the test target**, producing "cannot
   find X in scope" for code that builds fine in the app. If a brand-new file's symbols are
   missing from tests, `xcodebuild clean` before believing the error.
