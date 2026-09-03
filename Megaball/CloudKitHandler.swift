@@ -541,14 +541,30 @@ final class CloudKitHandler: NSObject {
         
         achievementsPercentageCompleteArray = totalStatsArray[0].achievementsPercentageCompleteArray
         achievementDates = totalStatsArray[0].achievementDates
-        if let achievementsPercentageCompleteArrayCloudCheck = iCloudStore.array(forKey: "achievementsUnlockedArray") as? [String] {
+        if let achievementsPercentageCompleteArrayCloudCheck = iCloudStore.array(forKey: "achievementsPercentageCompleteArray") as? [String] {
+            // **The key, not `achievementsUnlockedArray`** (round 302). It read the *unlocked*
+            // key here and cast it to `[String]`, so the cast could never succeed - that key
+            // holds `[Bool]` - and this branch had never once run. Every sync therefore took
+            // the `else` below and pushed this device's percentages and dates over whatever
+            // the cloud held, with no merge at all: a second device syncing after a first
+            // could overwrite years of achievement dates with its own empties, and the merge
+            // written to prevent exactly that was unreachable.
             var achievementsPercentageCompleteArrayCloud = achievementsPercentageCompleteArrayCloudCheck
             achievementsPercentageCompleteArrayCloud = CloudKitHandler.padded(achievementsPercentageCompleteArrayCloud, toMatch: achievementsPercentageCompleteArray!)
-            var achievementDatesCloud = iCloudStore.array(forKey: "achievementDates") as? [Date]
+            var achievementDatesCloud = CloudKitHandler.padded(
+                iCloudStore.array(forKey: "achievementDates") as? [Date] ?? [],
+                toMatch: achievementDates ?? [])
+            // Padded and defaulted rather than force-unwrapped. It *was* force-unwrapped, and
+            // that was safe only because the branch was dead: fixing the key above makes this
+            // line reachable for the first time, and a player whose cloud holds percentages
+            // but no dates - or a shorter dates array, which is every player who last synced
+            // before an achievement was added - would have crashed on it.
             for i in 0..<min(achievementsPercentageCompleteArray!.count, achievementsPercentageCompleteArrayCloud.count) {
                 if achievementsPercentageCompleteArray![i] != "" && achievementsPercentageCompleteArray![i] != "0.0%" {
                     achievementsPercentageCompleteArrayCloud[i] = achievementsPercentageCompleteArray![i]
-                    achievementDatesCloud![i] = achievementDates![i]
+                    if i < achievementDatesCloud.count, let dates = achievementDates, i < dates.count {
+                        achievementDatesCloud[i] = dates[i]
+                    }
                 }
             }
             iCloudStore.set(achievementsPercentageCompleteArrayCloud, forKey: "achievementsPercentageCompleteArray")

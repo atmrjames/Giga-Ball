@@ -81,4 +81,57 @@ final class CloudKitHandlerTests: XCTestCase {
             XCTFail("TotalStats failed to encode: \(error)")
         }
     }
+    // MARK: - Every array is read back from its own key
+
+    /// **A key that names the wrong array is invisible until a player loses data** (round 302).
+    ///
+    /// `saveToiCloud` read the achievement *percentages* out of the key holding the
+    /// *unlocked flags* and cast the result to `[String]`. That key holds `[Bool]`, so the cast
+    /// could never succeed, the merge branch had never once run, and every sync fell through to
+    /// the else that pushes this device's arrays over the cloud's wholesale - which is how a
+    /// second device could overwrite years of achievement dates with its own empties.
+    ///
+    /// Nothing crashed, nothing warned, and no test failed, because the code *reads* fine: the
+    /// variable is named after the array it wants and only the string literal disagrees.
+    ///
+    /// So the check is mechanical rather than clever: for every place the handler reads an
+    /// array out of the key-value store into a variable, the key has to be the variable's own
+    /// name. That is the convention the file already follows everywhere else, and this asserts
+    /// it rather than trusting it.
+    func testEveryICloudArrayIsReadFromTheKeyNamedAfterIt() throws {
+        let source = try String(contentsOf: URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .appendingPathComponent("Megaball/CloudKitHandler.swift"), encoding: .utf8)
+
+        // Both forms, because they fail the same way and only one of them was ever checked:
+        //   `let somethingArrayCloudCheck = iCloudStore.array(forKey: "somethingArray")`  - save
+        //   `somethingArray = iCloudStore.array(forKey: "somethingArray")`                - load
+        //
+        // The load path is the one with more at stake, since a wrong key there reads another
+        // array's contents straight into a player's stats. It was clean when this was written;
+        // it was also unguarded, which is the same position the save path was in.
+        let pattern = #"(?:(?:let|var)\s+|\b)([A-Za-z]+?)(?:Cloud|CloudCheck)?\s*=\s*iCloudStore\.array\(forKey:\s*"([A-Za-z]+)"\)"#
+        let regex = try NSRegularExpression(pattern: pattern)
+        let range = NSRange(source.startIndex..., in: source)
+        let matches = regex.matches(in: source, range: range)
+
+        XCTAssertGreaterThan(matches.count, 20,
+                             "the pattern stopped matching the file, so this test is asleep - "
+                             + "it should be seeing both the save path's reads and the load "
+                             + "path's assignments, and there are around thirty of those alone")
+
+        var wrong: [String] = []
+        for match in matches {
+            guard let v = Range(match.range(at: 1), in: source),
+                  let k = Range(match.range(at: 2), in: source) else { continue }
+            let variable = String(source[v]), key = String(source[k])
+            if variable.hasPrefix(key) == false { wrong.append("\(variable) reads \(key)") }
+        }
+
+        XCTAssertEqual(wrong, [],
+                       "an array is being read out of another array's iCloud key, which is "
+                       + "silent until two devices disagree: \(wrong.joined(separator: "; "))")
+    }
+
 }

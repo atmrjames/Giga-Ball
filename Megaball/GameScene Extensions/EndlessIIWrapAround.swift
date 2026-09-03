@@ -242,12 +242,15 @@ extension GameScene {
             paddle.physicsBody?.collisionBitMask |= CollisionTypes.boarderCategory.rawValue
             endlessIIWrapDressed = false
 
-            let limit = gameWidth/2 - endlessIIPaddleHalfWidth
-            if abs(paddle.position.x) > limit {
-                paddle.position.x = max(-limit, min(limit, paddle.position.x))
-            }
+            paddle.position.x = endlessIIWrapPaddleX(paddle.position.x)
             // A paddle overhanging an edge when the walls come back is pushed back inside
-            // them - left there, it would be half stuck outside a wall that is solid again
+            // them - left there, it would be half stuck outside a wall that is solid again.
+            //
+            // Through the same function the touch handler and the per-frame clamp use, and by
+            // this point in this branch it answers as a plain clamp because the wrap has
+            // already stopped running. This *was* a third written-out copy of the clamp
+            // arithmetic; it was correct, and round 293 showed what the second copy cost, so
+            // it is one writer now (§8.6)
         }
     }
 

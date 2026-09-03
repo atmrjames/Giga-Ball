@@ -2184,9 +2184,34 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     func endlessIIKeepThePaddleInsideTheWalls() {
         let placed = endlessIIWrapPaddleX(paddle.position.x)
         guard placed != paddle.position.x else { return }
+        let carried = placed - paddle.position.x
         paddle.position.x = placed
         positionPaddleOverlays()
         positionRetroPaddleLayers()
+
+        if ballIsOnPaddle {
+            ball.position.x = paddle.position.x + ballRelativePositionOnPaddle
+        }
+        // **A ball waiting to be served goes where the paddle goes** (round 302).
+        //
+        // The whole point of this clamp is that it moves the paddle on frames where *no touch
+        // is happening* - an Expand growing a paddle that is standing still at the wall. The
+        // waiting ball is re-placed only inside `touchesMoved`, so every one of those frames
+        // left it behind: a paddle nudged 50pt inward by a resize put the ball 50pt further
+        // out along it, and far enough would put it past the end and send the serve somewhere
+        // nobody aimed. Every mode, because Expand and the waiting ball are in all three.
+        //
+        // Held balls need nothing here - `tickEndlessIIHeldBalls` re-places them every frame
+        // from a *share* of the paddle's half-width, which is round 293's fix and already
+        // survives a paddle that moves for any reason.
+
+        if endlessIIAimHold, endlessIIAimTouched {
+            endlessIIAimTouchX += carried
+        }
+        // And the aim rides it, for the reason `touchesMoved` carries it: the angle is measured
+        // from the ball to the point the finger last pointed at, so a ball that moves out from
+        // under a point that stays put swings the arrow (round 275). It is the same walk
+        // whether a finger or a resize caused it
         // **Through the wrap's own rule, not a second copy of the clamp** (James, round 300:
         // "the wrap around power up isn't letting the paddle wrap around any more"). Round 293
         // wrote the clamp out again here, and an unconditional clamp is exactly what
