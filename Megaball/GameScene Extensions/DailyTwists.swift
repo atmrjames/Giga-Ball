@@ -15,6 +15,7 @@
 //
 
 import SpriteKit
+import CoreImage
 
 extension GameScene {
 
@@ -91,6 +92,21 @@ extension GameScene {
     /// Also puts the run's score where the game-over screen reads it: the campaign path
     /// does that as part of the stats writing this run must never touch, and without it
     /// a Classic daily ended on "Score: 0" whatever the run earned.
+    /// The player is leaving mid-run and said to post what they had (round 300).
+    ///
+    /// James: "quitting a daily should post the partial score - ask the user with a pop up,
+    /// otherwise assume not." The pop-up is `GigaBallConfirm.postDailyScore` and this is the
+    /// yes: it runs the same recording a run's natural end runs, which is the whole point -
+    /// a partial score is a score, and routing it through the one recorder means it lands in
+    /// the record, on the board and in the practice best by exactly the rules a finished run
+    /// obeys, including the ones about closed days and forfeits.
+    ///
+    /// Nothing here decides anything. The deciding was done on the pop-up, and a run whose
+    /// player said no simply never sends this.
+    @objc func postDailyPartialScoreReceived(_ notification: Notification) {
+        recordDailyResult()
+    }
+
     func recordDailyResult() {
         guard let challenge = DailyChallengeSession.shared.active else { return }
         let session = DailyChallengeSession.shared
@@ -273,6 +289,47 @@ extension GameScene {
     /// One question rather than two, because both twists live in the `look` category and a
     /// day therefore has at most one of them (round 229) - the caller should not have to know
     /// that, and `userSettings` should not have to ask twice.
+    /// **The colour actually goes** (round 300). This is §4's Blackout, and it turns out not
+    /// to need a twist of its own: `monochromatic` has shipped since round 229 promising "All
+    /// the colour is gone" in its own briefing and delivering the *Classic theme*, which is
+    /// not colourless. The blurb was describing Blackout and the code was forcing a dress.
+    ///
+    /// `SKScene` is an `SKEffectNode` subclass, so the filter goes on the scene itself and
+    /// nothing is reparented. That matters more here than it sounds: the alternative is
+    /// wrapping the world in an effect node, and this game's hardest invariants are positions
+    /// read straight off the scene's children (§8.6 - a brick's `position.y` is its row).
+    ///
+    /// The theme forcing stays. Classic is the theme whose bricks are told apart by colour, so
+    /// greying *it* is the difficulty the twist was graduated from a dress for; greying a
+    /// theme that already distinguishes bricks by shape would be a picture change rather than
+    /// a rule change.
+    var dailyMonochrome: Bool {
+        guard isDailyChallenge, let challenge = DailyChallengeSession.shared.active else {
+            return false
+        }
+        return challenge.twists.contains(.monochromatic)
+    }
+
+    /// Puts the run in greyscale, or takes it out again.
+    ///
+    /// Idempotent and called from one place, so a resumed run and a fresh one arrive at the
+    /// same screen - a filter left on from a previous scene would be the worse failure, since
+    /// nothing else in the game would look wrong enough to notice.
+    ///
+    /// **The cost was measured before it was built** (round 284): a full field through
+    /// `CIPhotoEffectMono` costs 1.82x the unfiltered draw, 1.69ms against 3.08ms, on this
+    /// Mac's GPU through the simulator. Both numbers are small, and the ratio is the honest
+    /// part - the oldest supported iPhone is a different machine and there is not one to hand.
+    func applyDailyMonochrome() {
+        guard dailyMonochrome else {
+            shouldEnableEffects = false
+            filter = nil
+            return
+        }
+        filter = CIFilter(name: "CIPhotoEffectMono")
+        shouldEnableEffects = true
+    }
+
     var dailyForcedTheme: Int? {
         guard isDailyChallenge, let challenge = DailyChallengeSession.shared.active else {
             return nil

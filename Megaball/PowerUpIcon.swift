@@ -1220,6 +1220,34 @@ extension DailyTwist {
     /// One builder for every screen that lists twists, so they cannot drift apart in how
     /// a twist reads. The icon rides slightly below the baseline, which is where a glyph
     /// the height of a capital sits without looking like it is floating.
+    /// A level's picture as the day will actually present it.
+    ///
+    /// James, round 300: "for daily challenges where the level is mirrored or upside down, the
+    /// image of the level on the daily challenge menu view should reflect how the level will
+    /// be presented." The card is where a player decides whether the day looks worth a go, and
+    /// a Mirrored day that shows the unmirrored level is showing them a level they will not
+    /// play.
+    ///
+    /// It reads `layoutFlip(in:)` rather than asking after the two twists by name, so a third
+    /// layout twist added to the `layout` category arrives here already answered - and it
+    /// matches `applyDailyLayoutFlip`, which switches on the same value.
+    ///
+    /// An orientation rather than a redraw: `.upMirrored` is a horizontal flip and
+    /// `.downMirrored` a vertical one, both free, and both exactly the reflections the scene
+    /// performs - a negation about the field's centre line. Brick Swap is in the same category
+    /// and changes no positions, so it falls through untouched.
+    static func presented(_ image: UIImage?, under twists: [DailyTwist]) -> UIImage? {
+        guard let image, let bitmap = image.cgImage else { return image }
+        switch layoutFlip(in: twists) {
+        case .mirrored:
+            return UIImage(cgImage: bitmap, scale: image.scale, orientation: .upMirrored)
+        case .upsideDown:
+            return UIImage(cgImage: bitmap, scale: image.scale, orientation: .downMirrored)
+        default:
+            return image
+        }
+    }
+
     func titleLine(font: UIFont, colour: UIColor) -> NSAttributedString {
         DailyTwist.badgedLine(icon: icon, name: displayName, font: font, colour: colour)
     }

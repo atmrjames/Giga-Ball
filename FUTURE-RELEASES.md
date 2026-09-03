@@ -124,6 +124,42 @@ for 1.3, drop without ceremony if they resist": 120fps ProMotion (**built, round
 iCloud game saves (the conflict story is the work), and a widget (the first second
 target in a hand-edited pbxproj, plus an app group and URL routing).
 
+### The 1.3 line, narrowed (3 September 2026)
+
+The August line was widened twice - rounds 100 and 101 pulled the daily's phases 4, 5 and 6
+into the release along with three platform features - and by round 299 eight of those pieces
+were still written-and-unbuilt. Reviewed against the code rather than the queue, James cut it:
+
+**Out of 1.3, into 1.4:**
+
+- **The widget.** No second target exists; it is the first one in a hand-edited `pbxproj`,
+  plus an app group and URL routing. The largest unstarted thing on the list.
+- **iCloud game saves.** The conflict story is the work, and getting it wrong costs a player
+  their run rather than a nicety.
+- **The daily's notifications** (§11.5). No notification code exists in the project at all.
+  The share card follows it.
+- **Mayhem Rules in the other modes.** The twist reads as a curated weights list and is a
+  round of its own (§12.0, round 267).
+
+**Still in 1.3:**
+
+- **Daily Challenge themes** (phase 6).
+- **Blackout. Built the same day** (round 300), and it needed neither the measurement nor a
+  twist of its own: `monochromatic` had been promising "all the colour is gone" since round
+  229 while only forcing the Classic theme, so the twist was half-built and mis-described
+  rather than missing. The filter goes on the scene, which is already an `SKEffectNode`. The
+  performance gate turns out to be a question about the **minimum supported device** rather
+  than about the twist - the deployment target is iOS 15 and reaches A9 hardware, and raising
+  it is a one-line change that is James's to make because it drops players.
+- Everything else the August line already carried.
+
+Two of the three platform features are therefore out, and the one that stayed - 120fps - was
+built in round 123. **iPad multitasking is in, and genuinely so**: James, round 300: "I want
+genuine multitasking on the iPad, but the app's ratio must remain the same / near the same."
+The play zone has never depended on the window - `GameSceneLayout` holds 1.8236 at any size
+and asserts it - so the work is the *menus*, and the `UIRequiresFullScreen` flag that
+currently says the app does not do this at all.
+
 ### The 1.3 line, decided (8 August 2026)
 
 Reviewed together against the full open-items lists; recorded here so it is written down

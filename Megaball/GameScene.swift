@@ -1926,6 +1926,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		// And when the cover is *about* to go, so the field can start falling behind the
 		// last quarter second of the fade rather than after it
 		NotificationCenter.default.addObserver(self, selector: #selector(self.backgroundSettingChangedNotificationReceived), name: .backgroundSettingChanged, object: nil)
+        NotificationCenter.default.addObserver(self,
+                                               selector: #selector(self.postDailyPartialScoreReceived),
+                                               name: .postDailyPartialScore, object: nil)
         // Sets up an observer to watch for changes to the NSUbiquitousKeyValueStore pushed by the main menu screen
 		
 		let swipeUp = UISwipeGestureRecognizer(target: self, action: #selector(swipeGesture))
@@ -2180,11 +2183,18 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     /// so a paddle nudged inward by an Expand left its lasers and its sticky face behind until
     /// the player next moved.
     func endlessIIKeepThePaddleInsideTheWalls() {
-        let limit = gameWidth/2 - endlessIIPaddleHalfWidth
-        guard abs(paddle.position.x) > limit else { return }
-        paddle.position.x = max(-limit, min(limit, paddle.position.x))
+        let placed = endlessIIWrapPaddleX(paddle.position.x)
+        guard placed != paddle.position.x else { return }
+        paddle.position.x = placed
         positionPaddleOverlays()
         positionRetroPaddleLayers()
+        // **Through the wrap's own rule, not a second copy of the clamp** (James, round 300:
+        // "the wrap around power up isn't letting the paddle wrap around any more"). Round 293
+        // wrote the clamp out again here, and an unconditional clamp is exactly what
+        // Wrap-Around exists to suspend - so the moment this started running every frame, the
+        // paddle could no longer leave the edge. `endlessIIWrapPaddleX` already holds both
+        // halves of the rule: clamp at the walls ordinarily, and carry a centre that crosses
+        // an edge round to the other side while the wrap runs. One writer, one rule.
     }
 
     func positionPaddleOverlays() {
@@ -2687,6 +2697,28 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         }
     }
 
+    /// **After the actions, because the growth this keeps up with *is* an action.**
+    ///
+    /// James, round 300: "laser turrets are still moving away from the paddle a pixel or two
+    /// when the paddle is dragged against the edge" - the same report as round 293, which
+    /// moved this clamp into `update` and did not fix it.
+    ///
+    /// The reason it did not is the frame order. SpriteKit calls `update`, *then* evaluates
+    /// every running `SKAction`, then simulates physics. Expand and Shrink animate `xScale`
+    /// over 0.2s, so a clamp in `update` measures the paddle's width **before** this frame's
+    /// slice of that growth has been applied and writes a position that is correct for the
+    /// paddle as it was a frame ago. The paddle then grows underneath the answer. One frame
+    /// of a fifth-of-a-second growth is a pixel or two at the end of the bar, which is where
+    /// the turret is drawn and the only part of a bar whose movement the eye can catch.
+    ///
+    /// `didEvaluateActions` is the first hook after the growth and before physics, so the
+    /// width read here is the width that will be drawn. Nothing else needs to change.
+    override func didEvaluateActions() {
+        endlessIIKeepThePaddleInsideTheWalls()
+        // Guarded by its own early return, so on the frames where nothing overhangs - which
+        // is nearly all of them - this is one comparison
+    }
+
     override func didSimulatePhysics() {
         guard endlessIIAimHold == false else {
             sweepDyingBricks()
@@ -2828,19 +2860,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		// frame with the last one
 		tickDailyTimeTrial(frameDelta)
 		tickDeferredBallPowerUpEnds()
-		endlessIIKeepThePaddleInsideTheWalls()
-		// **Every frame, because a paddle grows over a fifth of a second and the clamp used to
-		// run once at the start of it** (James, round 293: "when the paddle hits the edge of
-		// the screen, if lasers are active, the laser turrets keep moving a couple of pixels
-		// without the paddle"). Expand animates `xScale` to its new value over 0.2s and nudges
-		// the paddle inside the walls *immediately* - measured against the width it still has
-		// at that instant, which is the old one. So a paddle standing at the wall is judged to
-		// fit, and then grows: its centre stays put and its two ends walk outward past the
-		// edge of the play area for the rest of the animation. The end is where the turret is
-		// drawn, and a bar's ends are the only part of it whose movement the eye can see.
-		//
-		// Guarded by its own early return, so on the frames where nothing overhangs - which is
-		// nearly all of them - this is one comparison
+		// The paddle's wall clamp is not here - it is in `didEvaluateActions`, because
+		// the growth it has to keep up with is an SKAction and actions have not run yet
 		// Measured once, for everything that needs to know what a frame is worth - the sticky
 		// catch's lookahead first of all, which was a fixed sixtieth and looked two frames
 		// ahead on a 120Hz screen
@@ -6855,6 +6876,10 @@ laserTimer?.invalidate()
 		//
 		// The player's own settings are untouched on disk: this is the run being dressed, not
 		// the preference being changed, and the next ordinary game reads what it always did
+		applyDailyMonochrome()
+		// And the colour goes with it, which is what Monochromatic's own briefing has been
+		// promising since round 229 (round 300). Here rather than beside the twist's other
+		// effects, because a dress and a filter are the same decision made once
         appIconSetting = defaults.integer(forKey: "appIconSetting")
 		swipeUpPause = defaults.bool(forKey: "swipeUpPause")
 		gameInProgress = defaults.bool(forKey: "gameInProgress")

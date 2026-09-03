@@ -42,6 +42,15 @@ enum GigaBallConfirm {
     case mainMenu
     /// The first pause of all: how pausing works, and where to turn it off.
     case swipeUpToPause
+    /// Leaving a daily mid-run: post the score so far, or walk away with nothing.
+    ///
+    /// James, round 300: "quitting a daily should post the partial score - ask the user with a
+    /// pop up, otherwise assume not." Until now quitting burned the attempt and posted
+    /// nothing, which the daily spec called honest but not the recommendation: the run was
+    /// really played, and an attempt is spent whether or not the score is offered. Both
+    /// buttons leave - the player has already said they are going - and only the green one
+    /// posts, which is what "otherwise assume not" means when it is written as a control.
+    case postDailyScore
 
     var title: String {
         switch self {
@@ -49,6 +58,7 @@ enum GigaBallConfirm {
         case .resetData: return "RESET DATA"
         case .mainMenu: return "MAIN MENU"
         case .swipeUpToPause: return "SWIPE UP"
+        case .postDailyScore: return "END ATTEMPT"
         }
     }
 
@@ -63,6 +73,9 @@ enum GigaBallConfirm {
             return "Are you sure?\nCurrent progress will be lost."
         case .swipeUpToPause:
             return "Swipe up anywhere to pause.\nDisable in Settings."
+        case .postDailyScore:
+            return "Leaving ends today's attempt.\n\nPost the score you have so far, or "
+                + "leave without posting?"
         }
     }
 
@@ -73,6 +86,7 @@ enum GigaBallConfirm {
         case .resetData: return "trash.fill"
         case .mainMenu: return "house.fill"
         case .swipeUpToPause: return "hand.draw.fill"
+        case .postDailyScore: return "trophy.fill"
         }
     }
 
@@ -82,19 +96,29 @@ enum GigaBallConfirm {
     /// player something - so it gets the single lime OK a one-button pop-up already takes,
     /// which is exactly what the old sheet did with its centre button.
     var confirmTitle: String? {
-        self == .swipeUpToPause ? nil : "OK"
+        switch self {
+        case .swipeUpToPause: return nil
+        case .postDailyScore: return "Post"
+        default: return "OK"
+        }
     }
 
     /// What the pale button says. "Cancel" everywhere there is something to cancel.
     var dismissTitle: String {
-        self == .swipeUpToPause ? "OK" : "Cancel"
+        switch self {
+        case .swipeUpToPause: return "OK"
+        case .postDailyScore: return "Don't Post"
+        // Not "Cancel": this pop-up cannot be cancelled, because the leaving was already
+        // agreed to on the pop-up before it. Both buttons go home and only one of them posts
+        default: return "Cancel"
+        }
     }
 
     /// Asks it, on top of whatever is on screen.
     func show(on presenter: UIViewController) {
         GigaBallAlert.show(on: presenter, title: title, message: message, symbol: symbol,
                            dismissTitle: dismissTitle,
-                           dismiss: { GigaBallConfirm.stepBack(self) },
+                           dismiss: { GigaBallConfirm.stepBack(self, from: presenter) },
                            confirmTitle: confirmTitle,
                            confirm: confirmTitle == nil ? nil : { self.go(from: presenter) })
         // `dismiss` is never nil, which is what keeps a tap outside the card from answering
@@ -109,7 +133,14 @@ enum GigaBallConfirm {
     /// to, and the row that opened the question may have been mid-change. Posted for all four,
     /// as the sheet posted it, rather than reasoned about per case: it is a refresh, and a
     /// screen that is not listening does not hear it.
-    private static func stepBack(_ confirm: GigaBallConfirm) {
+    private static func stepBack(_ confirm: GigaBallConfirm, from presenter: UIViewController) {
+        if confirm == .postDailyScore {
+            leave(from: presenter)
+            return
+            // The pale button here is an answer, not a cancel - "leave without posting" - so
+            // it does the leaving and posts nothing. Returning early also keeps the refresh
+            // below from firing at a screen that is on its way out
+        }
         if confirm == .swipeUpToPause {
             UserDefaults.standard.set(false, forKey: "firstPause")
             CloudKitHandler().saveToiCloud()
@@ -127,23 +158,46 @@ enum GigaBallConfirm {
             NotificationCenter.default.post(name: .killBallRemoveVC, object: nil)
         case .resetData:
             NotificationCenter.default.post(name: .resetNotificiation, object: nil)
+        case .postDailyScore:
+            NotificationCenter.default.post(name: .postDailyPartialScore, object: nil)
+            // The scene owns the score and the record-keeping, so it does the posting - this
+            // only carries the player's answer to it. Sent before leaving, because the scene
+            // is torn down on the way out
+            GigaBallConfirm.leave(from: presenter)
+
         case .mainMenu:
-            MenuViewController().clearSavedGame()
-            // The save goes first, or the run just abandoned is offered back on the splash
-            if let pauseMenu = presenter as? PauseMenuViewController {
-                pauseMenu.moveToMainMenu()
-                // The pause menu's own return carries the pack number the menus need to
-                // reopen the right level list. Posting a bare copy of the same notifications
-                // was how a quit-while-paused used to land on the pack list rather than on
-                // the played pack's levels
-            } else {
-                NotificationCenter.default.post(name: .returnMenuNotification, object: nil)
-                NotificationCenter.default.post(name: .returnFromGameNotification, object: nil)
-                NotificationCenter.default.post(name: .returnLevelStatsNotification, object: nil)
+            if DailyChallengeSession.shared.leavingWouldAbandonAScoringAttempt {
+                GigaBallConfirm.postDailyScore.show(on: presenter)
+                return
+                // One question at a time: this one has already been answered "yes, leave",
+                // and the next one is what to do with the score on the way out
             }
+            GigaBallConfirm.leave(from: presenter)
+
         case .swipeUpToPause:
             break
             // No green button, so nothing reaches here
+        }
+    }
+
+    /// Out of the run and back to the menus.
+    ///
+    /// Its own method since round 300, because three answers now end here - the main-menu
+    /// confirm, and both buttons of the daily's post-or-not question - and the ordering
+    /// inside it is the part that has been got wrong before.
+    private static func leave(from presenter: UIViewController) {
+        MenuViewController().clearSavedGame()
+        // The save goes first, or the run just abandoned is offered back on the splash
+        if let pauseMenu = presenter as? PauseMenuViewController {
+            pauseMenu.moveToMainMenu()
+            // The pause menu's own return carries the pack number the menus need to
+            // reopen the right level list. Posting a bare copy of the same notifications
+            // was how a quit-while-paused used to land on the pack list rather than on
+            // the played pack's levels
+        } else {
+            NotificationCenter.default.post(name: .returnMenuNotification, object: nil)
+            NotificationCenter.default.post(name: .returnFromGameNotification, object: nil)
+            NotificationCenter.default.post(name: .returnLevelStatsNotification, object: nil)
         }
     }
 }

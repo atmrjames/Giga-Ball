@@ -160,7 +160,8 @@ final class DailyCardView: UIView {
             let number = DailyChallengeGenerator.levelNumber(forClassicLevel: level)
             let pack = DailyChallengeGenerator.pack(forClassicLevel: level)
             let setup = LevelPackSetup()
-            levelImageView.image = setup.levelImageArray[number]
+            levelImageView.image = DailyTwist.presented(setup.levelImageArray[number],
+                                                        under: challenge.twists)
             levelLabel.text = "\(setup.levelNameArray[number]) - \(setup.levelPackNameArray[pack])"
                 + "\n" + DailyChallengeGenerator.classicObjective
             // The level by its name, home and picture, not its number: a number says

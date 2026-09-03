@@ -2,9 +2,10 @@
 
 **Status: phases 1-3 built, plus §12.5 (interruption and offline posting) in full and phase
 5's streaks (round 268); ten feedback rounds folded in. Still open: phase 4's twist subset -
-of which only **Blackout** and **Mayhem Rules** remain written-and-unbuilt, and Mayhem Rules is
-a round of its own rather than the curated weights list it reads as (ENDLESS-2 §12.0, round
-267) - the rest of phase 5 (**achievements** - per-day results and round 12's posted-score container
+of which only **Mayhem Rules** remains written-and-unbuilt, and it is out of 1.3 as of
+round 300 - a round of its own rather than the curated weights list it reads as (ENDLESS-2
+§12.0, round 267). **Blackout was built in round 300** as the missing half of Monochromatic
+(§4) - the rest of phase 5 (**achievements** - per-day results and round 12's posted-score container
 are built, the latter having been largely built since round 21 and finished in round 269),
 phase 6 themes, and §11.5's notifications and share card. **The test clock's controls are gone** (round 19): debug-gating them
 in round 18 took them out of release builds but left them on screen in every build James
@@ -20,9 +21,11 @@ offset with `object(forKey:) as? Int`, which rejects the *String* an argument-do
 arrives as, while the header read the same key with `integer(forKey:)`, which coerces - so
 the header switched to date mode while the date stayed put. Both read through
 `testDayOffset` now. "Practice" is called free play everywhere the
-player reads it (round 12). **Open before release:** the play-test queues below - the
-single-level score tally and screen reorder (round 96), the similar-days rule and level
-naming (round 90). **Boards (round 95):** the Daily Challenge leaderboard *set* is live;
+player reads it (round 12). **Both play-test queues are closed (round 300).** Round 90's
+similar-days rule was built in round 118 and its level naming in round 119; round 96's score
+tally was built in round 210 and its screen reorder was superseded by round 241. All four
+went on being listed as open for between ninety and a hundred and eighty rounds after they
+landed - see §8.6 on what a queue entry is actually claiming. **Boards (round 95):** the Daily Challenge leaderboard *set* is live;
 three individual boards are still in App Store Connect review. **Round 100 pulls into
 1.3:** the remaining written twists (§4's unbuilt ten, with the round-99 choose-your
 ideas as candidates), per-day results on the card, §11.5's notifications and the share
@@ -178,7 +181,7 @@ and its hooks into the scene. The launch pool, from the brief plus fills:
 | **Mayhem Bricks** | Endless daily uses Mayhem's style pool at elevated rates | Endless Mayhem only — see note | **Built, round 198, narrower than the table asked.** The variety dial turned up: a brick's chance of taking a style is tripled for the day, capped at the 85 a motif phase uses - the loudest the field ever legitimately gets, matched and never exceeded. The stacking roll is deliberately untouched: more bricks doing *something* is the twist; more bricks doing two things at once is a nastier day nobody asked for. **The original Endless is excluded on purpose**: it has no style machinery at all - its rows come from height-band tables - so "Mayhem's style pool" there is not a rate change but a port of the whole style system into a mode that never had it, and that is a decision for James (§13), not something to smuggle in under a twist |
 | **Fog of War** | All bricks are invisible until first struck | All | Reuses the invisible machinery |
 | **Time Trial** | 90 seconds on the clock; the score at the whistle is the score | All | **Built, round 197.** The quickest daily there is, and the one that fits the concept best. **The clock runs while the ball is live** - Playing, not paused, ball off the paddle - so the ninety seconds are seconds of play rather than seconds of hesitation, and a lost life buys the reset moment back. The countdown sits centred just below the power-up tray - **not** centre-top where the mode icon used to sit, because the reason that spot is empty is that the Dynamic Island covers it (round 199; the icon's own removal comment says "directly under the notch", and the first screenshot of a Time Trial run had a clock that was there and invisible) - says whole seconds rounded up, and turns red for the last ten. The whistle ends the run the way running out of lives does - same flag, same state - so the daily result, the game-over screen and posting all treat it as a run that finished rather than a special case. **The clock rides in the save**: without that, a pause and resume handed back a fresh ninety seconds, the one thing this twist cannot give away. In a `tempo` category of its own, so a foggy Time Trial or a one-life Time Trial can land |
-| **Blackout** | The whole game monochrome | All | A *twist*, not a dress: Classic bricks are told apart by colour, so grayscale is genuine difficulty there. Mayhem's glyphs keep it fair rather than impossible |
+| **Blackout** | The whole game monochrome | All | **Built, round 300 - as the missing half of Monochromatic rather than a twist of its own.** `monochromatic` had shipped since round 229 with the briefing "All the colour is gone. Classic, and only Classic" and an implementation that forced the Classic *theme*, which is not colourless: the second sentence was built and the first was not, so a player on that day read a promise the run did not keep. Adding the greyscale completes it and delivers this row, and a separate Blackout would now be the same day under two names. **The filter goes on the scene itself** - `SKScene` subclasses `SKEffectNode`, so nothing is reparented; the alternative wraps the world in an effect node and moves every brick into a new coordinate space, and a brick's `position.y` is its row (§8.6). Two lines against a refactor of the thing this project protects hardest. The theme forcing stays, and is the point: Classic is the theme whose bricks are told apart by colour, so greying *it* is the difficulty this was graduated from a dress for. A *twist*, not a dress: Mayhem's glyphs keep it fair rather than impossible |
 | **Mayhem Rules** | Mayhem's power-ups drop in a Classic level | Classic | Suitable ones only — a curated list excluding anything that needs the descending field (Descent, Clear And Retreat) |
 | **Landslide** | The level's bricks descend continuously; whatever reaches the bottom row vanishes, unscored | Classic | Endless's movement in Classic's clothes: the level is escaping, and the score is what you catch |
 | **No Pausing** | The pause button is disabled for the run | All | **Built, round 195.** The nerve twist. Backgrounding the app forfeits posting. Both routes into the pause screen ask one question (`dailyPausingIsAllowed`) - the button and the swipe are three hundred lines apart and a twist that closed one would be no twist at all. The button is *taken off the screen* rather than made inert, because a control that is drawn and does nothing reads as a bug where an absent one reads as the rule the briefing screen already announced. The forfeit hangs off the same notification that pauses every other run when the app goes to the background: on this day that notification must not pause, or switching apps would hand the player exactly what the twist withholds. **The run carries on** - ending somebody's game from the outside is worse than not scoring it - and the score is kept as practice rather than thrown away, because it was really played |
@@ -566,13 +569,30 @@ must be *posted* inside the window, not merely earned in it. As shipped:
 
 ### Queued from play-test round 96
 
-- **Show the tally on a single-level day.** A best-score day's posted score is the level score
+- ~~**Show the tally on a single-level day.**~~ **Built (round 210)**, and the queue went on
+  asking for it for ninety rounds. `ScoreTally` owns the curve, the timings and the
+  arithmetic, and both screens read it - the between-levels summary and the daily's own
+  Complete screen - so the two cannot drift. `startDailyBreakdownTally` runs it once per
+  screen, under `showsDailyBreakdown`, with Level Score and Time Bonus counting out before the
+  total takes them. Found in round 300 by reading the code rather than the queue.
+
+  Original note: A best-score day's posted score is the level score
   plus the time score, and the player currently sees only the total. Classic mode already
   counts those up one after another at the end of a level, so this is that animation reused
   rather than written: level score, then time score, then the total. It matters more here than
   in Classic, because beating everyone on the level score alone is hard and **the time score is
   where a day is actually won**, which a player cannot learn if they never see it.
-- **Reorder the daily pause and game-over screen.** Logo, title and level name move up
+- ~~**Reorder the daily pause and game-over screen.**~~ **Superseded by round 241**, which
+  reshaped the same screen against James's own later instructions rather than this note's:
+  "the level score and time bonus can be on the same line with total score underneath" and
+  "perhaps the stats summary isn't important in daily challenges. All stats can go under the
+  more stats button". Three stacked rows became two columns and a total, and the four-line
+  stats summary left the screen entirely, which is what this entry was reaching for - room -
+  arrived at by a different route. **Building this wording now would put a ninety-round-old
+  layout back over the top of the one he asked for**, so it is closed rather than done (round
+  300).
+
+  Original note: Logo, title and level name move up
   together, with the twist details and the competitive-or-free-play note directly beneath
   them; everything else follows as it does now. That gives the tally somewhere to live and
   puts the day's identity above its result rather than beside it.
@@ -614,6 +634,8 @@ must be *posted* inside the window, not merely earned in it. As shipped:
   pattern), but it makes replays memorisable and needs the row generator to take an
   injected RNG everywhere. *Recommendation: live-random field in v1; the twist set is the
   shared experience. Revisit if the leaderboard feels luck-dominated.*
+  **Decided, round 300**: James took the recommendation. Live-random it is, and the twist set
+  carries the shared experience. Nothing to build - this closes as written.
 - **The overall board's normalisation factor** (§7): height × 100 is a first guess.
 - **The "newer version exists" flag** (§2.1): App Store lookup API, or piggyback on iCloud
   KVS from newer clients, or accept silent divergence for the 14-day window?
@@ -621,9 +643,19 @@ must be *posted* inside the window, not merely earned in it. As shipped:
   attempt with nothing? Posting-partial is the anti-cheese answer and the recommendation.
   *As built in phase 3: quitting to the menu burns it* - the quit path leaves the scene
   without reaching the end-of-run recording, so the attempt reads "spent, nothing
-  posted", exactly like a force-quit. Honest, but not yet the recommendation; making
-  quit post the partial means routing the pause menu's home-confirm through the same
-  recording the run's natural end uses.
+  posted", exactly like a force-quit. Honest, but not yet the recommendation.
+
+  **Answered and built, round 300.** James: "quitting a daily should post the partial score -
+  ask the user with a pop up, otherwise assume not." So it is neither answer the question
+  offered: the player decides, once, on the way out. `GigaBallConfirm.postDailyScore` follows
+  the main-menu confirm whenever `DailyChallengeSession.leavingWouldAbandonAScoringAttempt` -
+  a daily running, the scoring attempt rather than free play, and the day still open, because
+  offering a post the boards will refuse is worse than not asking at all. Both its buttons
+  leave, since the leaving was agreed to on the pop-up before it, and only the green one
+  posts; "Don't Post" rather than "Cancel" says so. The yes routes through
+  `recordDailyResult()`, the same recorder a natural end uses, so a partial lands in the
+  record, on the board and in the practice best by exactly the rules a finished run obeys -
+  closed days and forfeits included.
 - **Monochrome performance** (§5, §4 Blackout). **Measured, round 284**, since James asked
   for it before deciding: a field of 121 bricks, four balls and a paddle costs 1.69ms to
   draw as it is and 3.08ms through a `CIPhotoEffectMono` on an `SKEffectNode` wrapping it -
@@ -632,7 +664,19 @@ must be *posted* inside the window, not merely earned in it. As shipped:
   it is a real render of a real layer through the real filter, but it runs on a Mac's GPU
   through the simulator and the oldest supported iPhone is a different machine. A ratio near
   one would have settled the gate; 1.82x does not, so this still wants one run on the oldest
-  device before the palette-swap fallback is ruled out. The HUD stays outside the filtered
+  device before the palette-swap fallback is ruled out.
+
+  **Closed, round 300, by the gate turning out not to be one.** James has no older iPhone to
+  measure on, so the question as written could not be answered - and the palette-swap fallback
+  was never the cheap alternative it reads as: the game makes two thousand texture
+  assignments, so a grey copy of every texture is not a fallback, it is a second art pipeline.
+  What settles it instead is that **both numbers are small**. 1.69ms against 3.08ms is 10% of
+  a 60fps frame against 18.5%, and the field draw is a small part of a frame that also has
+  physics, the HUD and the descent in it. A device slow enough to miss frames *with* the
+  filter is close to missing them without it, which makes this a question about the minimum
+  supported device rather than about the twist. The deployment target is iOS 15, which reaches
+  A9 hardware; **raising it is the one-line change that retires this**, and it is James's call
+  because it drops players. Built and shipping in the meantime. The HUD stays outside the filtered
   node - James, round 284: "for the HUD, leave it, it doesn't need the filter" - which is
   also the cheaper arrangement, since a filter's cost goes with the area it covers.
 

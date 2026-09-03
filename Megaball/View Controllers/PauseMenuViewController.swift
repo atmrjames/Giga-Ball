@@ -1732,5 +1732,10 @@ extension PauseMenuViewController: GKGameCenterControllerDelegate {
 extension Notification.Name {
     public static let returnPauseNotification = Notification.Name(rawValue: "returnPauseNotification")
     public static let killBallRemoveVC = Notification.Name(rawValue: "killBallRemoveVC")
+
+    /// The player chose, on the way out of a daily, to post the score they had (round 300).
+    /// Carried to the scene because the scene owns the score and the record-keeping.
+    public static let postDailyPartialScore =
+        Notification.Name(rawValue: "postDailyPartialScore")
 }
 // Notification setup for sending information from the pause menu popup to unpause the game

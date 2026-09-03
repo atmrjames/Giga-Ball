@@ -686,6 +686,68 @@ final class EndlessIIFieldPowerUpTests: XCTestCase {
                        "a centre pushed past the edge comes back in from the other one")
     }
 
+    /// **The per-frame clamp must not undo the wrap.**
+    ///
+    /// James, round 300: "the wrap around power up isn't letting the paddle wrap around any
+    /// more." Round 293 added `endlessIIKeepThePaddleInsideTheWalls` and ran it every frame to
+    /// chase a laser turret, and it carried its own copy of the clamp - so from that round on,
+    /// a paddle driven off the edge was hauled back inside the walls before it could ever
+    /// reach the other one. The power-up existed and did nothing.
+    ///
+    /// This is the frame-loop test rather than the pure-function one above: the rule was
+    /// always right, and a second writer was overruling it.
+    func testTheEveryFrameClampLeavesAWrappingPaddleAlone() {
+        let scene = fieldScene()
+        scene.gameWidth = 400
+        scene.paddle.size = CGSize(width: 100, height: 20)
+
+        scene.paddle.position.x = 500
+        scene.endlessIIKeepThePaddleInsideTheWalls()
+        XCTAssertEqual(scene.paddle.position.x, 150, accuracy: 0.01,
+                       "without the wrap it still clamps at the wall, which is round 293's job")
+
+        scene.endlessIICollectWrapAround()
+
+        scene.paddle.position.x = 190
+        scene.endlessIIKeepThePaddleInsideTheWalls()
+        XCTAssertEqual(scene.paddle.position.x, 190, accuracy: 0.01,
+                       "a paddle overhanging the edge is left overhanging")
+
+        scene.paddle.position.x = 210
+        scene.endlessIIKeepThePaddleInsideTheWalls()
+        XCTAssertEqual(scene.paddle.position.x, -190, accuracy: 0.01,
+                       "and one driven past it comes back in from the other side")
+    }
+
+    /// **The clamp runs after the growth it is chasing.**
+    ///
+    /// James, round 300: "laser turrets are still moving away from the paddle a pixel or two
+    /// when the paddle is dragged against the edge" - the same sentence as round 293, which
+    /// moved the clamp into `update` and did not fix it, because SpriteKit evaluates actions
+    /// *after* `update` returns. Expand animates `xScale` over 0.2s, so a clamp in `update`
+    /// answers for the paddle as it was one frame ago and the paddle grows out from under it.
+    ///
+    /// The test is the override's existence and its behaviour: a paddle whose width has just
+    /// grown is inside the walls, with its overlays moved to match, by the time this hook has
+    /// run.
+    func testTheWallClampRunsInDidEvaluateActions() {
+        let scene = fieldScene()
+        scene.gameWidth = 400
+        scene.paddle.size = CGSize(width: 100, height: 20)
+        scene.paddle.position.x = 150
+        // Hard against the wall at its old width
+
+        scene.paddle.size = CGSize(width: 200, height: 20)
+        // What the Expand action will have done by the time actions have been evaluated
+
+        scene.didEvaluateActions()
+
+        XCTAssertEqual(scene.paddle.position.x, 100, accuracy: 0.01,
+                       "the grown paddle is pulled back so its end sits on the wall")
+        XCTAssertEqual(scene.paddleLaser.position.x, scene.paddle.position.x, accuracy: 0.01,
+                       "and the turrets came with it, rather than a frame later")
+    }
+
     func testAWrappedBallKeepsTheHeadingItLeftWith() {
         let scene = fieldScene()
         scene.gameWidth = 400

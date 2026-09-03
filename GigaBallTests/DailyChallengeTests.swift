@@ -2445,4 +2445,159 @@ final class DailyLayoutFlipTests: XCTestCase {
         }
         XCTAssertGreaterThan(checked, 100, "and it actually saw some Classic days")
     }
+    // MARK: - The card shows the day it will actually play
+
+    /// James, round 300: "for daily challenges where the level is mirrored or upside down, the
+    /// image of the level on the daily challenge menu view should reflect how the level will
+    /// be presented."
+    ///
+    /// The picture is what a player judges the day on, so a Mirrored day showing the
+    /// unmirrored level is showing them a level they will not play. Checked by pixel, because
+    /// an orientation flag that is set and never honoured looks identical to one that is not.
+    func testTheCardsPictureIsFlippedTheWayTheDayWillBe() {
+        let plain = UIGraphicsImageRenderer(size: CGSize(width: 4, height: 4)).image { context in
+            UIColor.white.setFill()
+            context.fill(CGRect(x: 0, y: 0, width: 4, height: 4))
+        }
+
+        XCTAssertEqual(DailyTwist.presented(plain, under: [])?.imageOrientation, .up,
+                       "a day with no layout twist shows the level as it is")
+
+        XCTAssertEqual(DailyTwist.presented(plain, under: [.mirrored])?.imageOrientation,
+                       .upMirrored,
+                       "Mirrored is a horizontal reflection, which is what .upMirrored draws")
+
+        XCTAssertEqual(DailyTwist.presented(plain, under: [.upsideDown])?.imageOrientation,
+                       .downMirrored,
+                       "Upside Down is a vertical one: a half turn and a mirror, which is "
+                       + "the same reflection the scene makes about the field's centre line")
+
+        XCTAssertEqual(DailyTwist.presented(plain, under: [.brickSwap])?.imageOrientation, .up,
+                       "and Brick Swap, in the same category and moving no brick, leaves the "
+                       + "picture alone")
+
+        XCTAssertEqual(DailyTwist.presented(plain, under: [.mirrored])?.cgImage, plain.cgImage,
+                       "the same bitmap, turned rather than redrawn - the card draws one of "
+                       + "these per day it pages past")
+
+        XCTAssertNil(DailyTwist.presented(nil, under: [.mirrored]),
+                     "a level with no picture stays a level with no picture")
+    }
+
+    /// The card and the scene must read the same twist. Both go through `layoutFlip(in:)`, so
+    /// a third layout twist cannot reach one and miss the other - this is the check that they
+    /// still share it.
+    func testEveryLayoutTwistTheSceneFlipsForIsOneTheCardFlipsFor() {
+        for twist in DailyTwist.allCases where twist.category == .layout {
+            XCTAssertEqual(DailyTwist.layoutFlip(in: [twist]), twist,
+                           "\(twist) is a layout twist and layoutFlip does not report it")
+        }
+    }
+
+}
+
+
+/// Leaving a daily part-way through, and what happens to the score (round 300).
+///
+/// Its own class rather than the end of whichever one came last in the file: two rounds have
+/// now lost tests to being appended into a neighbouring class and reported as passing when
+/// they never ran.
+final class DailyQuitTests: XCTestCase {
+
+    /// James, round 300: "quitting a daily should post the partial score - ask the user with a
+    /// pop up, otherwise assume not."
+    ///
+    /// This is the test of when the pop-up is *worth* asking. All three conditions are real:
+    /// asking outside a daily is nonsense, asking during free play offers something there is
+    /// no attempt for, and asking on a run that crossed midnight offers a post the boards will
+    /// refuse (§1) - which would be worse than not asking, because the player would think they
+    /// had banked it.
+    func testTheQuitQuestionIsAskedOnlyWhenThereIsAScoreToLose() {
+        let session = DailyChallengeSession.shared
+        let key = session.todayKey
+        let challenge = DailyChallengeGenerator.challenge(forKey: key)
+
+        let wasActive = session.active
+        let wasScoring = session.isScoringAttempt
+        defer { session.active = wasActive; session.isScoringAttempt = wasScoring }
+
+        session.active = nil
+        session.isScoringAttempt = true
+        XCTAssertFalse(session.leavingWouldAbandonAScoringAttempt,
+                       "there is no daily running, so there is nothing to ask about")
+
+        session.active = challenge
+        session.isScoringAttempt = false
+        XCTAssertFalse(session.leavingWouldAbandonAScoringAttempt,
+                       "free play posts nothing however it ends")
+
+        session.isScoringAttempt = true
+        XCTAssertTrue(session.leavingWouldAbandonAScoringAttempt,
+                      "a scoring attempt on today's day is exactly the case the pop-up is for")
+
+        let yesterday = DailyChallengeGenerator.challenge(
+            forKey: DailyDay.key(for: Calendar.current.date(byAdding: .day, value: -1,
+                                                            to: session.today)!))
+        session.active = yesterday
+        XCTAssertFalse(session.leavingWouldAbandonAScoringAttempt,
+                       "a run that outlived its day cannot post, so it must not be offered")
+    }
+
+    /// Both buttons on that pop-up leave, and only one of them posts - so the pale button is
+    /// an answer rather than a cancel, and it must not say "Cancel".
+    func testTheQuitQuestionsButtonsBothLeave() {
+        XCTAssertEqual(GigaBallConfirm.postDailyScore.confirmTitle, "Post")
+        XCTAssertEqual(GigaBallConfirm.postDailyScore.dismissTitle, "Don\'t Post",
+                       "not \"Cancel\": leaving was already agreed to on the pop-up before it")
+    }
+}
+
+/// Blackout, delivered as the half of Monochromatic that was missing (round 300).
+///
+/// Its own class, because appending to whichever class happens to be last in the file is how
+/// two rounds have now reported tests as passing that never ran.
+final class DailyMonochromeTests: XCTestCase {
+    /// **Monochromatic's briefing was telling the truth and the code was not** (round 300).
+    ///
+    /// The twist has shipped since round 229 saying "All the colour is gone. Classic, and only
+    /// Classic." It forced the Classic theme, which is not colourless, so the second sentence
+    /// was built and the first was not. This is §4's Blackout, and it needed no twist of its
+    /// own - only the half of this one that was missing.
+    func testMonochromaticActuallyTakesTheColourOut() {
+        let scene = GameScene()
+        let session = DailyChallengeSession.shared
+        let wasActive = session.active
+        defer { session.active = wasActive }
+        // `isDailyChallenge` is derived - it reads `DailyChallengeSession.shared.isActive` -
+        // so setting the session's active challenge is the whole of the setup, and there is no
+        // second flag that could disagree with it
+
+        session.active = DailyChallenge(dateKey: session.todayKey, mode: .classic,
+                                        classicLevel: 1, twists: [.monochromatic])
+        XCTAssertTrue(scene.dailyMonochrome)
+        scene.applyDailyMonochrome()
+        XCTAssertTrue(scene.shouldEnableEffects, "the run is greyscale")
+        XCTAssertNotNil(scene.filter, "and there is a filter doing it")
+
+        session.active = DailyChallenge(dateKey: session.todayKey, mode: .classic,
+                                        classicLevel: 1, twists: [.oneLife])
+        XCTAssertFalse(scene.dailyMonochrome)
+        scene.applyDailyMonochrome()
+        XCTAssertFalse(scene.shouldEnableEffects,
+                       "and an ordinary day takes it off again - a filter left on from the "
+                       + "run before is the worse failure, because nothing else would look "
+                       + "wrong enough to notice")
+        XCTAssertNil(scene.filter)
+    }
+
+    /// The filter goes on the scene itself, which is what keeps this cheap and safe.
+    ///
+    /// `SKScene` is an `SKEffectNode` subclass, so nothing is reparented. The alternative -
+    /// wrapping the world in an effect node - moves every brick into a new coordinate space,
+    /// and a brick's `position.y` is its row (§8.6). This test is the reminder of why the
+    /// two-line version is the right one.
+    func testTheSceneIsItsOwnEffectNode() {
+        XCTAssertTrue(GameScene() is SKEffectNode)
+    }
+
 }

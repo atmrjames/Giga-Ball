@@ -53,6 +53,22 @@ xcodebuild -project Megaball.xcodeproj -scheme Megaball \
   on the Mac - a reboot, or `sudo killall coreaudiod` - so it needs James. Until then,
   `-only-testing:` a few classes still works, because fewer launches means fewer chances to
   hit it.
+- **If a build hangs before compiling anything, check the simulator runtime's build number.**
+  Round 300 lost an afternoon to it. `xcodebuild` sat at `PruneExplicitPrecompiledModules`
+  with **zero** `swift-frontend` processes, forever, and survived `xcodebuild clean`, a wiped
+  `ModuleCache.noindex`, a killed `XCBBuildService`, and a completely fresh
+  `-derivedDataPath`. The cause is a mismatch: Xcode-beta's simulator SDK is
+  **24A5390e** and the installed iOS 27.0 runtime had updated to **24A5390f**. Compare
+  `xcrun simctl list runtimes` against the build number in
+  `DerivedData/SDKStatCaches.noindex/*.sdkstatcache` - if they differ, that is it, and
+  clearing the cache does not help because xcodebuild regenerates it at the SDK's number.
+  The fix is James's: update Xcode-beta, or reinstall the matching runtime. **The workaround
+  is another runtime** - `-destination 'id=6C4F510D-FAC7-42B0-98CE-258809ABA4B7'` is an
+  iPhone 16 Pro on iOS 18.5 and builds and tests normally. `SWIFT_ENABLE_EXPLICIT_MODULES=NO`
+  gets the *compile* through and still hangs at the end, so it looks like progress and is not.
+  The tell that separates this from every other build problem: it never compiles a single
+  file, and the same command worked earlier the same day.
+
 - **Stale derived data has twice hidden a new file from the test target**, producing "cannot
   find X in scope" for code that builds fine in the app. If a brand-new file's symbols are
   missing from tests, `xcodebuild clean` before believing the error.

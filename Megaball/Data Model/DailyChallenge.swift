@@ -1130,6 +1130,19 @@ final class DailyChallengeSession {
         }
     }
 
+    /// Whether walking out now would abandon a score that could still have counted.
+    ///
+    /// James, round 300: "quitting a daily should post the partial score - ask the user with a
+    /// pop up, otherwise assume not." This is the question that decides whether the pop-up is
+    /// worth asking, and all three parts of it matter: there has to *be* a daily running, it
+    /// has to be the scoring attempt rather than free play, and the day has to still be open -
+    /// a run that crossed midnight cannot post whatever the player answers (§1), so asking
+    /// them would be offering something the boards will not take.
+    var leavingWouldAbandonAScoringAttempt: Bool {
+        guard let active, isScoringAttempt else { return false }
+        return active.dateKey == todayKey
+    }
+
     var todayKey: String { DailyDay.key(for: today) }
     var todaysChallenge: DailyChallenge { DailyChallengeGenerator.challenge(forKey: todayKey) }
 

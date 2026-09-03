@@ -26,11 +26,45 @@ final class GameSceneLayoutTests: XCTestCase {
         ("iPad Pro 12.9", CGSize(width: 1024, height: 1366), 20)
     ]
 
+    /// **The shapes a resized window takes, which no device has** (round 300). James: "I want
+    /// genuine multitasking on the iPad, but the app's ratio must remain the same / near the
+    /// same." Kept apart from the device list on purpose: a device screen is always
+    /// height-limited, so bar plus field fills it exactly, and a narrow column is
+    /// width-limited, so it holds the ratio and letterboxes the slack instead. Both are
+    /// correct; only the first is "fills the screen", which is why that test takes the list
+    /// above and this one does not.
+    private let windows: [(name: String, size: CGSize, inset: CGFloat)] = [
+        ("iPad Slide Over", CGSize(width: 375, height: 1133), 20),
+        ("iPad split, one third", CGSize(width: 375, height: 1366), 20),
+        ("iPad split, half", CGSize(width: 507, height: 1366), 20),
+        ("iPad split, two thirds", CGSize(width: 639, height: 1366), 20),
+        ("the minimum window", CGSize(width: 420, height: 640), 0),
+        ("short and wide", CGSize(width: 1024, height: 420), 0)
+    ]
+
     func testThePlayAreaKeepsItsRatioOnEveryScreen() {
-        for screen in screens {
+        for screen in screens + windows {
             let layout = GameSceneLayout(screen: screen.size, bottomInset: screen.inset)
             let ratio = layout.playHeight/layout.gameWidth
             XCTAssertEqual(ratio, GameSceneLayout.playRatio, accuracy: 0.0001, screen.name)
+        }
+    }
+
+    /// **Every window the app can now be given is one it can be played in** (round 300).
+    ///
+    /// Removing `UIRequiresFullScreen` lets iPadOS hand the app shapes no device has, and a
+    /// playfield that came back zero-sized or wider than its window would be a black screen
+    /// rather than a squeezed one. The floor is `SceneDelegate`'s minimum window, so nothing
+    /// smaller than that has to work.
+    func testEveryMultitaskingWindowGivesAPlayableField() {
+        for screen in screens + windows {
+            let layout = GameSceneLayout(screen: screen.size, bottomInset: screen.inset)
+            XCTAssertGreaterThan(layout.gameWidth, 0, "\(screen.name) has no playfield at all")
+            XCTAssertLessThanOrEqual(layout.gameWidth, screen.size.width + 0.01,
+                                     "\(screen.name)'s playfield is wider than its window")
+            XCTAssertLessThanOrEqual(layout.topBarHeight + layout.playHeight,
+                                     screen.size.height + 0.01,
+                                     "\(screen.name)'s bar and field are taller than its window")
         }
     }
 
