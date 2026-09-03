@@ -1974,4 +1974,135 @@ final class EndlessIIFrameCostTests: XCTestCase {
         return total/Double(w*h)/255
     }
 
+    /// **Blackout, drawn, because greyscale is exactly the kind of claim to check by eye.**
+    ///
+    /// Round 300 built it as `SKScene.filter` on the strength of `SKScene` being an
+    /// `SKEffectNode`. The arithmetic for that is one line and the question it cannot answer
+    /// is whether the colour actually goes - a filter that is set on a scene nothing renders
+    /// looks identical to one that works.
+    ///
+    /// Two halves of the same field, so the comparison is in one picture.
+    func testBlackoutCanBeLookedAt() throws {
+        let cell = CGSize(width: 96, height: 44)
+        let names = ["BrickNormal", "BrickMultiHit1", "BrickMultiHit2",
+                     "BrickMultiHit3", "BrickIndestructible1"]
+
+        func field(monochrome: Bool) -> SKScene {
+            let scene = SKScene(size: CGSize(width: cell.width*CGFloat(names.count) + 24,
+                                             height: cell.height + 24))
+            scene.backgroundColor = UIColor(red: 0.15, green: 0.04, blue: 0.24, alpha: 1)
+            for (column, name) in names.enumerated() {
+                let brick = SKSpriteNode(texture: SKTexture(imageNamed: name), size: cell)
+                brick.position = CGPoint(x: 12 + cell.width*(CGFloat(column) + 0.5),
+                                         y: scene.size.height/2)
+                scene.addChild(brick)
+            }
+            if monochrome {
+                scene.filter = CIFilter(name: "CIPhotoEffectMono")
+                scene.shouldEnableEffects = true
+                // The two lines the game itself runs, so this picture cannot flatter it
+            }
+            return scene
+        }
+
+        let sheet = SKScene(size: CGSize(width: cell.width*CGFloat(names.count) + 24,
+                                         height: (cell.height + 24)*2))
+        sheet.backgroundColor = .black
+        for (row, monochrome) in [false, true].enumerated() {
+            let part = field(monochrome: monochrome)
+            let view = SKView(frame: CGRect(origin: .zero, size: part.size))
+            let drawn = try XCTUnwrap(view.texture(from: part),
+                                      "no renderer here, so there is nothing to look at")
+            let strip = SKSpriteNode(texture: drawn, size: part.size)
+            strip.position = CGPoint(x: sheet.size.width/2,
+                                     y: part.size.height*(0.5 + CGFloat(1 - row)))
+            sheet.addChild(strip)
+        }
+
+        let view = SKView(frame: CGRect(origin: .zero, size: sheet.size))
+        let texture = try XCTUnwrap(view.texture(from: sheet))
+        let image = UIImage(cgImage: texture.cgImage())
+        let file = URL(fileURLWithPath: NSTemporaryDirectory())
+            .appendingPathComponent("blackout.png")
+        try XCTUnwrap(image.pngData()).write(to: file)
+        print("\n  Blackout - colour above, greyscale below: \(file.path)\n")
+    }
+
+    /// **Blackout is harder, and it must not be unfair.**
+    ///
+    /// §4 justifies the twist by saying Classic's bricks are told apart by colour, so removing
+    /// it is a genuine rule change rather than a dress. That argument only holds while the
+    /// bricks stay *distinguishable* - three greys a player cannot separate is not difficulty,
+    /// it is a brick whose remaining hits cannot be read.
+    ///
+    /// Measured rather than judged, and the answer was not the one the picture suggested.
+    /// Greyscale luminances come out Normal 253, Indestructible 225, MultiHit 155 / 133 / 103:
+    /// the closest pair is 22 apart. In *colour* the closest pair is MultiHit1 against
+    /// MultiHit2 at 14 - dark red beside red, two saturated colours of nearly the same
+    /// brightness. So the tightest reading in Blackout is wider than the tightest reading in
+    /// the ordinary game, which is the fact that settles this.
+    ///
+    /// The floor is 15, below the current 22 and above colour's 14. An art change that
+    /// collapsed two bricks into the same grey would fail here rather than ship.
+    func testBlackoutLeavesEveryBrickTellableApart() throws {
+        let names = ["BrickNormal", "BrickMultiHit1", "BrickMultiHit2",
+                     "BrickMultiHit3", "BrickIndestructible1"]
+        let cell = CGSize(width: 64, height: 32)
+
+        /// The mean luminance of one brick, drawn through the filter the twist applies.
+        func greyLuminance(of name: String) throws -> Double {
+            let scene = SKScene(size: cell)
+            scene.backgroundColor = .black
+            let brick = SKSpriteNode(texture: SKTexture(imageNamed: name), size: cell)
+            brick.position = CGPoint(x: cell.width/2, y: cell.height/2)
+            scene.addChild(brick)
+            scene.filter = CIFilter(name: "CIPhotoEffectMono")
+            scene.shouldEnableEffects = true
+
+            let view = SKView(frame: CGRect(origin: .zero, size: cell))
+            let drawn = try XCTUnwrap(view.texture(from: scene),
+                                      "no renderer here, so there is nothing to measure")
+            let bitmap = drawn.cgImage()
+            let width = bitmap.width, height = bitmap.height
+            var pixels = [UInt8](repeating: 0, count: width*height*4)
+            let context = CGContext(data: &pixels, width: width, height: height,
+                                    bitsPerComponent: 8, bytesPerRow: width*4,
+                                    space: CGColorSpaceCreateDeviceRGB(),
+                                    bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)
+            context?.draw(bitmap, in: CGRect(x: 0, y: 0, width: width, height: height))
+
+            // The middle band only: a brick's bevel is its own edge and belongs to no reading
+            var total = 0.0, counted = 0
+            for y in (height/3)..<(height*2/3) {
+                for x in (width/3)..<(width*2/3) {
+                    let o = (y*width + x)*4
+                    total += 0.299*Double(pixels[o]) + 0.587*Double(pixels[o+1])
+                        + 0.114*Double(pixels[o+2])
+                    counted += 1
+                }
+            }
+            return counted > 0 ? total/Double(counted) : 0
+        }
+
+        var readings: [(String, Double)] = []
+        for name in names { readings.append((name, try greyLuminance(of: name))) }
+
+        var closest = (gap: Double.greatestFiniteMagnitude, one: "", two: "")
+        for i in readings.indices {
+            for j in readings.indices where j > i {
+                let gap = abs(readings[i].1 - readings[j].1)
+                if gap < closest.gap { closest = (gap, readings[i].0, readings[j].0) }
+            }
+        }
+
+        print("\n  Blackout luminances: "
+              + readings.map { "\($0.0) \(Int($0.1.rounded()))" }.joined(separator: ", "))
+        print("  closest: \(closest.one) vs \(closest.two), gap \(Int(closest.gap.rounded()))\n")
+
+        XCTAssertGreaterThan(closest.gap, 15,
+                             "\(closest.one) and \(closest.two) are the same grey in Blackout, "
+                             + "so a player cannot read how many hits a brick has left - that "
+                             + "is not difficulty, it is missing information (§4)")
+    }
+
 }
