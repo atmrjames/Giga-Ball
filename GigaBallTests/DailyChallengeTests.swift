@@ -177,6 +177,46 @@ final class DailyChallengeTests: XCTestCase {
             "2026-08-28|classic|96|noPowerUps,fogOfWar",
             "2026-08-29|endlessII|-|fogOfWar",
             "2026-08-30|endlessII|-|noPowerUps,fogOfWar",
+
+            // **September, added in round 302, because this is where the layout twists begin.**
+            //
+            // The August rows above cannot exercise `levelsUnchangedBy` at all: the `layout`
+            // category activates on 2026-09-01, so no August day can draw Mirrored or Upside
+            // Down, and the table that decides which levels those twists may land on was
+            // therefore unguarded by this test. 09-02 and 09-24 are the two days that draw one,
+            // and they are the reason these thirty rows exist - editing a level into or out of
+            // symmetry, or moving the 80% bar, changes the pool those days roll against and
+            // rewrites what somebody already played.
+            "2026-09-01|classic|92|powerShower",
+            "2026-09-02|classic|11|upsideDown",
+            "2026-09-03|endlessII|-|",
+            "2026-09-04|endlessII|-|noBadNews",
+            "2026-09-05|classic|78|spareBalls",
+            "2026-09-06|endlessII|-|fogOfWar",
+            "2026-09-07|classic|49|",
+            "2026-09-08|endlessII|-|",
+            "2026-09-09|classic|15|noGoodNews",
+            "2026-09-10|classic|63|",
+            "2026-09-11|classic|71|oneLife",
+            "2026-09-12|classic|4|powerShower",
+            "2026-09-13|classic|35|oneLife",
+            "2026-09-14|classic|80|powerShower",
+            "2026-09-15|endless|-|fogOfWar",
+            "2026-09-16|endlessII|-|fogOfWar",
+            "2026-09-17|endless|-|",
+            "2026-09-18|classic|35|drought",
+            "2026-09-19|endlessII|-|noGoodNews",
+            "2026-09-20|classic|87|fogOfWar,spareBalls",
+            "2026-09-21|endless|-|",
+            "2026-09-22|classic|10|powerShower",
+            "2026-09-23|endlessII|-|fogOfWar",
+            "2026-09-24|classic|86|upsideDown",
+            "2026-09-25|endlessII|-|fogOfWar,noPowerUps",
+            "2026-09-26|endless|-|fogOfWar",
+            "2026-09-27|endless|-|",
+            "2026-09-28|endless|-|fogOfWar,spareBalls",
+            "2026-09-29|classic|96|fogOfWar,oneLife",
+            "2026-09-30|endless|-|",
         ]
         for line in recorded {
             let parts = line.split(separator: "|", omittingEmptySubsequences: false).map(String.init)

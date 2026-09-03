@@ -693,8 +693,20 @@ enum DailyChallengeGenerator {
         let mode: GameMode = modeRoll < 50 ? .classic : (modeRoll < 75 ? .endless : .endlessII)
 
         // 2. The level, drawn whether or not it is used - every draw always happens, in the
-        // same order, so the stream's layout never depends on earlier outcomes and adding a
-        // pool later cannot shift what an old date drew (§2.1)
+        // same order, so the *stream's layout* never depends on earlier outcomes (§2.1).
+        //
+        // That is the half this guarantees, and it is worth being exact about the other half.
+        // `classicLevelCount` is derived live from the pack tables, so **adding a level pack
+        // changes this roll's modulus and every past Classic day draws a different level** -
+        // the fixed draw order protects the shape of the stream, not the outcome of a roll
+        // whose range moved. A previous version of this comment said adding a pool "cannot
+        // shift what an old date drew", which is true of a new *twist* (kept out of an old
+        // day's pool by its `activationKey`) and untrue of a new level.
+        //
+        // Nothing here needs to change for it: `testTheDaysAlreadyPlayedStillReadExactlyTheSame`
+        // pins thirty real days with their level numbers, so a pack added in a later release
+        // fails that test by name rather than quietly rewriting history. This comment exists so
+        // that whoever sees it fail knows immediately why, rather than re-pinning it.
         let levelRoll = stream.roll(max(1, classicLevelCount))
         let classicLevel: Int? = mode == .classic ? levelRoll + 1 : nil
 
