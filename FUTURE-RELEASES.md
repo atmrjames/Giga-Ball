@@ -153,12 +153,28 @@ were still written-and-unbuilt. Reviewed against the code rather than the queue,
   it is a one-line change that is James's to make because it drops players.
 - Everything else the August line already carried.
 
+**The minimum is iOS 17** (James, round 301: "go with iOS 17"). It was iOS 15, which reaches
+A9 hardware - iPhone 6s and SE - and that device sat behind Blackout's performance gate and
+behind every future question of the form "will this hold 60fps on the oldest thing we
+support". Raising it retires the class of question rather than one instance of it. It drops
+players, which is why it was James's call and not a recommendation acted on. Two dead
+availability guards went with it, one of them a deprecated `SKStoreReviewController` fallback
+that could no longer be reached and had no business sitting in a binary that goes to App
+Review.
+
 Two of the three platform features are therefore out, and the one that stayed - 120fps - was
 built in round 123. **iPad multitasking is in, and genuinely so**: James, round 300: "I want
 genuine multitasking on the iPad, but the app's ratio must remain the same / near the same."
 The play zone has never depended on the window - `GameSceneLayout` holds 1.8236 at any size
 and asserts it - so the work is the *menus*, and the `UIRequiresFullScreen` flag that
 currently says the app does not do this at all.
+
+**Portrait only, and that is the decision rather than the default** (James, round 301: "no
+landscape"). Slide Over and Split View on current iPadOS need only that the app resize, which
+it now does; the four-orientation requirement belongs to older iPadOS, and meeting it would
+mean designing landscape *menus* - the play zone itself would simply letterbox. That is a real
+piece of design work for the systems least likely to be running 1.3, so the app stays portrait
+and resizable, and older iPadOS simply does not offer the split.
 
 ### The 1.3 line, decided (8 August 2026)
 

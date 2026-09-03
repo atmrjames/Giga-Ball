@@ -80,6 +80,7 @@
 		000000001AF1800000000041 /* EndlessIIPaddlePowerUpTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000001AF1800000000040 /* EndlessIIPaddlePowerUpTests.swift */; };
 		000000001AF1800000000021 /* EndlessIIVisionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000001AF1800000000020 /* EndlessIIVisionTests.swift */; };
 		1AF170000000009D /* MenuNavigationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF170000000009C /* MenuNavigationTests.swift */; };
+		1AF1700000000101 /* WindowSizeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000100 /* WindowSizeTests.swift */; };
 		1AF1700000000071 /* GameSceneLayoutTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000070 /* GameSceneLayoutTests.swift */; };
 		1AF170000000006F /* GameBackgroundTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF170000000006E /* GameBackgroundTests.swift */; };
 		1AF170000000006D /* BrickTypesViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF170000000006C /* BrickTypesViewController.swift */; };
@@ -459,6 +460,7 @@
 		000000001AF1800000000040 /* EndlessIIPaddlePowerUpTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndlessIIPaddlePowerUpTests.swift; sourceTree = "<group>"; };
 		000000001AF1800000000020 /* EndlessIIVisionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndlessIIVisionTests.swift; sourceTree = "<group>"; };
 		1AF170000000009C /* MenuNavigationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuNavigationTests.swift; sourceTree = "<group>"; };
+		1AF1700000000100 /* WindowSizeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WindowSizeTests.swift; sourceTree = "<group>"; };
 		1AF1700000000070 /* GameSceneLayoutTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameSceneLayoutTests.swift; sourceTree = "<group>"; };
 		1AF170000000006E /* GameBackgroundTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameBackgroundTests.swift; sourceTree = "<group>"; };
 		1AF170000000006C /* BrickTypesViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrickTypesViewController.swift; sourceTree = "<group>"; };
@@ -809,6 +811,7 @@
 				000000001AF1800000000003 /* BallPathTests.swift */,
 				000000001AF1C00000001300 /* AimHoldControlTests.swift */,
 				1AF170000000009C /* MenuNavigationTests.swift */,
+				1AF1700000000100 /* WindowSizeTests.swift */,
 				1AF1700000000070 /* GameSceneLayoutTests.swift */,
 				1AF170000000006E /* GameBackgroundTests.swift */,
 				1AF1100000000000 /* LevelPackSetupTests.swift */,
@@ -1637,6 +1640,7 @@
 				000000001AF1800000000004 /* BallPathTests.swift in Sources */,
 				000000001AF1C00000001301 /* AimHoldControlTests.swift in Sources */,
 				1AF170000000009D /* MenuNavigationTests.swift in Sources */,
+				1AF1700000000101 /* WindowSizeTests.swift in Sources */,
 				1AF1700000000071 /* GameSceneLayoutTests.swift in Sources */,
 				1AF170000000006F /* GameBackgroundTests.swift in Sources */,
 				1AF1200000000000 /* LevelPackSetupTests.swift in Sources */,
@@ -1957,7 +1961,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = ZAGZPD36YG;
 				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.atmrjames.Megaball.GigaBallTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_VERSION = 5.0;
@@ -1974,7 +1978,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = ZAGZPD36YG;
 				GENERATE_INFOPLIST_FILE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.atmrjames.Megaball.GigaBallTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_VERSION = 5.0;
@@ -2039,7 +2043,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
@@ -2100,7 +2104,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = iphoneos;
@@ -2139,7 +2143,7 @@
 				INFOPLIST_FILE = Megaball/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Giga-Ball";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.arcade-games";
-				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -2181,7 +2185,7 @@
 				INFOPLIST_FILE = Megaball/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = "Giga-Ball";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.arcade-games";
-				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",

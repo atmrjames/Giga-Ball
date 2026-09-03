@@ -787,23 +787,19 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
 
         guard let windowScene = view.window?.windowScene else { return }
         defaults.set(Date().timeIntervalSince1970, forKey: MenuViewController.lastReviewAskKey)
-        if #available(iOS 16.0, *) {
-            AppStore.requestReview(in: windowScene)
-        } else {
-            requestReviewLegacy(in: windowScene)
-        }
+        AppStore.requestReview(in: windowScene)
         // Recorded whether or not iOS actually draws it: the app cannot tell, and an ask that
         // was swallowed is still an ask as far as not pestering is concerned
+        //
+        // **One path since round 301**, when the deployment target went to iOS 17 (James:
+        // "go with iOS 17"). The `#available(iOS 16)` branch and its `SKStoreReviewController`
+        // fallback could not be reached any more, and a dead fallback around a *review prompt*
+        // is worse than dead code elsewhere: it is a deprecated StoreKit call sitting in a
+        // binary that goes to App Review
     }
 
     private static let lastReviewAskKey = "lastReviewAsk"
     private static let reviewAskCooldown: TimeInterval = 60*60*24*120
-
-    @available(iOS, introduced: 14.0, deprecated: 16.0, message: "Superseded by AppStore.requestReview(in:)")
-    private func requestReviewLegacy(in windowScene: UIWindowScene) {
-        SKStoreReviewController.requestReview(in: windowScene)
-    }
-    // Review prompt for iOS 15. The deprecation annotation keeps this from warning on modern builds
 
     @objc private func foregroundNotificationKeyReceived(_ notification: Notification) {
         authGCPlayer()

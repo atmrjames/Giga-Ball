@@ -674,9 +674,10 @@ must be *posted* inside the window, not merely earned in it. As shipped:
   a 60fps frame against 18.5%, and the field draw is a small part of a frame that also has
   physics, the HUD and the descent in it. A device slow enough to miss frames *with* the
   filter is close to missing them without it, which makes this a question about the minimum
-  supported device rather than about the twist. The deployment target is iOS 15, which reaches
-  A9 hardware; **raising it is the one-line change that retires this**, and it is James's call
-  because it drops players. Built and shipping in the meantime. The HUD stays outside the filtered
+  supported device rather than about the twist. The deployment target was iOS 15, which reaches
+  A9 hardware; **raising it is the one-line change that retires this**. James did, in round
+  301: **the minimum is iOS 17**, the A9 and A10 devices are gone, and this question is closed
+  rather than deferred. The HUD stays outside the filtered
   node - James, round 284: "for the HUD, leave it, it doesn't need the filter" - which is
   also the cheaper arrangement, since a filter's cost goes with the area it covers.
 

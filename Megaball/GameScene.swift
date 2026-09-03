@@ -1279,13 +1279,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		// this trusts the save in exactly the cases the scene is about to load it from - a
 		// fresh run that ignored a pending save would ignore this too
 		
-		if #available(iOS 13.0, *) {
-			softHaptic = UIImpactFeedbackGenerator(style: .soft)
-			// use for lost ball
-			rigidHaptic = UIImpactFeedbackGenerator(style: .rigid)
-			// use for power-ups collected
-		}
-		// Haptics redefined for iOS13
+		softHaptic = UIImpactFeedbackGenerator(style: .soft)
+		// use for lost ball
+		rigidHaptic = UIImpactFeedbackGenerator(style: .rigid)
+		// use for power-ups collected
+		// Ungated since round 301: the deployment target is iOS 17, and `.soft` and `.rigid`
+		// have been there since 13
 	
         physicsWorld.contactDelegate = self
         // Sets the GameScene as the delegate in the physicsWorld
