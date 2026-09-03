@@ -154,6 +154,47 @@ extension TotalStatsConsistencyTests {
         XCTAssertEqual(stats.powerupsCollected.count, stats.powerUpUnlockedArray.count)
     }
 
+    /// **A new theme, icon, pack or level has to appear for a player who already has a file.**
+    ///
+    /// Not a crash, which is why it went unnoticed: the screens take their row count from the
+    /// stored array, so an older file simply draws fewer rows and indexes them safely. It is
+    /// the quieter failure - the new item is *not there*, and from outside that looks exactly
+    /// like an item that was never added.
+    ///
+    /// Each of these is indexed by a catalogue that grows between releases, which is the same
+    /// shape as the power-up arrays above and the same shape as the crash of round 118's
+    /// twenty-ninth power-up. The cloud copy has always padded them; the file had not.
+    func testTheUnlockArraysGrowWithTheirCatalogues() {
+        var stats = TotalStats()
+        let fresh = TotalStats()
+
+        stats.themeUnlockedArray = Array(stats.themeUnlockedArray.dropLast(2))
+        stats.appIconUnlockedArray = Array(stats.appIconUnlockedArray.dropLast(3))
+        stats.levelPackUnlockedArray = Array(stats.levelPackUnlockedArray.dropLast())
+        stats.levelUnlockedArray = Array(stats.levelUnlockedArray.dropLast(10))
+        // A file written before two themes, three icons, a pack and ten levels existed
+
+        stats.makeStoredArraysConsistent()
+
+        XCTAssertEqual(stats.themeUnlockedArray.count, fresh.themeUnlockedArray.count,
+                       "a theme added since this file was written is missing from it")
+        XCTAssertEqual(stats.appIconUnlockedArray.count, fresh.appIconUnlockedArray.count)
+        XCTAssertEqual(stats.levelPackUnlockedArray.count, fresh.levelPackUnlockedArray.count)
+        XCTAssertEqual(stats.levelUnlockedArray.count, fresh.levelUnlockedArray.count)
+    }
+
+    /// And what the player had already unlocked survives the growing.
+    func testGrowingTheUnlockArraysKeepsWhatWasUnlocked() {
+        var stats = TotalStats()
+        stats.themeUnlockedArray = [true, false, true]
+
+        stats.makeStoredArraysConsistent()
+
+        XCTAssertEqual(Array(stats.themeUnlockedArray.prefix(3)), [true, false, true],
+                       "three themes the player had earned")
+        XCTAssertEqual(stats.themeUnlockedArray.count, TotalStats().themeUnlockedArray.count)
+    }
+
     func testAnEmptyFileIsFilledRatherThanLeftEmpty() {
         var stats = TotalStats()
         stats.powerupsCollected = []

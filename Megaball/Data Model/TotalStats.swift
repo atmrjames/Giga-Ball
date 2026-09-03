@@ -719,6 +719,24 @@ extension TotalStats {
         // turn "never played an endless run" into "played and scored nothing", and the stats
         // page tells those two apart
 
+        themeUnlockedArray = TotalStats.padded(themeUnlockedArray, like: fresh.themeUnlockedArray)
+        appIconUnlockedArray = TotalStats.padded(appIconUnlockedArray,
+                                                 like: fresh.appIconUnlockedArray)
+        levelPackUnlockedArray = TotalStats.padded(levelPackUnlockedArray,
+                                                   like: fresh.levelPackUnlockedArray)
+        levelUnlockedArray = TotalStats.padded(levelUnlockedArray, like: fresh.levelUnlockedArray)
+        // **The unlock arrays, added round 303.** These are not a crash risk the way the
+        // power-up arrays were, because the screens that show them take their row count from
+        // the *stored* array rather than from the catalogue - twelve stored entries draw twelve
+        // rows and index nought to eleven, which is self-consistent and wrong in a quieter way:
+        // a thirteenth theme would simply **not be there** for anybody with an older file. From
+        // the outside that is indistinguishable from a theme that was never added, which is
+        // §8.6's own lesson about pools said in a different place.
+        //
+        // The cloud copy has always padded these (`CloudKitHandler.padded`), so a player with
+        // iCloud would eventually see the new item and a player without it never would. Padding
+        // here makes the file agree with the cloud on first launch, for everyone.
+
         powerupsCollected = TotalStats.padded(powerupsCollected, like: fresh.powerupsCollected)
         powerupsGenerated = TotalStats.padded(powerupsGenerated, like: fresh.powerupsGenerated)
         powerUpUnlockedArray = TotalStats.padded(powerUpUnlockedArray,
