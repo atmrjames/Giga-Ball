@@ -118,4 +118,58 @@ final class WindowSizeTests: XCTestCase {
                           "\(window.name) clips the day's card: \(escaped.joined(separator: "; "))")
         }
     }
+    /// **The flipped card picture, drawn.**
+    ///
+    /// Round 300 asserted the *orientation* - `.upMirrored` and `.downMirrored` - which is the
+    /// contract and is not the same as having looked. James asked for the card to "reflect how
+    /// the level will be presented", and whether it does is a question about a picture.
+    ///
+    /// A real level from the catalogue, three ways: as it is, mirrored, upside down.
+    func testTheFlippedCardPicturesCanBeLookedAt() throws {
+        let setup = LevelPackSetup()
+
+        // Through the card's own path rather than by picking an index: these pictures are
+        // only ever drawn for a *Classic* daily, and index 0 is the Endless Mode icon, which
+        // is what an earlier version of this test flipped and looked at. A mode badge flips
+        // fine and proves nothing about a level.
+        // A level both flips change, asked of the same table the pool filters on rather than
+        // judged by looking - which is the point of the table. Tunnel, the first that
+        // qualifies, *reads* symmetric top to bottom at a glance and is not: measured off the
+        // rendered panels, mirroring and turning it over each leave only about 45% of pixels
+        // where they were. The eye compares the overall shape; the bar compares brick for
+        // brick, and the bar is right.
+        let level = try XCTUnwrap((1...110).first { level in
+            [DailyTwist.mirrored, .upsideDown].allSatisfy {
+                DailyTwist.levelsUnchangedBy[$0]?.contains(level) == false
+            }
+        }, "every level is symmetric both ways, which cannot be true")
+        let number = DailyChallengeGenerator.levelNumber(forClassicLevel: level)
+        let plain = setup.levelImageArray[number]
+
+        let cases: [(String, [DailyTwist])] = [
+            ("as it is", []), ("mirrored", [.mirrored]), ("upside down", [.upsideDown])
+        ]
+        let scale: CGFloat = 2
+        let each = CGSize(width: plain.size.width, height: plain.size.height)
+        let sheet = CGSize(width: each.width*CGFloat(cases.count) + 40,
+                           height: each.height + 20)
+
+        let image = UIGraphicsImageRenderer(size: sheet).image { context in
+            UIColor(red: 0.09, green: 0, blue: 0.14, alpha: 1).setFill()
+            context.fill(CGRect(origin: .zero, size: sheet))
+            for (index, entry) in cases.enumerated() {
+                let drawn = DailyTwist.presented(plain, under: entry.1)
+                drawn?.draw(in: CGRect(x: 10 + (each.width + 10)*CGFloat(index), y: 10,
+                                       width: each.width, height: each.height))
+            }
+        }
+        _ = scale
+
+        let file = URL(fileURLWithPath: NSTemporaryDirectory())
+            .appendingPathComponent("card-flips.png")
+        try XCTUnwrap(image.pngData()).write(to: file)
+        print("\n  Card pictures - \(setup.levelNameArray[number]) (level \(level)), "
+              + "as it is / mirrored / upside down: \(file.path)\n")
+    }
+
 }
