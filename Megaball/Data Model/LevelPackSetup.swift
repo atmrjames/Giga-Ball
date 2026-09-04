@@ -1053,7 +1053,7 @@ class LevelPackSetup {
         "",
         "10s",
         "10s",
-        "10s",
+        "5 bounces",
         "10s",
         "5 paddle hits",
         "5 paddle hits",

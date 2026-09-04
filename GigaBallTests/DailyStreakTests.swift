@@ -188,7 +188,16 @@ final class DailyFreePlayLineTests: XCTestCase {
                                           posted: true, bestPracticeScore: 15900,
                                           attemptCount: 4)
         card.show(key: posted.dateKey, isToday: true, record: posted, standing: nil)
-        XCTAssertEqual(card.resultTextForTesting.contains("3 free plays, best 15900"), true)
+        XCTAssertEqual(card.resultTextForTesting.contains("free play"), false,
+                       "**and a posted day does not list them either, since round 306** "
+                       + "(James: \"there's no need to show the details of the free play game "
+                       + "scores\"). It was §8's posted-score container doing what §8 asked, "
+                       + "and the card is better without it: a second score beside the day's "
+                       + "own invited exactly the comparison it then had to explain away. "
+                       + "`freePlayLine` itself is still built and still tested below - this "
+                       + "is about what the card chooses to draw")
+        XCTAssertTrue(card.resultTextForTesting.contains("12480"),
+                      "the day's own number is still the headline")
     }
 
     /// It says free play, which is what the player reads everywhere else (round 12's rename).

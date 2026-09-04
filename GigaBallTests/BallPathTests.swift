@@ -655,3 +655,76 @@ final class TrajectoryRespectsPortalsTests: XCTestCase {
         XCTAssertFalse(path.stoppedAtBrick, "it bounces, as it always has")
     }
 }
+
+
+/// The loop-breaker stops bending a ball that is making progress (round 307).
+final class BallLoopDetectorFieldChangeTests: XCTestCase {
+
+    /// James, round 305: "I'm still seeing instances of the ball chasing direction when
+    /// travelling near vertically near the low brick line in Endless Mayhem mode. It's not
+    /// changing direction by much, maybe 5-10 degrees."
+    ///
+    /// The arithmetic matched the report exactly. A signature is quantised to half-brick cells
+    /// and five-degree headings, so a near-vertical ball striking the *same brick in the same
+    /// column* repeats it precisely, and three repeats in nine bounces prove a "loop". That is
+    /// not a loop, it is a ball hammering a multi-hit brick.
+    func testHammeringOneBrickLooksExactlyLikeALoop() {
+        var detector = BallLoopDetector()
+        var nudge: Double?
+        for _ in 0..<BallLoopDetector.repeatsThatProveALoop {
+            nudge = detector.recordBounce(x: 100, y: 200, headingDegrees: 88, cell: 20)
+        }
+        XCTAssertNotNil(nudge,
+                        "the same bounce three times over is what the detector calls a loop, "
+                        + "and it cannot tell that a brick died each time")
+    }
+
+    /// So the field changing has to clear it, exactly as a paddle hit does.
+    func testABrickDyingClearsWhatTheDetectorThoughtItWasWatching() {
+        var detector = BallLoopDetector()
+        _ = detector.recordBounce(x: 100, y: 200, headingDegrees: 88, cell: 20)
+        _ = detector.recordBounce(x: 100, y: 200, headingDegrees: 88, cell: 20)
+        detector.fieldChanged()
+
+        XCTAssertNil(detector.recordBounce(x: 100, y: 200, headingDegrees: 88, cell: 20),
+                     "the two before the brick died described a field that no longer exists")
+    }
+
+    /// **And the escalation resets with it**, which is the half that produced 5 to 10 degrees.
+    ///
+    /// The nudge doubles each time a loop is proved - 1, 2, 4, 8 - and capped at 8. It reset
+    /// only on a paddle hit, and in Mayhem a ball can rally among bricks for a long time
+    /// without touching the paddle, so the nudge climbed to the cap and stayed there.
+    func testTheEscalationResetsWhenTheFieldChanges() throws {
+        var detector = BallLoopDetector()
+
+        func proveALoop(_ heading: Double) -> Double? {
+            var last: Double?
+            for _ in 0..<BallLoopDetector.repeatsThatProveALoop {
+                last = detector.recordBounce(x: 100, y: 200, headingDegrees: heading, cell: 20)
+            }
+            return last
+        }
+
+        XCTAssertEqual(try XCTUnwrap(proveALoop(88)), BallLoopDetector.firstNudgeDegrees,
+                       accuracy: 0.001, "the first nudge is a degree, which nobody sees")
+        XCTAssertEqual(try XCTUnwrap(proveALoop(88)), BallLoopDetector.firstNudgeDegrees*2,
+                       accuracy: 0.001, "and it doubles while the ball stays stuck")
+
+        detector.fieldChanged()
+
+        XCTAssertEqual(try XCTUnwrap(proveALoop(88)), BallLoopDetector.firstNudgeDegrees,
+                       accuracy: 0.001,
+                       "a ball that just broke a brick is not stuck, so it starts again at a "
+                       + "degree rather than carrying on toward the eight-degree cap")
+    }
+
+    /// A paddle hit still does what it always did - this adds a reason, it does not move one.
+    func testAPaddleHitStillResetsEverything() {
+        var detector = BallLoopDetector()
+        _ = detector.recordBounce(x: 100, y: 200, headingDegrees: 88, cell: 20)
+        _ = detector.recordBounce(x: 100, y: 200, headingDegrees: 88, cell: 20)
+        detector.playerIntervened()
+        XCTAssertNil(detector.recordBounce(x: 100, y: 200, headingDegrees: 88, cell: 20))
+    }
+}

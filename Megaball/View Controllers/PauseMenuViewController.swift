@@ -151,13 +151,17 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
         runStatsLabel.isHidden = true
         containterView.addSubview(runStatsLabel)
 
-        var stats = AttributedString("More Stats…")
+        var stats = AttributedString("Stats…")
         stats.font = .boldSystemFont(ofSize: 14)
         var moreStats = UIButton.Configuration.plain()
         moreStats.attributedTitle = stats
-        moreStats.image = UIImage(systemName: "star.fill",
-                                  withConfiguration: UIImage.SymbolConfiguration(
-                                      pointSize: 12, weight: .bold))
+        moreStats.image = UIImage(named: "iconStats.png")?
+            .withRenderingMode(.alwaysTemplate)
+        // **The app's own statistics mark** (James, round 306: "for the stats label icon, use
+        // the same graphic as used elsewhere in the app for stats"). It was a filled star,
+        // which is not what statistics look like anywhere else in this app - the information
+        // screen's Statistics row has worn `iconStats` since it existed. Templated so it takes
+        // the button's own lime rather than arriving in its drawn colours
         moreStats.imagePadding = 6
         moreStats.baseForegroundColor = #colorLiteral(red: 0.8235294118, green: 1, blue: 0, alpha: 1)
         moreStatsButton.configuration = moreStats
@@ -677,6 +681,15 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
         }
         if isDailyChallenge {
             let balls = livesRemaining + 1
+            guard endlessMode == false || balls > 1 else {
+                livesLabel.isHidden = true
+                return
+            }
+            // **An endless daily with no extra balls says nothing** (James, round 306: "there's
+            // no need to show Last ball if it's not a day where there's no extra lives in play.
+            // Endless modes only have a single life so this is unnecessary detail"). It is not
+            // news that an endless run has one ball; it is only news when a twist has granted
+            // more, which is exactly when this line survives
             livesLabel.isHidden = false
             livesLabel.text = balls == 1 ? "Last ball" : "\(balls) balls left"
             // The daily counts balls, not the rack: the one in play plus the reserves.
@@ -804,7 +817,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
                 // Store Connect - the retry loop carries it and the briefing screen's
                 // badge tells the truth of where it got to
             } else {
-                resultLabel.text = "Free play, which never posts"
+                resultLabel.text = "Free play"
             }
             return
         }

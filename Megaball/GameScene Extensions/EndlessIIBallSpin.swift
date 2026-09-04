@@ -72,16 +72,46 @@ enum EndlessIIBallSpin {
     /// ordinary flick is already under `gripThreshold`.
     static let gripMemoryPerSecond: CGFloat = 0.001
 
-    /// The turn rate a paddle moving at this speed grips the ball with.
+    /// The turn the *contact itself* gives, at the very edge of the paddle.
+    ///
+    /// **A still paddle curves the ball too** (James, round 305: "the ball spin power up only
+    /// seems to curve the ball if the paddle is moving when the ball hits it. I think it should
+    /// cause the ball to curve even if it's not moving, it should just cause more of a curve
+    /// the faster it's moving").
+    ///
+    /// Where the extra curve comes from is the part worth choosing rather than inventing: a
+    /// ball meeting a grippy surface off-centre is already sliding across it, and that is
+    /// friction whether or not the surface is travelling. So the baseline is the *collision
+    /// offset* - dead centre gives nothing, the edge gives all of this - and the paddle's own
+    /// speed adds to it. A third of the flick's turn, so a swipe is still the bigger half of
+    /// the power-up and the still-paddle curve reads as grip rather than as a second flick.
+    static let edgeTurn: CGFloat = .pi/6
+
+    /// The most the two together may ask for, so a fast flick into the corner stays playable.
+    static let steepestTurn: CGFloat = .pi*2/3
+
+    /// The turn rate a paddle grips the ball with.
     ///
     /// Signed: the ball curves the way the paddle was travelling, which is what "as if there
-    /// were friction between the two" means. Below the threshold there is no grip at all.
-    static func turnRate(paddleSpeed: CGFloat) -> CGFloat {
+    /// were friction between the two" means - and, since round 305, the way the ball was
+    /// already sliding when it met an off-centre surface.
+    ///
+    /// `collision` is where the ball struck, from -1 at the left end through 0 at the middle
+    /// to 1 at the right, which is what `PaddleBounce.collision` already answers for the
+    /// bounce angle. Defaulted so the arithmetic can still be asked the old question.
+    static func turnRate(paddleSpeed: CGFloat, collision: CGFloat = 0) -> CGFloat {
         let magnitude = abs(paddleSpeed)
-        guard magnitude > gripThreshold else { return 0 }
-        let span = max(1, fullGripSpeed - gripThreshold)
-        let strength = min(1, (magnitude - gripThreshold)/span)
-        return (paddleSpeed < 0 ? -1 : 1)*strength*strongestTurn
+        var rate: CGFloat = 0
+        if magnitude > gripThreshold {
+            let span = max(1, fullGripSpeed - gripThreshold)
+            let strength = min(1, (magnitude - gripThreshold)/span)
+            rate += (paddleSpeed < 0 ? -1 : 1)*strength*strongestTurn
+        }
+        // The threshold still guards the *speed* term only: a paddle creeping along under a
+        // ball is noise, and that was always what the floor was for
+
+        rate += min(max(collision, -1), 1)*edgeTurn
+        return min(max(rate, -steepestTurn), steepestTurn)
     }
 
     /// What is left of a turn rate after this much flight.
@@ -164,10 +194,14 @@ extension GameScene {
     /// bends the flight that follows rather than replacing the bounce. A ball that was *caught*
     /// gets no grip: a catch is not a bounce, and Aimed Sticky owns what happens next (§12.0's
     /// note that this conflicts with the paddle group - it does, and this is where).
-    func endlessIIGripBall(_ subject: SKSpriteNode) {
+    /// - Parameter collision: where the ball struck the surface, -1 to 1. The callers know
+    ///   which surface they are - the paddle, the mirror, the safety bar - and each has
+    ///   already worked this out for the bounce angle, so it is passed rather than guessed.
+    func endlessIIGripBall(_ subject: SKSpriteNode, collision: CGFloat = 0) {
         guard endlessIIBallSpinIsRunning else { return }
         guard endlessIIHeldBalls.contains(where: { $0 === subject }) == false else { return }
-        let rate = EndlessIIBallSpin.turnRate(paddleSpeed: endlessIIPaddleGripSpeed)
+        let rate = EndlessIIBallSpin.turnRate(paddleSpeed: endlessIIPaddleGripSpeed,
+                                              collision: collision)
         guard rate != 0 else { return }
         endlessIIBallSpinRates[ObjectIdentifier(subject)] = rate
     }

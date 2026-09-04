@@ -1783,15 +1783,26 @@ final class RandomisedBounceTests: XCTestCase {
     ///
     /// It used to check the clock had grown; from round 220 a second collection resets it, so
     /// what matters is that one bar stands with a full clock rather than two standing at once.
+    ///
+    /// **Spends bounces rather than seconds since round 305**, when the power-up moved onto a
+    /// turn budget - `run(down:)` deliberately does not touch a turns clock any more, so the
+    /// old version of this test burned five seconds that no longer exist and then asserted the
+    /// clock was full, which it would have been either way. Rewritten rather than deleted: the
+    /// thing it is about - one bar, refilled, not two - has not changed.
     func testASecondCollectionRefillsItRatherThanStackingTwo() {
         let scene = safetyScene()
         scene.endlessIICollectSafetyPaddle()
-        scene.endlessIISafetyPaddleClock.run(down: 5)
+        scene.endlessIISafetyPaddleClock.spendTurn()
+        scene.endlessIISafetyPaddleClock.spendTurn()
+        XCTAssertEqual(scene.endlessIISafetyPaddleClock.remaining,
+                       TimeInterval(GameScene.endlessIISafetyPaddleBounces - 2), accuracy: 0.001,
+                       "two of the five bounces are spent")
+
         scene.endlessIICollectSafetyPaddle()
 
         XCTAssertEqual(scene.endlessIISafetyPaddleClock.remaining,
-                       GameScene.endlessIISafetyPaddleDuration, accuracy: 0.001,
-                       "the clock did not start again")
+                       TimeInterval(GameScene.endlessIISafetyPaddleBounces), accuracy: 0.001,
+                       "the budget did not start again")
         var found = 0
         scene.enumerateChildNodes(withName: GameScene.endlessIISafetyPaddleName) { _, _ in
             found += 1
@@ -1804,7 +1815,12 @@ final class RandomisedBounceTests: XCTestCase {
         // the same rule Ghost Ball has about the ball's alpha
         let scene = safetyScene()
         scene.endlessIICollectSafetyPaddle()
-        scene.endlessIISafetyPaddleClock.run(down: GameScene.endlessIISafetyPaddleDuration)
+        for _ in 0..<GameScene.endlessIISafetyPaddleBounces {
+            scene.endlessIISafetyPaddleClock.spendTurn()
+        }
+        scene.endlessIISafetyPaddleClock.run(down: EndlessIIClock.lingerSeconds)
+        // Every bounce spent, then the goodbye run out - which `run(down:)` still does for a
+        // turns clock, and is the only thing it does for one
         scene.tickEndlessIISafetyPaddle()
 
         XCTAssertNil(scene.childNode(withName: GameScene.endlessIISafetyPaddleName),

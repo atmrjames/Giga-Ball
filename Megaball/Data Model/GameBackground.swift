@@ -162,10 +162,29 @@ enum GameBackground: Int, CaseIterable {
     static let deepGreenMiddle = UIColor(red: 10/255, green: 15/255, blue: 1/255, alpha: 1)
     static let deepGreenBottom = UIColor(red: 0, green: 0, blue: 0, alpha: 1)
 
+    /// How far down the purple reaches before the green takes over.
+    ///
+    /// **Measured off Deep Blue rather than guessed** (James, round 305: "for the deep green
+    /// game background, add a purple gradient to the top section similar to how it is on the
+    /// deep blue game background to make the transition with the purple power up hud area less
+    /// dramatic"). Deep Blue is a picture, so the only way to be "similar to" it is to read it:
+    /// sampled down its centre column it starts at rgb(24,0,26) - within a couple of points of
+    /// `purple` - and has become its own blue by about a quarter of the way down.
+    static let greenPurpleReach: CGFloat = 0.25
+
     static func greenGradientStops(paddleFraction: CGFloat)
     -> (colours: [UIColor], locations: [CGFloat]) {
         let fraction = min(max(paddleFraction, 0), 1)
-        return ([deepGreenTop, deepGreenMiddle, deepGreenBottom], [0, 1 - fraction, 1])
+        let paddle = 1 - fraction
+        let reach = min(greenPurpleReach, paddle)
+        // Clamped under the paddle stop so the locations stay in order. A paddle sitting in the
+        // top quarter of the background is not a layout this game produces, but a gradient with
+        // its stops out of order draws something arbitrary rather than failing, which is the
+        // kind of thing that is only ever found by looking
+        return ([purple, deepGreenTop, deepGreenMiddle, deepGreenBottom],
+                [0, reach, paddle, 1])
+        // The purple is the *same* purple the Classic background and the side borders use, so
+        // the join with the power-up tray above is a continuation rather than a meeting
     }
 
     // Where the haze sits is `glowPools` below. Off-centre on purpose (play-test round 21):

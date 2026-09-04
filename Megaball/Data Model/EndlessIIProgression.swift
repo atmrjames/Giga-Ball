@@ -248,6 +248,13 @@ struct EndlessIIProgression: Codable, Equatable {
     /// And of its power-up spacing, around the standard 14.
     static let powerUpSpacingRange = 9...20
 
+    // Note for whoever reads these three ranges next: `styleSpacingRange` and
+    // `powerUpSpacingRange` are the **fallback** schedules, used only by a run saved before the
+    // unified queue existed. A run started today puts every element - brick type, action,
+    // shape, set row, phase and power-up alike - into one `releaseOrder` at
+    // `elementSpacing`, so `elementSpacingRange` is the number that decides how often a player
+    // meets something new. Round 307 measured the wrong one first.
+
     /// The most and least a run may weight a power-up by.
     static let rarityTweakRange = 0.78...1.30
 
@@ -279,7 +286,23 @@ struct EndlessIIProgression: Codable, Equatable {
     /// The shortest a gap may shrink to, as a share of the run's own spacing. Without a floor
     /// a long run would end up introducing something every few metres, which is a flood
     /// rather than a rise.
-    static let shortestGapShare = 0.35
+    ///
+    /// **Raised from 0.35 to 0.6 in round 307**, because the floor was the whole of what James
+    /// kept reporting: "the progressive disclosure in Endless Mayhem still feels a bit
+    /// dramatic. Like too many new things are appearing at once... about 1 new game element
+    /// beyond the standard ones should be appearing every 10-20m."
+    ///
+    /// Measured before it was changed, and the opening was never the problem. Every element
+    /// now arrives through one queue at `elementSpacing`, so the gap *is* the rate - and at
+    /// 0.35 it started at 18-26m, which is his band, then quickened past it: under 10m by
+    /// about 183m of height and settling at **6.3 to 9.1m**, which is twice as often as he
+    /// asked for and is what "too many at once" describes. At 0.6 the same run settles at 9.6
+    /// to 13.2m instead, so the whole of it sits inside the band rather than falling out of
+    /// the bottom.
+    ///
+    /// The quickening itself stays exactly as it was: James asked for introductions to rise
+    /// with height and they still do, they just stop rising past the point he named.
+    static let shortestGapShare = 0.6
 
     /// How far above the opening set the `steps`-th introduction sits.
     ///
@@ -308,7 +331,9 @@ struct EndlessIIProgression: Codable, Equatable {
     /// shallow one - "the game will start gentle but quickly ramp up" - and with the floor at
     /// a third of this, everything in the mode has arrived somewhere near the end of the ramp.
     static let elementIntroductionSpacing = 22
-    static let elementSpacingRange = 18...26
+    static let elementSpacingRange = 16...22
+    // Narrowed from 18...26 with the floor above (round 307). The top of the old range put a
+    // run's opening gaps above the 20m James asked for before the quickening had even started
 
     /// Metres between one style being introduced and the next.
     ///

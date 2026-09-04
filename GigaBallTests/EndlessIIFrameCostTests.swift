@@ -2105,4 +2105,119 @@ final class EndlessIIFrameCostTests: XCTestCase {
                              + "is not difficulty, it is missing information (§4)")
     }
 
+    /// **What a power-up drop actually costs, the first time and the tenth** (round 307).
+    ///
+    /// James: "the ball still seems to be stuttering sometimes when a power up graphic appears
+    /// after hitting a brick. Generally the first time it happens in a game."
+    ///
+    /// "The first time" is the whole clue and it points at a one-off cost - and this project
+    /// has one of those on record: `SKTexture(image:)` is **9.8ms**, which round 291 measured
+    /// while chasing a different stutter. But the power-up textures are built as stored
+    /// properties when the scene is constructed and then `SKTexture.preload`ed, so the obvious
+    /// suspect is already supposed to be handled. Measured rather than assumed.
+    func testWhatTheFirstPowerUpDropCosts() {
+        let scene = loadedField()
+        scene.brickWidth = 40
+        scene.brickHeight = 20
+        scene.ballSize = 10
+
+        func drop(_ index: Int) -> Double {
+            let brick = SKSpriteNode(texture: scene.brickNormalTexture,
+                                     size: CGSize(width: 40, height: 20))
+            brick.name = BrickCategoryName
+            brick.position = CGPoint(x: CGFloat((index % 5)*40 - 80), y: 120)
+            scene.addChild(brick)
+
+            let start = Date.timeIntervalSinceReferenceDate
+            scene.powerUpGenerator(sprite: brick)
+            return (Date.timeIntervalSinceReferenceDate - start)*1000
+        }
+
+        var costs: [Double] = []
+        for i in 0..<12 { costs.append(drop(i)) }
+
+        print("\n  A power-up drop, in milliseconds")
+        print(String(format: "    first          %6.3f ms", costs[0]))
+        print(String(format: "    second         %6.3f ms", costs[1]))
+        let rest = costs.dropFirst(2)
+        print(String(format: "    median of rest %6.3f ms",
+                     rest.sorted()[rest.count/2]))
+        print(String(format: "    worst of rest  %6.3f ms", rest.max() ?? 0))
+        print(String(format: "    a 60fps frame is 16.667 ms; a 120fps one is 8.333\n"))
+
+        XCTAssertLessThan(costs[0], 8.0,
+                          "the first drop of a game must fit inside a 120fps frame - if this "
+                          + "fails, something is being built on the frame a brick is struck "
+                          + "rather than when the scene was")
+    }
+
+    /// **And what the HUD ring costs the first time each power-up is collected.**
+    ///
+    /// The drop above is free, so the stutter is not the falling graphic. The other thing that
+    /// happens once per power-up per game is its ring in the tray: `PowerUpIcon.ringTexture`
+    /// caches by name, and a cache's *first* answer is the expensive one - round 291 measured
+    /// `SKTexture(image:)` at 9.8ms while chasing a stutter that turned out to be this same
+    /// machinery being asked every frame.
+    ///
+    /// Round 291 fixed the per-frame cost. This asks what is left: the one-off.
+    func testWhatTheFirstRingOfEachPowerUpCosts() {
+        var first: [Double] = []
+        var again: [Double] = []
+
+        for (index, name) in ["WrapIcon", "BallSpinIcon", "AuraIcon", "GhostBallIcon",
+                              "SafetyPaddleIcon"].enumerated() {
+            let key = "cost-probe-\(index)-" + name
+
+            var start = Date.timeIntervalSinceReferenceDate
+            _ = PowerUpIcon.ringTexture(key, PowerUpIcon.hud(name, PowerUpIcon.wrapAround))
+            first.append((Date.timeIntervalSinceReferenceDate - start)*1000)
+
+            start = Date.timeIntervalSinceReferenceDate
+            _ = PowerUpIcon.ringTexture(key, PowerUpIcon.hud(name, PowerUpIcon.wrapAround))
+            again.append((Date.timeIntervalSinceReferenceDate - start)*1000)
+        }
+
+        print("\n  A power-up's HUD ring, in milliseconds")
+        print(String(format: "    first time  median %6.3f   worst %6.3f",
+                     first.sorted()[first.count/2], first.max() ?? 0))
+        print(String(format: "    cached      median %6.3f   worst %6.3f",
+                     again.sorted()[again.count/2], again.max() ?? 0))
+        print(String(format: "    a 60fps frame is 16.667 ms; a 120fps one is 8.333\n"))
+
+        XCTAssertLessThan(again.max() ?? 99, 0.1,
+                          "round 291's cache still holds - a repeat must be free")
+    }
+
+    /// **And the warm-up leaves nothing cold** (round 307).
+    ///
+    /// The measurement above says the first ring of each power-up costs about 10.6ms, and
+    /// `warmEndlessIIRingTextures` pays that during the build-in instead of mid-rally. This is
+    /// the check that it actually does: after warming, asking for the same rings again is the
+    /// cached price rather than the built one.
+    ///
+    /// Worth its own test because the warm-up works by *discarding* three return values, which
+    /// is exactly the shape of code a later tidy-up deletes as useless.
+    func testWarmingTheRingsLeavesThemWarm() {
+        let scene = loadedField()
+        scene.gameMode = .endlessII
+
+        scene.warmEndlessIIRingTextures()
+
+        var again: [Double] = []
+        for _ in 0..<3 {
+            let start = Date.timeIntervalSinceReferenceDate
+            _ = scene.endlessIIFieldClocks
+            _ = scene.endlessIIPaddleRingEntries()
+            _ = scene.endlessIIVisionRingEntries()
+            again.append((Date.timeIntervalSinceReferenceDate - start)*1000)
+        }
+
+        print(String(format: "\n  Rings after warming: median %6.3f ms, worst %6.3f ms\n",
+                     again.sorted()[again.count/2], again.max() ?? 0))
+
+        XCTAssertLessThan(again.max() ?? 99, 4.0,
+                          "a warmed ring must cost far less than the 10.6ms it costs cold - "
+                          + "if this fails, the warm-up is no longer reaching every table")
+    }
+
 }

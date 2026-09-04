@@ -27,12 +27,19 @@ import SpriteKit
 
 extension GameScene {
 
-    /// How long a safety paddle stands.
+    /// How many bounces a safety paddle is worth.
     ///
-    /// Longer than the field batch's clocks, because the value of this one is that you can
-    /// plan around it: a surface you cannot rely on for a few shots is a surprise rather
-    /// than a tool.
-    static let endlessIISafetyPaddleDuration = GameScene.endlessIIPaddlePowerUpDuration
+    /// **Bounces rather than seconds since round 305** (James: "safety paddle disappears too
+    /// quickly as a timed power-up. It should get 5 bounces off of it before it disappears").
+    /// A timer spends itself whether or not the bar is doing anything, so a safety paddle
+    /// collected while the ball was up in the field could expire having caught nothing - the
+    /// player paid for a surface and got a countdown. Bounces are what the power-up is *for*,
+    /// and five of them is the same budget the rest of the paddle batch carries.
+    ///
+    /// The old note, which is still the reason the number is not smaller: the value of this
+    /// one is that you can plan around it, and a surface you cannot rely on for a few shots is
+    /// a surprise rather than a tool.
+    static let endlessIISafetyPaddleBounces = Int(GameScene.endlessIIPaddlePowerUpTurns)
 
     /// How much of the field it used to span, before round 184.
     ///
@@ -59,7 +66,7 @@ extension GameScene {
 
     func endlessIICollectSafetyPaddle() {
         guard gameMode == .endlessII else { return }
-        endlessIISafetyPaddleClock.collect(GameScene.endlessIISafetyPaddleDuration)
+        endlessIISafetyPaddleClock.collect(turns: GameScene.endlessIISafetyPaddleBounces)
         showEndlessIISafetyPaddle()
     }
 
@@ -256,6 +263,16 @@ extension GameScene {
     /// seconds at a time, and a minimum angle is what stops that. Nothing here spends a
     /// paddle turn, counts a paddle hit, or touches the aim - this is furniture the ball
     /// bounces off, and every power-up that answers a paddle contact stays out of it.
+    /// Where a ball struck the bar, -1 to 1, for the shaped-bounce path that returns before
+    /// the ordinary bounce has worked it out.
+    func endlessIISafetyPaddleCollision(of subject: SKSpriteNode) -> CGFloat {
+        guard let bar = childNode(withName: GameScene.endlessIISafetyPaddleName)
+                as? SKSpriteNode, bar.size.width > 0 else { return 0 }
+        return min(max(PaddleBounce.collision(ballX: subject.position.x,
+                                              paddleX: bar.position.x,
+                                              paddleWidth: bar.size.width), -1), 1)
+    }
+
     func endlessIISafetyPaddleHit(_ subject: SKSpriteNode) {
         guard let body = subject.physicsBody else { return }
         guard body.velocity.dy < 0 else { return }
@@ -273,8 +290,15 @@ extension GameScene {
         if soundsSetting { run(ballPaddleHitSound) }
         if hapticsSetting { lightHaptic.impactOccurred() }
 
+        endlessIISafetyPaddleClock.spendTurn(thenLingerFor: EndlessIIClock.lingerSeconds)
+        // **This is the bounce being counted** (round 305), and it is counted here rather than
+        // at the contact because everything above this line is a reason the bar did *not*
+        // bounce the ball: a climber passing through from below, and a catch, which is the
+        // surface deciding not to bounce at all. A turn spent on either would be a bounce the
+        // player never got.
+
         if endlessIIApplyShapedBounce(to: subject) {
-            endlessIIGripBall(subject)
+            endlessIIGripBall(subject, collision: endlessIISafetyPaddleCollision(of: subject))
             return
         }
         // The shape decides, exactly as it does on the paddle and on the mirror: the engine
@@ -295,7 +319,7 @@ extension GameScene {
             minimumDeg: minAngleDeg)
         ballHorizontalControl(angleDegInput: angleDeg, for: subject)
         _ = endlessIIApplyAutoAim(to: subject)
-        endlessIIGripBall(subject)
+        endlessIIGripBall(subject, collision: collision)
         // **It is a paddle now** (James, round 224: "go with the latest definition", against
         // his matrix giving the safety paddle the paddle's shape, its Inert Paddle, its
         // Flipped Bounce Angle, its Auto-Aim, its Random Bounce and its Ball Spin).

@@ -433,4 +433,76 @@ final class EndlessIIBrickTests: XCTestCase {
         let brick = flasher(solidFor: 2.5, passableFor: 1.75)
         XCTAssertEqual(brick.cycle, 2.5 + 1.75 + EndlessIIFlasher.fade*2, accuracy: 0.0001)
     }
+    // MARK: - The Fixed cap (round 305)
+
+    /// James: "the number of fixed bricks on screen at any time should be limited. Let's say 3
+    /// is the maximum. If there are 3 on screen, then no more can be added at that time."
+    ///
+    /// A Fixed brick anchors where it stands and destroys whatever descends onto it, so each
+    /// one is a hole punched in the field's descent. Three is a hazard; a dozen is a wall the
+    /// field cannot get past.
+    func testTheFieldWillNotTakeAFourthFixedBrick() {
+        let scene = GameScene()
+        scene.gameMode = .endlessII
+        scene.brickWidth = 40
+        scene.brickHeight = 20
+
+        var made: [SKSpriteNode] = []
+        for i in 0..<GameScene.endlessIIFixedBrickCap {
+            let brick = SKSpriteNode(texture: scene.brickNormalTexture,
+                                     size: CGSize(width: 40, height: 20))
+            brick.name = BrickCategoryName
+            brick.position = CGPoint(x: CGFloat(i)*40, y: 100)
+            scene.addChild(brick)
+            XCTAssertTrue(scene.endlessIICanTake(.fixed, brick),
+                          "brick \(i + 1) of \(GameScene.endlessIIFixedBrickCap) is allowed")
+            scene.applyEndlessIIStyle(.fixed, to: brick)
+            made.append(brick)
+        }
+
+        XCTAssertEqual(scene.endlessIIBricksCarrying(.fixed), GameScene.endlessIIFixedBrickCap)
+
+        let fourth = SKSpriteNode(texture: scene.brickNormalTexture,
+                                  size: CGSize(width: 40, height: 20))
+        fourth.name = BrickCategoryName
+        fourth.position = CGPoint(x: 200, y: 100)
+        scene.addChild(fourth)
+        XCTAssertFalse(scene.endlessIICanTake(.fixed, fourth),
+                       "the fourth is refused while three are on screen")
+    }
+
+    /// And the cap lifts when one leaves, which is the half a counter would get wrong.
+    ///
+    /// A brick can leave in more ways than it can arrive - destroyed, exploded by a neighbour,
+    /// Culled, Wiped, cleared with its row - so the count is taken from the field rather than
+    /// tracked, and this is the test of that choice rather than of the number.
+    func testTheFixedCapLiftsWhenOneLeavesTheField() {
+        let scene = GameScene()
+        scene.gameMode = .endlessII
+        scene.brickWidth = 40
+        scene.brickHeight = 20
+
+        var made: [SKSpriteNode] = []
+        for i in 0..<GameScene.endlessIIFixedBrickCap {
+            let brick = SKSpriteNode(texture: scene.brickNormalTexture,
+                                     size: CGSize(width: 40, height: 20))
+            brick.name = BrickCategoryName
+            brick.position = CGPoint(x: CGFloat(i)*40, y: 100)
+            scene.addChild(brick)
+            scene.applyEndlessIIStyle(.fixed, to: brick)
+            made.append(brick)
+        }
+
+        made[0].removeFromParent()
+        // However it went - destroyed, exploded, Culled - the field is what answers
+
+        let next = SKSpriteNode(texture: scene.brickNormalTexture,
+                                size: CGSize(width: 40, height: 20))
+        next.name = BrickCategoryName
+        next.position = CGPoint(x: 200, y: 100)
+        scene.addChild(next)
+        XCTAssertTrue(scene.endlessIICanTake(.fixed, next),
+                      "a Fixed brick left the field, so the field can take another")
+    }
+
 }

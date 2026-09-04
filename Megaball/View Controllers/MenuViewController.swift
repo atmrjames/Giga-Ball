@@ -593,6 +593,21 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
     }
     
     func authGCPlayer() {
+        guard GameCenterHandler.isRunningTests == false else { return }
+        // **Never under the test runner** (round 306, measured rather than suspected).
+        //
+        // A simulator cannot sign in to Game Center, and GameKit does not say so quickly: the
+        // suite's own logs show `reportAuthenticationFailedForPlayer` taking **30, 65, 81 and
+        // once 207 seconds** to give up. Every batch launches the app, every launch called
+        // this, and every one of those stalls was charged to the batch - which is why a suite
+        // of fast tests took the best part of an hour and why batches appeared to hang after
+        // their last test had already passed.
+        //
+        // Nothing under test loses anything: authentication fails in the simulator either way,
+        // so this skips the *waiting* for a failure rather than any behaviour. The guard is a
+        // runtime check, so the shipped binary carries it and never takes it - `XCTestCase`
+        // does not exist in an App Store build.
+
         let localPlayer = GKLocalPlayer.local
         localPlayer.authenticateHandler = { (view, error) in
             if view != nil {

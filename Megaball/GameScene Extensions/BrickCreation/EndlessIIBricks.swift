@@ -743,6 +743,20 @@ extension GameScene {
         return found
     }
 
+    /// How many bricks on the field currently wear this style.
+    ///
+    /// Walks the field on purpose - see `endlessIICanTake`'s Fixed case for why a counter
+    /// would be the wrong shape. Asked only when a style with a cap is being considered, which
+    /// is rare, and the field is at most a few hundred nodes.
+    func endlessIIBricksCarrying(_ style: EndlessIIStyle) -> Int {
+        var count = 0
+        enumerateChildNodes(withName: BrickCategoryName) { node, _ in
+            guard let brick = node as? SKSpriteNode else { return }
+            if self.endlessIIStyles(on: brick).contains(style) { count += 1 }
+        }
+        return count
+    }
+
     /// Whether a brick can take a style on top of what it already is.
     ///
     /// Three separate questions. Whether the style suits the behaviour is a design rule and
@@ -794,7 +808,20 @@ extension GameScene {
             // reference page. What is left is whether the drawing sits on the node, which is a
             // question about a *particular* brick rather than about its size class - a Big
             // one's sprite hangs off its node on purpose (§8.6)
-        case .fixed: return true
+        case .fixed:
+            return endlessIIBricksCarrying(.fixed) < GameScene.endlessIIFixedBrickCap
+            // **At most three on screen at once** (James, round 305: "the number of fixed
+            // bricks on screen at any time should be limited. Let's say 3 is the maximum. If
+            // there are 3 on screen, then no more can be added at that time").
+            //
+            // A Fixed brick anchors where it stands and destroys whatever descends onto it, so
+            // each one is a hole punched in the field's descent. Three is a hazard; a dozen is
+            // a wall the field cannot get past, and the run stops being about the ball.
+            //
+            // Counted from the field rather than tracked in a counter, because a brick can
+            // leave in more ways than it can arrive - destroyed, exploded by a neighbour,
+            // Culled, Wiped, cleared with its row - and a counter that missed one of those
+            // would drift until it forbade the fourth Fixed brick for the rest of the run.
         case .gravity:
             // And never in a column a spinner is in. A falling brick stops on whatever is
             // below it, and a spinner's cell reads as empty to that check because the spinner

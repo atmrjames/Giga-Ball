@@ -162,17 +162,34 @@ final class DailyCardView: UIView {
             let setup = LevelPackSetup()
             levelImageView.image = DailyTwist.presented(setup.levelImageArray[number],
                                                         under: challenge.twists)
-            levelLabel.text = "\(setup.levelNameArray[number]) - \(setup.levelPackNameArray[pack])"
-                + "\n" + DailyChallengeGenerator.classicObjective
+            levelLabel.attributedText = DailyCardView.levelLine(
+                level: setup.levelNameArray[number],
+                pack: setup.levelPackNameArray[pack],
+                icon: setup.packIcon(pack),
+                font: levelLabel.font)
             // The level by its name, home and picture, not its number: a number says
             // nothing, and a glimpse of a level from a pack you have not opened is the
-            // tasting menu. The line under it says what the day is *scored* on rather
-            // than what finishes it (play-test round 90): clearing the level is how the
-            // run ends, but the score is what the board ranks, and "clear it for the
-            // score" had players reading the day as pass-or-fail
+            // tasting menu.
+            //
+            // **The objective line is gone** (James, round 306: "remove the description under
+            // the game modes. It's unnecessary. Just show the name of the game mode, the level
+            // and pack if it's classic mode, and then the twists"). Round 90 added it to stop
+            // the day reading as pass-or-fail, and the twists below it now carry the day's
+            // character well enough that a sentence saying "high score on a single level" is
+            // repeating what the mode name already says.
+            //
+            // **And the pack wears its own badge** ("is it possible to place the pack's icon
+            // graphic near the pack name?"), from `packIcon` - the same picture the pack grid
+            // and the mode menu draw, asked for rather than named, so a pack whose art changes
+            // changes here too
         } else {
             levelImageView.image = GameMode.menuIcon(for: challenge.mode)
-            levelLabel.text = "How high can you get?"
+            levelLabel.attributedText = nil
+            levelLabel.text = nil
+            // Nothing under an endless day's mode name either, by the same instruction: the
+            // mode name and the twists are the day (round 306). This line used to read "How
+            // high can you get?" on both endless modes, which said the same thing twice on
+            // two days that play very differently"
             // Through the one door rather than naming an asset (round 130): a Mayhem day now
             // wears Mayhem's own icon, and it did so the moment that icon existed, without
             // this screen being told about it
@@ -229,11 +246,20 @@ final class DailyCardView: UIView {
     /// a scoring run that could not reach Game Center), and not played at all.
     private func showResult(_ record: DailyChallengeRecord?, mode: GameMode,
                             isToday: Bool, standing: LeaderboardStanding?) {
-        guard let record, record.attemptCount > 0 else {
+        guard let record, record.posted else {
             resultLabel.attributedText = nil
             resultCard.isHidden = true
             return
         }
+        // **Posted, or nothing** (James, round 306: "for a Daily Challenge where a score is set
+        // but not posted, just treat it as if no score was set").
+        //
+        // The card used to show any day that had been *attempted*, with a "Not posted" badge
+        // and the best figure of whatever was played. That is honest and it is not what the
+        // screen is for: this row is the leaderboard's own row, and a score that never reached
+        // a board has nothing to say on it. The "waiting to post" case goes with it - a
+        // pending post flips to `posted` the moment it lands, and until then there is nothing
+        // to show
         resultCard.isHidden = false
 
         let unit = mode == .classic ? "" : "m"
@@ -252,7 +278,7 @@ final class DailyCardView: UIView {
         let tint: UIColor
         if record.posted {
             symbol = "list.number"
-            title = "Posted Score"
+            title = "Posted Score:"
             tint = #colorLiteral(red: 0.8235294118, green: 1, blue: 0, alpha: 1)
         } else if record.isPending && isToday {
             symbol = "hourglass"
@@ -277,29 +303,36 @@ final class DailyCardView: UIView {
             attributes: [.font: UIFont.systemFont(ofSize: 14),
                          .foregroundColor: tint]))
 
-        if record.posted, isToday, let standing {
-            line.append(NSAttributedString(
-                string: standing.text + "   ",
-                attributes: [.font: UIFont.boldSystemFont(ofSize: 14),
-                             .foregroundColor: tint]))
-            // **In front of the score, with the field size after it** (play-test round
-            // 126: "1st / 200"). The placing is what the player came back to read, and
-            // "#3" alone never said whether that was three of four or three of four
-            // thousand. It is only asked for today: the daily board is recurring, so it
-            // resets at the deadline and a past day's placing no longer exists
-        }
-
         line.append(NSAttributedString(
             string: String(score) + unit,
             attributes: [.font: UIFont.boldSystemFont(ofSize: 16),
                          .foregroundColor: UIColor.white]))
 
-        if record.posted, let free = DailyCardView.freePlayLine(record, unit: unit) {
-            line.append(NSAttributedString(string: "\n" + free,
-                                           attributes: [.font: UIFont.systemFont(ofSize: 13),
-                                                        .foregroundColor: UIColor(white: 1,
-                                                                                  alpha: 0.6)]))
+        if record.posted, isToday, let standing {
+            line.append(NSAttributedString(
+                string: ", Rank: ",
+                attributes: [.font: UIFont.systemFont(ofSize: 14),
+                             .foregroundColor: tint]))
+            line.append(NSAttributedString(
+                string: standing.text,
+                attributes: [.font: UIFont.boldSystemFont(ofSize: 16),
+                             .foregroundColor: UIColor.white]))
+            // **The score first, then the rank** (James, round 306): "put the player's posted
+            // score between 'posted score' and the rank so it reads: Posted score: 115m,
+            // Rank: 1/100". The placing used to lead, from round 126, and reading it before
+            // the number it describes is what made the line hard to take in at a glance.
+            //
+            // Today only, and that is not a limitation to fix: the daily board is a
+            // *recurring* leaderboard, so it resets at each deadline and a past day's placing
+            // no longer exists to ask for (James, round 306, asking exactly this)
         }
+
+        // **No free-play detail here** (James, round 306: "there's no need to show the details
+        // of the free play game scores"). It was §8's posted-score container doing what §8
+        // asked - a quieter second line counting the runs played after the attempt was spent -
+        // and the card is better without it: the day's number is the one that counts, and a
+        // second score beside it invited exactly the comparison it then had to explain away.
+        // `freePlayLine` stays, tested, because the stats screens still have a use for it
         // **Free play goes in the same container** (§8's posted-score container, the last
         // clause of it: "free play attempts played after the post get listed in the same
         // container"). A second line under the day's own number, quieter than it, because a
@@ -314,6 +347,34 @@ final class DailyCardView: UIView {
             resultCard.addGestureRecognizer(
                 UITapGestureRecognizer(target: self, action: #selector(resultWasTapped)))
         }
+    }
+
+    /// "Tunnel - Space Pack", with the pack's own badge in front of its name.
+    ///
+    /// An attachment rather than a second label, because the two are one sentence and a label
+    /// beside a label wraps independently of it - the pack name would have gone to its own
+    /// line on a narrow window while the level name sat alone on the first.
+    ///
+    /// The badge is sized from the font's own line height, so it grows and shrinks with the
+    /// text rather than being a fixed number of points that is right on one device.
+    static func levelLine(level: String, pack: String, icon: UIImage?,
+                          font: UIFont) -> NSAttributedString {
+        let line = NSMutableAttributedString(
+            string: level + " - ", attributes: [.font: font, .foregroundColor: UIColor.white])
+
+        if let icon {
+            let badge = NSTextAttachment()
+            badge.image = icon
+            let side = font.lineHeight*0.95
+            badge.bounds = CGRect(x: 0, y: font.descender*0.6, width: side, height: side)
+            line.append(NSAttributedString(attachment: badge))
+            line.append(NSAttributedString(string: " ", attributes: [.font: font]))
+        }
+
+        line.append(NSAttributedString(string: pack,
+                                       attributes: [.font: font,
+                                                    .foregroundColor: UIColor.white]))
+        return line
     }
 
     /// What free play after the day's attempt adds up to, or nil when there was none.

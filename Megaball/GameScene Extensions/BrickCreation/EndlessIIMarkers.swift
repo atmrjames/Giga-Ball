@@ -439,6 +439,11 @@ extension GameScene {
         // already and must never animate it in - the run is mid-flight
         guard endlessIIBuildInBricks.isEmpty == false else { return }
         endlessIIBuildInWaiting = true
+        warmEndlessIIRingTextures()
+        // **And the ring textures are built here, before a ball is in play** (round 307). Each
+        // one costs about 10.6ms the first time it is asked for, which is a dropped frame; see
+        // `warmEndlessIIRingTextures` for the measurement. This is the moment to pay it - the
+        // field is assembling behind the splash and nothing the player is watching can stutter
         // Not started here. `tickEndlessIIBuildIn` starts it on the first frame where nothing
         // is covering the scene - see there for why this is a poll rather than a notification
     }

@@ -37,10 +37,25 @@ enum EndlessIIPaddleEffects {
     /// the first time it happens and still proportional to how much you asked for.
     static let flippedInfluence: Double = -1.8
 
-    static func angleInfluence(inert: Bool, flipped: Bool) -> Double {
+    /// How much harder a gripping paddle throws the ball off its ends.
+    ///
+    /// James, round 305: "I also think the angle at which the ball bounces off the paddle
+    /// should be more extreme as if the paddle is more grippy." A grippy surface does not just
+    /// curve the flight afterwards, it takes the ball further off centre in the first place -
+    /// so Ball Spin raises the paddle's angular influence for as long as it runs.
+    ///
+    /// A half again rather than double: the influence multiplies a bend that is already
+    /// clamped at both ends by `angleAdjustmentK` and `minimumDeg`, so this steepens the
+    /// bounce without letting the edges return a ball that runs along the field sideways.
+    static let grippyInfluence: Double = 1.5
+
+    static func angleInfluence(inert: Bool, flipped: Bool, gripping: Bool = false) -> Double {
         if inert { return 0 }
         if flipped { return flippedInfluence }
-        return 1
+        return gripping ? grippyInfluence : 1
+        // Inert first and Flipped second, unchanged: a paddle that gives no angle at all gives
+        // none however grippy it is, and Flipped's over-correction is its own statement rather
+        // than something to multiply
     }
 
     // MARK: - Reversed Controls

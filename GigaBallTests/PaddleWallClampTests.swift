@@ -71,8 +71,20 @@ final class PaddleWallClampTests: XCTestCase {
             game.didEvaluateActions()
             XCTAssertEqual(game.paddle.position.x, 100, accuracy: 0.01,
                            "\(name): the grown paddle's end should sit on the wall")
-            XCTAssertEqual(game.paddleLaser.position.x, game.paddle.position.x, accuracy: 0.01,
-                           "\(name): and its dress should have come with it, not a frame later")
+            for (what, node) in [("laser", game.paddleLaser), ("sticky", game.paddleSticky),
+                                 ("retro", game.paddleRetroTexture),
+                                 ("retro sticky", game.paddleRetroStickyTexture)] {
+                XCTAssertEqual(node.position.x, game.paddle.position.x, accuracy: 0.01,
+                               "\(name): the \(what) dress should have come with the paddle, "
+                               + "not a frame later")
+            }
+            // **Every strip, not just the lasers** (James, round 305: "sticky paddle graphic,
+            // like the laser turrets graphic, is also moving away from the paddle a pixel or
+            // two when the paddle is dragged against the edge"). They all hang off
+            // `positionPaddleOverlays` and `positionRetroPaddleLayers`, so round 300's move to
+            // `didEvaluateActions` fixed the lot - but only the laser was being asserted, which
+            // is how a report about the sticky can arrive after the laser is fixed and leave
+            // nobody sure whether it is the same bug
         }
     }
 

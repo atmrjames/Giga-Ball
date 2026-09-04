@@ -69,6 +69,26 @@ xcodebuild -project Megaball.xcodeproj -scheme Megaball \
   The tell that separates this from every other build problem: it never compiles a single
   file, and the same command worked earlier the same day.
 
+- **If the whole suite is slow, it is the app's launch reaching outside the process.** The app
+  starts three external services on launch and a simulator has none of them, so each one waits
+  for a timeout - **on every batch, because every batch launches the app**. The symptom is a
+  batch that appears to **hang after its last test has already passed**, which sends you
+  looking at the harness instead of the app. Round 306 found and guarded all three behind
+  `GameCenterHandler.isRunningTests`:
+  - **Game Center authentication**, the worst by far, at **30 to 207 seconds per launch**. The
+    tell is already in the suite's own log: `grep "Authentication failed for player in"` and
+    read the seconds.
+  - **`NSUbiquitousKeyValueStore.synchronize()`** in `AppDelegate`, a main-thread call into a
+    key-value store with no iCloud account behind it.
+  - **The audio session**, which wants a server that may not answer - the same trap the audio
+    note above describes, met at launch rather than in a crash report.
+
+  A three-class batch went from minutes to **45 seconds including its build**. Nothing under
+  test wants any of the three: no test asserts on Game Center, iCloud sync or audio, so the fix
+  is not to start them. It is a runtime check rather than `#if DEBUG`, because the question is
+  "am I being tested", not "is this a debug build" - James plays debug builds every round and
+  they must behave exactly as the shipped one does.
+
 - **A milder version of that relaunch trap looks like a failing test with no assertion.**
   Round 302 hit it three times in one night on iOS 18.5, across three unrelated classes
   (`EndlessIIBrickTests`, `EndlessIIDensityStepTests`, and a batch of frame-cost tests). The

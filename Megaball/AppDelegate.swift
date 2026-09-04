@@ -16,6 +16,20 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         
         NotificationCenter.default.addObserver(self, selector: #selector(onUbiquitousKeyValueStoreDidChangeExternally(notification:)), name: NSUbiquitousKeyValueStore.didChangeExternallyNotification, object: NSUbiquitousKeyValueStore.default)
                 
+        guard GameCenterHandler.isRunningTests == false else { return true }
+        // **The test runner needs neither iCloud nor an audio session** (round 306).
+        //
+        // Both of these reach outside the process at launch, and a simulator answers neither
+        // quickly: `synchronize()` is a main-thread call into a key-value store with no
+        // account behind it, and the audio session wants a server that may not answer at all -
+        // which is CLAUDE.md's own audio-server trap, seen from the other side. The suite
+        // launches the app once per batch, so every launch paid both.
+        //
+        // Measured, not assumed: Game Center's authentication was the first of these to be
+        // caught doing it, at up to 207 seconds a launch, and the batches went on stalling
+        // after it was guarded. Nothing under test wants either service - no test asserts on
+        // iCloud sync or on audio - so the honest fix is not to start them.
+
         NSUbiquitousKeyValueStore.default.synchronize()
         
         MusicHandler.sharedHelper.prepareSession()

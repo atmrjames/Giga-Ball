@@ -72,8 +72,14 @@ class RunStatsViewController: UIViewController, UITableViewDataSource, UITableVi
             // (play-test round 13)
             let headline: [(String, String, String)] = summary.isEndless
                 ? [("arrow.up", "Height", "\(summary.height)m")]
-                : [("star.fill", "Score", String(summary.score)),
-                   ("flag.fill", "Levels cleared", "\(summary.levelsCleared)")]
+                : ([("star.fill", "Score", String(summary.score))]
+                   + (summary.isMultiLevel
+                      ? [("flag.fill", "Levels cleared", "\(summary.levelsCleared)")]
+                      : []))
+                // **A one-level run says nothing about levels cleared** (round 306). A Classic
+                // daily and single-level mode both play exactly one, so the row either
+                // restates the run's own shape or reports a nought against a target nobody was
+                // given. The same rule the endless branch already follows for balls lost
 
             let lines: [(String, String, String)] = headline + [
                 ("clock", "Time", String(format: "%d:%02d", minutes, seconds)),

@@ -155,6 +155,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var stickyInertLaunchAngleRad: Double?
 	var endlessIIWrapAroundClock = EndlessIIClock()
 	var endlessIIPendingWraps: [SKSpriteNode] = []
+	/// The texture the split paddle's halves were last built from, so a dress change while the
+	/// paddle is split rebuilds them (round 305).
+	var endlessIISplitHalfTexture: SKTexture?
 	var endlessIIWrapDressed = false
 	/// The paddle's far-side half while it straddles a wrapped edge - see EndlessIIWrapAround.
 	var endlessIIWrapGhostPaddle: SKSpriteNode?
@@ -1040,6 +1043,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	/// been got wrong twice.
 	var endlessIIPaddleHalfWidth: CGFloat { paddle.size.width/2 }
 	// Endless 2.0's spinning and flashing bricks, driven from update rather than by actions
+	/// The most Fixed bricks the field may hold at once (James, round 305).
+	///
+	/// Each one anchors where it stands and destroys what descends onto it, so every Fixed
+	/// brick is a hole punched in the descent. Three is a hazard; a dozen is a wall.
+	static let endlessIIFixedBrickCap = 3
 	var endlessIIWanderers: [EndlessIIWander] = []
 	var endlessIIFallers: [ObjectIdentifier: EndlessIIFall] = [:]
 	var endlessIIPortalCooldown: TimeInterval = 0
@@ -3040,6 +3048,18 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		// from it: they would clear bricks, score, and land power-ups for a ball that is gone,
 		// through the whole of the lost-ball animation and into the next serve
 		
+		if gameMode == .endlessII {
+			clearEndlessIIMarkers()
+		}
+		// **The height lines go with the ball too** (James, round 305: "Endless Mayhem height
+		// marker lines should disappear immediately when the ball is lost").
+		//
+		// They exist only in Mayhem, and Mayhem is a single life, so a lost ball there is the
+		// run ending - the lines were sitting behind the field through the whole lost-ball
+		// animation, still saying how far a run that is over had got. Guarded on the mode
+		// rather than on a lives count for that reason: if Mayhem ever gains spare lives the
+		// guard is the thing that has to be revisited, and it is named here so that it is.
+		
 		enumerateChildNodes(withName: BrickCategoryName) { (node, _) in
 			node.removeAllActions()
 			node.alpha = 1.0
@@ -3826,6 +3846,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		InGameRecents.shared.brickDestroyed()
 		// The run's count for the game-over summary - after the null-cell return, which
 		// is a placeholder leaving, not a brick dying
+
+		ballLoopDetector.fieldChanged()
+		// And the loop-breaker forgets what it thought it was watching (round 307). Here
+		// rather than at the contact, and after the same null-cell return, because a
+		// placeholder leaving is not the field changing - see `fieldChanged` for why a rally
+		// that is breaking bricks must never be read as a ball that is stuck
 		
 		if ballDress == .undestructi {
 			countBricks()
@@ -4348,6 +4374,15 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 														 paddleWidth: paddle.size.width)
 		// Where on the paddle it landed, -1 to 1 - see PaddleBounce, which every screen that
 		// bounces a ball off a paddle now asks
+
+		if let onSegment = endlessIISplitCollision(ballX: ball.position.x) {
+			collisionPercentage = onSegment
+		}
+		// **Unless it is split, when each piece steers across its own width** (round 305). See
+		// `endlessIISplitCollision`: the whole-span answer made both inner edges read as the
+		// middle of the paddle, so half of every segment could not steer at all. A ball over a
+		// gap is answered nil and keeps the span's number, because it has struck nothing and
+		// the fall-through is not this function's business
 		var angleDeg = Double(atan2(Double(abs(ySpeed)), Double(xSpeed)))/Double.pi*180
 		// The angle it arrived at. Vertical taken as an absolute: the answer always goes up
 		
@@ -4448,7 +4483,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		}
 
 		if isOnPaddle == false, endlessIIApplyShapedBounce(to: ball) {
-			endlessIIGripBall(subject)
+			endlessIIGripBall(subject, collision: collisionPercentage)
 			invisibleBrickFlash()
 			return
 		}
@@ -4479,8 +4514,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		// marker drew, the turns were spent, and the ball left at the ordinary bounce angle,
 		// which is exactly "Auto-Aim never hits the brick it is aiming at"
 
-		endlessIIGripBall(subject)
-		// The paddle's own movement grips the ball on the way out (§12.0's Ball Spin note).
+		endlessIIGripBall(subject, collision: collisionPercentage)
+		// The paddle's own movement grips the ball on the way out (§12.0's Ball Spin note),
+		// and since round 305 so does where on the paddle it struck.
 		// After the bounce above, because the spin bends the flight that follows rather than
 		// replacing what the paddle would have done anyway
 
@@ -6821,7 +6857,11 @@ laserTimer?.invalidate()
 			score: totalScore + levelScore,
 			levelsCleared: max(0, levelNumber - startLevelNumber),
 			isEndless: endlessMode,
+			isMultiLevel: endlessMode == false && numberOfLevels > 1,
 			bestBallHits: max(hitsOnThisBall, runBestBallHits))
+			// `numberOfLevels` is how many the run was given, which is 1 for a Classic daily
+			// and for single-level mode - the same number the pause menu already branches on
+			// to decide whether to print "Level 3 of 10" (round 306)
 			// The ball still in play counts too - a run that ends with the best ball of it
 			// still alive should say so
 		// The snapshot the reference pages and the game-over stats read - taken as the

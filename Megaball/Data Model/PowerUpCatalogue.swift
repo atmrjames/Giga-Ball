@@ -341,6 +341,12 @@ enum PowerUpCatalogue {
         PowerUp(id: "safetyPaddle", name: "Safety Paddle", availability: .endlessII,
                 rarity: .uncommon, valence: .beneficial, isTimed: true,
                 stacking: .extendsDuration),
+        // **Five bounces rather than ten seconds** (round 305), and still `isTimed` - which in
+        // this table means "has a running clock", not "measured in seconds". Landing Marker
+        // counts paddle hits and Split Paddle counts turns, and both are `isTimed: true` for
+        // the same reason: what the flag decides is whether a second collection *extends*
+        // something, which it does. Round 307 had this as `false` for a round, and
+        // `testNoUntimedPowerUpClaimsToExtendADuration` is what said so
         // Deliberately double-edged, like Gravity: it keeps the ball up in the field, and it
         // stops the ball reaching the bricks from below while it is there
         PowerUp(id: "ghostBall", name: "Ghost Ball", availability: .endlessII,

@@ -479,7 +479,14 @@ final class DailyChallengeTests: XCTestCase {
         XCTAssertEqual(
             DailyChallengePosting.practiceNotice(record: nil, isToday: false,
                                                  mode: .classic),
-            "This challenge has closed.\nFree play scores are never posted.")
+            "This challenge closed. Playing won't post a score.")
+
+        XCTAssertEqual(
+            DailyChallengePosting.practiceNotice(record: nil, isToday: false,
+                                                 mode: .classic, closedOn: "3 MARCH"),
+            "This challenge closed on 3 MARCH. Playing won't post a score.",
+            "and it names the day when the screen has told it one - which is what somebody "
+            + "browsing back through a fortnight wants to know (round 306)")
 
         var spent = DailyChallengeRecord(dateKey: "t")
         spent.attemptCount = 1
@@ -494,8 +501,11 @@ final class DailyChallengeTests: XCTestCase {
         XCTAssertEqual(
             DailyChallengePosting.practiceNotice(record: spent, isToday: true,
                                                  mode: .endless),
-            "Your score of 34m is on today's board.\nPlaying again won't post a new score.",
-            "once posted, the board's number is the day's number - heights wear their metres")
+            "You've already posted a score on the leaderboard for today's challenge of 34m."
+            + " Playing again won't post a new score.",
+            "once posted, the board's number is the day's number - heights wear their metres. "
+            + "James's own wording, round 306: the old line said the same thing more briefly "
+            + "and never said *leaderboard*, which is the word that makes it matter")
     }
 
     func testTheScoringAttemptPostsAndPracticeOnlyRaisesThePracticeBest() {
@@ -1471,27 +1481,38 @@ final class DailyNoRepeatsTests: XCTestCase {
 
     // MARK: - The standing
 
-    // Play-test round 126: "For a listed score on the daily challenge menu view, put the
-    // position info in front of the score and show the number of players e.g. 1st / 200."
-
+    /// **`1/100`, everywhere** (James, round 306: "for the ranking once a score has been posted
+    /// show the player's ranking followed by the total number of posted scores in this format
+    /// 1/100 for rank 1 out of 100 players. Use this same format throughout the app").
+    ///
+    /// Rewritten rather than deleted, because what these two tested is still true and only the
+    /// spelling changed. Play-test round 126 asked for "the position info... and the number of
+    /// players e.g. 1st / 200", and round 160 grouped the field because the endless boards have
+    /// years of players on them and "3rd / 100000" has to be counted rather than read. Both
+    /// facts still hold; James has since chosen a shorter way to say them, and one property
+    /// says it, so every screen changed at once.
     func testAStandingReadsAsAPlaceOutOfAField() {
-        XCTAssertEqual(LeaderboardStanding(rank: 1, players: 200).text, "1st / 200")
-        XCTAssertEqual(LeaderboardStanding(rank: 2, players: 200).text, "2nd / 200")
-        XCTAssertEqual(LeaderboardStanding(rank: 3, players: 200).text, "3rd / 200")
-        XCTAssertEqual(LeaderboardStanding(rank: 4, players: 200).text, "4th / 200")
+        XCTAssertEqual(LeaderboardStanding(rank: 1, players: 200).text, "1/200")
+        XCTAssertEqual(LeaderboardStanding(rank: 2, players: 200).text, "2/200")
+        XCTAssertEqual(LeaderboardStanding(rank: 3, players: 200).text, "3/200")
+        XCTAssertEqual(LeaderboardStanding(rank: 4, players: 200).text, "4/200")
     }
 
-    func testABigFieldIsGroupedAndThePlaceIsNot() {
-        // The endless boards have years of players on them, and "3rd / 100000" has to be
-        // counted rather than read (round 160). The daily's own fields are small enough
-        // that the line above still reads exactly as play-test round 126 asked for it.
-        XCTAssertEqual(LeaderboardStanding(rank: 3, players: 1204).text,
-                       "3rd / " + StatsPage.grouped(1204))
-        XCTAssertEqual(LeaderboardStanding(rank: 3, players: 999).text, "3rd / 999")
-        XCTAssertEqual(LeaderboardStanding(rank: 1204, players: 2000).text,
-                       LeaderboardStanding.ordinal(1204) + " / " + StatsPage.grouped(2000))
-        // A four-figure place is the formatter's business and it groups those too, which is
-        // the same reading it gives every other long number on the screen
+    /// The ordinal and the grouping both went, and that is the point rather than a casualty.
+    ///
+    /// "1,204th / 2,000" and "1204/2000" carry the same two numbers; only the second reads at
+    /// a glance beside a score, which is the whole reason the format changed. `ordinal` and
+    /// `StatsPage.grouped` both still exist and are still used elsewhere - this is about what
+    /// a *standing* spells, not about losing either tool.
+    func testABigFieldIsNeitherOrdinalNorGrouped() {
+        XCTAssertEqual(LeaderboardStanding(rank: 3, players: 1204).text, "3/1204")
+        XCTAssertEqual(LeaderboardStanding(rank: 3, players: 999).text, "3/999")
+        XCTAssertEqual(LeaderboardStanding(rank: 1204, players: 2000).text, "1204/2000")
+
+        XCTAssertFalse(LeaderboardStanding(rank: 3, players: 1204).text.contains(","),
+                       "no thousands separator, on a line that sits beside a score")
+        XCTAssertFalse(LeaderboardStanding(rank: 3, players: 1204).text.contains(" "),
+                       "and no spaces around the slash")
     }
 
     func testTheAwkwardOrdinalsAreTheFormattersProblemAndItGetsThemRight() {

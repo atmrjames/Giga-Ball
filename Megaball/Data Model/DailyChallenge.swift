@@ -847,17 +847,24 @@ enum DailyChallengePosting {
     /// it interrupts only the presses it applies to. Pure, so the promise the screen
     /// makes is a promise the tests can hold it to.
     static func practiceNotice(record: DailyChallengeRecord?, isToday: Bool,
-                               mode: GameMode) -> String? {
+                               mode: GameMode, closedOn: String? = nil) -> String? {
         guard isToday else {
-            return "This challenge has closed.\nFree play scores are never posted."
+            let when = closedOn.map { " on " + $0 } ?? ""
+            return "This challenge closed\(when). Playing won't post a score."
         }
         guard let record, record.attemptCount > 0 else { return nil }
         if record.posted {
-            return "Your score of \(scoreText(record.firstAttemptScore, mode: mode))"
-                + " is on today's board.\nPlaying again won't post a new score."
+            return "You've already posted a score on the leaderboard for today's challenge of "
+                + "\(scoreText(record.firstAttemptScore, mode: mode))."
+                + " Playing again won't post a new score."
         }
         return "Today's attempt is spent.\nThis run won't post a score."
     }
+    // **James's own words, round 306**, for the two the play test kept meeting. The closed one
+    // now names the day it closed on, which is the thing a player browsing back through a
+    // fortnight actually wants to know; `closedOn` is passed rather than derived here because
+    // the screen already knows how it spells a date and two spellings of one date would be
+    // worse than none
 
     // MARK: - Pending posts (§12.5)
 
@@ -1003,8 +1010,16 @@ struct LeaderboardStanding: Equatable {
     /// separators are for, and the other is an ordinal, which has never worn one. A daily's
     /// field is small enough that this shows nowhere; the endless boards' fields are not.
     var text: String {
-        "\(LeaderboardStanding.ordinal(rank)) / \(StatsPage.grouped(players))"
+        "\(rank)/\(players)"
     }
+    // **Plain, slashed, ungrouped** (James, round 306: "for the ranking once a score has been
+    // posted show the player's ranking followed by the total number of posted scores in this
+    // format 1/100 for rank 1 out of 100 players. Use this same format throughout the app").
+    //
+    // One property, so "throughout the app" is one change: the daily card, the daily's own
+    // pause result and the endless boards' line all read this. The ordinal and the grouping
+    // both went - "1st / 1,200" and "1/1200" say the same thing, and the second is the one
+    // that reads at a glance beside a score.
 
     /// 1st, 2nd, 3rd - and whatever the reader's locale makes of them, since a formatter
     /// knows what English's exceptions are and what other languages do instead.

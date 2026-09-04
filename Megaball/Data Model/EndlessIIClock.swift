@@ -180,6 +180,14 @@ struct EndlessIIClock: Equatable {
             // A clock in its goodbye has no turns left to spend and no time left to run: the
             // only thing still counting is the second the paddle takes to change back
         }
+        guard countsTurns == false else { return }
+        // **A turns clock does not decay with time at all**, which this type says about itself
+        // a hundred lines above and did not enforce. It never had to: the only turns clock was
+        // Descent, kept out of the seconds tick by living in a different list. Round 305 put
+        // the Safety Paddle on turns and it *is* in that list - it needs `run(down:)` for its
+        // goodbye, which is handled above - so the contract is honoured here rather than by
+        // remembering which list a clock belongs in.
+
         remaining = max(0, remaining - delta)
         if remaining == 0, total > 0 {
             self = EndlessIIClock()

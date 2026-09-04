@@ -4780,3 +4780,169 @@ final class AimedStickyReachesTheSafetyBarTests: XCTestCase {
         XCTAssertFalse(scene.endlessIIAimHold, "and no arrow, because nothing is aiming")
     }
 }
+
+/// A still paddle curves the ball too, and a gripping one bounces it harder (round 305).
+///
+/// Its own class rather than appended to whichever came last in the file - two rounds have
+/// lost tests to that.
+final class EndlessIIBallSpinGripTests: XCTestCase {
+
+    /// James: "the ball spin power up only seems to curve the ball if the paddle is moving when
+    /// the ball hits it. I think it should cause the ball to curve even if it's not moving, it
+    /// should just cause more of a curve the faster it's moving."
+    ///
+    /// The baseline comes from *where* the ball struck, not from nothing: a ball meeting a
+    /// grippy surface off-centre is already sliding across it, and that is friction whether or
+    /// not the surface is travelling.
+    func testAStillPaddleStillCurvesABallStruckOffCentre() {
+        XCTAssertEqual(EndlessIIBallSpin.turnRate(paddleSpeed: 0, collision: 0), 0,
+                       "dead centre on a still paddle is the one case with no friction at all")
+
+        let edge = EndlessIIBallSpin.turnRate(paddleSpeed: 0, collision: 1)
+        XCTAssertEqual(edge, EndlessIIBallSpin.edgeTurn, accuracy: 0.0001,
+                       "the very edge of a still paddle gives the whole baseline")
+
+        XCTAssertEqual(EndlessIIBallSpin.turnRate(paddleSpeed: 0, collision: 0.5),
+                       EndlessIIBallSpin.edgeTurn/2, accuracy: 0.0001,
+                       "and it grows with how far off centre the ball landed")
+
+        XCTAssertEqual(EndlessIIBallSpin.turnRate(paddleSpeed: 0, collision: -1), -edge,
+                       accuracy: 0.0001, "the other side curves the other way")
+    }
+
+    /// And moving still means more, which is the half that already worked.
+    func testMovingFasterStillMeansMoreCurve() {
+        let still = EndlessIIBallSpin.turnRate(paddleSpeed: 0, collision: 0.5)
+        let brisk = EndlessIIBallSpin.turnRate(paddleSpeed: 400, collision: 0.5)
+        let fast = EndlessIIBallSpin.turnRate(paddleSpeed: 900, collision: 0.5)
+
+        XCTAssertGreaterThan(brisk, still, "a moving paddle adds to the contact's own grip")
+        XCTAssertGreaterThan(fast, brisk, "and faster adds more")
+    }
+
+    /// The two together never exceed the ceiling, whatever is asked of them.
+    func testTheCurveIsNeverSteeperThanTheCeiling() {
+        for speed in stride(from: CGFloat(-1600), through: 1600, by: 100) {
+            for collision in stride(from: CGFloat(-1), through: 1, by: 0.25) {
+                let rate = EndlessIIBallSpin.turnRate(paddleSpeed: speed, collision: collision)
+                XCTAssertLessThanOrEqual(abs(rate), EndlessIIBallSpin.steepestTurn + 0.0001,
+                                         "speed \(speed), collision \(collision)")
+            }
+        }
+    }
+
+    /// **A grippy paddle throws the ball further off its ends, too.**
+    ///
+    /// James: "I also think the angle at which the ball bounces off the paddle should be more
+    /// extreme as if the paddle is more grippy." The curve bends the flight afterwards; this is
+    /// the bounce itself being steeper, which is the other half of what grip means.
+    func testAGrippingPaddleSteepensTheBounceItself() {
+        XCTAssertEqual(EndlessIIPaddleEffects.angleInfluence(inert: false, flipped: false), 1,
+                       "an ordinary paddle is unchanged")
+        XCTAssertEqual(EndlessIIPaddleEffects.angleInfluence(inert: false, flipped: false,
+                                                             gripping: true),
+                       EndlessIIPaddleEffects.grippyInfluence)
+        XCTAssertGreaterThan(EndlessIIPaddleEffects.grippyInfluence, 1)
+
+        XCTAssertEqual(EndlessIIPaddleEffects.angleInfluence(inert: true, flipped: false,
+                                                             gripping: true), 0,
+                       "a paddle that gives no angle at all gives none however grippy it is")
+        XCTAssertEqual(EndlessIIPaddleEffects.angleInfluence(inert: false, flipped: true,
+                                                             gripping: true),
+                       EndlessIIPaddleEffects.flippedInfluence,
+                       "and Flipped's over-correction is its own statement, not something to "
+                       + "multiply")
+    }
+}
+
+/// A split paddle is two paddles that move together, not one with a hole in it (round 305).
+final class EndlessIISplitSegmentBounceTests: XCTestCase {
+
+    private func splitScene() -> GameScene {
+        let scene = GameScene()
+        scene.gameMode = .endlessII
+        scene.gameWidth = 400
+        scene.ballSize = 10
+        scene.paddleWidth = 100
+        scene.paddle.size = CGSize(width: 200, height: 20)
+        scene.paddle.position.x = 0
+        scene.totalStatsArray = [TotalStats()]
+        scene.endlessIICollectDoublePaddle()
+        return scene
+    }
+
+    /// James: "I think the paddle sections should be treated like separate individual paddles
+    /// that move together, rather than a single paddle with a hole in the middle."
+    ///
+    /// The bounce angle comes from where the ball lands across the paddle. Measured across the
+    /// whole span, the inner ends of both pieces sit near the middle - so a ball striking the
+    /// very edge of a segment came back almost straight up, the flattest bounce there is, and
+    /// half of every piece could not steer at all.
+    func testEachSegmentSteersAcrossItsOwnWidth() throws {
+        let scene = splitScene()
+        let centres = scene.endlessIISplitSegmentCentres
+        XCTAssertGreaterThanOrEqual(centres.count, 2, "a split paddle is more than one piece")
+        // How *many* pieces is the layout's business and grows with the span - an earlier
+        // version of this test assumed two and got three, which is the layout working
+
+        let layout = GameScene.endlessIIDoublePaddleLayout(span: scene.paddle.size.width,
+                                                           standardWidth: scene.paddleWidth,
+                                                           ballSize: scene.ballSize)
+        let half = layout.segment/2
+
+        for centre in centres {
+            XCTAssertEqual(try XCTUnwrap(scene.endlessIISplitCollision(ballX: centre)), 0,
+                           accuracy: 0.01, "the middle of a piece steers like a middle")
+            XCTAssertEqual(try XCTUnwrap(scene.endlessIISplitCollision(ballX: centre + half)), 1,
+                           accuracy: 0.01, "its right edge steers like an edge")
+            XCTAssertEqual(try XCTUnwrap(scene.endlessIISplitCollision(ballX: centre - half)), -1,
+                           accuracy: 0.01, "and so does its left one, which is the whole point")
+        }
+    }
+
+    /// The edges beside a gap are the ones the old arithmetic got wrong, so they get their own
+    /// check: on its own piece such an edge is an edge, and across the whole span it is not.
+    func testAnEdgeBesideAGapNoLongerReadsAsLessThanAnEdge() throws {
+        let scene = splitScene()
+        let layout = GameScene.endlessIIDoublePaddleLayout(span: scene.paddle.size.width,
+                                                           standardWidth: scene.paddleWidth,
+                                                           ballSize: scene.ballSize)
+        let centres = scene.endlessIISplitSegmentCentres
+        let innerEdge = try XCTUnwrap(centres.first) + layout.segment/2
+
+        let acrossTheWholeSpan = abs(PaddleBounce.collision(ballX: innerEdge,
+                                                            paddleX: scene.paddle.position.x,
+                                                            paddleWidth: scene.paddle.size.width))
+        let onItsOwnPiece = abs(try XCTUnwrap(scene.endlessIISplitCollision(ballX: innerEdge)))
+
+        XCTAssertEqual(onItsOwnPiece, 1, accuracy: 0.01, "it is the edge of its piece")
+        XCTAssertLessThan(acrossTheWholeSpan, onItsOwnPiece - 0.2,
+                          "and the span's answer is meaningfully flatter, which is what made "
+                          + "half of every piece unable to steer")
+    }
+
+    /// A ball over a gap has struck nothing, so no segment answers for it.
+    func testABallOverAGapIsNotOnASegment() throws {
+        let scene = splitScene()
+        let layout = GameScene.endlessIIDoublePaddleLayout(span: scene.paddle.size.width,
+                                                           standardWidth: scene.paddleWidth,
+                                                           ballSize: scene.ballSize)
+        let centres = scene.endlessIISplitSegmentCentres
+        let first = try XCTUnwrap(centres.first)
+        let gapCentre = first + layout.segment/2 + layout.gap/2
+        // Between the first two pieces, wherever the layout put them - the *middle of the
+        // paddle* is a gap only when there is an even number of pieces, which an earlier
+        // version of this test assumed
+
+        XCTAssertNil(scene.endlessIISplitCollision(ballX: gapCentre),
+                     "a ball down a gap is on no piece at all")
+    }
+
+    /// And an unsplit paddle answers nothing at all, so the ordinary bounce is untouched.
+    func testAnUnsplitPaddleIsLeftAlone() {
+        let scene = GameScene()
+        scene.gameMode = .endlessII
+        scene.paddle.size = CGSize(width: 200, height: 20)
+        XCTAssertNil(scene.endlessIISplitCollision(ballX: 10))
+    }
+}

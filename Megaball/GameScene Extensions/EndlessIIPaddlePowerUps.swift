@@ -885,7 +885,8 @@ extension GameScene {
     /// What multiplies the paddle's angular influence on a bounce - see `paddleHit`.
     var endlessIIPaddleAngleInfluence: Double {
         EndlessIIPaddleEffects.angleInfluence(inert: endlessIIInertPaddleClock.isRunning,
-                                              flipped: endlessIIFlippedAngleClock.isRunning)
+                                              flipped: endlessIIFlippedAngleClock.isRunning,
+                                              gripping: endlessIIBallSpinIsRunning)
     }
 
     /// What multiplies the finger's movement before it reaches the paddle - see `touchesMoved`.

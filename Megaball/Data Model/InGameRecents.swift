@@ -86,6 +86,19 @@ final class InGameRecents {
         var levelsCleared: Int = 0
         var isEndless: Bool = true
 
+        /// Whether the run was ever going to be more than one level.
+        ///
+        /// A Classic daily and single-level mode both play exactly one level, so "levels
+        /// cleared: 1" is the run restating its own shape rather than telling anybody
+        /// anything - and "levels cleared: 0" on a lost one reads as a failure to do
+        /// something that was never on offer (James, round 306: "there's no need to show stats
+        /// that aren't applicable to the game / mode that was being played. For example
+        /// showing a levels cleared stat in a classic mode daily challenge doesn't make any
+        /// sense as it was only a single level").
+        ///
+        /// Defaulted true so a summary written before this existed keeps the row it had.
+        var isMultiLevel: Bool = true
+
         /// The most paddle hits one ball survived in this run (play-test round 37).
         var bestBallHits: Int = 0
     }

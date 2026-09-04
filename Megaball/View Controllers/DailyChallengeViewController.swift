@@ -495,20 +495,34 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
     }
 
     func refreshCountdown() {
-        if viewedOffset == 0 {
-            let session = DailyChallengeSession.shared
-            let remaining = DailyDay.windowEnd(for: session.today)
-                .timeIntervalSince(session.today)
-            let hours = Int(remaining)/3600
-            let minutes = (Int(remaining) % 3600)/60
-            countdownLabel.text = "Closes in \(hours)h \(minutes)m"
-        } else {
-            countdownLabel.text = "Challenge closed, free play only"
-            // A past day plays for ever and posts nothing (§8). One word under the date
-            // is the whole of it now - the standing yellow banner it used to share the
-            // screen with is gone (play-test round 5), and the pop-up on the play press
+        guard viewedOffset == 0 else {
+            countdownLabel.text = "Free play only"
+            // A past day plays for ever and posts nothing (§8), and three words under the date
+            // are the whole of it (James, round 306: "for past daily challenges under the date
+            // just say Free play only. No need to say Challenge closed"). That it closed is
+            // already said by the date being in the past, and the pop-up on the play press
             // says the rest to exactly the presses it applies to
+            return
         }
+
+        let session = DailyChallengeSession.shared
+        let remaining = DailyDay.windowEnd(for: session.today).timeIntervalSince(session.today)
+        let hours = Int(remaining)/3600
+        let minutes = (Int(remaining) % 3600)/60
+
+        let spent = (totalStatsArray[0].dailyRecord(forKey: viewedKey)?.attemptCount ?? 0) > 0
+        countdownLabel.text = spent
+            ? "Next challenge in \(hours)h \(minutes)m"
+            : "Closes in \(hours)h \(minutes)m"
+        // **Once the attempt is spent the deadline stops being a deadline** (James, round 306:
+        // "once a player has completed a paint challenge, the note on the daily challenge menu
+        // view under the date should say 'Next challenge in ...time' to let them know how long
+        // until the next daily challenge is available").
+        //
+        // The same instant either way - the window's end is both when this one closes and when
+        // the next one opens - so it is the *wording* that changes rather than the arithmetic.
+        // A player with nothing left to post is being told when they can come back, not being
+        // hurried
     }
 
     // MARK: - Day browsing
@@ -535,7 +549,8 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
         if let notice = DailyChallengePosting.practiceNotice(
             record: totalStatsArray[0].dailyRecord(forKey: viewedKey),
             isToday: viewedOffset == 0,
-            mode: challenge.mode) {
+            mode: challenge.mode,
+            closedOn: DailyChallengeSession.shared.displayName(forKey: viewedKey)) {
             GigaBallAlert.show(on: self, title: "Free play", message: notice,
                                symbol: "gamecontroller.fill",
                                 dismissTitle: "Cancel", confirmTitle: "Play",

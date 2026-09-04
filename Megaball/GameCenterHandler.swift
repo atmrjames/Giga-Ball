@@ -9,6 +9,18 @@
 import GameKit
 
 final class GameCenterHandler: NSObject {
+
+    /// Whether this process was launched by the test runner.
+    ///
+    /// Used to keep Game Center's authentication out of the suite - see `authGCPlayer`, where
+    /// the measurement that made it necessary is written down. A runtime check rather than
+    /// `#if DEBUG`, because the thing being asked is "am I being tested", not "is this a debug
+    /// build": James plays debug builds every round and they should behave exactly as the
+    /// shipped one does.
+    static var isRunningTests: Bool {
+        NSClassFromString("XCTestCase") != nil
+    }
+
     typealias CompletionBlock = (Error?) -> Void
     
     static let helper = GameCenterHandler()

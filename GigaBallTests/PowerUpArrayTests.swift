@@ -314,7 +314,11 @@ final class PowerUpDurationTextTests: XCTestCase {
 
     /// Every duration the page prints is one of the four the game has.
     func testThePageOnlySpeaksOfDurationsTheGameHas() {
-        let allowed: Set<String> = ["", "10s", "5 paddle hits", "1 backstop hit", "Until a Key"]
+        let allowed: Set<String> = ["", "10s", "5 paddle hits", "5 bounces",
+                                    "1 backstop hit", "Until a Key"]
+        // "5 bounces" is the Safety Paddle since round 305 - bounces off the *bar*, which is
+        // not the same thing as the paddle hits the rest of the batch counts, and is spelled
+        // differently so the page does not claim it is
         let retired = setup.retiredPowerUpIndices
         for (i, timer) in setup.powerUpTimerArray.enumerated() where retired.contains(i) == false {
             XCTAssertTrue(allowed.contains(timer),
@@ -334,8 +338,9 @@ final class PowerUpDurationTextTests: XCTestCase {
                        GameScene.endlessIIPaddlePowerUpDuration)
         XCTAssertEqual(GameScene.endlessIIGhostBallDuration,
                        GameScene.endlessIIPaddlePowerUpDuration)
-        XCTAssertEqual(GameScene.endlessIISafetyPaddleDuration,
-                       GameScene.endlessIIPaddlePowerUpDuration)
+        XCTAssertEqual(GameScene.endlessIISafetyPaddleBounces,
+                       Int(GameScene.endlessIIPaddlePowerUpTurns),
+                       "the Safety Paddle counts bounces since round 305, not seconds")
     }
 
     /// The four the page had wrong, named one at a time so a regression says which.

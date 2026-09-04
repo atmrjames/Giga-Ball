@@ -122,6 +122,23 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
         return true
     }
     
+    /// The total is the answer; the two above it are the working.
+    ///
+    /// James, round 307: "at the end of a classic mode level, with the level score, time bonus
+    /// and total score, make the total score labels bigger than the other 2 to show a
+    /// hierarchy." All three were the same size, so the row read as a list of three equal
+    /// numbers when it is really two figures and their sum.
+    ///
+    /// Scaled from whatever the storyboard set rather than given a number of its own: the three
+    /// labels are laid out together, and a hard-coded size here would be a second opinion about
+    /// the first two the moment either was touched.
+    private func raiseTheTotal() {
+        for label in [totalScoreTitle, totalScoreLabel] {
+            guard let label, let font = label.font else { continue }
+            label.font = font.withSize((font.pointSize*1.35).rounded())
+        }
+    }
+
     override func viewDidLoad() {
         super.viewDidLoad()
         
@@ -130,6 +147,7 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
         loadData()
         userSettings()
         setBlur()
+        raiseTheTotal()
         if parallaxSetting {
             addParallaxToView()
         }

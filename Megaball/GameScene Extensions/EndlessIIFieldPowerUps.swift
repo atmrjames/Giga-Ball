@@ -1049,6 +1049,37 @@ extension GameScene {
     /// the freeze list, the wipe list and the tick, and to neither of these - so both ran
     /// with nothing in the ring to say so, and both were quietly lost by a save and resume.
     /// Now a clock that is in the table is in all three, and a clock that is not is in none.
+    /// Builds every ring texture now, while nothing is moving.
+    ///
+    /// **The stutter James kept reporting** (round 305: "the ball still seems to be stuttering
+    /// sometimes when a power up graphic appears after hitting a brick. Generally the first
+    /// time it happens in a game").
+    ///
+    /// Measured before it was fixed, and the falling graphic turned out to be innocent: a drop
+    /// costs 0.29ms the first time and nothing after. It is the **HUD ring** - the first time
+    /// each power-up reaches the tray, `PowerUpIcon.ringTexture` has to build its picture, and
+    /// that is **10.6ms median, 11.7 worst**. A 120fps frame is 8.3ms and a 60fps one 16.7, so
+    /// the first ring of each power-up blows one frame outright and eats two thirds of the
+    /// other. One dropped frame, once per power-up, exactly where he said - and "generally the
+    /// first time" is the cache being cold.
+    ///
+    /// Round 291 measured this same machinery at 30.8ms *per frame* and cached it, which fixed
+    /// the repeat cost - a cached ring is 0.002ms. What nobody measured then was what the cache
+    /// costs on its first answer.
+    ///
+    /// Warming it is enough because the cache is keyed by name and never emptied: touching the
+    /// three tables that build rings populates all of them. Done during the build-in, where the
+    /// field is assembling behind the splash and a lost frame costs nothing - the same window
+    /// the textures were always going to be needed after.
+    func warmEndlessIIRingTextures() {
+        guard gameMode == .endlessII else { return }
+        _ = endlessIIFieldClocks
+        _ = endlessIIPaddleRingEntries()
+        _ = endlessIIVisionRingEntries()
+        // The return values are the point being discarded: each of these builds its textures on
+        // the way to answering, and the answers are about clocks that are not running yet
+    }
+
     var endlessIIFieldClocks: [(id: String, clock: EndlessIIClock, icon: SKTexture)] {
         [("endlessIIWreckingBall", endlessIIWreckingBallClock,
           PowerUpIcon.ringTexture("WreckingBallIcon", PowerUpIcon.hud("WreckingBallIcon", PowerUpIcon.wreckingBall))),

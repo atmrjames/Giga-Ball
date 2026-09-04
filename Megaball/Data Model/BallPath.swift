@@ -355,6 +355,34 @@ struct BallLoopDetector {
         // degrees because a loop was broken two rallies ago is the old bug with extra steps
     }
 
+    /// A brick was destroyed: whatever was repeating, the field just changed under it.
+    ///
+    /// **This is the fix for James's near-vertical drift** (round 305: "I'm still seeing
+    /// instances of the ball chasing direction when travelling near vertically near the low
+    /// brick line in Endless Mayhem mode. It's not changing direction by much, maybe 5-10
+    /// degrees.")
+    ///
+    /// The arithmetic matches the report exactly. A signature is quantised to half-brick cells
+    /// and five-degree headings, so a near-vertical ball striking the *same brick in the same
+    /// column* repeats it precisely - and three repeats inside nine bounces prove a "loop".
+    /// That is not a loop, it is a ball hammering a multi-hit brick, which is the game being
+    /// played well. The detector could not tell the difference because nothing told it the
+    /// field had changed.
+    ///
+    /// Then the escalation did the rest: 1 degree, 2, 4, 8, and it resets **only on a paddle
+    /// hit**. In Mayhem a ball can rally among bricks for a long time without touching the
+    /// paddle, so the nudge climbs to the 8-degree cap and stays there - which is the 5 to 10
+    /// degrees James is seeing.
+    ///
+    /// A full reset rather than just clearing the history: the old signatures describe a field
+    /// that no longer exists, and `provings` counts how stuck this ball is - a ball that just
+    /// broke a brick is not stuck at all. The same reasoning `playerIntervened` already uses,
+    /// applied to the other thing that can change what a rally is doing.
+    mutating func fieldChanged() {
+        signatures.removeAll()
+        provings = 0
+    }
+
     /// A bounce, quantised to half-brick cells and five-degree headings - coarse enough
     /// that a loop's tiny frame-to-frame drift still reads as the same bounce, fine enough
     /// that two different rallies do not.

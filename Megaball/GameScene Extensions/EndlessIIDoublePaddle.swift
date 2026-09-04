@@ -125,8 +125,25 @@ extension GameScene {
         // textures - so the current one is remembered every frame rather than once at the
         // start, and the halves wear whatever it is now
 
-        guard abs(endlessIIDoublePaddleWidth - paddle.size.width) > 0.5 else { return }
+        let dressNow = endlessIIDoublePaddleHalfDress
+        let widthMoved = abs(endlessIIDoublePaddleWidth - paddle.size.width) > 0.5
+        let dressChanged = endlessIISplitHalfTexture !== dressNow.texture
+        guard widthMoved || dressChanged else { return }
         endlessIIDoublePaddleWidth = paddle.size.width
+        endlessIISplitHalfTexture = dressNow.texture
+        // **Rebuilt when the picture changes as well as when the width does** (James, round
+        // 305: "paddle graphics aren't applying to the split paddle correctly").
+        //
+        // The halves are children carrying their own copy of the paddle's texture, and this
+        // guard used to ask only about the width - so a dress that changed while the paddle was
+        // already split never reached them. Collecting Lasers, a theme swap from the pause
+        // menu, the sticky band arriving: the paddle underneath changed picture and the two
+        // pieces the player can actually see went on wearing the one they were born with,
+        // until something happened to resize the paddle.
+        //
+        // Compared by identity rather than equality because `SKTexture` has no useful `==`,
+        // and identity is exactly the question: the halves were built from *that* texture
+        // object, and a different object is a different picture
 
         let layout = GameScene.endlessIIDoublePaddleLayout(span: paddle.size.width,
                                                            standardWidth: paddleWidth,
@@ -254,6 +271,42 @@ extension GameScene {
         let pitch = layout.segment + layout.gap
         let first = -paddle.size.width/2 + layout.segment/2
         return (0..<layout.count).map { paddle.position.x + first + pitch*CGFloat($0) }
+    }
+
+    /// Where a ball landed on the *segment* it struck, -1 to 1.
+    ///
+    /// **A split paddle is two paddles that move together, not one paddle with a hole in it**
+    /// (James, round 305: "I think the paddle sections should be treated like separate
+    /// individual paddles that move together, rather than a single paddle with a hole in the
+    /// middle").
+    ///
+    /// The bounce angle is taken from where the ball lands across the paddle, and measuring
+    /// that across the *whole span* is what made the split read as one object: the inner ends
+    /// of the two pieces are near the span's middle, so a ball hitting either of them came back
+    /// almost straight up - the flattest, most centred bounce there is - even though it had
+    /// struck the very edge of a piece. Half of each segment answered as if it were the middle
+    /// of the paddle, and the two outer ends were the only parts that steered at all.
+    ///
+    /// Measured per segment, each piece steers across its own width like the paddle it is: the
+    /// inner edges throw the ball inward hard, which is what makes aiming with a split paddle a
+    /// different skill rather than a worse one.
+    ///
+    /// Nil when the paddle is not split, or when the ball is over a gap rather than a piece -
+    /// a ball down a gap has struck nothing, and the caller keeps whatever the whole-span
+    /// answer was rather than being handed a number about a segment it missed.
+    func endlessIISplitCollision(ballX: CGFloat) -> CGFloat? {
+        guard endlessIIPaddleIsSplit else { return nil }
+        let layout = GameScene.endlessIIDoublePaddleLayout(span: paddle.size.width,
+                                                           standardWidth: paddleWidth,
+                                                           ballSize: ballSize)
+        guard layout.segment > 0 else { return nil }
+
+        for centre in endlessIISplitSegmentCentres {
+            let offset = ballX - centre
+            guard abs(offset) <= layout.segment/2 else { continue }
+            return min(max(offset/(layout.segment/2), -1), 1)
+        }
+        return nil
     }
 
     /// Cuts one of the paddle's overlays into pieces that sit on the split, or puts it back.

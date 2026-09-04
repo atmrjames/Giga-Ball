@@ -172,4 +172,59 @@ final class WindowSizeTests: XCTestCase {
               + "as it is / mirrored / upside down: \(file.path)\n")
     }
 
+    /// **Deep Green's new purple top, drawn beside Deep Blue's.**
+    ///
+    /// James asked for the transition into the purple power-up tray to be "less dramatic",
+    /// similar to Deep Blue. Whether it is, is a question about a picture: the numbers say the
+    /// stops are where they should be and say nothing about whether the join reads as a join.
+    func testTheDeepGreenPurpleTopCanBeLookedAt() throws {
+        let size = CGSize(width: 300, height: 620)
+        let paddleFraction: CGFloat = 0.18
+
+        let image = UIGraphicsImageRenderer(size: CGSize(width: size.width*2 + 30,
+                                                         height: size.height + 40)).image { ctx in
+            UIColor.black.setFill()
+            ctx.fill(CGRect(origin: .zero, size: CGSize(width: size.width*2 + 30,
+                                                        height: size.height + 40)))
+
+            // The tray above both, in the purple the HUD actually uses
+            GameBackground.borderPurple.setFill()
+            ctx.fill(CGRect(x: 0, y: 0, width: size.width*2 + 30, height: 40))
+
+            let stops = GameBackground.greenGradientStops(paddleFraction: paddleFraction)
+            let space = CGColorSpaceCreateDeviceRGB()
+            if let gradient = CGGradient(colorsSpace: space,
+                                         colors: stops.colours.map(\.cgColor) as CFArray,
+                                         locations: stops.locations) {
+                ctx.cgContext.saveGState()
+                ctx.cgContext.clip(to: CGRect(x: 10, y: 40, width: size.width, height: size.height))
+                ctx.cgContext.drawLinearGradient(
+                    gradient, start: CGPoint(x: 0, y: 40),
+                    end: CGPoint(x: 0, y: 40 + size.height), options: [])
+                ctx.cgContext.restoreGState()
+            }
+
+            UIImage(named: "BackgroundBlue")?.draw(in: CGRect(x: size.width + 20, y: 40,
+                                                              width: size.width, height: size.height))
+        }
+
+        let file = URL(fileURLWithPath: NSTemporaryDirectory())
+            .appendingPathComponent("green-vs-blue.png")
+        try XCTUnwrap(image.pngData()).write(to: file)
+        print("\n  Deep Green (left) beside Deep Blue (right), tray above both: \(file.path)\n")
+    }
+
+    /// The stops stay in order whatever the paddle does, because a gradient with its stops out
+    /// of order draws something arbitrary rather than failing.
+    func testTheGreenGradientStopsAreAlwaysInOrder() {
+        for fraction in stride(from: CGFloat(0), through: 1, by: 0.05) {
+            let stops = GameBackground.greenGradientStops(paddleFraction: fraction)
+            XCTAssertEqual(stops.colours.count, stops.locations.count)
+            for (a, b) in zip(stops.locations, stops.locations.dropFirst()) {
+                XCTAssertLessThanOrEqual(a, b,
+                                         "paddleFraction \(fraction) puts the stops out of order")
+            }
+        }
+    }
+
 }
