@@ -56,14 +56,15 @@ final class ResumeCardRenderTests: XCTestCase {
     }
 
     /// The screen, laid out, exactly as a relaunch into a saved run builds it.
-    private func laidOut(_ game: SavedGame) -> SplashViewController {
+    private func laidOut(_ game: SavedGame,
+                         in size: CGSize? = nil) -> SplashViewController {
         game.save(to: UserDefaults.standard)
         UserDefaults.standard.set(true, forKey: SavedGame.resumeFlagKey)
         let board = UIStoryboard(name: "Main", bundle: Bundle(for: SplashViewController.self))
         let splash = board.instantiateViewController(withIdentifier: "splashView")
             as! SplashViewController
         splash.gameToResume = true
-        splash.view.frame = screen
+        splash.view.frame = CGRect(origin: .zero, size: size ?? screen.size)
         splash.view.layoutIfNeeded()
         return splash
     }
@@ -193,6 +194,35 @@ final class ResumeCardRenderTests: XCTestCase {
         let splash = laidOut(base())
         XCTAssertNil(splash.cancelResumeButton.superview,
                      "removed rather than hidden")
+    }
+
+    /// **The card still fits the smallest window the app allows** (round 311).
+    ///
+    /// Two changes this round pull against each other: the card grew a group of air between each
+    /// of its four parts, and the iPad floor came down from 420x640 to 320x568. Either alone is
+    /// fine. Together they are the shape of a bug that would only ever be seen by somebody
+    /// resuming a game in a small window on an iPad, which is nobody until it is somebody.
+    func testTheWholeCardFitsTheSmallestWindowTheAppAllows() {
+        var daily = base()
+        daily.dailyDateKey = DailyChallengeSession.shared.todayKey
+        daily.dailyWasScoringAttempt = true
+        // The tallest of the three: mode, what is being played, the day, the competition line,
+        // the score and the rack
+
+        let small = SceneDelegate.smallestWindow
+        let splash = laidOut(daily, in: small)
+
+        let button = try! XCTUnwrap(disc(splash))
+        let parts = card(splash).filter { $0.isHidden == false } + [button]
+        for part in parts {
+            let frame = part.convert(part.bounds, to: splash.view)
+            XCTAssertGreaterThanOrEqual(frame.minY, 0,
+                                        "\(part) has been pushed off the top at \(small)")
+            XCTAssertLessThanOrEqual(frame.maxY, small.height,
+                                     "\(part) hangs off the bottom at \(small)")
+            XCTAssertGreaterThanOrEqual(frame.minX, 0)
+            XCTAssertLessThanOrEqual(frame.maxX, small.width)
+        }
     }
 
     // MARK: - The gap the endless modes lost

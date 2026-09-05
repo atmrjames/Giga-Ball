@@ -124,10 +124,43 @@ final class DailyStreakTests: XCTestCase {
         XCTAssertEqual(StatsPage.days(0), "0 days")
         XCTAssertEqual(StatsPage.days(12), "12 days")
     }
+
+    /// **A key that is not a day is not the day after anything** (round 311).
+    ///
+    /// Found by mutation testing, not by reading. Changing `isTheDayAfter`'s failure branch from
+    /// `return false` to `return true` broke nothing: the guard runs on every call, so coverage
+    /// was satisfied, and no test had ever asked what happens when it *fails*.
+    ///
+    /// It matters because of the sentence `date(fromKey:)` carries above itself - keys arrive off
+    /// disk and out of iCloud, and "a corrupted one silently becoming a different day is a day
+    /// that could join a streak it has nothing to do with". A `true` here is exactly that day
+    /// joining: every malformed record would extend whatever run it was sitting next to.
+    func testAMalformedKeyIsNotTheDayAfterAnything() {
+        for nonsense in ["", "not-a-day", "2026-02-30", "2026-13-01", "26-1-1", "2026-01"] {
+            XCTAssertFalse(DailyStreak.isTheDayAfter("2026-03-01", nonsense),
+                           "\(nonsense) is not a day, so nothing follows it")
+            XCTAssertFalse(DailyStreak.isTheDayAfter(nonsense, "2026-02-28"),
+                           "and it is not what follows a day either")
+        }
+    }
+
+    /// And the consequence, at the level a player would feel it: a corrupted record cannot
+    /// lengthen a streak by standing next to it.
+    func testACorruptedRecordCannotJoinAStreak() {
+        func posted(_ key: String) -> DailyChallengeRecord {
+            var record = DailyChallengeRecord(dateKey: key)
+            record.posted = true
+            return record
+        }
+        let honest = ["2026-03-01", "2026-03-02", "2026-03-03"].map(posted)
+        XCTAssertEqual(DailyStreak.longest(records: honest), 3)
+
+        let withRubbish = honest + [posted("2026-02-30"), posted("not-a-day")]
+        XCTAssertEqual(DailyStreak.longest(records: withRubbish), 3,
+                       "two records that name no day add nothing to the run beside them")
+    }
 }
 
-/// The last clause of §8's posted-score container: "free play attempts played after the post
-/// get listed in the same container".
 final class DailyFreePlayLineTests: XCTestCase {
 
     private func record(attempts: Int, best: Int = 0) -> DailyChallengeRecord {
