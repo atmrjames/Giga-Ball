@@ -318,6 +318,12 @@ extension GameScene {
             let angle = endlessIILaunchAngle(atPaddleOffset: offset)
             held.physicsBody?.velocity = CGVector(dx: cos(angle)*Double(ballSpeedLimit),
                                                   dy: sin(angle)*Double(ballSpeedLimit))
+            endlessIIAimTheStickyLaunch(held)
+            // **This loop had no aim at all** (round 311). Every other way a ball leaves the
+            // paddle asks Auto-Aim what it thinks; the last-turn release, which lets go of the
+            // whole queue at once, went straight out on the offset. Two balls launched by
+            // different rules in the same instant is the drift `endlessIILaunchAngle` exists to
+            // stop, arriving one level up
             endlessIIReleasedFromPaddle(held)
         }
         if endlessIIHeldBalls.contains(where: { $0 === ball }) == false {

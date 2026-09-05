@@ -5,7 +5,7 @@
 //  **The iPad audit, as a test rather than a look** (round 301).
 //
 //  Removing `UIRequiresFullScreen` lets iPadOS hand the app window shapes no device has: a
-//  Slide Over column, a third of a split, and anything down to `SceneDelegate`'s 420x640
+//  Slide Over column, a third of a split, and anything down to `SceneDelegate`'s floor
 //  floor. `GameSceneLayoutTests` already proves the *playfield* holds its ratio in all of
 //  them - that was never the risk, because the ratio is solved from whatever size it is given.
 //  The risk is the **menus**, which are constraint-driven UIKit and have only ever been laid
@@ -45,7 +45,7 @@ final class WindowSizeTests: XCTestCase {
     private let windows: [(name: String, size: CGSize)] = [
         ("iPhone SE", CGSize(width: 375, height: 667)),
         ("iPhone 17 Pro", CGSize(width: 402, height: 874)),
-        ("the minimum window", CGSize(width: 420, height: 640)),
+        ("the minimum window", SceneDelegate.smallestWindow),
         ("iPad Slide Over", CGSize(width: 375, height: 1133)),
         ("iPad split, one third", CGSize(width: 375, height: 1366)),
         ("iPad split, half", CGSize(width: 507, height: 1366)),
@@ -227,4 +227,24 @@ final class WindowSizeTests: XCTestCase {
         }
     }
 
+    /// The floor is the smallest phone the app supports, not a number picked by eye.
+    ///
+    /// James, round 311: "it's ok to make it smaller, so long as the game view maintains its
+    /// height to width ratio." Round 310's 420x640 was wider than any phone the app runs on,
+    /// which made it a guess rather than a rule - and a guess is what a window floor must not
+    /// be, because it decides how small a player is allowed to make the game.
+    func testTheWindowFloorIsTheSmallestPhoneTheAppSupports() {
+        XCTAssertEqual(SceneDelegate.smallestWindow, CGSize(width: 320, height: 568),
+                       "the iPhone SE, which is the smallest screen iOS 15 runs on")
+    }
+
+    /// And the play zone keeps its ratio there, which is the condition he attached to it.
+    func testThePlayZoneKeepsItsRatioAtTheFloor() {
+        let layout = GameSceneLayout(screen: SceneDelegate.smallestWindow)
+        XCTAssertEqual(layout.playHeight/layout.gameWidth, GameSceneLayout.playRatio,
+                       accuracy: 0.0001,
+                       "the one constraint that never bends, at the smallest window allowed")
+        XCTAssertLessThanOrEqual(layout.gameWidth, SceneDelegate.smallestWindow.width)
+        XCTAssertGreaterThan(layout.gameWidth, 0, "and there is still a field to play on")
+    }
 }

@@ -848,6 +848,22 @@ extension GameScene {
         guard gameMode == .endlessII, endlessIIAutoAimOwedTurn else { return }
         _ = endlessIIApplyAutoAim(to: launched)
     }
+    // **The precondition stays, and the catch pays it instead** (James, round 311: "with sticky
+    // paddle and auto aim on together, the ball should still launch towards the aimed brick.
+    // Currently it launches based on the ball's position on the paddle").
+    //
+    // The report is real and the first fix was wrong: it dropped this guard, which encodes a
+    // rule two tests defend and which is right - the *turn* buys the aim, not the clock merely
+    // running, so the first launch of a life follows no contact and takes the shot the player
+    // aimed by placing the paddle. Dropping the guard also let a whole Multi-Ball queue aim off
+    // one paid contact.
+    //
+    // What was actually broken is upstream: **a sticky catch is not a paddle contact.**
+    // `catchStickyBallBeforeStep` takes the ball in `update`, before the physics step, precisely
+    // so it never bounces - so `endlessIISpendPaddleTurns` never ran for it and the flag was
+    // whatever the last real contact left behind, which is nearly always false. That file
+    // already knows it has to hand-deliver what the contact would have done; it was delivering
+    // the haptic and the sound and not the turn. It does now
 
     // MARK: - The hooks the scene asks
 

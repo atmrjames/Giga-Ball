@@ -638,6 +638,69 @@ final class EndlessIIFieldPowerUpTests: XCTestCase {
         XCTAssertEqual(scene.ball.physicsBody!.velocity.dy, 100, accuracy: 0.001)
     }
 
+    /// **A sticky catch buys the turn a bounce would have bought** (James, round 311: "with
+    /// sticky paddle and auto aim on together, the ball should still launch towards the aimed
+    /// brick. Currently it launches based on the ball's position on the paddle").
+    ///
+    /// This is the seam that was broken, and it is worth stating on its own because the bug was
+    /// invisible from either side of it. `endlessIIAimTheStickyLaunch` refuses to aim a launch
+    /// that paid for nothing, which is right and which two tests below defend.
+    /// `endlessIISpendPaddleTurns` runs on a paddle *contact*. And a sticky catch is not a
+    /// contact: `catchStickyBallBeforeStep` takes the ball in `update`, before the physics step,
+    /// precisely so it never bounces. So nothing ever paid, and the refusal was total.
+    ///
+    /// The first fix dropped the guard, and the suite caught it - which is the whole argument
+    /// for tests that say *why* rather than only what.
+    func testACaughtBallOwesTheAutoAimTurnItsBounceWouldHave() {
+        let scene = fieldScene()
+        scene.paddleHeight = 12
+        scene.paddle.size = CGSize(width: 100, height: 12)
+        scene.paddle.position = CGPoint(x: 0, y: -200)
+        scene.stickyPaddleCatches = 3
+        scene.ballIsOnPaddle = false
+        scene.ball.physicsBody = SKPhysicsBody(circleOfRadius: 5)
+        scene.ball.physicsBody!.velocity = CGVector(dx: 0, dy: -600)
+
+        let paddleTop = scene.paddle.position.y + scene.paddleHeight/2
+        scene.ball.position = CGPoint(x: 0, y: paddleTop + scene.ball.size.height/2 + 1)
+        scene.ballStateBeforeStep[ObjectIdentifier(scene.ball)] =
+            BallState(position: scene.ball.position, velocity: CGVector(dx: 0, dy: -600))
+        // A ball one point above the surface, falling fast enough to cross it this step -
+        // which is the one frame `catchStickyBallBeforeStep` is written to act on
+
+        scene.endlessIICollectAutoAim()
+        XCTAssertFalse(scene.endlessIIAutoAimOwedTurn, "nothing owed before the catch")
+
+        scene.catchStickyBallBeforeStep()
+
+        XCTAssertTrue(scene.ballIsOnPaddle, "the catch happened at all")
+        XCTAssertTrue(scene.endlessIIAutoAimOwedTurn,
+                      "the catch is the contact, so it buys the contact's turn")
+    }
+
+    /// And with that paid, the launch aims - which is the whole of what James asked for.
+    func testTheLaunchAfterACatchAimsAtTheBrick() {
+        let scene = fieldScene()
+        scene.ballSpeedLimit = 100
+        let target = brick(in: scene, x: 60, y: 120)
+        scene.ball.position = .zero
+        scene.ball.physicsBody = SKPhysicsBody(circleOfRadius: 5)
+        scene.ball.physicsBody!.velocity = CGVector(dx: 0, dy: 100)
+
+        scene.endlessIICollectAutoAim()
+        scene.endlessIIAutoAimOwedTurn = true
+        // What the catch above leaves behind
+
+        scene.endlessIIAimTheStickyLaunch(scene.ball)
+
+        let leave = scene.ball.physicsBody!.velocity
+        let heading = atan2(Double(leave.dy), Double(leave.dx))
+        let wanted = atan2(Double(target.position.y - scene.ball.position.y),
+                           Double(target.position.x - scene.ball.position.x))
+        XCTAssertEqual(heading, wanted, accuracy: 0.001,
+                       "towards the aimed brick, not up the paddle's own angle")
+    }
+
     /// The turn is delivered once. A second release in the same breath - a Multi-Ball queue
     /// emptying on consecutive taps - must not keep aiming off one paid contact.
     func testTheOwedAimIsSpentByTheLaunchThatTakesIt() {

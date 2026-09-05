@@ -85,6 +85,30 @@ final class ResumeCardRenderTests: XCTestCase {
         return search(splash.view)
     }
 
+    /// Writes the three cards out as PNGs so they can be looked at.
+    ///
+    /// Not an assertion - a render. The project's rule is that visual work gets verified on the
+    /// simulator, and this screen is only reachable by force-quitting a game, so the cheapest
+    /// way to see all three cases is to draw them. Run it on an iOS 26 device to see the glass
+    /// button the way a player does.
+    func testWriteTheThreeCardsOutToBeLookedAt() {
+        var daily = base()
+        daily.dailyDateKey = DailyChallengeSession.shared.todayKey
+        daily.dailyWasScoringAttempt = true
+
+        for (name, game) in [("classic", base()), ("endless", endlessGame()), ("daily", daily)] {
+            let splash = laidOut(game)
+            splash.view.setNeedsLayout()
+            splash.view.layoutIfNeeded()
+            let renderer = UIGraphicsImageRenderer(bounds: splash.view.bounds)
+            let png = renderer.image { _ in
+                splash.view.drawHierarchy(in: splash.view.bounds, afterScreenUpdates: true)
+            }.pngData()!
+            try? png.write(to: URL(fileURLWithPath: "/tmp/gb2-\(name).png"))
+            print("SHOT \(name)")
+        }
+    }
+
     // MARK: - Everything at the bottom
 
     /// "With everything grouped towards the bottom."
@@ -92,9 +116,12 @@ final class ResumeCardRenderTests: XCTestCase {
         let splash = laidOut(base())
         let top = card(splash).filter { $0.isHidden == false }
             .map { $0.convert($0.bounds, to: splash.view).minY }.min()!
-        XCTAssertGreaterThan(top, screen.height * 0.6,
-                             "the heading starts below the two-thirds line, so the logo above "
-                             + "it has the room it has always had")
+        XCTAssertGreaterThan(top, screen.height * 0.55,
+                             "the heading starts in the bottom half, so the logo above it has "
+                             + "the room it has always had")
+        // 0.55 rather than 0.6 since round 311 gave the card its four groups of air: the block
+        // is taller by design now, and the assertion is about it being *grouped at the bottom*
+        // rather than about a line it must not cross
     }
 
     /// "Move the Resuming... label to just above the cancel button" - the card reads downwards
@@ -132,6 +159,34 @@ final class ResumeCardRenderTests: XCTestCase {
                           "and on the screen rather than off the end of it")
     }
 
+    /// **The button is the app's plain close button, not its confirm button** (James, round
+    /// 311: "the close button shouldn't be coloured. It should be a big version of the other
+    /// close / back buttons in the app").
+    ///
+    /// Round 310 built it `rimmed: true`, which is the lime prominent tint the app gives the
+    /// *positive* action in a row - the play, the confirm. Cancelling a resume is not that.
+    ///
+    /// Asserted on the pale-disc fallback, which is what every close button in the app paints
+    /// before `applyRoundGlass` puts glass over it on iOS 26 - the same two colours as the
+    /// music screen's and the run-stats screen's, and nothing lime anywhere.
+    func testTheButtonWearsTheSameColoursAsEveryOtherCloseButton() {
+        let splash = laidOut(base())
+        let button = try! XCTUnwrap(disc(splash))
+
+        var white: CGFloat = 0, alpha: CGFloat = 0
+        XCTAssertTrue(button.backgroundColor?.getWhite(&white, alpha: &alpha) ?? false,
+                      "the pale disc is a grey, as the other close buttons paint it")
+        XCTAssertEqual(white, 0.92, accuracy: 0.01)
+
+        var red: CGFloat = 0, green: CGFloat = 0, blue: CGFloat = 0, a: CGFloat = 0
+        button.tintColor.getRed(&red, green: &green, blue: &blue, alpha: &a)
+        XCTAssertEqual(red, 0.16, accuracy: 0.01, "the app's deep purple")
+        XCTAssertEqual(green, 0.0, accuracy: 0.01)
+        XCTAssertEqual(blue, 0.24, accuracy: 0.01)
+        XCTAssertFalse(green > 0.9 && red > 0.7 && blue < 0.2,
+                       "and emphatically not the lime that means confirm")
+    }
+
     /// The table view that used to be the Cancel row is gone, not merely hidden - a hidden view
     /// keeps its frame, and 70 points of it sat in the middle of the new layout.
     func testTheOldCancelRowIsOutOfTheHierarchy() {
@@ -155,7 +210,7 @@ final class ResumeCardRenderTests: XCTestCase {
                       "an endless mode's name has nothing under it")
         let endlessGap = endless.scoreLabel.frame.minY - endless.packNameLabel.frame.maxY
 
-        XCTAssertGreaterThan(endlessGap, 8,
+        XCTAssertGreaterThan(endlessGap, SplashViewController.groupGap - 1,
                              "the height must not sit jammed under the mode's name")
         XCTAssertEqual(endlessGap, classicGap, accuracy: 1,
                        "and it is the same gap the classic card puts above its score")

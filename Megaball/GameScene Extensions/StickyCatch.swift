@@ -103,6 +103,22 @@ extension GameScene {
         // The play test saw it as the ball "snapping into the middle of the paddle even if it
         // wasn't caught in the middle" (round 39)
 
+        endlessIIAutoAimOwedTurn = endlessIIAutoAimClock.isRunning
+        // **The catch buys the Auto-Aim turn the contact would have bought** (James, round 311:
+        // "with sticky paddle and auto aim on together, the ball should still launch towards the
+        // aimed brick. Currently it launches based on the ball's position on the paddle").
+        //
+        // The comment at the foot of this function has always said the shape of it: "the contact
+        // never happens now, so the tap and the sound `paddleHit` would have made have to be
+        // made here". The turn is the third thing on that list and it was missed, so
+        // `endlessIIAimTheStickyLaunch` - which correctly refuses to aim a launch that paid for
+        // nothing - refused every sticky launch there has ever been.
+        //
+        // Auto-Aim alone rather than `endlessIISpendPaddleTurns()`, which would spend a turn on
+        // every running paddle clock. That is arguably the consistent answer and it is a change
+        // to how eleven power-ups end, on a release branch, for a report about one - see §12.0,
+        // where the wider question is written down rather than smuggled in here
+
         performStickyCatch()
         // Moved to where it was going before it is stopped, so it sticks where it would have
         // landed rather than where it happened to be when the frame began

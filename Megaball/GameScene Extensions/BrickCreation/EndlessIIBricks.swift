@@ -1192,6 +1192,37 @@ extension GameScene {
 
     // MARK: - Driving
 
+    /// Advances the breathing bricks, **including while the aim is held**.
+    ///
+    /// James, twice: "during aimed sticky with the ball on the paddle, the breathing brick
+    /// animation is still pausing." The aim hold freezes the world from `update` - the descent,
+    /// the spinners, the movers and the timed clocks - because the play test caught the field
+    /// stepping past a ball that was sitting on the paddle, and a player releasing into bricks
+    /// that had moved since they aimed.
+    ///
+    /// Breathing is the exception, and it is the exception on the brick's own terms: "the
+    /// interest is in the gap it opens and closes... a brick you time rather than one you aim
+    /// at" (`makeBreathing`). Freezing it while the player lines up a shot removes the whole of
+    /// what the brick is for, and a pulse that stops dead reads as the game having hung.
+    ///
+    /// A clock of its own rather than `endlessIILastTick`, which the hold pins to now every
+    /// frame so that everything else resumes where it stopped. This one is allowed to keep
+    /// running, and because each caller stamps it, the two cannot advance it twice in a frame.
+    func tickEndlessIIBreathing(_ currentTime: TimeInterval) {
+        guard gameMode == .endlessII else { return }
+
+        let elapsed = currentTime - endlessIIBreathLastTick
+        endlessIIBreathLastTick = currentTime
+        guard gameState.currentState is Playing else { return }
+        let delta = min(max(elapsed, 0), GameScene.maximumTickInterval)
+        guard delta > 0 else { return }
+
+        endlessIIBreathers.removeAll { $0.brick.parent == nil }
+        for index in endlessIIBreathers.indices {
+            advanceBreather(at: index, by: delta)
+        }
+    }
+
     /// Advances the spinning and flashing bricks. Called once a frame.
     func tickEndlessIIBricks(_ currentTime: TimeInterval) {
         guard gameMode == .endlessII else { return }
@@ -1212,10 +1243,10 @@ extension GameScene {
             advanceFlasher(at: index, by: delta)
         }
 
-        endlessIIBreathers.removeAll { $0.brick.parent == nil }
-        for index in endlessIIBreathers.indices {
-            advanceBreather(at: index, by: delta)
-        }
+        tickEndlessIIBreathing(currentTime)
+        // Driven from here in the ordinary case, and from `update` directly while the aim is
+        // held - see `tickEndlessIIBreathing` for why it is the one thing the hold does not
+        // freeze. Its own clock, so the two callers cannot advance it twice in a frame
 
         endlessIIResolveAnchorOverlaps()
         // Before the drift and the roles move anything: a brick sharing space with an anchor

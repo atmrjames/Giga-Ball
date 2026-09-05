@@ -1151,13 +1151,11 @@ class LevelPackSetup {
         "Giga-Wrecking Ball!",                      // 79 mayhemWreckingGiga
         "Juggler",                                  // 80 mayhemThreeBalls
         "Wormhole",                                 // 81 mayhemPortalTravel
-        "Backwards Compatible",                     // 82 mayhemSurviveReversed
-        // **Not "Paddle Master", which the workbook asks for and which is already taken**
-        // (round 310). Index 42 has worn that name since 2020 - it is the ten-paddle-hit level
-        // clear - and two achievements with one name is a page a player cannot read.
-        // `testAchievementNamesAreUnique` caught it. This is a placeholder in the game's own
-        // voice, beside Blur, Pokey, Juggler and Butter Fingers, and James can rename it: both
-        // the name and the identifier are still unshipped
+        "Paddle Guru",                              // 82 mayhemSurviveReversed
+        // **James's rename** (round 311). The workbook asked for "Paddle Master", which index 42
+        // has worn since 2020 for the ten-paddle-hit level clear, and two achievements sharing a
+        // name is a page a player cannot read - `testAchievementNamesAreUnique` caught it.
+        // Round 310 shipped "Backwards Compatible" as a placeholder and this is his answer
         "Power-Up Completionist",                   // 83 allPowerUpsCollected
         "Multi-Talented",                           // 84 fivePowerUpsActive
         "First Daily Challenge",                    // 85 firstDailyChallenge

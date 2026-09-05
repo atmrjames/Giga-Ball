@@ -279,6 +279,69 @@ final class StickyBandAlignmentTests: XCTestCase {
         }
     }
 
+    /// **The overlays follow a paddle that something else moved** (round 311).
+    ///
+    /// James, four reports running: the sticky band and the laser turrets sit a point or two off
+    /// the paddle while it is held against a wall. Three rounds measured positions and found
+    /// them identical, because every *writer* of `paddle.position.x` re-places the overlays in
+    /// the same breath. The mover nobody had counted is the physics engine: the paddle is a
+    /// dynamic body that collides with the border, so the solver pushes it out of the wall after
+    /// `touchesMoved` and after `didEvaluateActions` have both had their say.
+    ///
+    /// The paddle is moved here the way the solver moves it - directly, behind everybody's back
+    /// - and `didFinishUpdate` is the frame's last word before it is drawn.
+    func testTheOverlaysFollowAPaddleMovedBehindTheirBack() {
+        let game = scene()
+        game.paddle.position.x = 120
+        game.positionPaddleOverlays()
+        XCTAssertEqual(game.paddleSticky.position.x, 120, accuracy: 0.01, "placed to begin with")
+
+        game.paddle.position.x = 118.4
+        // 1.6 points, which is the size of the penetration a solver resolves at a wall
+
+        XCTAssertEqual(game.paddleSticky.position.x, 120, accuracy: 0.01,
+                       "and this is the bug: the band is still where the paddle used to be")
+
+        game.didFinishUpdate()
+        XCTAssertEqual(game.paddleSticky.position.x, game.paddle.position.x, accuracy: 0.01,
+                       "the band follows before the frame is drawn")
+        XCTAssertEqual(game.paddleLaser.position.x, game.paddle.position.x, accuracy: 0.01,
+                       "and so does the laser strip, which is the same report")
+    }
+
+    /// Every strip, not only the two the report named.
+    func testEveryStripFollows() {
+        let game = scene()
+        game.paddle.position.x = 60
+        game.positionPaddleOverlays()
+        game.positionRetroPaddleLayers()
+
+        game.paddle.position.x = 57.5
+        game.didFinishUpdate()
+
+        for (name, node) in [("sticky", game.paddleSticky), ("laser", game.paddleLaser),
+                             ("retro", game.paddleRetroTexture),
+                             ("retro laser", game.paddleRetroLaserTexture),
+                             ("retro sticky", game.paddleRetroStickyTexture)] {
+            XCTAssertEqual(node.position.x, game.paddle.position.x, accuracy: 0.01, name)
+        }
+    }
+
+    /// And a frame where nothing moved costs one comparison and writes nothing.
+    ///
+    /// Worth a test of its own: this runs on every frame of every mode, so a version of it that
+    /// re-placed the strips unconditionally would put `refreshEndlessIISplitDress` on the hot
+    /// path for the whole game rather than for the frames where the paddle actually moved.
+    func testAStillPaddleCostsNothing() {
+        let game = scene()
+        game.paddle.position.x = 42
+        game.positionPaddleOverlays()
+        let before = game.paddleSticky.position
+        game.didFinishUpdate()
+        XCTAssertEqual(game.paddleSticky.position.x, before.x, accuracy: 0.0001)
+        XCTAssertEqual(game.paddleSticky.position.y, before.y, accuracy: 0.0001)
+    }
+
     /// **What the retro paddle's six scale factors actually are** (round 310).
     ///
     /// Expand and Shrink run six `scaleX` actions. The plain paddle and its two strips go to

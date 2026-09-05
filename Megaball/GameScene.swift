@@ -997,6 +997,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var endlessIIFlashers: [EndlessIIFlasher] = []
 	var endlessIIBreathers: [EndlessIIBreather] = []
 	var endlessIILastTick: TimeInterval = 0
+
+	/// The breathing bricks' own clock, so they can keep going while the aim hold pins
+	/// everything else - see `tickEndlessIIBreathing` (round 311).
+	var endlessIIBreathLastTick: TimeInterval = 0
 	/// Which frame this is, counted in `update`.
 	var frameNumber: Int = 0
 	/// The frame each ball's last counted paddle landing was in.
@@ -2771,6 +2775,42 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         // is nearly all of them - this is one comparison
     }
 
+    /// The paddle's overlays follow it after *everything* has finished moving it.
+    ///
+    /// **This is James's misaligned sticky band, reported four times** (round 305: "the sticky
+    /// paddle graphic, like the laser turrets graphic, is moving away from the paddle a pixel or
+    /// two when the paddle is dragged against the edge"; round 310: "still misaligning... at
+    /// normal width, on the classic theme").
+    ///
+    /// Three rounds looked for a positional bug and found none, because there is none: every
+    /// writer of `paddle.position.x` calls `positionPaddleOverlays()` in the same breath, and
+    /// the two frames match exactly wherever you measure them. What nobody had asked is **who
+    /// else moves the paddle**.
+    ///
+    /// The physics engine does. `paddle.physicsBody!.isDynamic = true` and its
+    /// `collisionBitMask` includes `boarderCategory`, so a paddle driven into a wall is a body
+    /// in contact with another body, and the solver pushes it back out by however far it
+    /// penetrated. That happens **after** `touchesMoved` has placed the overlays and after
+    /// `didEvaluateActions` has run the clamp - and nothing put them right again, so the
+    /// overlays kept the pre-physics x for the whole of the frame that was drawn.
+    ///
+    /// It is a point or two, it only shows while the paddle is held against a wall, and it
+    /// happens in every mode, at every width, under every theme - which is exactly the report,
+    /// and exactly what a bug in the *frame order* looks like rather than one in the maths.
+    ///
+    /// `didFinishUpdate` rather than `didSimulatePhysics`: it is the last callback before the
+    /// frame is rendered, after constraints as well as after physics, so nothing can move the
+    /// paddle behind its back. The guard is one comparison on the frames where nothing moved,
+    /// which is nearly all of them, and it catches *any* mover rather than the one this round
+    /// happens to know about.
+    override func didFinishUpdate() {
+        guard paddleLaser.position.x != paddle.position.x
+                || paddleLaser.position.y != paddle.position.y - paddle.size.height/2
+        else { return }
+        positionPaddleOverlays()
+        positionRetroPaddleLayers()
+    }
+
     override func didSimulatePhysics() {
         guard endlessIIAimHold == false else {
             sweepDyingBricks()
@@ -2934,6 +2974,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			if endlessIIAimHold {
 				endlessIILastTick = currentTime
 				endlessIIPaddleLastTick = currentTime
+				tickEndlessIIBreathing(currentTime)
+				// **Except the breathers** (James, round 311: "during aimed sticky with the
+				// ball on the paddle, the breathing brick animation is still pausing"). A
+				// breathing brick is one the player *times* - the gap it opens is the shot -
+				// so freezing it while they line that shot up removes the whole point of it,
+				// and a pulse that stops dead reads as a hang. Its own clock, which is why it
+				// can keep running while everything around it is pinned
 				// The aim hold freezes the *world*, and most of the world is driven from
 				// right here rather than from node actions - the descent, the spinners
 				// and movers, the timed clocks. The play test caught the gap: lasers

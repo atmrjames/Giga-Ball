@@ -83,10 +83,48 @@ final class ResumeCardTests: XCTestCase {
         XCTAssertEqual(lines.mode, GameMode.classic.name,
                        "the mode leads, which is what the screen never used to say at all")
         XCTAssertEqual(lines.detail, packs.levelPackNameArray[2] + " - Level 4 of "
-                       + String(packs.numberOfLevels[2]),
-                       "pack before level, the order round 310 asked the daily's card for too")
+                       + String(packs.numberOfLevels[2])
+                       + "\n" + packs.levelNameArray[classicGame().levelNumber],
+                       "pack before level, then the level's own name on a line of its own")
         XCTAssertEqual(lines.scoreTitle, "Score")
         XCTAssertEqual(lines.scoreValue, "3400")
+        XCTAssertEqual(lines.lives, "3 balls left",
+                       "two in the rack and the one on the paddle")
+    }
+
+    /// "For the classic mode level, can it also show the name of the level, maybe on another
+    /// line underneath" (James, round 311).
+    func testAClassicRunNamesTheLevelItIsOn() {
+        let lines = ResumeCard.lines(for: classicGame(), fallbackMode: .classic)
+        let name = LevelPackSetup().levelNameArray[classicGame().levelNumber]
+        XCTAssertEqual(lines.detail.components(separatedBy: "\n").count, 2,
+                       "where in the pack, then what it is called")
+        XCTAssertEqual(lines.detail.components(separatedBy: "\n").last, name)
+        XCTAssertFalse(name.isEmpty)
+    }
+
+    /// "The number of lives could come back underneath the score" (James, round 311).
+    func testTheRackIsCountedWithTheBallOnThePaddle() {
+        XCTAssertEqual(ResumeCard.livesLine(1), "Last ball")
+        XCTAssertEqual(ResumeCard.livesLine(3), "3 balls left")
+
+        var game = classicGame()
+        game.numberOfLives = 0
+        XCTAssertEqual(ResumeCard.lines(for: game, fallbackMode: .classic).lives, "Last ball",
+                       "an empty rack still has the ball about to be served")
+    }
+
+    /// An endless run says nothing about its single life, the rule the pause screen follows.
+    func testAnEndlessRunWithNoRackSaysNothingAboutIt() {
+        var game = endlessGame(.endlessII)
+        game.numberOfLives = 0
+        XCTAssertEqual(ResumeCard.lines(for: game, fallbackMode: .endlessII).lives, "",
+                       "it is not news that an endless run has one ball")
+
+        game.numberOfLives = 2
+        XCTAssertEqual(ResumeCard.lines(for: game, fallbackMode: .endlessII).lives,
+                       "3 balls left",
+                       "and it is news when a twist has granted more")
     }
 
     /// A single level is not a pack, and says so where the pack name would go.
@@ -148,11 +186,14 @@ final class ResumeCardTests: XCTestCase {
 
         let lines = ResumeCard.lines(for: game, fallbackMode: .classic)
         XCTAssertEqual(lines.mode, GameMode.daily.name)
-        XCTAssertTrue(lines.detail.contains("Competition run"),
-                      "got: \(lines.detail)")
-        XCTAssertTrue(lines.detail.hasPrefix(
-            DailyChallengeSession.shared.displayName(forKey: key).capitalized),
-                      "the day leads the detail line, got: \(lines.detail)")
+
+        let rows = lines.detail.components(separatedBy: "\n")
+        XCTAssertEqual(rows.count, 3, "what is being played, the day, and that it counts")
+        XCTAssertEqual(rows[1],
+                       DailyChallengeSession.shared.displayName(forKey: key).capitalized,
+                       "**the day sits under the mode and above the competition line** "
+                       + "(James, round 311), got: \(lines.detail)")
+        XCTAssertEqual(rows[2], "Competition run")
     }
 
     /// Free play on today's challenge is not a competition run, and says nothing.
@@ -161,8 +202,10 @@ final class ResumeCardTests: XCTestCase {
         game.dailyDateKey = DailyChallengeSession.shared.todayKey
         game.dailyWasScoringAttempt = false
 
-        XCTAssertFalse(ResumeCard.lines(for: game, fallbackMode: .classic)
-            .detail.contains("Competition"))
+        let lines = ResumeCard.lines(for: game, fallbackMode: .classic)
+        XCTAssertFalse(lines.detail.contains("Competition"))
+        XCTAssertEqual(lines.detail.components(separatedBy: "\n").count, 2,
+                       "what is being played, and the day - and nothing else")
     }
 
     /// Neither is a run resumed after its day closed, however it started.
@@ -177,9 +220,8 @@ final class ResumeCardTests: XCTestCase {
         let lines = ResumeCard.lines(for: game, fallbackMode: .classic)
         XCTAssertFalse(lines.detail.contains("Competition"),
                        "the window is the day, and the day has gone")
-        XCTAssertTrue(lines.detail.hasPrefix("1 January 2020")
-                      || lines.detail.isEmpty == false,
-                      "the day it was still names itself, got: \(lines.detail)")
+        XCTAssertEqual(lines.detail.components(separatedBy: "\n").count, 2,
+                       "what was played and which day it was, got: \(lines.detail)")
     }
 
     /// An endless daily reads its unit off the challenge, not off the save's level number -
@@ -200,9 +242,10 @@ final class ResumeCardTests: XCTestCase {
             XCTAssertEqual(lines.scoreTitle, "Height")
             XCTAssertEqual(lines.scoreValue, "88m")
         }
-        XCTAssertTrue(lines.detail.contains(challenge.mode == .classic
-                                            ? LevelPackSetup().levelNameArray[game.levelNumber]
-                                            : challenge.mode.name),
-                      "the day's own mode or level names itself, got: \(lines.detail)")
+        XCTAssertEqual(lines.detail.components(separatedBy: "\n").first,
+                       challenge.mode == .classic
+                       ? LevelPackSetup().levelNameArray[game.levelNumber]
+                       : challenge.mode.name,
+                       "the day's own mode or level leads, got: \(lines.detail)")
     }
 }

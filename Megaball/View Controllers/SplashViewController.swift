@@ -41,6 +41,32 @@ enum ResumeCard {
         /// The score row, split so the screen can set two faces on one line.
         var scoreTitle = ""
         var scoreValue = ""
+
+        /// What the rack has left, under the score. Empty where the mode has no rack to speak
+        /// of - the endless modes are one ball, and saying so every time is not news.
+        var lives = ""
+    }
+
+    /// How the rack is spoken about, which is the pause screen's own wording.
+    static func livesLine(_ balls: Int) -> String {
+        balls == 1 ? "Last ball" : "\(balls) balls left"
+    }
+
+    /// What the rack has left, or nothing at all.
+    ///
+    /// James, round 311: "the number of lives could come back underneath the score." It went in
+    /// round 310 with the footnote it shared a label with, and it is worth having - a run
+    /// resumed with one ball left is a different proposition from one resumed with three.
+    ///
+    /// The endless modes say nothing unless something granted them a rack, which is the rule
+    /// the pause screen already follows: it is not news that an endless run has one ball, and
+    /// it is news when a twist has given more.
+    private static func livesRow(_ game: SavedGame, endless: Bool) -> String {
+        if endless, game.numberOfLives <= 0 { return "" }
+        return livesLine(game.numberOfLives + 1)
+        // Plus the one on the paddle: `numberOfLives` is the *rack*, and a player counting
+        // their balls counts the one they are about to serve as well (round 228's lesson,
+        // written down in `dailyStartingLives`)
     }
 
     /// - Parameter fallbackMode: the remembered mode, for saves written before `gameMode`
@@ -54,13 +80,20 @@ enum ResumeCard {
             let session = DailyChallengeSession.shared
             let challenge = DailyChallengeGenerator.challenge(forKey: key)
             lines.mode = GameMode.daily.name
-            lines.detail = session.displayName(forKey: key).capitalized + ", "
-                + (challenge.mode == .classic
-                   ? packs.levelNameArray[game.levelNumber]
-                   : challenge.mode.name)
+            var detail = [challenge.mode == .classic
+                          ? packs.levelNameArray[game.levelNumber]
+                          : challenge.mode.name]
+            detail.append(session.displayName(forKey: key).capitalized)
+            // **The day on a line of its own, under what is being played** (James, round 311:
+            // "for the Daily Challenge, put the date detail underneath the game mode and before
+            // Competition run"). It used to share a line with the mode, joined by a comma, and
+            // the two are different kinds of fact - one says what you are playing and the other
+            // says which day's it is
             if key == session.todayKey, game.dailyWasScoringAttempt == true {
-                lines.detail += "\nCompetition run"
+                detail.append("Competition run")
             }
+            lines.detail = detail.joined(separator: "\n")
+            lines.lives = livesRow(game, endless: challenge.mode.isEndless)
             // **The day's own word for what this run is** (James, round 310: "if it's a
             // competition run on a daily challenge say that in the details label"). It replaces
             // "Still your scoring attempt.", which said the same thing as a footnote under the
@@ -84,6 +117,7 @@ enum ResumeCard {
             // field existed still fall back to the key, which is what they were always doing
             lines.scoreTitle = "Height"
             lines.scoreValue = String(game.endlessHeight) + "m"
+            lines.lives = livesRow(game, endless: true)
             return lines
         }
 
@@ -92,13 +126,19 @@ enum ResumeCard {
             let within = game.levelNumber - packs.startLevelNumber[game.packNumber] + 1
             lines.detail = packs.levelPackNameArray[game.packNumber]
                 + " - Level \(within) of \(packs.numberOfLevels[game.packNumber])"
-            // Pack before level, the order James asked the daily's card for in the same round
+                + "\n" + packs.levelNameArray[game.levelNumber]
+            // Pack before level, the order James asked the daily's card for in the same round,
+            // and **the level's own name under it** (James, round 311: "for the classic mode
+            // level, can it also show the name of the level, maybe on another line
+            // underneath"). Where it is in the pack and what it is called are two different
+            // questions, and a player coming back after a day away wants the second one
         } else {
             lines.mode = "Single Level Mode"
             lines.detail = packs.levelNameArray[game.levelNumber]
         }
         lines.scoreTitle = "Score"
         lines.scoreValue = String(game.totalScore)
+        lines.lives = livesRow(game, endless: false)
         return lines
     }
 }
@@ -261,7 +301,8 @@ class SplashViewController: UIViewController {
             modeLabel.text = lines.mode
             detailLabel.text = lines.detail
             detailLabel.isHidden = lines.detail.isEmpty
-            resumeStack?.setCustomSpacing(lines.detail.isEmpty ? 10 : 0, after: modeLabel)
+            resumeStack?.setCustomSpacing(
+                lines.detail.isEmpty ? SplashViewController.groupGap : 0, after: modeLabel)
             // **The air above the score has to move with the line that carries it.** A stack
             // skips the custom spacing after a hidden arranged view, so hiding the detail line
             // in the endless modes - where a mode's name has nothing under it to say - took the
@@ -269,6 +310,8 @@ class SplashViewController: UIViewController {
             // Mayhem". Caught by rendering the three cards and looking at them
             scoreLabel.attributedText = resumeScoreLine(title: lines.scoreTitle,
                                                         value: lines.scoreValue)
+            livesLabel.text = lines.lives
+            livesLabel.isHidden = lines.lives.isEmpty
             // Said before the resume, never discovered after it (§12.5) - the same rule the
             // briefing screen follows for whether an attempt posts
 
@@ -324,10 +367,18 @@ class SplashViewController: UIViewController {
         resumingLabel.textColor = GigaBallGlow.colour
         resumingLabel.adjustsFontSizeToFitWidth = true
         resumingLabel.minimumScaleFactor = 0.6
-        resumingLabel.applyGigaBallGlow(radius: GigaBallGlow.headingRadius)
+        resumingLabel.applyGigaBallGlow(radius: GigaBallGlow.wordmarkRadius, opacity: 0.8)
         // The face, colour and halo every menu screen's title wears - `menuTitleFont` is the
         // one place those 35 black points are written down (round 212 found two screens that
-        // had drifted off it)
+        // had drifted off it).
+        //
+        // **A wider, brighter halo than a heading's** (James, round 311: "can we also add a glow
+        // to the resuming... header like some of the other headers"). It had one already, at
+        // `headingRadius` and 0.6, which is what PAUSED and GAME OVER wear - and those sit on a
+        // busy screen where a tight halo is enough to lift them off it. This one sits alone on
+        // an empty field with nothing near it to be lifted off, so the same halo reads as
+        // almost nothing. The wordmark's radius is the one the logo uses for exactly that
+        // reason: a word with space around it needs the light to travel
 
         modeLabel.font = .systemFont(ofSize: 25, weight: .bold)
         modeLabel.textColor = UIColor(white: 0.871, alpha: 1)
@@ -344,15 +395,30 @@ class SplashViewController: UIViewController {
         // because round 310 asked for the mode first and its detail under it, so the larger of
         // the two is on top
 
+        livesLabel.font = .systemFont(ofSize: 17, weight: .semibold)
+        livesLabel.textColor = UIColor(white: 0.667, alpha: 1)
+        livesLabel.textAlignment = .center
+        livesLabel.numberOfLines = 1
+        livesLabel.translatesAutoresizingMaskIntoConstraints = false
+        // The pause screen's own detail face, so the rack reads as a footnote to the score
+        // rather than as a second number competing with it
+
         let stack = UIStackView(arrangedSubviews: [resumingLabel, modeLabel,
-                                                   detailLabel, scoreLabel])
+                                                   detailLabel, scoreLabel, livesLabel])
         stack.axis = .vertical
         stack.alignment = .fill
         stack.spacing = 0
         stack.translatesAutoresizingMaskIntoConstraints = false
-        stack.setCustomSpacing(8, after: resumingLabel)
-        stack.setCustomSpacing(10, after: detailLabel)
+        stack.setCustomSpacing(SplashViewController.groupGap, after: resumingLabel)
+        stack.setCustomSpacing(SplashViewController.groupGap, after: detailLabel)
+        stack.setCustomSpacing(SplashViewController.groupGap, after: scoreLabel)
         resumeStack = stack
+        // **Four groups rather than five lines** (James, round 311: "add a gap between the
+        // Resuming header and the game mode / level information, and then another gap between
+        // the level information and score and then another gap to the balls remaining. Not
+        // huge gaps, just big enough to provide some separation and grouping"). The mode and
+        // its detail keep no gap between them, because they are one group - what a run is and
+        // where in it you are
         // Nothing between the mode and its detail, which is how the pause screen sets its two,
         // and air either side of that pair: the heading is a heading and the score is the
         // number the player came back for
@@ -370,13 +436,17 @@ class SplashViewController: UIViewController {
         cancel.addTarget(self, action: #selector(cancelResumeTapped), for: .touchUpInside)
         container.addSubview(cancel)
         applyRoundGlass(to: cancel, radius: size/2,
-                        symbol: "xmark", pointSize: 28, rimmed: true)
+                        symbol: "xmark", pointSize: 28, rimmed: false)
         // The pale disc first and the glass over it, in that order, because `applyRoundGlass`
         // only draws the glass on iOS 26 and leaves an older phone whatever the caller set -
         // which is the pattern every other round button here follows (round 94's sweep).
         //
-        // Rimmed, at the large size: this is the one button on the screen, and the app draws
-        // the one button in a row as the lime disc
+        // **Unrimmed** (James, round 311: "the close button shouldn't be coloured. It should be
+        // a big version of the other close / back buttons in the app"). `rimmed: true` is the
+        // lime prominent tint the app gives the *positive* action in a row - the play, the
+        // confirm - and cancelling a resume is not that. Every close and back button in the app
+        // is the plain purple glass, and this is that button at `largeButtonSize` because it is
+        // the only one on the screen
         NSLayoutConstraint.activate([
             stack.centerXAnchor.constraint(equalTo: container.centerXAnchor),
             stack.leadingAnchor.constraint(greaterThanOrEqualTo: container.leadingAnchor,
@@ -399,6 +469,22 @@ class SplashViewController: UIViewController {
     /// The card's stack, kept so the spacing can be adjusted once the words are known.
     private weak var resumeStack: UIStackView?
 
+    /// The air between the card's four groups.
+    ///
+    /// One number, used three times, because the point of it is *rhythm* - three different gaps
+    /// would read as three unrelated decisions rather than as a card in four parts. Fourteen is
+    /// "just big enough to provide some separation" rather than the 8 and 10 it replaced, which
+    /// were small enough that the five lines read as one block (James, round 311: "it still
+    /// seems quite overwhelming").
+    static let groupGap: CGFloat = 14
+
+    /// What the rack has left, under the score (round 311).
+    ///
+    /// Built in code rather than added to the storyboard scene: the card is a stack now, so a
+    /// fifth row costs one `arrangedSubviews` entry, where a fifth outlet would mean editing
+    /// the scene's XML by hand and wiring a connection that only this screen uses.
+    private let livesLabel = UILabel()
+
     @objc private func cancelResumeTapped() {
         if hapticsSetting { interfaceHaptic.impactOccurred() }
         NotificationCenter.default.post(name: .cancelGameResume, object: nil)
@@ -419,23 +505,52 @@ class SplashViewController: UIViewController {
     /// two detail lines it made the block taller than the screen had room for. The two faces
     /// are the pause screen's `scoreLabelTitle` and `scoreLabel`, 20 semibold grey and 35 black
     /// white, so the line reads as the same row that screen shows.
+    /// The face the in-game score is drawn in.
+    ///
+    /// James, round 311: "can the score use the same font as the in game score?" That is Fugaz
+    /// One - the one custom face the app registers, and the one the HUD's score, height and
+    /// multiplier are all set in. The number on this screen is the same number the HUD was
+    /// showing a moment before the app was quit, so it should look like it.
+    ///
+    /// Falls back to the black system face if the font ever fails to load, because a resume
+    /// screen with no score on it would be worse than one in the wrong face.
+    static var scoreFace: UIFont {
+        UIFont(name: "FugazOne-Regular", size: 30) ?? .systemFont(ofSize: 30, weight: .black)
+    }
+    // Thirty rather than thirty-five (James, round 311: "perhaps the score could get a little
+    // bit smaller"). Fugaz One sets larger on the body than the system face does at the same
+    // point size - it is a display face with a tall x-height - so the 35 that was right for
+    // `systemFont(.black)` reads as a size up in this one
+
+    /// The face the word beside it wears - the pause screen's score title.
+    static let scoreTitleFace = UIFont.systemFont(ofSize: 20, weight: .semibold)
+
     private func resumeScoreLine(title: String, value: String) -> NSAttributedString {
         let paragraph = NSMutableParagraphStyle()
         paragraph.alignment = .center
 
+        let number = SplashViewController.scoreFace
+        let word = SplashViewController.scoreTitleFace
+        let lift = (number.capHeight - word.capHeight)/2
+        // **Centred on the number, not sat on its baseline** (James, round 311: "can we also
+        // align the score label so it's vertically centred with the score"). Two faces on one
+        // line share a baseline unless told otherwise, which puts the small word level with the
+        // big number's *feet*. Raising it by half the difference in cap heights puts the middle
+        // of the word level with the middle of the digits - measured off the fonts rather than
+        // nudged by eye, so it stays right if either size changes
+
         let line = NSMutableAttributedString(
             string: title + "  ",
-            attributes: [.font: UIFont.systemFont(ofSize: 20, weight: .semibold),
+            attributes: [.font: word,
                          .foregroundColor: UIColor(white: 0.667, alpha: 1),
+                         .baselineOffset: lift,
                          .paragraphStyle: paragraph])
         line.append(NSAttributedString(
             string: value,
-            attributes: [.font: UIFont.systemFont(ofSize: 35, weight: .black),
+            attributes: [.font: number,
                          .foregroundColor: UIColor.white,
                          .paragraphStyle: paragraph]))
         return line
-        // Two sizes on one line sit on a shared baseline without being asked to, which is why
-        // the grey title lines up under the number's feet rather than its middle
     }
 
 

@@ -362,12 +362,20 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
             dateBlockGuide.topAnchor.constraint(equalTo: dateLabel.topAnchor),
             dateBlockGuide.bottomAnchor.constraint(equalTo: countdownLabel.bottomAnchor),
             backArrow.centerYAnchor.constraint(equalTo: dateBlockGuide.centerYAnchor),
-            backArrow.centerXAnchor.constraint(equalTo: view.centerXAnchor, constant: -150),
             forwardArrow.centerYAnchor.constraint(equalTo: dateBlockGuide.centerYAnchor),
-            forwardArrow.centerXAnchor.constraint(equalTo: view.centerXAnchor,
-                                                  constant: 150),
+            backArrow.leadingAnchor.constraint(greaterThanOrEqualTo: view.leadingAnchor,
+                                               constant: 10),
+            forwardArrow.trailingAnchor.constraint(lessThanOrEqualTo: view.trailingAnchor,
+                                                   constant: -10),
             // Centred on the date-and-countdown pair as one block (play-test round 12),
-            // via a layout guide spanning both
+            // via a layout guide spanning both.
+            //
+            // **The 150 is a preference now, not a rule** (round 311). Pinned at exactly
+            // ±150 from the centre, a 30pt arrow on a 320pt screen sat at -5 and 325 - five
+            // points off each edge - which is what `testTheDailyBriefingFitsEveryWindow`
+            // found the moment the iPad's window floor came down to the smallest phone the
+            // app supports. The offset still decides where they sit on every screen wide
+            // enough for it; the two inequalities above only bite below about 340
 
             countdownLabel.topAnchor.constraint(equalTo: dateLabel.bottomAnchor,
                                                 constant: 4),
@@ -401,6 +409,15 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
             // 40pt like every other menu's small buttons - only the play is big
 
         ])
+
+        for (arrow, offset) in [(backArrow, CGFloat(-150)), (forwardArrow, CGFloat(150))] {
+            let preferred = arrow.centerXAnchor.constraint(equalTo: view.centerXAnchor,
+                                                          constant: offset)
+            preferred.priority = .defaultHigh
+            preferred.isActive = true
+        }
+        // Separated from the block above because a constraint's priority has to be set before
+        // it is activated, and `NSLayoutConstraint.activate` gives no chance to
     }
 
     private func roundButton(system: String, action: Selector, size: CGFloat = 50) -> UIButton {
