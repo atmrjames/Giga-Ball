@@ -8516,14 +8516,23 @@ laserTimer?.invalidate()
 
 		let percent = min(max(fraction, 0), 1)*100
 		let spelled = percent >= 100 ? "100%" : String(format: "%.1f", percent) + "%"
-		guard 83 >= totalStatsArray[0].achievementsPercentageCompleteArray.count
-				|| totalStatsArray[0].achievementsPercentageCompleteArray[83] != spelled
-		else { return }
-		// **Only when the number actually moves.** This runs on every power-up collected, and
-		// `awardProgress` reports to Game Center each time it is called - a run where nothing new
-		// has been collected would send the same percentage away every ten seconds for nothing.
-		// The share is compared as the string that would be written, so the two cannot round
-		// differently and disagree about whether anything changed
+		let stored = 83 < totalStatsArray[0].achievementsPercentageCompleteArray.count
+			? totalStatsArray[0].achievementsPercentageCompleteArray[83] : nil
+		if percent < 100, stored == spelled { return }
+		// **Only when the number actually moves - and never on the last step.** This runs on
+		// every power-up collected, and `awardProgress` reports to Game Center each time it is
+		// called, so a run where nothing new has been collected would send the same percentage
+		// away every ten seconds for nothing. The share is compared as the string that would be
+		// written, so the two cannot round differently and disagree about whether anything
+		// changed.
+		//
+		// The `percent < 100` is not decoration. Without it a file whose percentage already says
+		// "100%" while the unlocked flag is still false would take the early return for ever and
+		// never earn the achievement. `awardProgress` writes the two together so they cannot
+		// drift apart locally - but the iCloud merge takes the flags and the percentages from
+		// different sides, ORing one and copying the other, and the whole reason
+		// `padded(_:toMatch:)` exists is that this family of arrays does come back disagreeing.
+		// A completion is always delivered; only the steps on the way are throttled
 
 		awardProgress(83, fraction: fraction)
 		// Through `awardProgress` rather than `award`, because Game Center draws a bar for this
