@@ -1190,6 +1190,13 @@ extension GameScene {
         // touch resets it. The Portal Paddle network is exempt: its exit is the paddle
         // itself, already the player's
 
+        if partner != nil, endlessIIPortalPaddleClock.isRunning == false { _ = award(81) }
+        // **Wormhole**: "have the ball travel between 2 portal bricks" (round 310). Two
+        // *bricks*, so a lone portal lifting the ball to the top of the field does not count,
+        // and neither does the Portal Paddle network - while that runs every portal exits at
+        // the paddle rather than at another brick, which is the same journey the achievement is
+        // not describing
+
         endlessIIPortalKeepsHeading = partner != nil || endlessIIPortalPaddleClock.isRunning
         endlessIIPortalExitVelocity = leaving
 

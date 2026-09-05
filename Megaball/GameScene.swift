@@ -497,6 +497,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     // Object layout property defintion
     
     var ballIsOnPaddle: Bool = true
+    /// The reserve balls a Classic run starts with, over and above the one on the paddle.
+    ///
+    /// Named in round 310 because two places need it and one of them was reading it from the
+    /// wrong side of an assignment - see `dailyStartingLives`.
+    static let classicStartingRack = 3
+
     var numberOfLives: Int = 0
     var collisionLocation: Double = 0
     var minAngleDeg: Double = 0
@@ -1983,6 +1989,20 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	// Setup game timer
 		
 	func endlessModeDurationCheck() {
+		if gameMode == .endlessII, isDailyChallenge == false {
+			for (seconds, index) in [(60, 72), (300, 73), (600, 74), (1800, 75), (3600, 76)]
+			where levelTimerValue >= seconds {
+				award(index)
+			}
+		}
+		// **Mayhem's own duration milestones** (round 309, from James's workbook). The five below
+		// are guarded by `endlessMode`, which is true in both endless modes, so a Mayhem run has
+		// always earned them - what it had no way to earn was anything that says *Mayhem*.
+		//
+		// Not a daily: `achievementsCheck` returns early for one, and a daily played on a level
+		// nobody has earned must not unlock what earning it would have (daily spec §9). The same
+		// rule the existing milestones follow.
+
 		if levelTimerValue >= 60 && totalStatsArray[0].achievementsUnlockedArray[17] == false {
 			totalStatsArray[0].achievementsUnlockedArray[17] = true
 			totalStatsArray[0].achievementDates[17] = Date()
@@ -3003,7 +3023,96 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		}
     }
     
+    /// Awards an achievement by index, once.
+    ///
+    /// **One place, instead of ten lines per achievement** (round 309). The pattern this
+    /// replaces is written out sixty-six times: check the flag, set the flag, stamp the date,
+    /// build a `GKAchievement` from a string literal, check it is not already complete, report
+    /// it, log the error. Every one of those sites also spells the identifier beside the index
+    /// it is setting, which is two facts held in step by hand - and thirty new achievements
+    /// were about to add thirty more chances to get the pair wrong.
+    ///
+    /// The identifier comes from `AchievementCatalogue.identifiers`, so the index is the only
+    /// thing a caller has to know.
+    ///
+    /// Returns whether it awarded, which most callers ignore.
+    @discardableResult
+    func award(_ index: Int) -> Bool {
+        guard isDailyChallenge == false
+                || AchievementCatalogue.earnableInDaily.contains(index) else { return false }
+        // **The daily rule, in one place** (round 310). Every caller written before this round
+        // guards `isDailyChallenge == false` itself and those guards stay, because they read
+        // beside the check they belong to; this is what the *new* ones ask instead, and what
+        // stops a later one forgetting to ask at all. See `earnableInDaily` for why nineteen of
+        // the new set are allowed through and the campaign's are not
+
+        guard totalStatsArray.isEmpty == false,
+              index >= 0, index < totalStatsArray[0].achievementsUnlockedArray.count,
+              index < AchievementCatalogue.identifiers.count else { return false }
+        guard totalStatsArray[0].achievementsUnlockedArray[index] == false else { return false }
+
+        totalStatsArray[0].achievementsUnlockedArray[index] = true
+        if index < totalStatsArray[0].achievementDates.count {
+            totalStatsArray[0].achievementDates[index] = Date()
+        }
+        // Both bounds-checked rather than assumed equal: `makeStoredArraysConsistent` keeps them
+        // in step, and a file from a newer build can be longer than this build's catalogue
+
+        let identifier = AchievementCatalogue.identifiers[index]
+        let achievement = GKAchievement(identifier: identifier)
+        guard achievement.isCompleted == false else { return true }
+        achievement.showsCompletionBanner = true
+        GKAchievement.report([achievement]) { error in
+            Log.gameCenter.error("\(error?.localizedDescription ?? "Error reporting \(identifier) achievement", privacy: .public)")
+        }
+        return true
+    }
+
+    /// Awards an achievement that shows how far along it is, and records that share.
+    ///
+    /// The companion to `award(_:)` for the milestones Game Center draws a progress bar for -
+    /// the total-height ones. Same reasoning: the pattern was twenty lines written out per
+    /// achievement, with the identifier spelled beside the index it was setting.
+    ///
+    /// `fraction` is 0 to 1; the percentage string the achievements page prints is written from
+    /// it, and the award happens when it reaches 1.
+    func awardProgress(_ index: Int, fraction: Double) {
+        guard totalStatsArray.isEmpty == false,
+              index >= 0, index < totalStatsArray[0].achievementsUnlockedArray.count,
+              index < AchievementCatalogue.identifiers.count else { return }
+        guard totalStatsArray[0].achievementsUnlockedArray[index] == false else { return }
+
+        let percent = min(max(fraction, 0), 1)*100
+        if index < totalStatsArray[0].achievementsPercentageCompleteArray.count {
+            totalStatsArray[0].achievementsPercentageCompleteArray[index] =
+                percent >= 100 ? "100%" : String(format: "%.1f", percent) + "%"
+        }
+        if percent >= 100 {
+            totalStatsArray[0].achievementsUnlockedArray[index] = true
+            if index < totalStatsArray[0].achievementDates.count {
+                totalStatsArray[0].achievementDates[index] = Date()
+            }
+        }
+
+        let identifier = AchievementCatalogue.identifiers[index]
+        let achievement = GKAchievement(identifier: identifier)
+        guard achievement.isCompleted == false else { return }
+        achievement.percentComplete = percent
+        achievement.showsCompletionBanner = true
+        GKAchievement.report([achievement]) { error in
+            Log.gameCenter.error("\(error?.localizedDescription ?? "Error reporting \(identifier) achievement", privacy: .public)")
+        }
+    }
+
     func ballLost() {
+		if endlessMode, InGameRecents.shared.bricksDestroyedThisRun == 0 {
+			_ = award(95)
+		}
+		// **Butter Fingers**: "lose the ball before destroying any bricks" (round 310). The run's
+		// own tally rather than the level's, which is the same number in an endless mode - the
+		// run *is* the level there. The sheet gives it both endless modes and not Classic, where
+		// a rack of three balls would hand it over on any careless first serve
+
 		if hapticsSetting {
 			softHaptic.impactOccurred()
 		}
@@ -4032,6 +4141,15 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		// reset on the way back through clears the flag by hand. What actually fixed it was
 		// anything that wrote `false` over a flag nothing else could.
 
+		if gameMode == .endlessII && bricksLeft == 0 {
+			_ = award(77)
+		}
+		// **Tidying Up Amongst The Mayhem**, the Mayhem twin of the Endless one below (round
+		// 310, from James's workbook). Beside it rather than inside it: 22 is guarded by
+		// `endlessMode`, which is true in both endless modes, so a Mayhem player has always
+		// earned the Endless one and had nothing of Mayhem's own to earn. Mayhem is not in
+		// `earnableInDaily`, and `award` enforces that rather than a guard here
+
 		if endlessMode && bricksLeft == 0 && totalStatsArray[0].achievementsUnlockedArray[22] == false {
 			totalStatsArray[0].achievementsUnlockedArray[22] = true
 			totalStatsArray[0].achievementDates[22] = Date()
@@ -4156,6 +4274,17 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		// added would immediately travel a row and sit against the wrong height
 		
 		if isDailyChallenge == false {
+		if gameMode == .endlessII {
+			for (metres, index) in [(10, 66), (100, 67), (500, 68), (1000, 69)]
+			where endlessHeight >= metres {
+				award(index)
+			}
+		}
+		// **Mayhem's own height milestones** (round 309, from James's workbook). The four below
+		// read `endlessHeight`, which both endless modes write, so a Mayhem run has always
+		// earned the Endless ones - and had nothing of its own to earn. Beside them rather than
+		// in a new place, because they answer the same question at the same moment
+
 		if endlessHeight >= 10 && totalStatsArray[0].achievementsUnlockedArray[0] == false {
 			totalStatsArray[0].achievementsUnlockedArray[0] = true
 			totalStatsArray[0].achievementDates[0] = Date()
@@ -4920,6 +5049,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			} else if ballSpeedLimit < ballSpeedNominal {
 				ballSpeedLimit = ballSpeedSlowest
 				refreshLaserFiringRate()
+				_ = award(97)
+				// Pokey: "slow the ball down to its minimum speed". Here rather than in a speed
+				// watcher in `update`, because this is the only line in the game that reaches
+				// the bottom of the dial - a second Decrease on a ball already slowed once
 			} else if ballSpeedLimit > ballSpeedNominal {
 				ballSpeedLimit = ballSpeedNominal
 				refreshLaserFiringRate()
@@ -4964,6 +5097,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			} else if ballSpeedLimit > ballSpeedNominal {
 				ballSpeedLimit = ballSpeedFastest
 				refreshLaserFiringRate()
+				_ = award(96)
+				// Blur: "accelerate the ball to its maximum speed". The mirror of Pokey above,
+				// and the only line that reaches the top of the dial
 			} else if ballSpeedLimit < ballSpeedNominal {
 				ballSpeedLimit = ballSpeedNominal
 				refreshLaserFiringRate()
@@ -6092,6 +6228,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		}
 		showMultiplier()
         // Update score
+
+		checkPowerUpCombinationAchievements()
+		checkPowerUpCompletionist()
+		// **Round 310's three power-up achievements, asked where a power-up lands.** This is the
+		// one method every collection goes through - a caught power-up, a power-up brick's
+		// direct grant, and the restore that reapplies one on resume - so it is the only place
+		// that can see the set the moment it grows
     }
 	
 	func removePowerUp(sprite: SKSpriteNode, powerUp: SKSpriteNode, powerUpSelection: Int) {
@@ -8302,6 +8445,68 @@ laserTimer?.invalidate()
 		// Endless 2.0's own power-ups have no tray slot to be read from, so they report
 		// themselves
 		return entries
+	}
+
+	/// Power-Up Completionist: "collect all power-ups at least once" (round 310).
+	///
+	/// **Nothing new is stored for it.** `powerupsCollected` already counts every power-up
+	/// separately - it is what the items screen reads - so the question is whether any entry is
+	/// still nought, and the answer is right on a device that has just merged another's history
+	/// for free.
+	///
+	/// Retired power-ups are excluded for the same reason retired twists are excluded from
+	/// Twist Completionist: they are no longer offered, and requiring one would make the
+	/// achievement unearnable by anyone who arrived after it went.
+	func checkPowerUpCompletionist() {
+		let collected = totalStatsArray[0].powerupsCollected
+		let setup = LevelPackSetup()
+		let wanted = (0..<collected.count).filter {
+			setup.retiredPowerUpIndices.contains($0) == false
+		}
+		guard wanted.isEmpty == false else { return }
+		let met = wanted.filter { collected[$0] > 0 }.count
+		let fraction = Double(met)/Double(wanted.count)
+
+		let percent = min(max(fraction, 0), 1)*100
+		let spelled = percent >= 100 ? "100%" : String(format: "%.1f", percent) + "%"
+		guard 83 >= totalStatsArray[0].achievementsPercentageCompleteArray.count
+				|| totalStatsArray[0].achievementsPercentageCompleteArray[83] != spelled
+		else { return }
+		// **Only when the number actually moves.** This runs on every power-up collected, and
+		// `awardProgress` reports to Game Center each time it is called - a run where nothing new
+		// has been collected would send the same percentage away every ten seconds for nothing.
+		// The share is compared as the string that would be written, so the two cannot round
+		// differently and disagree about whether anything changed
+
+		awardProgress(83, fraction: fraction)
+		// Through `awardProgress` rather than `award`, because Game Center draws a bar for this
+		// one and a player deserves to see fifty-nine of sixty-one rather than a locked badge
+	}
+
+	/// The two achievements that ask what is running *at once* (round 310).
+	///
+	/// Asked of `activePowerUpEntries()`, which is the same list the HUD's rings are drawn from,
+	/// so the answer is whatever the player can see - the tray's timed slots plus Mayhem's own
+	/// clocks, which have no tray slot and report themselves. Two things follow from reading the
+	/// HUD rather than a set of flags: an effect the player cannot see cannot earn either of
+	/// these, and neither check can drift out of step with what the game considers active.
+	///
+	/// Called from `applyPowerUp`, which is the only moment the set can grow.
+	func checkPowerUpCombinationAchievements() {
+		let entries = activePowerUpEntries()
+		if entries.count >= 5 { _ = award(84) }
+		// Multi-Talented: "have 5 power-ups active at the same time"
+
+		guard gameMode == .endlessII else { return }
+		if endlessIIWreckingBallClock.isRunning,
+		   gigaBallIconBar.isHidden == false, gigaBallIconBar.xScale > 0.001 {
+			_ = award(79)
+		}
+		// Giga-Wrecking Ball: "have Giga-Ball and Wrecking Ball power-up at the same time".
+		// The Wrecking Ball is one of Mayhem's own clocks and Giga-Ball is a tray slot, so the
+		// two are asked in the two different ways the game keeps them - the clock's own
+		// `isRunning`, which is what `endlessIIWreckingBallIsOn` asks, and the tray bar's scale,
+		// which is what the HUD reads
 	}
 
 	/// Where the sticky paddle sits in the tray arrays.

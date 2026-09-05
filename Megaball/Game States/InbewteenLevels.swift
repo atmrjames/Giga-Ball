@@ -744,6 +744,15 @@ class InbetweenLevels: GKState {
             // Pack complete achievements
         }
         
+        if scene.gameMode == .endlessII {
+            let flown = Double(scene.totalStatsArray[0].endlessIIHeights.reduce(0, +))
+            scene.awardProgress(70, fraction: flown/5000)
+            scene.awardProgress(71, fraction: flown/10000)
+        }
+        // **Mayhem's own total-height milestones** (round 309, from James's workbook). The two
+        // below add up `endlessModeHeight`, which is the *original* Endless mode's list of run
+        // heights; Mayhem keeps its own in `endlessIIHeights`, and had nothing reading it
+
         if scene.endlessMode {
             if scene.totalStatsArray[0].achievementsUnlockedArray[4] == false {
                 let percentComplete = Double(scene.totalStatsArray[0].endlessModeHeight.reduce(0, +))/5000.0*100.0

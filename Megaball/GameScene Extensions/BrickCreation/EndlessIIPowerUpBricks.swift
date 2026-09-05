@@ -214,6 +214,13 @@ extension GameScene {
         // Handed to the same method a caught power-up goes through, so every effect, timer,
         // icon and conflict rule is the one that already exists
 
+        _ = award(78)
+        // **Feel The Power Of The Brick** (round 310). "Collect a power-up from a power-up
+        // brick" - and a power-up brick *is* the collection: it hands the effect straight to
+        // `applyPowerUp` rather than dropping something to be caught, so the moment it triggers
+        // is the moment it is collected. Mayhem only, which the guard at the top of this method
+        // already settles
+
         totalStatsArray[0].powerupsGenerated[index] += 1
         // Collected is counted by `applyPowerUp` itself, in whichever case it lands on
 

@@ -276,3 +276,82 @@ final class CloudArrayLengthTests: XCTestCase {
             .path
     }
 }
+
+
+/// The achievement family, which is eight arrays that must agree (round 309).
+final class AchievementCatalogueLengthTests: XCTestCase {
+
+    private let setup = LevelPackSetup()
+
+    /// **Every list an achievement appears in is the same length.**
+    ///
+    /// Adding one lengthens eight arrays across three files, which is the trap CLAUDE.md names
+    /// for power-ups met again for achievements: "the suite fails loudly on any one missed,
+    /// which is the only reason this is survivable". Thirty were about to be added, so this is
+    /// that loud failure.
+    func testEveryAchievementListIsTheSameLength() {
+        let names = setup.achievementsNameArray.count
+        XCTAssertEqual(setup.achievementsPreEarnedDescriptionArray.count, names,
+                       "pre-earned descriptions")
+        XCTAssertEqual(setup.achievementsEarnedDescriptionArray.count, names,
+                       "earned descriptions")
+        XCTAssertEqual(setup.achievementsImageArray.count, names, "images")
+        XCTAssertEqual(AchievementCatalogue.identifiers.count, names, "Game Center identifiers")
+
+        let stats = TotalStats()
+        XCTAssertEqual(stats.achievementsUnlockedArray.count, names, "unlocked flags")
+        XCTAssertEqual(stats.achievementsPercentageCompleteArray.count, names, "percentages")
+        XCTAssertEqual(stats.achievementDates.count, names, "dates")
+    }
+
+    /// No identifier is repeated, because Game Center would award the wrong one.
+    func testNoIdentifierIsUsedTwice() {
+        let ids = AchievementCatalogue.identifiers
+        XCTAssertEqual(Set(ids).count, ids.count,
+                       "two achievements sharing an identifier means one can never be earned")
+        XCTAssertTrue(ids.allSatisfy { $0.isEmpty == false }, "and none may be blank")
+    }
+
+    /// **Mayhem has achievements of its own now** (round 309, from James's workbook).
+    ///
+    /// It shared the Endless six and the duration five, because none of those checks asks which
+    /// endless mode it is in - so a Mayhem player earned them and nothing rewarded Mayhem.
+    func testMayhemHasItsOwnMilestones() {
+        XCTAssertEqual(AchievementCatalogue.mayhemOnly.count, 17,
+                       "eleven milestones from round 309, six more from round 310")
+        for index in AchievementCatalogue.mayhemOnly {
+            XCTAssertEqual(AchievementCatalogue.modes(for: index), [.endlessII],
+                           "\(setup.achievementsNameArray[index]) is Mayhem's alone")
+        }
+    }
+
+    /// The eleven *milestones* say Mayhem in their names, because they mirror Endless ones.
+    ///
+    /// Round 310's six do not, and must not: they are Juggler and Wormhole and Giga-Wrecking
+    /// Ball, named things rather than numbered ones, and Mayhem is where they live rather than
+    /// what they are about. Split into two rules rather than loosened into none, so the
+    /// milestones keep the naming that stops them being confused with the Endless six.
+    func testTheMayhemMilestonesNameTheirModeAndTheRestNeedNot() {
+        for index in 66...76 {
+            XCTAssertTrue(setup.achievementsNameArray[index].contains("Endless Mayhem"),
+                          "\(setup.achievementsNameArray[index]) mirrors an Endless milestone "
+                          + "and has to say which mode it is")
+        }
+        for index in 77...82 {
+            XCTAssertTrue(AchievementCatalogue.mayhemOnly.contains(index),
+                          "\(setup.achievementsNameArray[index]) is filed under Mayhem")
+        }
+    }
+
+    /// Every name, description and identifier is distinct from the Endless ones it mirrors.
+    func testTheMayhemMilestonesAreNotTheEndlessOnesAgain() {
+        for index in AchievementCatalogue.mayhemOnly {
+            let name = setup.achievementsNameArray[index]
+            XCTAssertFalse(name.contains("Endless Mode"),
+                           "\(name) reads as the original Endless mode's")
+        }
+        XCTAssertTrue(AchievementCatalogue.mayhemOnly
+                        .isDisjoint(with: AchievementCatalogue.endlessOnly),
+                      "an achievement cannot be both Mayhem's alone and both modes'")
+    }
+}

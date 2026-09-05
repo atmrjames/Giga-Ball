@@ -870,7 +870,17 @@ extension GameScene {
         // Ball Steering, Magnetism and Paddle Halo are not here: all three run on time now,
         // and spending them a turn as well would end them twice as fast as their rings say
         endlessIIFlippedAngleClock.spendTurn(thenLingerFor: EndlessIIClock.lingerSeconds)
+
+        let reversedWasRunning = endlessIIReversedControlsClock.isRunning
         endlessIIReversedControlsClock.spendTurn(thenLingerFor: EndlessIIClock.lingerSeconds)
+        if reversedWasRunning, endlessIIReversedControlsClock.isRunning == false {
+            _ = award(82)
+        }
+        // **Paddle Master**: "survive the Reversed Paddle Control power-up" (round 310). Its
+        // clock running out is exactly surviving it, and this method only runs on a paddle hit -
+        // so a ball lost while it was on cannot reach here, and a lost ball resets the clock
+        // rather than expiring it. The linger only delays the award to the next paddle hit,
+        // which is still a hit made after the twist ended
         endlessIIAutoAimClock.spendTurn(thenLingerFor: EndlessIIClock.lingerSeconds)
         endlessIIPaddleSurfaceClock.spendTurn(thenLingerFor: EndlessIIClock.lingerSeconds)
         endlessIIDoublePaddleClock.spendTurn(thenLingerFor: EndlessIIClock.lingerSeconds)

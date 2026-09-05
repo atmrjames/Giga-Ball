@@ -173,7 +173,8 @@ final class DailyCardView: UIView {
                 level: setup.levelNameArray[number],
                 pack: setup.levelPackNameArray[pack],
                 icon: setup.packIcon(pack),
-                font: levelLabel.font)
+                font: levelLabel.font,
+                colour: levelLabel.textColor ?? .white)
             // The level by its name, home and picture, not its number: a number says
             // nothing, and a glimpse of a level from a pack you have not opened is the
             // tasting menu.
@@ -373,22 +374,28 @@ final class DailyCardView: UIView {
     /// The badge is sized from the font's own line height, so it grows and shrinks with the
     /// text rather than being a fixed number of points that is right on one device.
     static func levelLine(level: String, pack: String, icon: UIImage?,
-                          font: UIFont) -> NSAttributedString {
-        let line = NSMutableAttributedString(
-            string: level + " - ", attributes: [.font: font, .foregroundColor: UIColor.white])
+                          font: UIFont, colour: UIColor = .white) -> NSAttributedString {
+        let line = NSMutableAttributedString()
 
         if let icon {
             let badge = NSTextAttachment()
-            badge.image = icon
+            badge.image = icon.withTintColor(colour, renderingMode: .alwaysOriginal)
             let side = font.lineHeight*0.95
             badge.bounds = CGRect(x: 0, y: font.descender*0.6, width: side, height: side)
             line.append(NSAttributedString(attachment: badge))
             line.append(NSAttributedString(string: " ", attributes: [.font: font]))
         }
+        // **Tinted to the text it sits in** (James, round 310: "for the pack icon, can you
+        // match its colour to the text colour"). A text attachment carries its own image and
+        // ignores the run's `foregroundColor`, so the tint has to be baked into the picture -
+        // `.alwaysOriginal` is what stops UIKit tinting it a second time on top.
 
-        line.append(NSAttributedString(string: pack,
-                                       attributes: [.font: font,
-                                                    .foregroundColor: UIColor.white]))
+        line.append(NSAttributedString(string: pack + " - " + level,
+                                       attributes: [.font: font, .foregroundColor: colour]))
+        // **Pack first, then the level** (James, round 310: "put the pack name before the level
+        // name"). It read level-then-pack from round 306, which puts the specific before the
+        // general - fine in a sentence, wrong in a list, where the pack is what a reader scans
+        // for and the level is what they find once they are in the right place
         return line
     }
 

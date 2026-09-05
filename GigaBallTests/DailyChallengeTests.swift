@@ -2253,8 +2253,14 @@ final class TwistNamesMatchTheWorkbookTests: XCTestCase {
         XCTAssertFalse(GameScene.dailyLifeIsSpent(onTimeTrial: true))
         XCTAssertTrue(GameScene.dailyLifeIsSpent(onTimeTrial: false),
                       "and every other day still spends one")
-        XCTAssertTrue(DailyTwist.timeTrial.blurb.lowercased().contains("lose the ball"),
+        XCTAssertTrue(DailyTwist.timeTrial.blurb.lowercased().contains("unlimited lives"),
                       "a player has to be told, or they will play it as if lives mattered")
+        // **The workbook's words, not the game's** (round 310). The blurb used to say "you
+        // won't lose the ball", which is the same fact in the game's own voice, and James asked
+        // for his descriptions verbatim: "for the twist descriptions, use the descriptions I
+        // provided in the details document." The assertion follows the wording rather than
+        // dropping - what matters is that the blurb still tells the player lives do not count,
+        // and it does
     }
 }
 
@@ -2661,4 +2667,74 @@ final class DailyMonochromeTests: XCTestCase {
         XCTAssertTrue(GameScene() is SKEffectNode)
     }
 
+}
+
+
+/// Extra Balls means two *more*, not two (round 310).
+final class DailyExtraBallsTests: XCTestCase {
+
+    override func tearDown() {
+        DailyChallengeSession.shared.active = nil
+        super.tearDown()
+    }
+
+    /// James: "the Extra Balls twist on a Classic Mode Daily Challenge should provide 2 extra
+    /// balls to normal, not just 2 balls. So that would be 1 ball in play and 5 balls in
+    /// reserve to start."
+    ///
+    /// The rule read `numberOfLives + 2`, and `PreGame` assigns
+    /// `numberOfLives = dailyStartingLives ?? classicStartingRack` - so the property was read
+    /// on the right-hand side of its own assignment and answered with whatever the previous run
+    /// left behind, which is nought on a fresh launch. Two more than nothing is two, which is
+    /// what he counted.
+    func testClassicGetsTwoMoreThanItsUsualRack() {
+        let scene = GameScene()
+        DailyChallengeSession.shared.active = DailyChallenge(
+            dateKey: "2026-10-08", mode: .classic, classicLevel: 3, twists: [.spareBalls])
+
+        scene.numberOfLives = 0
+        // Exactly as it stands the instant before `PreGame` assigns it, which is when the old
+        // arithmetic asked
+
+        XCTAssertEqual(scene.dailyStartingLives, GameScene.classicStartingRack + 2,
+                       "the usual rack, plus the twist's two")
+        XCTAssertEqual(scene.dailyStartingLives, 5,
+                       "one ball in play and five in reserve, which is what James counted out")
+    }
+
+    /// And the answer does not depend on what the last run happened to leave behind.
+    func testTheRackDoesNotDependOnThePreviousRun() {
+        let scene = GameScene()
+        DailyChallengeSession.shared.active = DailyChallenge(
+            dateKey: "2026-10-08", mode: .classic, classicLevel: 3, twists: [.spareBalls])
+
+        for leftover in [0, 1, 3, 7] {
+            scene.numberOfLives = leftover
+            XCTAssertEqual(scene.dailyStartingLives, 5,
+                           "a run that ended on \(leftover) balls must not change the next one")
+        }
+    }
+
+    /// The endless modes still get a rack of two, because theirs is empty to begin with.
+    func testAnEndlessDailyStillGetsTwo() {
+        let scene = GameScene()
+        scene.endlessMode = true
+        DailyChallengeSession.shared.active = DailyChallenge(
+            dateKey: "2026-10-08", mode: .endlessII, classicLevel: nil, twists: [.spareBalls])
+
+        XCTAssertEqual(scene.dailyStartingLives, 2,
+                       "two more than an empty rack is a rack of two")
+    }
+
+    /// The twists that empty the rack are untouched by the fix.
+    func testTheEmptyingTwistsStillEmptyIt() {
+        let scene = GameScene()
+        scene.numberOfLives = 3
+        for twist in [DailyTwist.oneLife, .suddenDeath] {
+            DailyChallengeSession.shared.active = DailyChallenge(
+                dateKey: "2026-10-08", mode: .classic, classicLevel: 3, twists: [twist])
+            XCTAssertEqual(scene.dailyStartingLives, 0,
+                           "\(twist) is one ball on the paddle and an empty rack")
+        }
+    }
 }

@@ -565,11 +565,36 @@ final class PerModeTimeTests: XCTestCase {
         }
     }
 
-    func testTheDailyHasNoneAndSaysWhy() {
+    /// **The daily's tab has rows in it now** (round 310, from James's workbook).
+    ///
+    /// It used to be empty, and the note under it explained why: `achievementsCheck()` returns
+    /// early for a daily, because a daily played on a level someone has not earned must not
+    /// unlock what earning it would have (daily spec §9). That was right for the campaign's
+    /// achievements and was only a blanket because the daily had nothing of its own.
+    ///
+    /// The tab is `earnableInDaily`, which is the workbook's Daily Challenge column - and the
+    /// note stays, because a tab that lists nineteen of ninety-eight still owes the reader an
+    /// explanation of what it is not listing.
+    func testTheDailyTabIsTheWorkbooksOwnColumn() {
         let count = LevelPackSetup().achievementsNameArray.count
-        XCTAssertTrue(AchievementCatalogue.indices(for: .daily, count: count).isEmpty,
-                      "achievementsCheck() returns early for a daily - daily spec §9")
+        let listed = Set(AchievementCatalogue.indices(for: .daily, count: count))
+        XCTAssertEqual(listed, AchievementCatalogue.earnableInDaily)
+        XCTAssertFalse(listed.isEmpty, "the daily has its own set as of round 310")
         XCTAssertTrue(AchievementCatalogue.emptyNote(for: .daily).isEmpty == false)
+    }
+
+    /// And §9's rule survives it: not one of them is a level's or a pack's.
+    ///
+    /// This is the assertion that matters. The tab could be wrong in a way the equality above
+    /// cannot see - `earnableInDaily` is a written-down set, and a mistake in it would be
+    /// faithfully reproduced by both. What must never be true is that a day on a lent level can
+    /// unlock what earning that level would have.
+    func testNothingEarnableInADailyIsAboutALevelOrAPack() {
+        for index in AchievementCatalogue.earnableInDaily {
+            XCTAssertFalse(AchievementCatalogue.classicOnly.contains(index),
+                           "\(LevelPackSetup().achievementsNameArray[index]) is filed under "
+                           + "Classic, which is where every level and pack achievement lives")
+        }
     }
 
     func testTheAllTabHoldsEveryAchievement() {

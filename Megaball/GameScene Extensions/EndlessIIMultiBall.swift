@@ -71,6 +71,11 @@ extension GameScene {
         extra.physicsBody = endlessIIBallBody(radius: ballSize/2)
         extra.physicsBody?.velocity = heading
         endlessIIExtraBalls.append(extra)
+        if endlessIIExtraBalls.count + 1 >= 3 { _ = award(80) }
+        // **Juggler**: "have 3 balls in play at the same time" (round 310). Plus one for the
+        // ball this list is *extra* to - `endlessIIExtraBalls` holds the copies, and the
+        // original is not in it. Counted here rather than in `update` because this is the only
+        // line that can make the number go up
         ballPhysicsBodySet()
         // A ball added while Giga-Ball is running is a Giga-Ball too. Its body is built plain
         // above, and this is what puts whatever the run is currently wearing onto it

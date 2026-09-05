@@ -314,6 +314,32 @@ Flipped Angle means.
 - **Streaks** are tracked locally (§10) and surfaced on the challenge screen. A streak
   achievement set ships in phase 5.
 
+  **Built round 310, from James's workbook, and derived like the streaks themselves.** Ten
+  achievements: one for a first posted score, three counts (10, 100 and 365 posted days), three
+  streaks (7, 30 and 365 days in a row), Twist Completionist, and the two placings. `DailyAchievements`
+  reads them all off `TotalStats.dailyRecords`, so nothing new is stored and nothing can
+  disagree with the history it is counting - the streaks call `DailyStreak.longest`, which
+  already owned that arithmetic, and Twist Completionist asks the generator what each played day
+  carried, because a day's twists are pure in its key.
+
+  Two decisions worth writing down. **A month is thirty days, not a calendar month**: the streak
+  is a run of days rather than a page of a diary, and read as a calendar month a player who
+  started on the second could not earn it until the first of the next having missed nothing.
+  **The twist target is the twists still being offered**, not every case: four are retired, and
+  requiring one of those would make the achievement unearnable by anyone who arrived after it
+  went. Once earned it stays earned, so a twist added next year cannot take it back off anybody.
+
+  The two placings are the only time-critical ones, and they are taken the moment Game Center
+  answers on the daily menu. The daily board is a **recurring** leaderboard: it resets at each
+  deadline, so a rank not read while the day is open cannot be asked for again.
+
+  **And the daily's blanket exemption ends here.** §9's rule - a day played on a level nobody
+  earned must not unlock what earning it would have - was enforced by `achievementsCheck`
+  returning early for any daily, which was right for the campaign's achievements and was only a
+  blanket because the daily had nothing of its own. `AchievementCatalogue.earnableInDaily` is
+  the workbook's Daily Challenge column, `GameScene.award(_:)` enforces it in one place, and
+  §9's rule is unchanged: not one of the nineteen is about a level or a pack.
+
   **Built round 268, and derived rather than stored.** §10 lists `dailyStreak` and
   `longestStreak` as fields to add beside the per-day records; they are not added, because the
   records already answer. Every one carries its `dateKey` and whether it `posted`, and a streak

@@ -21,20 +21,136 @@
 //  - A check with no mode guard at all - the power-up and paddle ones, which happen wherever
 //    the ball is - belongs to **all three**.
 //
-//  The daily has none, and that is a rule rather than an oversight: `achievementsCheck()`
-//  returns early for a daily, because a daily played on a level someone has not earned must
-//  not unlock what earning it would have (daily spec §9). Its own set arrives with phase 5.
+//  The daily had none until round 310, and that was a rule rather than an oversight:
+//  `achievementsCheck()` returns early for a daily, because a daily played on a level someone
+//  has not earned must not unlock what earning it would have (daily spec §9).
+//
+//  It has nineteen now - `earnableInDaily`, which is James's workbook's Daily Challenge column -
+//  and §9's rule is untouched by them, because not one is about a level or a pack. Ten are facts
+//  about the daily's own history and nine are things that happen inside a rally.
 //
 
 import Foundation
+import GameKit
 
 enum AchievementCatalogue {
+
+    /// Each achievement's Game Center identifier, in the order the arrays hold them.
+    ///
+    /// **Written down rather than left in a comment** (round 309). Every award site in the game
+    /// spells its own identifier as a string literal beside the index it is setting, which is
+    /// two facts kept in step by hand at sixty-six sites - and thirty more were about to be
+    /// added. Here the pair is one fact, and `GameScene.award(_:)` takes only the index.
+    ///
+    /// Append-only, like every other array in this family: a shipped identifier can never be
+    /// renamed, because Game Center has it.
+    static let identifiers: [String] = [
+        "achievementEndlessTen",              // 0 Endless Mode 10m Milestone
+        "achievementEndlessHundred",          // 1 Endless Mode 100m Milestone
+        "achievementEndlessFiveHundred",      // 2 Endless Mode 500m Milestone
+        "achievementEndlessOneK",             // 3 Endless Mode 1,000m Milestone
+        "achievementEndlessFiveK",            // 4 Endless Mode 5,000m Total Height
+        "achievementEndlessTenK",             // 5 Endless Mode 10,000m Total Height
+        "classicPackComplete",                // 6 Classic Pack Complete
+        "spacePackComplete",                  // 7 Space Pack Complete
+        "naturePackComplete",                 // 8 Nature Pack Complete
+        "urbanPackComplete",                  // 9 City Pack Complete
+        "foodPackComplete",                   // 10 Food Pack Complete
+        "computerPackComplete",               // 11 Computer Pack Complete
+        "bodyPackComplete",                   // 12 Body Pack Complete
+        "worldPackComplete",                  // 13 World Pack Complete
+        "emojiPackComplete",                  // 14 Emoji Pack Complete
+        "numbersPackComplete",                // 15 Numbers Pack Complete
+        "challengePackComplete",              // 16 Challenge Pack Complete
+        "endlessOneMins",                     // 17 Endless Mode 1 Minute Milestone
+        "endlessFiveMins",                    // 18 Endless Mode 5 Minute Milestone
+        "endlessTenMins",                     // 19 Endless Mode 10 Minute Milestone
+        "endlessThirtyMins",                  // 20 Endless Mode 30 Minute Milestone
+        "endlessSixtyMins",                   // 21 Endless Mode 1 Hour Milestone
+        "endlessCleared",                     // 22 Tidying Up
+        "mysteryPowerUp",                     // 23 Taking The Plunge
+        "firstPowerUp",                       // 24 Now We’re Talking
+        "gigaLasers",                         // 25 Giga-Lasers!
+        "endBackstop",                        // 26 Didn’t Even Need It
+        "favouritePowerUp",                   // 27 That’s My Favourite
+        "powerUpCollectorHundred",            // 28 100 And Counting
+        "powerUpCollectorThousand",           // 29 Hoarder
+        "powerUpLeaverHundred",               // 30 Picky
+        "powerUpLeaverThousand",              // 31 Power-Up Shy
+        "maxPaddleSize",                      // 32 This Is Too Easy
+        "minPaddleSize",                      // 33 Good Luck
+        "maxBallSize",                        // 34 Beach Ball
+        "minBallSize",                        // 35 Pinball
+        "noBallsLost",                        // 36 Invincible
+        "threeBallsLost",                     // 37 Hanging on
+        "allLevelPowerUps",                   // 38 Super Powers
+        "noLevelPowerUps",                    // 39 Mere Mortal
+        "quickLevelComplete",                 // 40 Giga-Speedy
+        "fivePaddleHits",                     // 41 Supreme Paddle Efficiency
+        "tenPaddleHits",                      // 42 Paddle Master
+        "fiveKPointsLevel",                   // 43 5,000 Points On 1 Level
+        "tenKPointsLevel",                    // 44 10,000 Points On 1 Level
+        "oneLevelsComplete",                  // 45 1 Level Down
+        "tenLevelsComplete",                  // 46 Level Decade
+        "hunderdLevelsComplete",              // 47 Level Century
+        "oneKLevelsComplete",                 // 48 Level Millennium
+        "tenKLevelsComplete",                 // 49 Level 10 Millenia
+        "paddleSpeed",                        // 50 Panic Move
+        "hundredKTotalScore",                 // 51 100,000 And Counting
+        "fiveHundredKTotalScore",             // 52 Half A Mill
+        "millTotalScore",                     // 53 Millionaire
+        "noBallsLostPack",                    // 54 God-Like
+        "tenBallsLostPack",                   // 55 More Balls Please
+        "allPackPowerUps",                    // 56 Super Hero
+        "noPackPowerUps",                     // 57 Serial Dodger
+        "quickPackComplete",                  // 58 And Time
+        "tenKPointsPack",                     // 59 10,000 Points On 1 Pack
+        "twoFiveKPointsPack",                 // 60 25,000 Points On 1 Pack
+        "fiftyKPointsPack",                   // 61 50,000 Points On 1 Pack
+        "onePacksComplete",                   // 62 1 Pack Down
+        "tenPacksComplete",                   // 63 Pack Decade
+        "hundredPacksComplete",               // 64 Pack Century
+        "thousandPacksComplete",              // 65 Pack Millennium
+        "mayhemTen",                          // 66 Endless Mayhem
+        "mayhemHundred",                      // 67 Endless Mayhem
+        "mayhemFiveHundred",                  // 68 Endless Mayhem
+        "mayhemOneK",                         // 69 Endless Mayhem
+        "mayhemFiveKTotal",                   // 70 Endless Mayhem
+        "mayhemTenKTotal",                    // 71 Endless Mayhem
+        "mayhemOneMinute",                    // 72 Endless Mayhem
+        "mayhemFiveMinutes",                  // 73 Endless Mayhem
+        "mayhemTenMinutes",                   // 74 Endless Mayhem
+        "mayhemThirtyMinutes",                // 75 Endless Mayhem
+        "mayhemOneHour",                      // 76 Endless Mayhem
+        "mayhemClear",                        // 77 Tidying Up Amongst The Mayhem
+        "mayhemPowerUpBrick",                 // 78 Feel The Power Of The Brick
+        "mayhemWreckingGiga",                 // 79 Giga-Wrecking Ball!
+        "mayhemThreeBalls",                   // 80 Juggler
+        "mayhemPortalTravel",                 // 81 Wormhole
+        "mayhemSurviveReversed",              // 82 Paddle Master
+        "allPowerUpsCollected",               // 83 Power-Up Completionist
+        "fivePowerUpsActive",                 // 84 Multi-Talented
+        "firstDailyChallenge",                // 85 First Daily Challenge
+        "tenDailyChallenges",                 // 86 Serial Daily Challenger
+        "hundredDailyChallenges",             // 87 Experienced Daily Challenger
+        "yearOfDailyChallenges",              // 88 Seasoned Daily Challenger
+        "dailyWeekStreak",                    // 89 Week Long Streak
+        "dailyMonthStreak",                   // 90 Month Long Streak
+        "dailyYearStreak",                    // 91 Year Long Streak
+        "dailyTopTen",                        // 92 Top 10 Finish
+        "dailyFirstPlace",                    // 93 Top Of The Charts
+        "allTwistsPlayed",                    // 94 Twist Completionist
+        "butterFingers",                      // 95 Butter Fingers
+        "maximumBallSpeed",                   // 96 Blur
+        "minimumBallSpeed",                   // 97 Pokey
+    ]
 
     /// The modes an achievement can be earned in.
     ///
     /// A set rather than a single mode, because most of them are honestly more than one:
     /// "Beach Ball" is a power-up on a paddle and does not care which mode the paddle is in.
     static func modes(for index: Int) -> Set<GameMode> {
+        if mayhemOnly.contains(index) { return [.endlessII] }
         if endlessOnly.contains(index) { return [.endless, .endlessII] }
         if classicOnly.contains(index) { return [.classic] }
         return [.classic, .endless, .endlessII]
@@ -42,10 +158,12 @@ enum AchievementCatalogue {
 
     /// Whether an achievement is offered under a tab.
     ///
-    /// `.daily` is answered false for every achievement, from the one rule above rather than
-    /// from a list of exceptions.
+    /// The daily's tab is `earnableInDaily`, which is exactly James's workbook's Daily Challenge
+    /// column - nineteen of round 310's additions and nothing else. It used to be answered false
+    /// for everything, and the note under the empty tab explained why; the daily has its own set
+    /// now, so the tab has something to show.
     static func belongs(_ index: Int, to mode: GameMode) -> Bool {
-        mode == .daily ? false : modes(for: index).contains(mode)
+        mode == .daily ? earnableInDaily.contains(index) : modes(for: index).contains(mode)
     }
 
     /// The indices shown under a mode, in the order the arrays hold them.
@@ -57,11 +175,88 @@ enum AchievementCatalogue {
     /// Earned only in an endless run: the height and duration milestones, and clearing the
     /// field. Guarded by `endlessHeight`, `endlessModeDurationCheck` or `endlessMode` in
     /// `GameScene`, and by `scene.endlessMode` in the between-levels pass for the two totals.
+    /// Earned only in Endless Mayhem: its own height, total-height and duration milestones.
+    ///
+    /// **Mayhem's first achievements of its own** (round 309, from James's workbook). Until now
+    /// it shared the Endless six and the duration five, because none of those checks asks which
+    /// endless mode it is in - so a Mayhem player earned them and nothing rewarded Mayhem.
+    static let mayhemOnly: Set<Int> = [
+        66, 67, 68, 69,   // 10m, 100m, 500m, 1,000m
+        70, 71,           // 5,000m and 10,000m total height
+        72, 73, 74, 75, 76,  // the duration milestones
+        77,               // Tidying Up Amongst The Mayhem - the Mayhem twin of 22
+        78,               // Feel The Power Of The Brick - power-up bricks are Mayhem's
+        79, 80, 81, 82,   // Giga-Wrecking Ball, Juggler, Wormhole, Paddle Master
+    ]
+    // **Round 310 added six more from James's workbook.** Four of them - 79 to 82 - name things
+    // only Mayhem has: the Wrecking Ball, three balls at once from its own multiball, portal
+    // bricks and Reversed Paddle Control. The sheet marks them for the daily as well, and they
+    // are: a daily *run* in Mayhem is a Mayhem run, and the checks that award them do not ask
+    // whose scoreboard it is going to. What `mayhemOnly` decides is which **tab** they are
+    // listed under, and that is Mayhem
+
+    /// Marks achievements earned outside a running game, and reports them to Game Center.
+    ///
+    /// **The menu's half of `GameScene.award(_:)`** (round 310). The daily's own ten are facts
+    /// about a history rather than about a rally - how many days have posted, how long the
+    /// streak is, whether every twist has been met - and the screen that knows the history is a
+    /// menu, which has no scene to ask. The two do the same three things in the same order: set
+    /// the flag, stamp the date, tell Game Center.
+    ///
+    /// Bounds-checked rather than assumed equal, exactly as the scene's is: a stats file written
+    /// by a newer build can be longer than this build's catalogue.
+    ///
+    /// - Returns: the indices that were newly earned, so a caller can decide whether to save.
+    @discardableResult
+    static func award(_ indices: Set<Int>, in stats: inout TotalStats) -> Set<Int> {
+        var earned: Set<Int> = []
+        for index in indices.sorted() {
+            guard index >= 0, index < stats.achievementsUnlockedArray.count,
+                  index < identifiers.count,
+                  stats.achievementsUnlockedArray[index] == false else { continue }
+
+            stats.achievementsUnlockedArray[index] = true
+            if index < stats.achievementDates.count { stats.achievementDates[index] = Date() }
+            if index < stats.achievementsPercentageCompleteArray.count {
+                stats.achievementsPercentageCompleteArray[index] = "100%"
+            }
+            earned.insert(index)
+
+            let identifier = identifiers[index]
+            let achievement = GKAchievement(identifier: identifier)
+            guard achievement.isCompleted == false else { continue }
+            achievement.showsCompletionBanner = true
+            GKAchievement.report([achievement]) { error in
+                Log.gameCenter.error("\(error?.localizedDescription ?? "Error reporting \(identifier) achievement", privacy: .public)")
+            }
+        }
+        return earned
+    }
+
+    /// The achievements a Daily Challenge run is allowed to earn.
+    ///
+    /// **The rule the daily spec's §9 was always half of.** `achievementsCheck()` returns early
+    /// for a daily and every in-scene check guards on `isDailyChallenge == false`, because a
+    /// daily can put a player on a level they have not earned and must not unlock what earning
+    /// it would have. That is right for everything about levels, packs and totals, and it was
+    /// only ever a blanket because the daily had nothing of its own.
+    ///
+    /// It does now. James's workbook marks a Daily Challenge column against nineteen of the
+    /// round-310 additions, and every one of them is a thing that happens *inside a rally* -
+    /// three balls at once, five power-ups running, the ball at its fastest - or a fact about
+    /// the daily's own history. None of them is a level's or a pack's, so none of them can be
+    /// unlocked by a level the player was lent for a day.
+    ///
+    /// The two Mayhem additions the sheet leaves blank stay blank: 77 clears the field, and 78
+    /// is a power-up brick, and both are marked for Mayhem alone.
+    static let earnableInDaily: Set<Int> = Set(79...97)
+
     static let endlessOnly: Set<Int> = [
         0, 1, 2, 3,   // 10m, 100m, 500m, 1,000m - endlessHeight, either endless mode
         4, 5,         // 5,000m and 10,000m total height
         17, 18, 19, 20, 21,  // the duration milestones
         22,           // Tidying Up - `endlessMode && bricksLeft == 0`
+        95,           // Butter Fingers - the sheet gives it both endless modes and not Classic
     ]
 
     /// Earned only in a campaign run: everything about levels and packs, and the four checks
@@ -94,8 +289,9 @@ enum AchievementCatalogue {
     /// What an empty tab says, in its own words rather than a shrug.
     static func emptyNote(for mode: GameMode?) -> String {
         mode == .daily
-            ? "The daily challenge has no achievements of its own yet - a day played on a "
-                + "level you have not earned must not unlock what earning it would have."
+            ? "Nothing here yet. The daily's own achievements are the ones a day can earn - "
+                + "a day played on a level you have not earned must not unlock what earning "
+                + "it would have, so the campaign's are not among them."
             : "Nothing here yet."
     }
 }

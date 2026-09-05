@@ -199,28 +199,38 @@ enum DailyTwist: String, CaseIterable, Codable {
         }
     }
 
+    /// One line each, in James's own words.
+    ///
+    /// **Taken from the workbook in round 310** (James: "for the twist descriptions, use the
+    /// descriptions I provided in the details document"). The lines these replace were written
+    /// here and were longer and chattier - "power-ups everywhere", "the level is the wrong way
+    /// round" - which read well in isolation and badly in a list of three on a card.
+    ///
+    /// Four keep the wording written here, and deliberately: **Loaded** and **Sudden Death**
+    /// are retired and have no row in the sheet, and **Full Deck** and **Level Pegging** have a
+    /// row with the description column empty.
     var blurb: String {
         switch self {
-        case .oneLife: return "One life. Make it count."
+        case .oneLife: return "Only one ball is provided"
         case .loaded: return "Five lives. Spend them well."
         case .suddenDeath: return "Any ball lost ends the run - every ball, every mode."
-        case .spareBalls: return "Two balls in reserve - the run survives losing one."
-        case .noPowerUps: return "Nothing drops. Just you and the bricks."
-        case .noGoodNews: return "Only the bad power-ups drop. Don't catch them."
-        case .noBadNews: return "Only the good power-ups drop. Catch everything."
-        case .powerShower: return "Power-ups everywhere."
-        case .drought: return "Power-ups are very rare today."
-        case .fogOfWar: return "Every brick is invisible until it is first struck."
-        case .mirrored: return "The level is the wrong way round."
-        case .upsideDown: return "The level is built the wrong way up."
-        case .brickSwap: return "The level's bricks are not the types they were."
-        case .noPausing: return "No pausing, and leaving the app ends your attempt."
-        case .timeTrial: return "Ninety seconds, and lives to spare - lose the ball as often as you like. The score at the whistle is the score."
-        case .mayhemBricks: return "The strange bricks are out in force today."
-        case .monochromatic: return "All the colour is gone. Classic, and only Classic."
-        case .dailyTheme: return "One theme, chosen for you, whatever you usually play in."
-        case .alwaysOn: return "One power-up is on all day, and never runs out."
-        case .landslide: return "The bricks are coming down, and they do not stop."
+        case .spareBalls: return "Two extra balls are provided"
+        case .noPowerUps: return "Just the paddle, the ball and the bricks"
+        case .noGoodNews: return "Bad power-ups only"
+        case .noBadNews: return "Good power-ups only"
+        case .powerShower: return "Power-ups are more frequent"
+        case .drought: return "Power-ups are rare"
+        case .fogOfWar: return "Every brick is invisible"
+        case .mirrored: return "The level is presented mirrored"
+        case .upsideDown: return "The level is presented upside down"
+        case .brickSwap: return "Brick types are swapped around"
+        case .noPausing: return "The pause button is disabled"
+        case .timeTrial: return "There’s only 90s available but unlimited lives"
+        case .mayhemBricks: return "Brick variety is dialled up"
+        case .monochromatic: return "All colour is drained from the game"
+        case .dailyTheme: return "One theme is applied"
+        case .alwaysOn: return "One power-up is permanently active"
+        case .landslide: return "Bricks continuously descend downwards"
         case .fullDeck:
             return "Everything is in play from the first metre. The rare stays rare."
         case .levelPegging:
@@ -574,6 +584,111 @@ enum DailyTwist: String, CaseIterable, Codable {
 // MARK: - The challenge
 
 /// A day's challenge, frozen: what the generator drew, and nothing that changes after.
+/// The ten achievements the daily's own history earns.
+///
+/// **From James's workbook, built in round 310.** Every one of them is a question about days
+/// already played, so none of them needs anything stored: the answers come off
+/// `TotalStats.dailyRecords`, which the sync already merges, and off the standing the board
+/// hands back when a score posts. That is the reason there is a type here rather than ten
+/// checks scattered through the posting flow - the history is one thing, and one thing should
+/// read it.
+///
+/// The indices are the catalogue's, written down once. Adding an achievement in the middle of
+/// the list would move them, which is why nothing is ever inserted: the arrays are append-only
+/// and a player's unlocked flags are stored by position.
+enum DailyAchievements {
+
+    static let firstPost = 85       // First Daily Challenge
+    static let tenPosts = 86        // Serial Daily Challenger
+    static let hundredPosts = 87    // Experienced Daily Challenger
+    static let yearOfPosts = 88     // Seasoned Daily Challenger
+    static let weekStreak = 89      // Week Long Streak
+    static let monthStreak = 90     // Month Long Streak
+    static let yearStreak = 91      // Year Long Streak
+    static let topTen = 92          // Top 10 Finish
+    static let firstPlace = 93      // Top Of The Charts
+    static let everyTwist = 94      // Twist Completionist
+
+    /// How many posted days each count wants.
+    ///
+    /// A *posted* day, not a played one: the sheet's first row says "post a score in a Daily
+    /// Challenge", and the three counts under it are the same sentence with a bigger number.
+    /// Free play does not count, which is the whole point of the attempt being one a day.
+    static let counts: [(index: Int, days: Int)] = [
+        (firstPost, 1), (tenPosts, 10), (hundredPosts, 100), (yearOfPosts, 365),
+    ]
+
+    /// How many days *in a row* each streak wants.
+    ///
+    /// Seven, thirty and three hundred and sixty-five. A month is thirty rather than a calendar
+    /// month because the streak is a run of days and not a page of a diary: "complete every
+    /// Daily Challenge for 1 month" read as a calendar month would mean a player who started on
+    /// the second of a month could not earn it until the first of the next, having missed
+    /// nothing.
+    static let streaks: [(index: Int, days: Int)] = [
+        (weekStreak, 7), (monthStreak, 30), (yearStreak, 365),
+    ]
+
+    /// The twists a player could be asked to meet, on the day the question is asked.
+    ///
+    /// Live ones only. Four twists are retired - Loaded and Sudden Death among them - and
+    /// requiring every case would make Twist Completionist unearnable by anyone who was not
+    /// playing before they went. A twist that has not activated yet is not required either, and
+    /// once the achievement is earned it stays earned, so a twist added next year cannot take
+    /// it back off a player who has it.
+    static func liveTwists(on key: String) -> Set<DailyTwist> {
+        Set(DailyTwist.allCases.filter { twist in
+            [GameMode.classic, .endless, .endlessII].contains {
+                twist.inPool(on: key, for: $0)
+            }
+        })
+    }
+
+    /// Which of the history's achievements the record list has earned.
+    ///
+    /// - Parameter key: today's key, which decides which twists are still being offered.
+    static func earned(from records: [DailyChallengeRecord], on key: String) -> Set<Int> {
+        var earned: Set<Int> = []
+
+        let posted = records.filter(\.posted).count
+        for count in counts where posted >= count.days { earned.insert(count.index) }
+
+        let best = DailyStreak.longest(records: records)
+        for streak in streaks where best >= streak.days { earned.insert(streak.index) }
+        // `DailyStreak` already owns the arithmetic, and owns it more carefully than a second
+        // copy would: it walks sorted keys through the calendar and refuses a key that does not
+        // spell its own date back, which is the guard against a corrupted record joining a run
+        // it has nothing to do with
+
+        let played = records.filter { $0.attemptCount > 0 }.map(\.dateKey)
+        var met: Set<DailyTwist> = []
+        for day in played {
+            met.formUnion(DailyChallengeGenerator.challenge(forKey: day).twists)
+        }
+        // Played rather than posted: the sheet says "play a Daily Challenge with each twist at
+        // least once", and a day whose attempt was spent without finishing was still met.
+        // Derived rather than recorded, because the generator is pure - a day's twists can
+        // always be worked out again from its key, which is the same property the resume path
+        // relies on
+
+        if liveTwists(on: key).subtracting(met).isEmpty { earned.insert(everyTwist) }
+        return earned
+    }
+
+    /// What a finishing position on the day's board earns.
+    ///
+    /// Checked when a standing comes back rather than stored, because the daily board is a
+    /// *recurring* leaderboard: it resets at each deadline, so a past day's placing cannot be
+    /// asked for again. If the answer is not taken when it arrives it is gone.
+    static func earned(fromStanding standing: LeaderboardStanding) -> Set<Int> {
+        var earned: Set<Int> = []
+        if standing.rank <= 10 { earned.insert(topTen) }
+        if standing.rank == 1 { earned.insert(firstPlace) }
+        return earned
+    }
+}
+
+
 struct DailyChallenge: Equatable {
     let dateKey: String
     let mode: GameMode

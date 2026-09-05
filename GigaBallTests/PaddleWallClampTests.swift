@@ -207,3 +207,195 @@ final class PaddleWallClampTests: XCTestCase {
     }
 
 }
+
+/// Where the sticky band actually sits relative to the paddle, at the wall (round 310).
+///
+/// James has now reported this three times, and round 308's answer - "every strip hangs off the
+/// same two functions, so round 300 fixed them all" - was checked by asserting that their
+/// `position.x` values match. They do. So either the report is about something other than
+/// position, or something outside those two functions moves one of them.
+///
+/// Measured rather than argued about.
+final class StickyBandAlignmentTests: XCTestCase {
+
+    private func scene() -> GameScene {
+        let game = GameScene()
+        game.gameMode = .endlessII
+        game.gameWidth = 400
+        game.ballSize = 10
+        game.paddleWidth = 100
+        game.paddle.size = CGSize(width: 100, height: 20)
+        game.paddleSticky.size = CGSize(width: 100, height: 11)
+        game.totalStatsArray = [TotalStats()]
+        return game
+    }
+
+    func testTheBandAndThePaddleShareACentreAtTheWall() {
+        let game = scene()
+        game.paddle.position.x = 500
+        game.didEvaluateActions()
+
+        print(String(format: "\n  at the wall: paddle x %.2f w %.2f | sticky x %.2f w %.2f",
+                     game.paddle.position.x, game.paddle.size.width,
+                     game.paddleSticky.position.x, game.paddleSticky.size.width))
+        print(String(format: "  paddle frame %@\n  sticky frame %@\n",
+                     NSCoder.string(for: game.paddle.frame),
+                     NSCoder.string(for: game.paddleSticky.frame)))
+
+        XCTAssertEqual(game.paddleSticky.position.x, game.paddle.position.x, accuracy: 0.01)
+        XCTAssertEqual(game.paddleSticky.frame.midX, game.paddle.frame.midX, accuracy: 0.01,
+                       "the drawn band and the drawn paddle share a centre line")
+    }
+
+    /// **The edges, not the centre** (round 310).
+    ///
+    /// James's fourth report says the band is "misaligning from the paddle graphic when hit
+    /// against the side wall". Three rounds have answered the centre-line question and the
+    /// centre lines match; what nobody had measured is the *edges*, and at the wall the edges
+    /// are the only place an eye has a reference to judge against - a band a point or two wider
+    /// than the paddle shows that difference against the wall and nowhere else.
+    ///
+    /// Expand and Shrink are `scaleX` actions run separately on the paddle and on each strip,
+    /// so a mismatch could come from a size that did not follow a resize as well as from a
+    /// scale that did not.
+    func testTheBandAndThePaddleShareTheirEdgesAtTheWall() {
+        for scale in [1.0, 1.5, 0.5] as [CGFloat] {
+            let game = scene()
+            game.paddle.xScale = scale
+            game.paddleSticky.xScale = scale
+            game.paddleLaser.xScale = scale
+            game.paddle.position.x = 500
+            game.didEvaluateActions()
+
+            let paddle = game.paddle.frame
+            let sticky = game.paddleSticky.frame
+            print(String(format: "  scale %.2f | paddle %.2f...%.2f | sticky %.2f...%.2f",
+                         scale, paddle.minX, paddle.maxX, sticky.minX, sticky.maxX))
+
+            XCTAssertEqual(sticky.minX, paddle.minX, accuracy: 0.01,
+                           "left edges, at scale \(scale)")
+            XCTAssertEqual(sticky.maxX, paddle.maxX, accuracy: 0.01,
+                           "right edges, at scale \(scale)")
+        }
+    }
+
+    /// **What the retro paddle's six scale factors actually are** (round 310).
+    ///
+    /// Expand and Shrink run six `scaleX` actions. The plain paddle and its two strips go to
+    /// 0.5, 0.75, 1.0, 1.5, 2.0, 2.5; the three retro layers go to 0.59, 0.79, 1.0, 1.42, 1.82,
+    /// 2.24. Those look eyeballed and are not: with `paddleRetroTexture.size.width` set to
+    /// `paddleWidth*1.22`, every one of them is `(plainScale + 0.22)/1.22` to within 0.01, which
+    /// is the rule "the retro artwork is the paddle's width plus a fixed margin, and the margin
+    /// does not grow with it".
+    ///
+    /// **Written down because it took an hour to work out twice.** The numbers read like a
+    /// mistake, the fourth report of a misaligned sticky band pointed straight at them, and the
+    /// conclusion "the retro paddle is drawn too narrow when expanded" is wrong. What is left is
+    /// the rounding: the retro layers are set to two decimal places rather than computed, which
+    /// is up to 0.011 of scale - **about a point and a half on a hundred-point paddle** at the
+    /// widest step, and the largest single misalignment anyone has measured on this paddle.
+    /// Whether that is what James is seeing is his to say; it is the right size for "a pixel or
+    /// two" and it is not enough to act on alone.
+    func testTheRetroScaleFactorsFollowTheFixedMarginRule() {
+        let margin: CGFloat = 0.22
+        let steps: [(plain: CGFloat, retro: CGFloat)] =
+            [(0.5, 0.59), (0.75, 0.79), (1.0, 1.0), (1.5, 1.42), (2.0, 1.82), (2.5, 2.24)]
+
+        var worst: CGFloat = 0
+        for step in steps {
+            let wanted = (step.plain + margin)/(1 + margin)
+            let drift = abs(step.retro - wanted)
+            worst = max(worst, drift)
+            print(String(format: "  plain %.2f | retro %.2f | rule %.4f | out by %.4f "
+                         + "(%.2fpt on a 100pt paddle)",
+                         step.plain, step.retro, wanted, drift, drift*100*(1 + margin)))
+            XCTAssertEqual(step.retro, wanted, accuracy: 0.012,
+                           "the retro factor for \(step.plain) follows the fixed-margin rule")
+        }
+        XCTAssertLessThan(worst*100*(1 + margin), 2.0,
+                          "and no step is more than two points out on a hundred-point paddle")
+    }
+
+    /// A strip whose scale was not taken along by a resize is the other half of that question.
+    ///
+    /// Expand runs six separate `scaleX` actions - the paddle, the two strips and the three
+    /// retro layers - and the retro three deliberately go to a different number. What must
+    /// never happen is the *visible* pair disagreeing: a plain paddle at 1.5 with a band still
+    /// at 1.0 is a band two thirds the width of what it is meant to be covering.
+    func testAStripLeftBehindByAResizeIsCaught() {
+        let game = scene()
+        game.paddle.xScale = 1.5
+        game.paddleSticky.xScale = 1.0
+        game.paddle.position.x = 500
+        game.didEvaluateActions()
+
+        XCTAssertNotEqual(game.paddleSticky.frame.width, game.paddle.frame.width,
+                          accuracy: 0.01,
+                          "the check has to be able to see a mismatch, or it proves nothing")
+    }
+
+    /// And after an Expand, which is when the clamp actually does something.
+    func testTheBandFollowsThroughAResizeAtTheWall() {
+        let game = scene()
+        game.paddle.position.x = 150
+
+        game.paddle.size = CGSize(width: 200, height: 20)
+        game.paddleSticky.size = CGSize(width: 200, height: 11)
+        game.didEvaluateActions()
+
+        print(String(format: "\n  after expand: paddle x %.2f | sticky x %.2f | midX %.2f vs %.2f\n",
+                     game.paddle.position.x, game.paddleSticky.position.x,
+                     game.paddle.frame.midX, game.paddleSticky.frame.midX))
+
+        XCTAssertEqual(game.paddleSticky.frame.midX, game.paddle.frame.midX, accuracy: 0.01,
+                       "a grown paddle takes its band with it")
+    }
+    /// **Draw it, because three rounds of arithmetic have said it is fine.**
+    ///
+    /// The frames are concentric and the positions match, so whatever James is seeing is not
+    /// where these nodes *are*. The remaining candidates are all about what is inside them -
+    /// the art, the nine-slice, the relative widths - and none of those can be reasoned about
+    /// from numbers. Each theme's paddle with its sticky band over it, at the wall.
+    func testTheStickyBandOverThePaddleCanBeLookedAt() throws {
+        let themes = ["regularPaddle", "3DPaddle", "outlinePaddle"]
+        let stickies = ["regularSticky", "3DSticky", "outlineSticky"]
+        // The asset names, taken from the `SKTexture(imageNamed:)` lines rather than guessed -
+        // the first version of this test guessed and rendered SpriteKit's missing-texture
+        // placeholder, which looks enough like art to be believed for a moment
+        let width: CGFloat = 150, height: CGFloat = 44
+
+        let scene = SKScene(size: CGSize(width: width + 40,
+                                         height: (height + 10)*CGFloat(themes.count) + 10))
+        scene.backgroundColor = UIColor(red: 0.09, green: 0, blue: 0.14, alpha: 1)
+
+        for (row, (paddleArt, stickyArt)) in zip(themes, stickies).enumerated() {
+            let y = scene.size.height - (height + 10)*CGFloat(row) - height/2 - 10
+
+            let paddle = SKSpriteNode(texture: SKTexture(imageNamed: paddleArt))
+            paddle.size = CGSize(width: width, height: 14)
+            paddle.centerRect = GameScene.paddleCapRect
+            paddle.position = CGPoint(x: 20 + width/2, y: y)
+            paddle.zPosition = 1
+            scene.addChild(paddle)
+
+            let band = SKSpriteNode(texture: SKTexture(imageNamed: stickyArt))
+            band.size = CGSize(width: width, height: 11)
+            band.centerRect = GameScene.paddleStickyCapRect
+            band.anchorPoint = CGPoint(x: 0.5, y: 0)
+            band.position = CGPoint(x: paddle.position.x, y: y - 7)
+            band.zPosition = 4
+            scene.addChild(band)
+            // Exactly what `positionPaddleOverlays` does: same x, the band anchored at its
+            // bottom on the paddle's underside
+        }
+
+        let view = SKView(frame: CGRect(origin: .zero, size: scene.size))
+        let texture = try XCTUnwrap(view.texture(from: scene),
+                                    "no renderer here, so there is nothing to look at")
+        let file = URL(fileURLWithPath: NSTemporaryDirectory())
+            .appendingPathComponent("sticky-band.png")
+        try XCTUnwrap(UIImage(cgImage: texture.cgImage()).pngData()).write(to: file)
+        print("\n  Paddle with its sticky band, three themes: \(file.path)\n")
+    }
+
+}

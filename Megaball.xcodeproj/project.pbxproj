@@ -385,6 +385,9 @@
 		1AF5749C23AA6DC300DCBAE5 /* Level010.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF5749B23AA6DC300DCBAE5 /* Level010.swift */; };
 		1AFEA46424414029006E765F /* InbetweenViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AFEA46324414029006E765F /* InbetweenViewController.swift */; };
 		1AFF33C323EB43AD0033F485 /* AboutViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AFF33C223EB43AD0033F485 /* AboutViewController.swift */; };
+		1AF1700000000902 /* ResumeCardTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000901 /* ResumeCardTests.swift */; };
+		1AF1700000000912 /* ResumeCardRenderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000911 /* ResumeCardRenderTests.swift */; };
+		1AF1700000000922 /* DailyAchievementsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000921 /* DailyAchievementsTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -770,6 +773,9 @@
 		1AF5749B23AA6DC300DCBAE5 /* Level010.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Level010.swift; sourceTree = "<group>"; };
 		1AFEA46324414029006E765F /* InbetweenViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InbetweenViewController.swift; sourceTree = "<group>"; };
 		1AFF33C223EB43AD0033F485 /* AboutViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AboutViewController.swift; sourceTree = "<group>"; };
+		1AF1700000000901 /* ResumeCardTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResumeCardTests.swift; sourceTree = "<group>"; };
+		1AF1700000000911 /* ResumeCardRenderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResumeCardRenderTests.swift; sourceTree = "<group>"; };
+		1AF1700000000921 /* DailyAchievementsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyAchievementsTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -821,6 +827,9 @@
 				1AF1100000000001 /* TotalStatsTests.swift */,
 				1AF1400000000001 /* ScoringTests.swift */,
 				1AF1700000000003 /* SavedGameTests.swift */,
+				1AF1700000000901 /* ResumeCardTests.swift */,
+				1AF1700000000921 /* DailyAchievementsTests.swift */,
+				1AF1700000000911 /* ResumeCardRenderTests.swift */,
 				000000001AF1810000000011 /* MusicTrackTests.swift */,
 				1AF170000000001D /* BrickGridTests.swift */,
 				1AF1700000000023 /* PowerUpCatalogueTests.swift */,
@@ -1651,6 +1660,9 @@
 				1AF1200000000001 /* TotalStatsTests.swift in Sources */,
 				1AF1400000000002 /* ScoringTests.swift in Sources */,
 				1AF1700000000004 /* SavedGameTests.swift in Sources */,
+				1AF1700000000902 /* ResumeCardTests.swift in Sources */,
+				1AF1700000000922 /* DailyAchievementsTests.swift in Sources */,
+				1AF1700000000912 /* ResumeCardRenderTests.swift in Sources */,
 				000000001AF1810000000012 /* MusicTrackTests.swift in Sources */,
 				1AF170000000001E /* BrickGridTests.swift in Sources */,
 				1AF1700000000024 /* PowerUpCatalogueTests.swift in Sources */,

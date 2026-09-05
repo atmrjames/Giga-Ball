@@ -535,7 +535,39 @@ class TotalStats: Codable {
         false, // 62 onePacksComplete
         false, // 63 tenPacksComplete
         false, // 64 hundredPacksComplete
-        false // 65 thousandPacksComplete
+        false, // 65 thousandPacksComplete
+        false, // 66 mayhemTen
+        false, // 67 mayhemHundred
+        false, // 68 mayhemFiveHundred
+        false, // 69 mayhemOneK
+        false, // 70 mayhemFiveKTotal
+        false, // 71 mayhemTenKTotal
+        false, // 72 mayhemOneMinute
+        false, // 73 mayhemFiveMinutes
+        false, // 74 mayhemTenMinutes
+        false, // 75 mayhemThirtyMinutes
+        false, // 76 mayhemOneHour
+        false, // 77 mayhemClear
+        false, // 78 mayhemPowerUpBrick
+        false, // 79 mayhemWreckingGiga
+        false, // 80 mayhemThreeBalls
+        false, // 81 mayhemPortalTravel
+        false, // 82 mayhemSurviveReversed
+        false, // 83 allPowerUpsCollected
+        false, // 84 fivePowerUpsActive
+        false, // 85 firstDailyChallenge
+        false, // 86 tenDailyChallenges
+        false, // 87 hundredDailyChallenges
+        false, // 88 yearOfDailyChallenges
+        false, // 89 dailyWeekStreak
+        false, // 90 dailyMonthStreak
+        false, // 91 dailyYearStreak
+        false, // 92 dailyTopTen
+        false, // 93 dailyFirstPlace
+        false, // 94 allTwistsPlayed
+        false, // 95 butterFingers
+        false, // 96 maximumBallSpeed
+        false, // 97 minimumBallSpeed
     ]
 
     var achievementsPercentageCompleteArray: [String] = [
@@ -604,7 +636,39 @@ class TotalStats: Codable {
         "", // 62 onePacksComplete
         "0.0%", // 63 tenPacksComplete
         "0.0%", // 64 hundredPacksComplete
-        "0.0%" // 65 thousandPacksComplete
+        "0.0%", // 65 thousandPacksComplete
+        "0.0%", // 66 mayhemTen
+        "0.0%", // 67 mayhemHundred
+        "0.0%", // 68 mayhemFiveHundred
+        "0.0%", // 69 mayhemOneK
+        "0.0%", // 70 mayhemFiveKTotal
+        "0.0%", // 71 mayhemTenKTotal
+        "0.0%", // 72 mayhemOneMinute
+        "0.0%", // 73 mayhemFiveMinutes
+        "0.0%", // 74 mayhemTenMinutes
+        "0.0%", // 75 mayhemThirtyMinutes
+        "0.0%", // 76 mayhemOneHour
+        "0.0%",  // 77 mayhemClear
+        "0.0%",  // 78 mayhemPowerUpBrick
+        "0.0%",  // 79 mayhemWreckingGiga
+        "0.0%",  // 80 mayhemThreeBalls
+        "0.0%",  // 81 mayhemPortalTravel
+        "0.0%",  // 82 mayhemSurviveReversed
+        "0.0%",  // 83 allPowerUpsCollected
+        "0.0%",  // 84 fivePowerUpsActive
+        "0.0%",  // 85 firstDailyChallenge
+        "0.0%",  // 86 tenDailyChallenges
+        "0.0%",  // 87 hundredDailyChallenges
+        "0.0%",  // 88 yearOfDailyChallenges
+        "0.0%",  // 89 dailyWeekStreak
+        "0.0%",  // 90 dailyMonthStreak
+        "0.0%",  // 91 dailyYearStreak
+        "0.0%",  // 92 dailyTopTen
+        "0.0%",  // 93 dailyFirstPlace
+        "0.0%",  // 94 allTwistsPlayed
+        "0.0%",  // 95 butterFingers
+        "0.0%",  // 96 maximumBallSpeed
+        "0.0%",  // 97 minimumBallSpeed
     ]
     var achievementDates: [Date] = [
         Date(), // 0 achievementEndlessTen
@@ -672,7 +736,39 @@ class TotalStats: Codable {
         Date(), // 62 onePacksComplete
         Date(), // 63 tenPacksComplete
         Date(), // 64 hundredPacksComplete
-        Date() // 65 thousandPacksComplete
+        Date(), // 65 thousandPacksComplete
+        Date(timeIntervalSince1970: 0), // 66 mayhemTen
+        Date(timeIntervalSince1970: 0), // 67 mayhemHundred
+        Date(timeIntervalSince1970: 0), // 68 mayhemFiveHundred
+        Date(timeIntervalSince1970: 0), // 69 mayhemOneK
+        Date(timeIntervalSince1970: 0), // 70 mayhemFiveKTotal
+        Date(timeIntervalSince1970: 0), // 71 mayhemTenKTotal
+        Date(timeIntervalSince1970: 0), // 72 mayhemOneMinute
+        Date(timeIntervalSince1970: 0), // 73 mayhemFiveMinutes
+        Date(timeIntervalSince1970: 0), // 74 mayhemTenMinutes
+        Date(timeIntervalSince1970: 0), // 75 mayhemThirtyMinutes
+        Date(timeIntervalSince1970: 0), // 76 mayhemOneHour
+        Date(timeIntervalSince1970: 0), // 77 mayhemClear
+        Date(timeIntervalSince1970: 0), // 78 mayhemPowerUpBrick
+        Date(timeIntervalSince1970: 0), // 79 mayhemWreckingGiga
+        Date(timeIntervalSince1970: 0), // 80 mayhemThreeBalls
+        Date(timeIntervalSince1970: 0), // 81 mayhemPortalTravel
+        Date(timeIntervalSince1970: 0), // 82 mayhemSurviveReversed
+        Date(timeIntervalSince1970: 0), // 83 allPowerUpsCollected
+        Date(timeIntervalSince1970: 0), // 84 fivePowerUpsActive
+        Date(timeIntervalSince1970: 0), // 85 firstDailyChallenge
+        Date(timeIntervalSince1970: 0), // 86 tenDailyChallenges
+        Date(timeIntervalSince1970: 0), // 87 hundredDailyChallenges
+        Date(timeIntervalSince1970: 0), // 88 yearOfDailyChallenges
+        Date(timeIntervalSince1970: 0), // 89 dailyWeekStreak
+        Date(timeIntervalSince1970: 0), // 90 dailyMonthStreak
+        Date(timeIntervalSince1970: 0), // 91 dailyYearStreak
+        Date(timeIntervalSince1970: 0), // 92 dailyTopTen
+        Date(timeIntervalSince1970: 0), // 93 dailyFirstPlace
+        Date(timeIntervalSince1970: 0), // 94 allTwistsPlayed
+        Date(timeIntervalSince1970: 0), // 95 butterFingers
+        Date(timeIntervalSince1970: 0), // 96 maximumBallSpeed
+        Date(timeIntervalSince1970: 0), // 97 minimumBallSpeed
     ]
 }
 

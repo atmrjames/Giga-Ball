@@ -15,7 +15,95 @@ import UIKit
 /// best. Read by `GameScene` so the opening field waits its turn.
 var splashScreenIsShowing = false
 
-class SplashViewController: UIViewController, UITableViewDelegate, UITableViewDataSource {
+/// What the resuming screen says, as the four lines round 310 asked for.
+///
+/// A type of its own rather than a run of assignments inside `viewDidLoad`, because the only
+/// way to see this screen is to force-quit a game and relaunch, and there are nine shapes of
+/// save that reach it: three modes, a single level, and a daily in either mode whose day may be
+/// today's or long closed. Every one of them was being decided by an `if` nested inside the
+/// unwrap of an optional save, and round 310 reordered and reworded all four lines at once.
+///
+/// The screen keeps the *look*; this owns the words, so the suite can read them.
+enum ResumeCard {
+
+    struct Lines: Equatable {
+
+        /// The heading, in the face and colour a menu gives its own title.
+        var heading = "RESUMING…"
+
+        /// Which mode is being resumed.
+        var mode = ""
+
+        /// What within it: the pack and level, or the day and its mode. Empty in the endless
+        /// modes, which have nothing under their name to say.
+        var detail = ""
+
+        /// The score row, split so the screen can set two faces on one line.
+        var scoreTitle = ""
+        var scoreValue = ""
+    }
+
+    /// - Parameter fallbackMode: the remembered mode, for saves written before `gameMode`
+    ///   existed. Passed in rather than read here so the suite is not asking `UserDefaults`
+    ///   what the last player was doing.
+    static func lines(for game: SavedGame, fallbackMode: GameMode) -> Lines {
+        var lines = Lines()
+        let packs = LevelPackSetup()
+
+        if let key = game.dailyDateKey {
+            let session = DailyChallengeSession.shared
+            let challenge = DailyChallengeGenerator.challenge(forKey: key)
+            lines.mode = GameMode.daily.name
+            lines.detail = session.displayName(forKey: key).capitalized + ", "
+                + (challenge.mode == .classic
+                   ? packs.levelNameArray[game.levelNumber]
+                   : challenge.mode.name)
+            if key == session.todayKey, game.dailyWasScoringAttempt == true {
+                lines.detail += "\nCompetition run"
+            }
+            // **The day's own word for what this run is** (James, round 310: "if it's a
+            // competition run on a daily challenge say that in the details label"). It replaces
+            // "Still your scoring attempt.", which said the same thing as a footnote under the
+            // score and read as a warning rather than as a fact about the run.
+            //
+            // A closed day says nothing (play-test round 20): it has no attempt left to be, and
+            // the pause menu stops the run and explains properly once the player is in it
+            lines.scoreTitle = challenge.mode == .classic ? "Score" : "Height"
+            lines.scoreValue = challenge.mode == .classic
+                ? String(game.totalScore)
+                : String(game.endlessHeight) + "m"
+            return lines
+        }
+
+        if game.levelNumber == 0 {
+            let saved = game.gameMode.flatMap(GameMode.init(rawValue:)) ?? fallbackMode
+            lines.mode = saved == .endlessII ? GameMode.endlessII.name : GameMode.endless.name
+            // **The save's own mode, where it has one** (round 170). It used to ask the
+            // remembered key, which a force quit can lose before it reaches disk - and then this
+            // card offered to resume "Endless Mode" into a Mayhem run. Saves written before the
+            // field existed still fall back to the key, which is what they were always doing
+            lines.scoreTitle = "Height"
+            lines.scoreValue = String(game.endlessHeight) + "m"
+            return lines
+        }
+
+        if game.numberOfLevels > 1 {
+            lines.mode = GameMode.classic.name
+            let within = game.levelNumber - packs.startLevelNumber[game.packNumber] + 1
+            lines.detail = packs.levelPackNameArray[game.packNumber]
+                + " - Level \(within) of \(packs.numberOfLevels[game.packNumber])"
+            // Pack before level, the order James asked the daily's card for in the same round
+        } else {
+            lines.mode = "Single Level Mode"
+            lines.detail = packs.levelNameArray[game.levelNumber]
+        }
+        lines.scoreTitle = "Score"
+        lines.scoreValue = String(game.totalScore)
+        return lines
+    }
+}
+
+class SplashViewController: UIViewController {
     
     @IBOutlet var splashScreenLogo1: UIImageView!
     @IBOutlet var splashScreenLogo2: UIImageView!
@@ -27,6 +115,12 @@ class SplashViewController: UIViewController, UITableViewDelegate, UITableViewDa
     @IBOutlet var creatorLabel: UILabel!
     @IBOutlet var resumingLabel: UILabel!
     
+    /// The Cancel row's table view, kept only because the storyboard scene owns it.
+    ///
+    /// Round 310 replaced it with the app's large round button, and `layOutResumeCard` takes it
+    /// out of the hierarchy - a hidden view keeps its frame, and seventy points of it sat in
+    /// the middle of the new card. The outlet stays because deleting a view from a storyboard
+    /// scene means editing the XML by hand for no gain; the tests assert it has no superview.
     @IBOutlet var cancelResumeButton: UITableView!
     
     @IBOutlet var packNameLabel: UILabel!
@@ -128,10 +222,7 @@ class SplashViewController: UIViewController, UITableViewDelegate, UITableViewDa
         setUpCreatorCredit()
         // Pre animation setup
         
-        cancelResumeButton.delegate = self
-        cancelResumeButton.dataSource = self
-        cancelResumeButton.register(UINib(nibName: "SettingsTableViewCell", bundle: nil), forCellReuseIdentifier: "customSettingCell")
-        
+
         scoreLabel.numberOfLines = 0
         // The storyboard has it at one line; the resume detail needs three
 
@@ -163,74 +254,26 @@ class SplashViewController: UIViewController, UITableViewDelegate, UITableViewDa
             // itself, so a save that fails to decode leaves the flag true and nothing to
             // resume. Showing the prompt then unwrapping would trap at launch - the crash
             // loop this format was meant to end
+            layOutResumeCard()
+            let lines = ResumeCard.lines(for: savedGame,
+                                         fallbackMode: GameMode.current(in: defaults))
+            resumingLabel.text = lines.heading
+            modeLabel.text = lines.mode
+            detailLabel.text = lines.detail
+            detailLabel.isHidden = lines.detail.isEmpty
+            resumeStack?.setCustomSpacing(lines.detail.isEmpty ? 10 : 0, after: modeLabel)
+            // **The air above the score has to move with the line that carries it.** A stack
+            // skips the custom spacing after a hidden arranged view, so hiding the detail line
+            // in the endless modes - where a mode's name has nothing under it to say - took the
+            // ten points above the score with it and left the height jammed under "Endless
+            // Mayhem". Caught by rendering the three cards and looking at them
+            scoreLabel.attributedText = resumeScoreLine(title: lines.scoreTitle,
+                                                        value: lines.scoreValue)
+            // Said before the resume, never discovered after it (§12.5) - the same rule the
+            // briefing screen follows for whether an attempt posts
+
             resumingLabel.isHidden = false
-            cancelResumeButton.isHidden = false
-            
-            let currentLevelNumber = savedGame.levelNumber
-            let currentPackNumber = savedGame.packNumber
-            let score = savedGame.totalScore
-            let height = savedGame.endlessHeight
-            let numberOfLevels = savedGame.numberOfLevels
-            
-            if numberOfLevels > 1 {
-                packNameLabel.text = "\(LevelPackSetup().levelPackNameArray[currentPackNumber])"
-                levelNumberLabel.text = "Level \(currentLevelNumber-LevelPackSetup().startLevelNumber[currentPackNumber]+1) of \(LevelPackSetup().numberOfLevels[currentPackNumber])"
-            } else {
-                packNameLabel.text = "Single Level Mode"
-                levelNumberLabel.text = "\(LevelPackSetup().levelNameArray[currentLevelNumber])"
-            }
-            let lives = savedGame.numberOfLives
-            if currentLevelNumber == 0 {
-                packNameLabel.text = ""
-                let savedMode = savedGame.gameMode.flatMap(GameMode.init(rawValue:))
-                    ?? GameMode.current()
-                levelNumberLabel.text = savedMode == .endlessII
-                    ? GameMode.endlessII.name : GameMode.endless.name
-                // **The save's own mode, where it has one** (round 170). It used to ask the
-                // remembered key, which a force quit can lose before it reaches disk - and
-                // then this card offered to resume "Endless Mode" into a Mayhem run. Saves
-                // written before the field existed still fall back to the key, which is
-                // what they were always doing
-                scoreLabel.attributedText = resumeDetail(title: "Height", value: String(height) + "m", footnote: nil)
-                // Endless has a single life and no counter anywhere else
-            } else {
-                scoreLabel.attributedText = resumeDetail(
-                    title: "Score",
-                    value: String(score),
-                    footnote: lives == 1 ? "1 life left" : "\(lives) lives left")
-            }
-            
-            if let key = savedGame.dailyDateKey {
-                let session = DailyChallengeSession.shared
-                let challenge = DailyChallengeGenerator.challenge(forKey: key)
-                packNameLabel.text = "Daily Challenge, "
-                    + session.displayName(forKey: key).capitalized
-                levelNumberLabel.text = challenge.mode == .classic
-                    ? LevelPackSetup().levelNameArray[savedGame.levelNumber]
-                    : challenge.mode.name
-
-                let closed = key != session.todayKey
-                let footnote = closed
-                    ? nil
-                    : ((savedGame.dailyWasScoringAttempt ?? false)
-                        ? "Still your scoring attempt."
-                        : "Free play.")
-                // A closed day says nothing here now (play-test round 20). It used to carry
-                // the whole explanation as a footnote on the way into a game nobody had yet
-                // realised was no longer worth anything; the pause menu stops the run and
-                // says it properly instead (see `announceClosedDayIfNeeded`)
-                scoreLabel.attributedText = resumeDetail(
-                    title: challenge.mode == .classic ? "Score" : "Height",
-                    value: challenge.mode == .classic
-                        ? String(savedGame.totalScore)
-                        : String(savedGame.endlessHeight) + "m",
-                    footnote: footnote)
-                // Said before the resume, never discovered after it (§12.5) - the same
-                // rule the briefing screen follows for whether an attempt posts
-            }
-
-            packNameLabel.isHidden = false
-            levelNumberLabel.isHidden = false
+            modeLabel.isHidden = false
             scoreLabel.isHidden = false
         } else {
             resumingLabel.isHidden = true
@@ -243,120 +286,164 @@ class SplashViewController: UIViewController, UITableViewDelegate, UITableViewDa
     }
     
 
-    private func resumeDetail(title: String, value: String, footnote: String?) -> NSAttributedString {
-        // The score, its title and the life count go in one label rather than three.
-        // The storyboard runs resuming -> pack -> level -> score -> cancel as a single
-        // chain, and only its bottom is anchored, so a taller score label pushes the
-        // block upwards - whereas splicing extra views into the chain fought constraints
-        // that the nib reinstates, and silently flattened them to nothing.
-        let paragraph = NSMutableParagraphStyle()
-        paragraph.alignment = scoreLabel.textAlignment
+    /// The mode's name, and the pack and level under it.
+    ///
+    /// Two of the storyboard's three labels, renamed at the point of use rather than in the
+    /// nib: round 310 reordered what the screen says, and `packNameLabel` now carries the mode
+    /// while `levelNumberLabel` carries the pack and level it used to sit above. Renaming the
+    /// outlets would mean re-wiring the scene, and an alias here is the same change with
+    /// nothing to get wrong in the storyboard.
+    private var modeLabel: UILabel { packNameLabel }
+    private var detailLabel: UILabel { levelNumberLabel }
 
-        let detail: [NSAttributedString.Key: Any] = [
-            .font: packNameLabel.font as Any,
-            .foregroundColor: packNameLabel.textColor as Any,
-            .paragraphStyle: paragraph
-        ]
-        let headline: [NSAttributedString.Key: Any] = [
-            .font: scoreLabel.font as Any,
-            .foregroundColor: scoreLabel.textColor as Any,
-            .paragraphStyle: paragraph
-        ]
+    /// The resume card: heading, mode, detail, score, and the round button under them, all
+    /// grouped at the bottom of the screen.
+    ///
+    /// James, round 310: "move the Resuming... label to just above the cancel button and give
+    /// it the same font, style, glow as the game mode titles from their respective menu views.
+    /// Make the cancel button a big round x button in the centre at the bottom instead of
+    /// saying cancel... Keep the spacing and style similar to the pause / end of game menu, but
+    /// with everything grouped towards the bottom."
+    ///
+    /// The four labels come out of the storyboard's constraint chain and into a stack view.
+    /// That chain ran heading -> pack -> level -> score -> cancel with only its *bottom*
+    /// anchored, so it was already bottom-grouped, but every gap in it was a separate
+    /// storyboard constant and the new order needed three of them changed. A stack owns the
+    /// spacing in one place, and taking the labels out of the chain retires those constraints
+    /// with them - a view removed from its superview takes the constraints that mention it.
+    ///
+    /// The table view that used to be the Cancel row goes entirely. It was one row in a list
+    /// control drawn as a capsule, and what round 310 asked for is the app's own large round
+    /// button - the same disc, at the same size, as the centre button on every menu's row.
+    private func layOutResumeCard() {
+        guard let container = resumingLabel.superview else { return }
 
-        let text = NSMutableAttributedString(string: title + "\n", attributes: detail)
-        text.append(NSAttributedString(string: value, attributes: headline))
-        if let footnote {
-            text.append(NSAttributedString(string: "\n" + footnote, attributes: detail))
+        cancelResumeButton.removeFromSuperview()
+
+        resumingLabel.font = UIViewController.menuTitleFont
+        resumingLabel.textColor = GigaBallGlow.colour
+        resumingLabel.adjustsFontSizeToFitWidth = true
+        resumingLabel.minimumScaleFactor = 0.6
+        resumingLabel.applyGigaBallGlow(radius: GigaBallGlow.headingRadius)
+        // The face, colour and halo every menu screen's title wears - `menuTitleFont` is the
+        // one place those 35 black points are written down (round 212 found two screens that
+        // had drifted off it)
+
+        modeLabel.font = .systemFont(ofSize: 25, weight: .bold)
+        modeLabel.textColor = UIColor(white: 0.871, alpha: 1)
+        modeLabel.adjustsFontSizeToFitWidth = true
+        modeLabel.minimumScaleFactor = 0.6
+        detailLabel.font = .systemFont(ofSize: 17, weight: .semibold)
+        detailLabel.textColor = UIColor(white: 0.667, alpha: 1)
+        for label in [resumingLabel, modeLabel, detailLabel, scoreLabel] {
+            label!.textAlignment = .center
+            label!.numberOfLines = 0
         }
-        return text
+        // The pause screen's own vocabulary, borrowed rather than invented: 25 bold at 0.871
+        // white is its level line, 17 semibold at 0.667 its pack line. They swap places here
+        // because round 310 asked for the mode first and its detail under it, so the larger of
+        // the two is on top
+
+        let stack = UIStackView(arrangedSubviews: [resumingLabel, modeLabel,
+                                                   detailLabel, scoreLabel])
+        stack.axis = .vertical
+        stack.alignment = .fill
+        stack.spacing = 0
+        stack.translatesAutoresizingMaskIntoConstraints = false
+        stack.setCustomSpacing(8, after: resumingLabel)
+        stack.setCustomSpacing(10, after: detailLabel)
+        resumeStack = stack
+        // Nothing between the mode and its detail, which is how the pause screen sets its two,
+        // and air either side of that pair: the heading is a heading and the score is the
+        // number the player came back for
+        container.addSubview(stack)
+
+        let size = MainMenuCollectionViewCell.largeButtonSize
+        let cancel = UIButton(type: .system)
+        cancel.translatesAutoresizingMaskIntoConstraints = false
+        cancel.backgroundColor = UIColor(white: 0.92, alpha: 1)
+        cancel.tintColor = UIColor(red: 0.16, green: 0, blue: 0.24, alpha: 1)
+        cancel.layer.cornerRadius = size/2
+        cancel.setImage(UIImage(systemName: "xmark",
+                                withConfiguration: UIImage.SymbolConfiguration(
+                                    pointSize: 28, weight: .heavy)), for: .normal)
+        cancel.addTarget(self, action: #selector(cancelResumeTapped), for: .touchUpInside)
+        container.addSubview(cancel)
+        applyRoundGlass(to: cancel, radius: size/2,
+                        symbol: "xmark", pointSize: 28, rimmed: true)
+        // The pale disc first and the glass over it, in that order, because `applyRoundGlass`
+        // only draws the glass on iOS 26 and leaves an older phone whatever the caller set -
+        // which is the pattern every other round button here follows (round 94's sweep).
+        //
+        // Rimmed, at the large size: this is the one button on the screen, and the app draws
+        // the one button in a row as the lime disc
+        NSLayoutConstraint.activate([
+            stack.centerXAnchor.constraint(equalTo: container.centerXAnchor),
+            stack.leadingAnchor.constraint(greaterThanOrEqualTo: container.leadingAnchor,
+                                           constant: 24),
+            stack.trailingAnchor.constraint(lessThanOrEqualTo: container.trailingAnchor,
+                                            constant: -24),
+            cancel.topAnchor.constraint(equalTo: stack.bottomAnchor, constant: 26),
+            cancel.centerXAnchor.constraint(equalTo: container.centerXAnchor),
+            cancel.widthAnchor.constraint(equalToConstant: size),
+            cancel.heightAnchor.constraint(equalToConstant: size),
+            cancel.bottomAnchor.constraint(
+                equalTo: container.safeAreaLayoutGuide.bottomAnchor, constant: -26),
+        ])
+        // The button is pinned to the *bottom* and the stack hangs off its top, so the whole
+        // card grows upwards out of the corner it is anchored in however long the detail runs.
+        // Twenty-six under the safe area puts the disc where the Cancel row's capsule sat, and
+        // twenty-six above it is the pause screen's gap between its result and its button row
     }
-    // Says the same things the pause screen does, rather than showing a bare number
+
+    /// The card's stack, kept so the spacing can be adjusted once the words are known.
+    private weak var resumeStack: UIStackView?
+
+    @objc private func cancelResumeTapped() {
+        if hapticsSetting { interfaceHaptic.impactOccurred() }
+        NotificationCenter.default.post(name: .cancelGameResume, object: nil)
+        gameToResume = false
+        removeAnimate(duration: 0.25)
+        // Exactly what the Cancel row did, minus the table view's highlight dance. The
+        // notification goes first: `removeAnimate` tears the screen down, and posting after it
+        // has run once left the run resumed behind a screen that was already gone
+    }
+
+    /// The score and its title on **one line**, in the pause screen's own two faces.
+    ///
+    /// James, round 310: "underneath that, show the current score / height with the score
+    /// label and score on a single line. Remove the still scoring your attempt line."
+    ///
+    /// It was three lines - title, number, then a footnote carrying either the life count or
+    /// whether the run was still the day's scoring attempt - and stacked under a heading and
+    /// two detail lines it made the block taller than the screen had room for. The two faces
+    /// are the pause screen's `scoreLabelTitle` and `scoreLabel`, 20 semibold grey and 35 black
+    /// white, so the line reads as the same row that screen shows.
+    private func resumeScoreLine(title: String, value: String) -> NSAttributedString {
+        let paragraph = NSMutableParagraphStyle()
+        paragraph.alignment = .center
+
+        let line = NSMutableAttributedString(
+            string: title + "  ",
+            attributes: [.font: UIFont.systemFont(ofSize: 20, weight: .semibold),
+                         .foregroundColor: UIColor(white: 0.667, alpha: 1),
+                         .paragraphStyle: paragraph])
+        line.append(NSAttributedString(
+            string: value,
+            attributes: [.font: UIFont.systemFont(ofSize: 35, weight: .black),
+                         .foregroundColor: UIColor.white,
+                         .paragraphStyle: paragraph]))
+        return line
+        // Two sizes on one line sit on a shared baseline without being asked to, which is why
+        // the grey title lines up under the number's feet rather than its middle
+    }
+
 
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         fadeObjectsIn()
     }
 
-    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return 1
-    }
-    // Set number of cells in table view
-    
-    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        let cell = tableView.dequeueReusableCell(withIdentifier: "customSettingCell", for: indexPath) as! SettingsTableViewCell
-        
-        cancelResumeButton.rowHeight = SettingsTableViewCell.glassRowHeight
-        cell.iconImage.backgroundColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 0)
-        
-        cell.settingDescription.text = ""
-        cell.centreLabel.text = "Cancel"
-        cell.settingState.text = ""
-        
-        cell.applyGlass(cornerRadius: 25)
-        // 25 rather than the 14 the list rows use: this is one lone button rather than a row
-        // in a stack, and it was already drawn as a capsule
-
-        cell.cellView2.layer.cornerRadius = 25
-        cell.cellView2.layer.masksToBounds = false
-        cell.cellView2.layer.shadowOffset = CGSize(width: 0, height: 0)
-        cell.cellView2.layer.shadowColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1)
-        cell.cellView2.layer.shadowOpacity = 0.5
-        cell.cellView2.layer.shadowRadius = 4
-        
-        UIView.animate(withDuration: 0.2) {
-            cell.cellView2.transform = .identity
-            if cell.isGlass == false {
-                cell.cellView2.backgroundColor = #colorLiteral(red: 0.8705882353, green: 0.8705882353, blue: 0.8705882353, alpha: 1)
-            }
-        }
-        // The reset back to grey has to skip a glass cell, or it paints the light card straight
-        // back over the material every time the row is built
-        
-        return cell
-    }
-    // Add content to cells
-    
-    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-
-        NotificationCenter.default.post(name: .cancelGameResume, object: nil)
-        gameToResume = false        
-        removeAnimate(duration: 0.25)
-                
-        if let cell = self.cancelResumeButton.cellForRow(at: indexPath) as? SettingsTableViewCell {
-            cell.showTapFeedback()
-        }
-        
-        tableView.deselectRow(at: indexPath, animated: true)
-        tableView.reloadData()
-        // Update table view
-    }
-    
-    func tableView(_ tableView: UITableView, didHighlightRowAt indexPath: IndexPath) {
-        if hapticsSetting {
-            interfaceHaptic.impactOccurred()
-        }
-        
-        NotificationCenter.default.post(name: .cancelGameResume, object: nil)
-        gameToResume = false
-        removeAnimate(duration: 0.25)
-                
-        if let cell = self.cancelResumeButton.cellForRow(at: indexPath) as? SettingsTableViewCell {
-            UIView.animate(withDuration: 0.1) {
-                cell.cellView2.transform = .init(scaleX: 0.98, y: 0.98)
-                cell.cellView2.backgroundColor = #colorLiteral(red: 0.8335226774, green: 0.9983789325, blue: 0.5007104874, alpha: 1)
-            }
-        }
-    }
-    
-    func tableView(_ tableView: UITableView, didUnhighlightRowAt indexPath: IndexPath) {
-        if let cell = self.cancelResumeButton.cellForRow(at: indexPath) as? SettingsTableViewCell {
-            UIView.animate(withDuration: 0.1) {
-                cell.cellView2.transform = .identity
-                cell.cellView2.backgroundColor = #colorLiteral(red: 0.8705882353, green: 0.8705882353, blue: 0.8705882353, alpha: 1)
-            }
-        }
-    }
-    
     func fadeObjectsIn() {
         
         let totalDuration = 6.0

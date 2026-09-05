@@ -121,6 +121,26 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
         if totalStatsArray.isEmpty {
             totalStatsArray = [TotalStats()]
         }
+        awardHistoryAchievements()
+    }
+
+    /// The eight achievements the daily's own history earns, checked whenever this screen
+    /// reads it (round 310, from James's workbook).
+    ///
+    /// Here rather than at the moment a score posts, and that is deliberate: the history is
+    /// merged from iCloud as well as written locally, so a player who posted their tenth day on
+    /// another device earns Serial Daily Challenger on this one the first time they open the
+    /// screen. A check that only ran at posting time would miss every one of those.
+    ///
+    /// Cheap enough to run on every load - the counts and the streak are one pass over the
+    /// records, and the twists are one generator call per day played, which is arithmetic on a
+    /// seed rather than anything stored.
+    private func awardHistoryAchievements() {
+        let earned = DailyAchievements.earned(from: totalStatsArray[0].dailyRecords,
+                                              on: DailyChallengeSession.shared.todayKey)
+        guard AchievementCatalogue.award(earned, in: &totalStatsArray[0]).isEmpty == false
+        else { return }
+        saveData()
     }
 
     func saveData() {
@@ -473,6 +493,16 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
             guard let self, let standing else { return }
             self.todayStanding = LeaderboardStanding(rank: standing.rank, players: standing.players)
             self.days.reloadData()
+
+            let placings = DailyAchievements.earned(fromStanding: self.todayStanding!)
+            if AchievementCatalogue.award(placings, in: &self.totalStatsArray[0]).isEmpty == false {
+                self.saveData()
+            }
+            // **Top 10 Finish and Top Of The Charts, taken when the answer arrives** (round 310,
+            // from James's workbook). The daily board is a *recurring* leaderboard: it resets at
+            // each deadline, so a placing that is not read while the day is open cannot be asked
+            // for again. Nothing is stored beyond the achievement flag itself, because there is
+            // nothing to store - the rank is gone by tomorrow either way
             // The placing joins the card when Game Center answers; the recurring board
             // resets at the deadline, so only today has one to ask for
         }

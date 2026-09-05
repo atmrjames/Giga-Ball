@@ -43,12 +43,29 @@ extension GameScene {
         // has its own teeth (see endlessIIBallWasLost's gate). Retired in round 228 for
         // exactly that reason, and still honoured if a challenge asks for it
         if DailyChallengeSession.shared.has(.spareBalls) {
-            return endlessMode ? 2 : numberOfLives + 2
+            let endless = DailyChallengeSession.shared.active?.mode.isEndless ?? endlessMode
+            return endless ? 2 : GameScene.classicStartingRack + 2
         }
         // **Two more than the mode's own rack** (round 228's workbook: "two extra balls are
         // provided"). In the endless modes the rack is empty, so two more is a rack of two;
         // in Classic it is two on top of whatever the level would have given, which is the
-        // only reading under which the same twist means the same thing in both
+        // only reading under which the same twist means the same thing in both.
+        //
+        // **It read `numberOfLives` until round 310, and that was a bug** (James: "the Extra
+        // Balls twist on a Classic Mode Daily Challenge should provide 2 extra balls to normal,
+        // not just 2 balls. So that would be 1 ball in play and 5 balls in reserve to start").
+        //
+        // The value is *self-referential*: `PreGame` writes `numberOfLives = dailyStartingLives
+        // ?? 3`, so the property is read on the right-hand side of its own assignment and
+        // answers with whatever the last run left behind - nought on a fresh launch. Two more
+        // than nothing is two, which is what he counted. Asking the constant instead makes the
+        // sentence true whatever came before.
+        //
+        // **And the mode comes from the day rather than from the scene's flag.** `endlessMode`
+        // is a scene property that something has to have set first, and the day already knows
+        // which mode it is - so a rule about what the *challenge* grants should read the
+        // challenge. It falls back to the scene's flag for the case that has no active day, in
+        // which case this line is unreachable anyway
         return nil
     }
 

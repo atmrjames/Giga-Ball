@@ -92,8 +92,9 @@ class PreGame: GKState {
             // The day's word first (Extra Balls racks reserves in an endless daily),
             // the mode's own empty rack otherwise
         } else {
-            scene.numberOfLives = scene.dailyStartingLives ?? 3
-            // The day's word first, the mode's own three otherwise
+            scene.numberOfLives = scene.dailyStartingLives ?? GameScene.classicStartingRack
+            // The day's word first, the mode's own rack otherwise - the same constant
+            // `dailyStartingLives` adds its two to, so the two cannot drift apart
         }
         // The count is the rack of reserve balls - the ball on the paddle is on top of it
         scene.multiplier = Scoring.multiplierBase

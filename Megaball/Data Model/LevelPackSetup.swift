@@ -1134,7 +1134,45 @@ class LevelPackSetup {
         "1 Pack Down", // 62 onePacksComplete
         "Pack Decade", // 63 tenPacksComplete
         "Pack Century", // 64 hundredPacksComplete
-        "Pack Millennium" // 65 thousandPacksComplete
+        "Pack Millennium", // 65 thousandPacksComplete
+        "Endless Mayhem 10m Milestone",             // 66 mayhemTen
+        "Endless Mayhem 100m Milestone",            // 67 mayhemHundred
+        "Endless Mayhem 500m Milestone",            // 68 mayhemFiveHundred
+        "Endless Mayhem 1,000m Milestone",          // 69 mayhemOneK
+        "Endless Mayhem 5,000m Total Height",       // 70 mayhemFiveKTotal
+        "Endless Mayhem 10,000m Total Height",      // 71 mayhemTenKTotal
+        "Endless Mayhem 1 Minute Milestone",        // 72 mayhemOneMinute
+        "Endless Mayhem 5 Minute Milestone",        // 73 mayhemFiveMinutes
+        "Endless Mayhem 10 Minute Milestone",       // 74 mayhemTenMinutes
+        "Endless Mayhem 30 Minute Milestone",       // 75 mayhemThirtyMinutes
+        "Endless Mayhem 1 Hour Milestone",          // 76 mayhemOneHour
+        "Tidying Up Amongst The Mayhem",            // 77 mayhemClear
+        "Feel The Power Of The Brick",              // 78 mayhemPowerUpBrick
+        "Giga-Wrecking Ball!",                      // 79 mayhemWreckingGiga
+        "Juggler",                                  // 80 mayhemThreeBalls
+        "Wormhole",                                 // 81 mayhemPortalTravel
+        "Backwards Compatible",                     // 82 mayhemSurviveReversed
+        // **Not "Paddle Master", which the workbook asks for and which is already taken**
+        // (round 310). Index 42 has worn that name since 2020 - it is the ten-paddle-hit level
+        // clear - and two achievements with one name is a page a player cannot read.
+        // `testAchievementNamesAreUnique` caught it. This is a placeholder in the game's own
+        // voice, beside Blur, Pokey, Juggler and Butter Fingers, and James can rename it: both
+        // the name and the identifier are still unshipped
+        "Power-Up Completionist",                   // 83 allPowerUpsCollected
+        "Multi-Talented",                           // 84 fivePowerUpsActive
+        "First Daily Challenge",                    // 85 firstDailyChallenge
+        "Serial Daily Challenger",                  // 86 tenDailyChallenges
+        "Experienced Daily Challenger",             // 87 hundredDailyChallenges
+        "Seasoned Daily Challenger",                // 88 yearOfDailyChallenges
+        "Week Long Streak",                         // 89 dailyWeekStreak
+        "Month Long Streak",                        // 90 dailyMonthStreak
+        "Year Long Streak",                         // 91 dailyYearStreak
+        "Top 10 Finish",                            // 92 dailyTopTen
+        "Top Of The Charts",                        // 93 dailyFirstPlace
+        "Twist Completionist",                      // 94 allTwistsPlayed
+        "Butter Fingers",                           // 95 butterFingers
+        "Blur",                                     // 96 maximumBallSpeed
+        "Pokey",                                    // 97 minimumBallSpeed
     ]
     let achievementsPreEarnedDescriptionArray: [String] = [
         "Reach 10m in Endless Mode", // 0 achievementEndlessTen
@@ -1202,7 +1240,39 @@ class LevelPackSetup {
         "Complete first pack", // 62 onePacksComplete
         "Complete 10 packs", // 63 tenPacksComplete
         "Complete 100 packs", // 64 hundredPacksComplete
-        "Complete 1,000 packs" // 65 thousandPacksComplete
+        "Complete 1,000 packs", // 65 thousandPacksComplete
+        "Reach 10m in Endless Mayhem",              // 66 mayhemTen
+        "Reach 100m in Endless Mayhem",             // 67 mayhemHundred
+        "Reach 500m in Endless Mayhem",             // 68 mayhemFiveHundred
+        "Reach 1,000m in Endless Mayhem",           // 69 mayhemOneK
+        "Reach 5,000m Total Height in Endless Mayhem",// 70 mayhemFiveKTotal
+        "Reach 10,000m Total Height in Endless Mayhem",// 71 mayhemTenKTotal
+        "Survive 1 minute in Endless Mayhem",       // 72 mayhemOneMinute
+        "Survive 5 minutes in Endless Mayhem",      // 73 mayhemFiveMinutes
+        "Survive 10 minutes in Endless Mayhem",     // 74 mayhemTenMinutes
+        "Survive 30 minutes in Endless Mayhem",     // 75 mayhemThirtyMinutes
+        "Survive 1 hour in Endless Mayhem",         // 76 mayhemOneHour
+        "Clear Endless Mayhem of all active bricks",                // 77 mayhemClear
+        "Collect a power-up from a power-up brick",                 // 78 mayhemPowerUpBrick
+        "Have Giga-Ball and Wrecking Ball power-up at the same time",// 79 mayhemWreckingGiga
+        "Have 3 balls in play at the same time",                    // 80 mayhemThreeBalls
+        "Have the ball travel between 2 portal bricks",             // 81 mayhemPortalTravel
+        "Survive the Reversed Paddle Control power-up",             // 82 mayhemSurviveReversed
+        "Collect all power-ups at least once",                      // 83 allPowerUpsCollected
+        "Have 5 power-ups active at the same time",                 // 84 fivePowerUpsActive
+        "Post a score in a Daily Challenge",                        // 85 firstDailyChallenge
+        "Complete 10 Daily Challenges",                             // 86 tenDailyChallenges
+        "Complete 100 Daily Challenges",                            // 87 hundredDailyChallenges
+        "Complete 365 Daily Challenges",                            // 88 yearOfDailyChallenges
+        "Complete every Daily Challenge for 1 week",                // 89 dailyWeekStreak
+        "Complete every Daily Challenge for 1 month",               // 90 dailyMonthStreak
+        "Complete every Daily Challenge for 1 year",                // 91 dailyYearStreak
+        "Finish in the top 10 of a Daily Challenge",                // 92 dailyTopTen
+        "Finish first in a Daily Challenge",                        // 93 dailyFirstPlace
+        "Play a Daily Challenge with each twist at least once",     // 94 allTwistsPlayed
+        "Lose the ball before destroying any bricks",               // 95 butterFingers
+        "Accelerate the ball to its maximum speed",                 // 96 maximumBallSpeed
+        "Slow the ball down to its minimum speed",                  // 97 minimumBallSpeed
     ]
     let achievementsEarnedDescriptionArray: [String] = [
         "Passed 10m in Endless Mode", // 0 achievementEndlessTen
@@ -1270,7 +1340,39 @@ class LevelPackSetup {
         "First pack completed", // 62 onePacksComplete
         "Completed 10 packs", // 63 tenPacksComplete
         "Completed 100 packs", // 64 hundredPacksComplete
-        "Completed 1,000 packs" // 65 thousandPacksComplete
+        "Completed 1,000 packs", // 65 thousandPacksComplete
+        "Passed 10m in Endless Mayhem",             // 66 mayhemTen
+        "Passed 100m in Endless Mayhem",            // 67 mayhemHundred
+        "Passed 500m in Endless Mayhem",            // 68 mayhemFiveHundred
+        "Passed 1,000m in Endless Mayhem",          // 69 mayhemOneK
+        "Passed 5,000m Total Height in Endless Mayhem",// 70 mayhemFiveKTotal
+        "Passed 10,000m Total Height in Endless Mayhem",// 71 mayhemTenKTotal
+        "Survived 1 minute in Endless Mayhem",      // 72 mayhemOneMinute
+        "Survived 5 minutes in Endless Mayhem",     // 73 mayhemFiveMinutes
+        "Survived 10 minutes in Endless Mayhem",    // 74 mayhemTenMinutes
+        "Survived 30 minutes in Endless Mayhem",    // 75 mayhemThirtyMinutes
+        "Survived 1 hour in Endless Mayhem",        // 76 mayhemOneHour
+        "Endless Mayhem cleared of all active bricks",                // 77 mayhemClear
+        "Collected a power-up from a power-up brick",                 // 78 mayhemPowerUpBrick
+        "Had Giga-Ball and Wrecking Ball power-up at the same time",  // 79 mayhemWreckingGiga
+        "Had 3 balls in play at the same time",                       // 80 mayhemThreeBalls
+        "Had the ball travel between 2 portal bricks",                // 81 mayhemPortalTravel
+        "Survived the Reversed Paddle Control power-up",              // 82 mayhemSurviveReversed
+        "Collected all power-ups at least once",                      // 83 allPowerUpsCollected
+        "Had 5 power-ups active at the same time",                    // 84 fivePowerUpsActive
+        "Posted a score in a Daily Challenge",                        // 85 firstDailyChallenge
+        "Completed 10 Daily Challenges",                              // 86 tenDailyChallenges
+        "Completed 100 Daily Challenges",                             // 87 hundredDailyChallenges
+        "Completed 365 Daily Challenges",                             // 88 yearOfDailyChallenges
+        "Completed every Daily Challenge for 1 week",                 // 89 dailyWeekStreak
+        "Completed every Daily Challenge for 1 month",                // 90 dailyMonthStreak
+        "Completed every Daily Challenge for 1 year",                 // 91 dailyYearStreak
+        "Finished in the top 10 of a Daily Challenge",                // 92 dailyTopTen
+        "Finished first in a Daily Challenge",                        // 93 dailyFirstPlace
+        "Played a Daily Challenge with each twist at least once",     // 94 allTwistsPlayed
+        "Lost the ball before destroying any bricks",                 // 95 butterFingers
+        "Ball accelerated to its maximum speed",                      // 96 maximumBallSpeed
+        "Ball slowed down to its minimum speed",                      // 97 minimumBallSpeed
     ]
     let achievementsImageArray: [String] = [
         "AchivementBadge.png", // 0 achievementEndlessTen
@@ -1338,7 +1440,39 @@ class LevelPackSetup {
         "AchivementBadge.png", // 62 onePacksComplete
         "AchivementBadge.png", // 63 tenPacksComplete
         "AchivementBadge.png", // 64 hundredPacksComplete
-        "AchivementBadge.png" // 65 thousandPacksComplete
+        "AchivementBadge.png", // 65 thousandPacksComplete
+        "AchivementBadge.png",                      // 66 mayhemTen
+        "AchivementBadge.png",                      // 67 mayhemHundred
+        "AchivementBadge.png",                      // 68 mayhemFiveHundred
+        "AchivementBadge.png",                      // 69 mayhemOneK
+        "AchivementBadge.png",                      // 70 mayhemFiveKTotal
+        "AchivementBadge.png",                      // 71 mayhemTenKTotal
+        "AchivementBadge.png",                      // 72 mayhemOneMinute
+        "AchivementBadge.png",                      // 73 mayhemFiveMinutes
+        "AchivementBadge.png",                      // 74 mayhemTenMinutes
+        "AchivementBadge.png",                      // 75 mayhemThirtyMinutes
+        "AchivementBadge.png",                      // 76 mayhemOneHour
+        "AchivementBadge.png",                      // 77 mayhemClear
+        "AchivementBadge.png",                      // 78 mayhemPowerUpBrick
+        "AchivementBadge.png",                      // 79 mayhemWreckingGiga
+        "AchivementBadge.png",                      // 80 mayhemThreeBalls
+        "AchivementBadge.png",                      // 81 mayhemPortalTravel
+        "AchivementBadge.png",                      // 82 mayhemSurviveReversed
+        "AchivementBadge.png",                      // 83 allPowerUpsCollected
+        "AchivementBadge.png",                      // 84 fivePowerUpsActive
+        "AchivementBadge.png",                      // 85 firstDailyChallenge
+        "AchivementBadge.png",                      // 86 tenDailyChallenges
+        "AchivementBadge.png",                      // 87 hundredDailyChallenges
+        "AchivementBadge.png",                      // 88 yearOfDailyChallenges
+        "AchivementBadge.png",                      // 89 dailyWeekStreak
+        "AchivementBadge.png",                      // 90 dailyMonthStreak
+        "AchivementBadge.png",                      // 91 dailyYearStreak
+        "AchivementBadge.png",                      // 92 dailyTopTen
+        "AchivementBadge.png",                      // 93 dailyFirstPlace
+        "AchivementBadge.png",                      // 94 allTwistsPlayed
+        "AchivementBadge.png",                      // 95 butterFingers
+        "AchivementBadge.png",                      // 96 maximumBallSpeed
+        "AchivementBadge.png",                      // 97 minimumBallSpeed
     ]
     let gameCenterAchievementsArray: [GKAchievement] = [
         GKAchievement(identifier: "onePacksComplete"),
