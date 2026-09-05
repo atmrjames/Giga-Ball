@@ -1220,6 +1220,46 @@ extension DailyTwist {
     /// One builder for every screen that lists twists, so they cannot drift apart in how
     /// a twist reads. The icon rides slightly below the baseline, which is where a glyph
     /// the height of a capital sits without looking like it is floating.
+    /// The day's twists, badged and blurbed, as one block of text for a pop-up.
+    ///
+    /// **One builder for both screens** (round 308). The pause menu has explained the day's
+    /// twists since play-test round 16, and the briefing card now needs exactly the same
+    /// pop-up - James: "twists on the daily challenge screen shouldn't show the descriptions,
+    /// just the icon and name of the twist. like on the pause screen, if a user wants more
+    /// details, they can click to show a pop up with the description of the twists for the
+    /// day's challenge."
+    ///
+    /// A twistless day is a Vanilla day and explains itself like any other (play-test round
+    /// 18): "Vanilla" says nothing to somebody who has not read the rest of the game, and it
+    /// was the one badge that did not answer a tap.
+    ///
+    /// The badge goes in front of the name, as every other screen that names a twist does
+    /// (play-test round 17) - the briefing, the pause summary and the level intro all read
+    /// icon-then-name, and the explainer was the one place that did not.
+    static func explainer(for twists: [DailyTwist]) -> NSAttributedString {
+        let named: [(icon: UIImage, name: String, blurb: String)] = twists.isEmpty
+            ? [(PowerUpIcon.twistVanilla, DailyTwist.vanillaName, DailyTwist.vanillaBlurb)]
+            : twists.map { ($0.icon, $0.displayName, $0.blurb) }
+
+        let body = NSMutableAttributedString()
+        for (position, twist) in named.enumerated() {
+            if position > 0 { body.append(NSAttributedString(string: "\n\n")) }
+            body.append(DailyTwist.badgedLine(icon: twist.icon, name: twist.name,
+                                              font: .boldSystemFont(ofSize: 16),
+                                              colour: .white))
+            body.append(NSAttributedString(
+                string: "\n\(twist.blurb)",
+                attributes: [.font: UIFont.systemFont(ofSize: 15),
+                             .foregroundColor: UIColor(white: 1, alpha: 0.75)]))
+        }
+
+        let centred = NSMutableParagraphStyle()
+        centred.alignment = .center
+        body.addAttribute(.paragraphStyle, value: centred,
+                          range: NSRange(location: 0, length: body.length))
+        return body
+    }
+
     /// A level's picture as the day will actually present it.
     ///
     /// James, round 300: "for daily challenges where the level is mirrored or upside down, the

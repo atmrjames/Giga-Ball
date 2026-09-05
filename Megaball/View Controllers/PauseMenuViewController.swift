@@ -99,6 +99,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
     
     let livesLabel = UILabel()
     let signedOutLabel = UILabel()
+    private var livesCollapsed: NSLayoutConstraint!
     private var livesUnderHighscore: NSLayoutConstraint!
     private var livesUnderScore: NSLayoutConstraint!
     private var livesUnderDailyTotal: NSLayoutConstraint!
@@ -118,6 +119,8 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
     let resultLabel = UILabel()
     /// The rules sit with the level they are the rules of; the title makes room for them.
     private var rulesUnderTheLevel: NSLayoutConstraint!
+    /// The same, for a day whose level name is blank - see where these are built.
+    private var rulesUnderTheNumber: NSLayoutConstraint!
     private var titleUnderTheRules: NSLayoutConstraint!
     // **The day's rules belong with the day's level** (play-test round 126: "twist info
     // should go near level info"). They used to float a third of the way down the screen,
@@ -155,13 +158,17 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
         stats.font = .boldSystemFont(ofSize: 14)
         var moreStats = UIButton.Configuration.plain()
         moreStats.attributedTitle = stats
-        moreStats.image = UIImage(named: "iconStats.png")?
-            .withRenderingMode(.alwaysTemplate)
+        moreStats.image = PauseMenuViewController.statsMark(pointSize: 15)
         // **The app's own statistics mark** (James, round 306: "for the stats label icon, use
         // the same graphic as used elsewhere in the app for stats"). It was a filled star,
         // which is not what statistics look like anywhere else in this app - the information
-        // screen's Statistics row has worn `iconStats` since it existed. Templated so it takes
-        // the button's own lime rather than arriving in its drawn colours
+        // screen's Statistics row has worn `iconStats` since it existed.
+        //
+        // **Drawn to a size** (James, round 308: "the stats icon on the game over screen is way
+        // too large"), which is round 306's mistake and worth naming: the star it replaced was
+        // an SF Symbol carrying `pointSize: 12`, and a `UIImage(named:)` carries no such thing -
+        // it arrives at whatever the asset was drawn at, which here is an icon meant for a
+        // 44pt table row. A symbol's size travels with it; a PNG's does not.
         moreStats.imagePadding = 6
         moreStats.baseForegroundColor = #colorLiteral(red: 0.8235294118, green: 1, blue: 0, alpha: 1)
         moreStatsButton.configuration = moreStats
@@ -656,6 +663,16 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
 
         rulesUnderTheLevel = dailySummaryLabel.topAnchor.constraint(
             equalTo: levelNameLabel.bottomAnchor, constant: 10)
+        rulesUnderTheNumber = dailySummaryLabel.topAnchor.constraint(
+            equalTo: levelNumberLabel.bottomAnchor, constant: 10)
+        // **Whichever of the two actually says something** (James, round 308: "the twist detail
+        // [is] too low. It should sit just under the game mode and level detail").
+        //
+        // An endless day writes the mode into `levelNumberLabel` and leaves `levelNameLabel`
+        // empty, and an empty label is not a collapsed one - it keeps a full line of height,
+        // which the rules were then hung below. So the twists sat a blank line lower on exactly
+        // the days that have no level name to sit under. Classic days are unaffected: their
+        // level name is the last thing above the rules, as it was.
         titleUnderTheRules = titleLabel.topAnchor.constraint(
             equalTo: dailySummaryLabel.bottomAnchor, constant: 16)
         // Switched on with the summary itself, in `updateDailySummary`, because they
@@ -666,7 +683,24 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
     // Matches the "Previous Highscore" title's font and colour, so it reads as another
     // line of the same block rather than something bolted on
 
+    /// Collapses the lives line to nothing while it is hidden.
+    ///
+    /// **A hidden label is not a removed one** (James, round 308: "the posted score detail
+    /// should sit closer underneath the final score"). Everything below the lives line hangs
+    /// from its bottom, so hiding it left a whole blank line plus its margin between the score
+    /// and the result - and round 306 *started* hiding it on endless dailies, which is when the
+    /// gap appeared. Auto Layout keeps a hidden view's frame; only a zero height takes it away.
+    private func collapseLivesLineWhileHidden() {
+        if livesCollapsed == nil {
+            livesCollapsed = livesLabel.heightAnchor.constraint(equalToConstant: 0)
+        }
+        livesCollapsed.isActive = livesLabel.isHidden
+    }
+
     func updateLivesLabel() {
+        defer { collapseLivesLineWhileHidden() }
+        // After whichever branch below decides, so there is one place that acts on the decision
+        // rather than six that have to remember to
         // The daily leaves the high score blank, so the lives line follows the score
         // itself there and the "Best" block everywhere else
         livesUnderDailyTotal.isActive = showsDailyBreakdown
@@ -757,34 +791,9 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
         guard let challenge = DailyChallengeSession.shared.active else { return }
         if hapticsSetting { interfaceHaptic.impactOccurred() }
 
-        let centred = NSMutableParagraphStyle()
-        centred.alignment = .center
-
-        // A twistless day is a Vanilla day, and it explains itself like any other
-        // (play-test round 18): "Vanilla" says nothing to somebody who has not read the
-        // rest of the game, and it was the one badge on this screen that did not answer
-        // a tap. Named and blurbed from the same constants the briefing prints
-        let named: [(icon: UIImage, name: String, blurb: String)] =
-            challenge.twists.isEmpty
-            ? [(PowerUpIcon.twistVanilla, DailyTwist.vanillaName, DailyTwist.vanillaBlurb)]
-            : challenge.twists.map { ($0.icon, $0.displayName, $0.blurb) }
-
-        let body = NSMutableAttributedString()
-        for (position, twist) in named.enumerated() {
-            if position > 0 { body.append(NSAttributedString(string: "\n\n")) }
-            body.append(DailyTwist.badgedLine(icon: twist.icon, name: twist.name,
-                                              font: .boldSystemFont(ofSize: 16),
-                                              colour: .white))
-            body.append(NSAttributedString(
-                string: "\n\(twist.blurb)",
-                attributes: [.font: UIFont.systemFont(ofSize: 15),
-                             .foregroundColor: UIColor(white: 1, alpha: 0.75)]))
-        }
-        body.addAttribute(.paragraphStyle, value: centred,
-                          range: NSRange(location: 0, length: body.length))
-        // The badge in front of the name, as every other screen that names a twist does
-        // (play-test round 17) - the briefing, the pause summary and the level intro all
-        // read icon-then-name, and the explainer was the one place that did not
+        let body = DailyTwist.explainer(for: challenge.twists)
+        // Built by `DailyTwist.explainer` since round 308, because the briefing card now shows
+        // the same pop-up and two copies of this block would be two copies of a decision
 
         GigaBallAlert.show(on: self, title: "Today's Twists", attributed: body,
                            symbol: "dice.fill")
@@ -807,10 +816,13 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
         if isDailyChallenge {
             resultLabel.isHidden = false
             if DailyChallengeSession.shared.lastRunPosted {
-                resultLabel.text = standing.map { "Posted, \($0.text) on today's board" }
-                // The same figures the briefing screen prints, from the same place: a
-                // placing with the field size beside it (play-test round 126)
-                    ?? "Submitted to today's board"
+                resultLabel.text = standing.map { "\($0.text) on today's leaderboard" }
+                // **The placing is the line** (James, round 308: it "should read: 1/100 on
+                // today's leaderboard"). "Posted," led it, which repeated what the screen has
+                // already said by showing a score at all, and pushed the two numbers a player
+                // came back for into the middle of the sentence. Same figures, same place as
+                // the briefing screen (play-test round 126); fewer words in front of them
+                    ?? "Submitted to today's leaderboard"
                 // The placing arrives asynchronously when Game Center answers. Until
                 // then "submitted" is the honest word (§12.5): the score is on its way,
                 // and if it cannot land - signed out, offline, board not yet in App
@@ -853,6 +865,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
         guard isDailyChallenge, let challenge = DailyChallengeSession.shared.active else {
             dailySummaryLabel.isHidden = true
             rulesUnderTheLevel?.isActive = false
+            rulesUnderTheNumber?.isActive = false
             titleUnderTheRules?.isActive = false
             return
         }
@@ -860,8 +873,12 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
 
         levelNameLabelNormalConstraint.isActive = false
         levelTitleLowerConstraint.isActive = false
-        rulesUnderTheLevel.isActive = true
+        let levelNameIsBlank = (levelNameLabel.text ?? "").isEmpty
+        rulesUnderTheLevel.isActive = levelNameIsBlank == false
+        rulesUnderTheNumber.isActive = levelNameIsBlank
         titleUnderTheRules.isActive = true
+        // An endless day leaves the level name empty and puts the mode in the line above it,
+        // so the rules follow that line instead - see where these two are built (round 308)
         // The rules stand between the level's name and PAUSED, so the storyboard's own
         // "title under the level" steps aside for them. Both of its versions are switched
         // off rather than only the active one: which of the two is running depends on
@@ -1483,6 +1500,24 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
 
     /// The finished run's detail (§12.0), over the game-over screen the way the
     /// reference pages sit over the pause menu.
+    /// The app's statistics icon, drawn at a size a button can wear.
+    ///
+    /// `iconStats` is an asset built for the information screen's rows, so it comes back far
+    /// larger than a label's cap height. Rendered down here rather than constrained in the
+    /// layout, because a button's configuration sizes itself around its image and a constraint
+    /// fights that rather than settling it.
+    ///
+    /// Templated so it takes the button's own lime rather than arriving in its drawn colours.
+    static func statsMark(pointSize: CGFloat) -> UIImage? {
+        guard let art = UIImage(named: "iconStats.png") else { return nil }
+        let side = pointSize
+        let size = CGSize(width: side, height: side)
+        let drawn = UIGraphicsImageRenderer(size: size).image { _ in
+            art.draw(in: CGRect(origin: .zero, size: size))
+        }
+        return drawn.withRenderingMode(.alwaysTemplate)
+    }
+
     @objc private func moreStatsTapped() {
         openRunStats()
     }

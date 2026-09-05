@@ -133,12 +133,25 @@ extension GameScene {
                         paddleX: paddle.position.x, paddleHalfWidth: paddle.size.width/2,
                         adjustmentK: angleAdjustmentK, minimumDeg: minAngleDeg,
                         influence: endlessIIPaddleAngleInfluence)
-                    let reach = ballSize*5
-                    points.append(CGPoint(x: landing.x + cos(angle)*reach,
-                                          y: landing.y + sin(angle)*reach))
+                    var travelled: CGFloat = 0
+                    for (from, to) in zip(points, points.dropFirst()) {
+                        travelled += hypot(to.x - from.x, to.y - from.y)
+                    }
+                    let afterBounce = max(ballSize*5, reach - travelled)
+                    points.append(CGPoint(x: landing.x + cos(angle)*afterBounce,
+                                          y: landing.y + sin(angle)*afterBounce))
                     // The bounce the paddle would give from where it stands now, drawn by
                     // the same rule paddleHit applies - the line keeps going off the paddle
-                    // so the player can aim the shot after the catch, not just the catch
+                    // so the player can aim the shot after the catch, not just the catch.
+                    //
+                    // **As long as the line has left to run** (James, round 308: the line
+                    // "stops short when the ball is heading towards/bouncing off the paddle").
+                    // It was a flat five ball-widths however much reach the power-up had, so a
+                    // ball falling straight at the paddle drew a long line to it and a stub off
+                    // it - which reads as the prediction giving up exactly where the player is
+                    // about to need it. The whole line is `reach` long wherever it goes now,
+                    // with the five-ball floor kept for a ball that arrives having already
+                    // spent it
                 }
                 lineIndex = endlessIIDrawFadingTrajectory(points, from: lineIndex)
             }
@@ -271,24 +284,35 @@ extension GameScene {
                 // fade depends on - so it carries across bounces rather than restarting at
                 // each one, and a line that has turned a corner keeps getting less certain
                 let along = (travelled + length*(a + b)/2)/total
-                let certainty = pow(1 - along, 1.8 - min(sharpness, 2)*0.45)
+                let certainty = FadingLine.certainty(along: along, sharpness: sharpness)
 
                 let segment = endlessIIVisionLine(at: index)
                 index += 1
 
-                let core = 1.5 + (1 - certainty)*3.5
-                let blur = (1 - certainty)*(1 - certainty)*9
+                let core = FadingLine.coreThickness(certainty: certainty)
+                let blur = FadingLine.blurWidth(certainty: certainty)
                 // **Wider and blurrier with distance than round 258 drew it** (James, round
                 // 260: "make the line more blurry and wider the further it gets from the
                 // ball"). Both numbers were tuned when the blur was an `SKShapeNode`'s glow,
-                // which spread further for the same figure than a stretched picture does
+                // which spread further for the same figure than a stretched picture does.
+                //
+                // **Less extreme since round 308** (James: "ball trajectory is now too wide
+                // over its length - make the widening less extreme - it also looks weird when
+                // it overlaps itself"). The swell was 1.5 to 5.0, more than three times over,
+                // and it is now 1.5 to 3.1 with the blur eased to match. The two complaints are
+                // one thing: a wide translucent line crossing its own path composites twice
+                // where it overlaps, so the fatter the far end the more obvious the crossing.
+                //
+                // Narrowing reduces that rather than curing it - the cure is drawing the whole
+                // polyline into a single node so an overlap composites once, which is a round
+                // of its own and is queued rather than smuggled in here
 
                 FadingLine.lay(segment.core, from: head, to: tail,
                                thickness: core, blur: blur,
-                               alpha: max(0.03, 0.275*certainty))
+                               alpha: FadingLine.coreAlpha(certainty: certainty))
                 FadingLine.lay(segment.glow, from: head, to: tail,
                                thickness: core, blur: blur + core*1.6,
-                               alpha: max(0.025, 0.20*certainty))
+                               alpha: FadingLine.glowAlpha(certainty: certainty))
                 // **Half of what it was** (James, round 299: "make the ball trajectory line
                 // more transparent, maybe half of what it is now"). Both the core and the glow
                 // are halved rather than only the core, and the floors with them: the line is

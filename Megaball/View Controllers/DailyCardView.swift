@@ -77,8 +77,13 @@ final class DailyCardView: UIView {
         levelImageView.layer.shadowRadius = 6
 
         twistsStack.axis = .vertical
-        twistsStack.spacing = 16
+        twistsStack.spacing = 8
         twistsStack.alignment = .center
+        twistsStack.isUserInteractionEnabled = true
+        twistsStack.addGestureRecognizer(
+            UITapGestureRecognizer(target: self, action: #selector(twistsBlockTapped)))
+        // Sixteen points of gap separated a name from its own blurb; with the blurbs gone
+        // (round 308) it separated two names from each other, which is a list with holes in it
 
         stack.axis = .vertical
         stack.spacing = 12
@@ -148,6 +153,8 @@ final class DailyCardView: UIView {
     /// Whether a twist name was tapped, and which one - the pause and briefing screens
     /// both explain a twist when it is touched (play-test round 15).
     var twistTapped: ((DailyTwist) -> Void)?
+    /// Asked when the day's twists are tapped, so the screen can put up the explainer.
+    var twistsExplainerTapped: (() -> Void)?
 
     /// Shows a day. Everything the card draws comes from these arguments, so the same card
     /// can be reused for any day the pager scrolls to.
@@ -216,28 +223,36 @@ final class DailyCardView: UIView {
             let name = UILabel()
             name.attributedText = title
             name.textAlignment = .center
-
-            let blurb = UILabel()
-            blurb.text = blurbText
-            blurb.font = .systemFont(ofSize: 14)
-            blurb.textColor = UIColor(white: 1, alpha: 0.7)
-            blurb.textAlignment = .center
-            blurb.numberOfLines = 0
-
-            let pair = UIStackView(arrangedSubviews: [name, blurb])
-            pair.axis = .vertical
-            pair.spacing = 3
-            pair.alignment = .center
-            _ = twist
-            // Not tappable here (play-test round 16): the blurb is already printed
-            // underneath. It is the *pause* screen, which shows only icons and names,
-            // where a twist needs explaining
-            twistsStack.addArrangedSubview(pair)
+            twistsStack.addArrangedSubview(name)
+            _ = (blurbText, twist)
         }
+        // **Icon and name only, and the whole list answers a tap** (James, round 308: "twists
+        // on the daily challenge screen shouldn't show the descriptions, just the icon and name
+        // of the twist. like on the pause screen, if a user wants more details, they can click
+        // to show a pop up with the description of the twists for the day's challenge").
+        //
+        // This is play-test round 16 turned around, and its reasoning is worth keeping because
+        // it was right about the *pause* screen and is being overruled about this one: the
+        // blurbs were printed here so a tap was not needed, and printing them made the card a
+        // wall of text on a two-twist day. The pop-up is the same one the pause menu shows -
+        // `DailyTwist.explainer` builds it for both - so a player who wants the detail asks for
+        // it in the same way on either screen.
+        //
+        // `blurbText` is still gathered above rather than dropped from the list, because the
+        // pop-up needs exactly it and the list is where the Vanilla case is handled.
     }
 
     @objc private func twistWasTapped(_ recogniser: DailyTwistTap) {
         twistTapped?(recogniser.twist)
+    }
+
+    /// The day's twists want explaining, and the whole block is the button.
+    ///
+    /// One tap target rather than one per twist: the pop-up lists every twist the day has, so
+    /// tapping the second name to be told about the first as well would be a control that does
+    /// not do what it looks like.
+    @objc private func twistsBlockTapped() {
+        twistsExplainerTapped?()
     }
 
     /// The day's own result, with a badge saying whether it reached the live board.

@@ -682,6 +682,9 @@ extension DailyChallengeViewController: UICollectionViewDataSource,
                        record: totalStatsArray[0].dailyRecord(forKey: key),
                        standing: isToday ? todayStanding : nil)
         cell.card.twistTapped = { [weak self] twist in self?.explain(twist) }
+        cell.card.twistsExplainerTapped = { [weak self] in self?.explainTheDaysTwists(on: key) }
+        // The card lists the day's twists by icon and name only since round 308, so the block
+        // answers a tap with the same pop-up the pause menu shows
         cell.card.postedScoreTapped = { [weak self] in self?.leaderboardTapped() }
         // The posted score is the board's own figure, so the row showing it opens the board
         return cell
@@ -722,6 +725,18 @@ extension DailyChallengeViewController: UICollectionViewDataSource,
     func explain(_ twist: DailyTwist) {
         if hapticsSetting { interfaceHaptic.impactOccurred() }
         GigaBallAlert.show(on: self, title: twist.displayName, message: twist.blurb,
+                           symbol: "dice.fill")
+    }
+
+    /// Every twist the shown day has, badged and blurbed - the pause menu's pop-up, here.
+    ///
+    /// Asked of the *browsed* day rather than the active session, because this screen pages
+    /// through a fortnight and the day on screen is usually not one being played.
+    func explainTheDaysTwists(on key: String) {
+        if hapticsSetting { interfaceHaptic.impactOccurred() }
+        let challenge = DailyChallengeGenerator.challenge(forKey: key)
+        GigaBallAlert.show(on: self, title: "Today's Twists",
+                           attributed: DailyTwist.explainer(for: challenge.twists),
                            symbol: "dice.fill")
     }
 }

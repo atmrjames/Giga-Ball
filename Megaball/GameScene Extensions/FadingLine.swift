@@ -147,6 +147,44 @@ enum FadingLine {
     /// For a plain soft line, pass the core as `thickness` and leave `blur` near zero: the
     /// picture is about three times the core tall already, and the outer two thirds of it are
     /// the falloff. That is a glowing line without asking for any blur at all.
+    // MARK: - How the trajectory line thickens, blurs and fades along its length
+    //
+    // **One copy of these, since round 308.** They were written inline in
+    // `endlessIIDrawFadingTrajectory` and written *again* in the test that draws the line to be
+    // looked at - whose comment claimed it used "the same three numbers". It did when it was
+    // written; by round 308 the game had halved both alphas (round 299) and the test had not,
+    // so the picture being judged was a line the game no longer drew. Deriving beats copying,
+    // and this is the case that proves it: the copy did not fail, it just quietly stopped
+    // being about the thing it was checking.
+
+    /// How certain the prediction is this far along, from 1 at the ball to 0 at the far end.
+    static func certainty(along: CGFloat, sharpness: CGFloat) -> CGFloat {
+        pow(1 - along, 1.8 - min(sharpness, 2)*0.45)
+    }
+
+    /// The stroke's width at this certainty.
+    ///
+    /// **Less extreme since round 308** (James: "ball trajectory is now too wide over its
+    /// length - make the widening less extreme"). It swelled 1.5 to 5.0, more than three times
+    /// over; it now runs 1.5 to 3.1.
+    static func coreThickness(certainty: CGFloat) -> CGFloat {
+        1.5 + (1 - certainty)*1.6
+    }
+
+    /// How far the stroke's edge is smeared at this certainty. Squared, so the fuzz arrives
+    /// mostly over the far half, where the guessing is.
+    static func blurWidth(certainty: CGFloat) -> CGFloat {
+        (1 - certainty)*(1 - certainty)*6
+    }
+
+    /// The core's opacity, and the glow's underneath it.
+    ///
+    /// Halved in round 299 (James: "make the ball trajectory line more transparent, maybe half
+    /// of what it is now") - both of them, and their floors with them, because the line is one
+    /// thing made of two and fading only the core leaves a soft band with a hole in it.
+    static func coreAlpha(certainty: CGFloat) -> CGFloat { max(0.03, 0.275*certainty) }
+    static func glowAlpha(certainty: CGFloat) -> CGFloat { max(0.025, 0.20*certainty) }
+
     static func lay(_ segment: SKSpriteNode, from head: CGPoint, to tail: CGPoint,
                     thickness: CGFloat, blur: CGFloat, alpha: CGFloat,
                     soft: Bool = false) {

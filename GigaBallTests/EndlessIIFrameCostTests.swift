@@ -94,25 +94,30 @@ final class EndlessIIFrameCostTests: XCTestCase {
                 let head = CGPoint(x: from.x + (to.x - from.x)*a, y: from.y + (to.y - from.y)*a)
                 let tail = CGPoint(x: from.x + (to.x - from.x)*b, y: from.y + (to.y - from.y)*b)
                 let along = (travelled + length*(a + b)/2)/total
-                let certainty = pow(1 - along, 1.8 - 1*0.45)
-
-                let core = 1.5 + (1 - certainty)*3.5
-                let blur = (1 - certainty)*(1 - certainty)*9
+                let certainty = FadingLine.certainty(along: along, sharpness: 1)
+                let core = FadingLine.coreThickness(certainty: certainty)
+                let blur = FadingLine.blurWidth(certainty: certainty)
 
                 let glowing = FadingLine.segment(glow: true)
                 FadingLine.lay(glowing, from: head, to: tail, thickness: core,
-                               blur: blur + core*1.6, alpha: max(0.05, 0.40*certainty))
+                               blur: blur + core*1.6,
+                               alpha: FadingLine.glowAlpha(certainty: certainty))
                 scene.addChild(glowing)
 
                 let segment = FadingLine.segment()
                 FadingLine.lay(segment, from: head, to: tail, thickness: core, blur: blur,
-                               alpha: max(0.06, 0.55*certainty))
+                               alpha: FadingLine.coreAlpha(certainty: certainty))
                 scene.addChild(segment)
             }
             travelled += length
         }
-        // The same path, the same step and the same three numbers `endlessIIDrawFadingTrajectory`
-        // uses, so what comes out is the line the game draws rather than a demonstration of it
+        // The same path, the same step, and - since round 308 - the same *functions*
+        // `endlessIIDrawFadingTrajectory` uses rather than its own copy of the numbers.
+        //
+        // The copy is why this is worth a note: it claimed to use "the same three numbers" and
+        // did, until round 299 halved both alphas in the game and not here. Nothing failed; the
+        // picture being looked at simply stopped being the line the game draws, which is the
+        // one job a render test has
 
         let view = SKView(frame: CGRect(origin: .zero, size: scene.size))
         let texture = try XCTUnwrap(view.texture(from: scene),
