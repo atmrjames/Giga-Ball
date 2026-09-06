@@ -188,6 +188,41 @@ final class ResumeCardRenderTests: XCTestCase {
                        "and emphatically not the lime that means confirm")
     }
 
+    /// **Nothing from the storyboard still has an opinion about the card's labels** (round 312).
+    ///
+    /// Found in James's iPad log, not by looking:
+    ///
+    ///     V:[UILabel]-(10)-[UILabel]                    the storyboard's chain
+    ///     'UISV-spacing' V:[UILabel]-(14)-[UILabel]     the stack's
+    ///
+    /// Putting a view into a stack reparents it, and a constraint naming a view that has left
+    /// its superview dies with it - which is why this looked finished. But these name *two* of
+    /// the card's labels, and all four moved together into a stack that is a child of the same
+    /// container, so nothing was orphaned and nothing was retired. UIKit breaks one of the pair
+    /// to recover, and on the device it broke the stack's: the four groups of air were being
+    /// drawn at the old spacing.
+    ///
+    /// **Asserted structurally rather than by measuring the gaps**, because which of two
+    /// conflicting constraints UIKit breaks is not something to rely on - the simulator resolved
+    /// it the other way, which is exactly why every render test agreed with itself and the phone
+    /// still looked wrong.
+    func testTheStoryboardKeepsNoConstraintsOnTheCardsLabels() {
+        let splash = laidOut(base())
+        let container = try! XCTUnwrap(splash.resumingLabel.superview?.superview,
+                                       "the stack's own superview is the storyboard container")
+        let carded = card(splash)
+
+        let leftovers = container.constraints.filter { constraint in
+            let first = constraint.firstItem as? UIView
+            let second = constraint.secondItem as? UIView
+            return carded.contains { $0 === first || $0 === second }
+        }
+        XCTAssertTrue(leftovers.isEmpty,
+                      "the stack owns this card's spacing and alignment now, and a second "
+                      + "opinion is resolved by UIKit breaking one of them silently: "
+                      + leftovers.map(\.description).joined(separator: "\n"))
+    }
+
     /// The table view that used to be the Cancel row is gone, not merely hidden - a hidden view
     /// keeps its frame, and 70 points of it sat in the middle of the new layout.
     func testTheOldCancelRowIsOutOfTheHierarchy() {

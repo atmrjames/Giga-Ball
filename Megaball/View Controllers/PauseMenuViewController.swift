@@ -154,7 +154,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
         runStatsLabel.isHidden = true
         containterView.addSubview(runStatsLabel)
 
-        var stats = AttributedString("Stats…")
+        var stats = AttributedString("Statistics")
         stats.font = .boldSystemFont(ofSize: 14)
         var moreStats = UIButton.Configuration.plain()
         moreStats.attributedTitle = stats
@@ -1256,7 +1256,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
             } else if sender == "Pause" {
                 let heightBest = runs.max() ?? 0
                 if height > heightBest {
-                    scoreLabelTitle.text = "New Best Height"
+                    scoreLabelTitle.text = "New Hi-Score Height"
                     highscoreLabelTitle.text = "Previous Best"
                 }
                 highscoreLabel.text = String(heightBest) + "m"
@@ -1264,7 +1264,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
                 let heightBest = runs.max() ?? 0
                 highscoreLabel.text = String(heightBest) + "m"
                 if runs.count <= 1 {
-                    scoreLabelTitle.text = "New Best Height"
+                    scoreLabelTitle.text = "New Hi-Score Height"
                     highscoreLabelTitle.text = "Previous Best"
                     highscoreLabel.text = "0m"
                 } else {
@@ -1272,7 +1272,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
                     heightsArray.sort(by: >)
                     let previousBestHeight = heightsArray[1]
                     if height > previousBestHeight {
-                        scoreLabelTitle.text = "New Best Height"
+                        scoreLabelTitle.text = "New Hi-Score Height"
                         highscoreLabelTitle.text = "Previous Best"
                         highscoreLabel.text = String(previousBestHeight) + "m"
                     }

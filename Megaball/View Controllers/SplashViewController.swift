@@ -403,6 +403,36 @@ class SplashViewController: UIViewController {
         // The pause screen's own detail face, so the rack reads as a footnote to the score
         // rather than as a second number competing with it
 
+        let carded = [resumingLabel, modeLabel, detailLabel, scoreLabel].compactMap { $0 }
+        for constraint in container.constraints {
+            guard let first = constraint.firstItem as? UIView else { continue }
+            let second = constraint.secondItem as? UIView
+            if carded.contains(where: { $0 === first || $0 === second }) {
+                constraint.isActive = false
+            }
+        }
+        // **The storyboard's chain has to go, not just be replaced** (round 312, found in James's
+        // iPad log rather than by looking).
+        //
+        // Putting a view into a stack reparents it, and a constraint that mentions a view which
+        // has left its superview dies with it - which is why this looked finished. But every one
+        // of these constraints names *two* of the card's labels, or a label and the container,
+        // and the labels all moved together into a stack that is itself a child of the same
+        // container. Nothing was orphaned, so nothing was retired, and the scene shipped with
+        // two sets of vertical spacing fighting:
+        //
+        //     V:[UILabel]-(10)-[UILabel]              the storyboard's
+        //     'UISV-spacing' V:[UILabel]-(14)-[UILabel]   the stack's
+        //
+        // UIKit breaks one of them to recover, and the one it broke was the stack's - so the
+        // four groups of air James asked for were being drawn at the old 10 and -5 on the
+        // device, while the simulator's render tests, which build the same card, agreed with
+        // each other and showed the new spacing. A conflict resolved silently in one direction
+        // is not a thing a render test can see.
+        //
+        // Cleared by identity rather than by outlet name, so a constraint the storyboard grows
+        // later is retired too.
+
         let stack = UIStackView(arrangedSubviews: [resumingLabel, modeLabel,
                                                    detailLabel, scoreLabel, livesLabel])
         stack.axis = .vertical

@@ -45,8 +45,8 @@ class RunStatsViewController: UIViewController, UITableViewDataSource, UITableVi
 
     private func buildLayout() {
         let title = UILabel()
-        title.text = "RUN STATS"
-        title.font = UIFont(name: "HelveticaNeue-Bold", size: 40) ?? .boldSystemFont(ofSize: 40)
+        title.text = "STATISTICS"
+        title.font = UIViewController.menuTitleFont
         title.textColor = #colorLiteral(red: 0.8235294118, green: 1, blue: 0, alpha: 1)
         title.textAlignment = .center
         title.adjustsFontSizeToFitWidth = true
@@ -128,7 +128,12 @@ class RunStatsViewController: UIViewController, UITableViewDataSource, UITableVi
         // its panel flush to it, and the two screens did not line up (James, round 121)
 
         let header = UILabel()
-        header.text = "POWER-UP HIGHLIGHTS"
+        header.text = ""
+        // **Gone** (James, round 312: "remove the power ups highlights sub heading it's
+        // unnecessary"). Emptied rather than deleted: the label carries the spacing between the
+        // panel and the table below it, and taking the view out would close a gap that is doing
+        // a job. `isHidden` is set from `highlights.isEmpty` below and a hidden label has no
+        // height, which is the behaviour that was already wanted when there is nothing to show
         header.font = .boldSystemFont(ofSize: 13)
         header.textColor = #colorLiteral(red: 0.8235294118, green: 1, blue: 0, alpha: 1)
         header.textAlignment = .center

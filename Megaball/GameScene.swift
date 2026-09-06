@@ -4880,7 +4880,27 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		// Put all textures from current on-screen power-ups in an array
 		
 		powerUpProbSum = powerUpProbArray.reduce(0, +)
-		
+
+		guard powerUpProbSum > 0 else {
+			powerUp.removeFromParent()
+			return
+		}
+		// **Nothing is allowed to drop, so nothing drops** (James, round 312: two crashes on a
+		// No Power-Ups day, "the first just as the ball was about to destroy the first brick",
+		// and again on a Classic day with the same twist).
+		//
+		// `No Power-Ups` zeroes every weight in `powerUpProbArray`, which is exactly what the
+		// twist says - and the next line is `Int.random(in: 0...powerUpProbSum-1)`, which on a
+		// sum of nought is `0...(-1)`. A range whose lower bound is above its upper traps, and
+		// the trap is a crash rather than a caught error.
+		//
+		// It needed the *twist* to be seen, but it was never really about the twist: any state
+		// that empties the weights reaches the same line, and the honest reading of an empty
+		// pool is that this brick has no power-up to give. The node has already been built and
+		// added, so it is removed the same way the cycle limiter below removes it - and
+		// `powerUpsOnScreen` is not touched, because it is not incremented until a selection
+		// has actually been made
+
 		let powerUpProb = Int.random(in: 0...powerUpProbSum-1)
 		// Select power-up at random based on weighting
 
@@ -7042,8 +7062,8 @@ laserTimer?.invalidate()
 			paddleHits: paddleHitsPerLevel,
 			bricksDestroyed: InGameRecents.shared.bricksDestroyedThisRun,
 			ballsLost: deathsPerLevel,
-			powerUpsSeen: InGameRecents.shared.sightings.count,
-			powerUpsCollected: powerUpsCollectedPerLevel,
+			powerUpsSeen: InGameRecents.shared.powerUpsSeen,
+			powerUpsCollected: InGameRecents.shared.powerUpsCollected,
 			score: totalScore + levelScore,
 			levelsCleared: max(0, levelNumber - startLevelNumber),
 			isEndless: endlessMode,

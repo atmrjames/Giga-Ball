@@ -34,6 +34,23 @@ final class InGameRecents {
 
     private(set) var sightings: [Sighting] = []
 
+    /// How many power-ups this run has put in front of the player, and how many of those they
+    /// took.
+    ///
+    /// **Both off the same list** (James, round 312: "the end of game stats page somehow shows
+    /// more power ups collected than power ups dropped which cannot be true" - 19 seen against
+    /// 51 collected, at 268%). It could not be true, and the reason it was showing is that the
+    /// two numbers were different kinds of fact: seen came from this list, and collected came
+    /// from `powerUpsCollectedPerLevel`, a scene counter incremented by `applyPowerUp` on every
+    /// path that grants an effect - a power-up brick handing one over directly, a Mystery
+    /// resolving into several - whether or not anything was ever *seen* to be collected.
+    ///
+    /// Asked of one list, collected can never exceed seen, because a collected sighting is a
+    /// sighting. The scene counter stays for the per-level and per-pack stats it feeds; it is
+    /// simply not the number this page was asking for.
+    var powerUpsSeen: Int { sightings.count }
+    var powerUpsCollected: Int { sightings.filter { $0.fate == .collected }.count }
+
     /// The indices in sighting order, duplicates and all - the pages' row source, and
     /// the dedupe set for the standard list below them.
     var powerUpIndices: [Int] { sightings.map(\.index) }

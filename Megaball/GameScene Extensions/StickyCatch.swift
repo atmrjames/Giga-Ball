@@ -103,8 +103,23 @@ extension GameScene {
         // The play test saw it as the ball "snapping into the middle of the paddle even if it
         // wasn't caught in the middle" (round 39)
 
-        endlessIIAutoAimOwedTurn = endlessIIAutoAimClock.isRunning
-        // **The catch buys the Auto-Aim turn the contact would have bought** (James, round 311:
+        endlessIISpendPaddleTurns()
+        // **The catch is the contact, and it spends what a contact spends** (James, round 312:
+        // "with portal paddle and sticky paddle active together, sticky paddle counts turns
+        // down, but portal paddle doesn't so you get extra turns. Both power-ups should count
+        // down turns together. This should apply to all the turn based power ups when active
+        // together").
+        //
+        // Round 311 gave the catch the Auto-Aim turn alone and wrote the general question down
+        // in §12.0 rather than answering it. This is the answer. A sticky catch is the ball
+        // landing on the paddle, and eleven Mayhem paddle clocks count paddle landings - so a
+        // player running Sticky Paddle was getting free turns on every one of them, which is
+        // why the sticky counter ran out while the portal's did not.
+        //
+        // Aimed Sticky is not double-spent: its own catch happens on contact and this function
+        // returns above before reaching here while its clock runs.
+        //
+        // **The old comment, kept because the reasoning still holds** (James, round 311:
         // "with sticky paddle and auto aim on together, the ball should still launch towards the
         // aimed brick. Currently it launches based on the ball's position on the paddle").
         //
@@ -114,10 +129,8 @@ extension GameScene {
         // `endlessIIAimTheStickyLaunch` - which correctly refuses to aim a launch that paid for
         // nothing - refused every sticky launch there has ever been.
         //
-        // Auto-Aim alone rather than `endlessIISpendPaddleTurns()`, which would spend a turn on
-        // every running paddle clock. That is arguably the consistent answer and it is a change
-        // to how eleven power-ups end, on a release branch, for a report about one - see §12.0,
-        // where the wider question is written down rather than smuggled in here
+        // That reasoning asked whether one turn or all of them was right; James has said all
+        // of them, so the narrow version above is gone
 
         performStickyCatch()
         // Moved to where it was going before it is stopped, so it sticks where it would have

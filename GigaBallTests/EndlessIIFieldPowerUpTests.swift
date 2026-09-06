@@ -678,6 +678,43 @@ final class EndlessIIFieldPowerUpTests: XCTestCase {
                       "the catch is the contact, so it buys the contact's turn")
     }
 
+    /// **And every other turn-based paddle power-up spends one too** (James, round 312: "with
+    /// portal paddle and sticky paddle active together, sticky paddle counts turns down, but
+    /// portal paddle doesn't so you get extra turns. Both power-ups should count down turns
+    /// together. This should apply to all the turn based power ups when active together").
+    ///
+    /// Round 311 gave the catch the Auto-Aim turn alone and left the general question open.
+    /// This is it answered: the catch calls `endlessIISpendPaddleTurns`, so a player running
+    /// Sticky Paddle no longer gets free turns on every other paddle clock.
+    ///
+    /// The Portal Paddle on its own rather than beside Auto-Aim, because collecting one paddle
+    /// power-up displaces another - a test that collected both was testing the displacement.
+    func testACaughtBallSpendsEveryOtherPaddleTurnAsWell() {
+        let scene = fieldScene()
+        scene.paddleHeight = 12
+        scene.paddle.size = CGSize(width: 100, height: 12)
+        scene.paddle.position = CGPoint(x: 0, y: -200)
+        scene.stickyPaddleCatches = 3
+        scene.ballIsOnPaddle = false
+        scene.ball.physicsBody = SKPhysicsBody(circleOfRadius: 5)
+        scene.ball.physicsBody!.velocity = CGVector(dx: 0, dy: -600)
+
+        let paddleTop = scene.paddle.position.y + scene.paddleHeight/2
+        scene.ball.position = CGPoint(x: 0, y: paddleTop + scene.ball.size.height/2 + 1)
+        scene.ballStateBeforeStep[ObjectIdentifier(scene.ball)] =
+            BallState(position: scene.ball.position, velocity: CGVector(dx: 0, dy: -600))
+
+        scene.endlessIICollectPortalPaddle()
+        let before = scene.endlessIIPortalPaddleClock.remaining
+        XCTAssertGreaterThan(before, 0, "running before the catch")
+
+        scene.catchStickyBallBeforeStep()
+
+        XCTAssertTrue(scene.ballIsOnPaddle, "the catch happened at all")
+        XCTAssertLessThan(scene.endlessIIPortalPaddleClock.remaining, before,
+                          "the portal's clock counts the catch, as the sticky's own does")
+    }
+
     /// And with that paid, the launch aims - which is the whole of what James asked for.
     func testTheLaunchAfterACatchAimsAtTheBrick() {
         let scene = fieldScene()

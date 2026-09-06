@@ -228,7 +228,7 @@ extension GameScene {
         guard let best = endlessBestHeight, endlessHeight > best else { return }
 
         clearPlacedDigits(from: multiplierLabel)
-        multiplierLabel.text = "NEW BEST"
+        multiplierLabel.text = "NEW HI-SCORE"
         multiplierLabel.fontColor = brickGreenGigaball
         // Left showing rather than removed - the run is now writing the number that will be
         // sitting there next time
