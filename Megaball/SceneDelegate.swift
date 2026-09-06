@@ -21,6 +21,8 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         window.makeKeyAndVisible()
         // Build the window from the main storyboard, replacing the pre-iOS 13 UIMainStoryboardFile path
 
+        Log.session(window: window.bounds.size, screen: windowScene.screen.bounds.size)
+
         if let restrictions = windowScene.sizeRestrictions {
             restrictions.minimumSize = SceneDelegate.smallestWindow
             Log.ui.info("""
@@ -69,10 +71,15 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     /// the smallest the menus have ever had to work at. Round 310's floor was 420 by 640, which
     /// was a guess at "roughly a phone" and is wider than any phone the app supports.
     ///
-    /// Note this is what the app *asks for*. iPadOS is free to enforce a larger floor of its
-    /// own, and if the smallest window James can make is still near full screen then it is
-    /// doing exactly that and the next question is why - which is a thing to find out on the
-    /// device rather than to guess at here.
+    /// **It was being ignored outright until round 312, and James's iPad log said so:**
+    ///
+    ///     window floor asked for (320.0, 568.0), restrictions now (0.0, 0.0)
+    ///     Update the Info.plist: Support for all orientations will soon be required.
+    ///
+    /// Read back, `minimumSize` was zero - the assignment never took. iPadOS ignores
+    /// `sizeRestrictions` for an app that declares a single orientation, so the floor was
+    /// entirely the system's and no number here was ever going to move it. The app declares all
+    /// four orientations on iPad as of round 312, which is what makes this line mean anything.
     static let smallestWindow = CGSize(width: 320, height: 568)
 
     func sceneWillResignActive(_ scene: UIScene) {

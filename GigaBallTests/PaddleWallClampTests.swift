@@ -342,6 +342,75 @@ final class StickyBandAlignmentTests: XCTestCase {
         XCTAssertEqual(game.paddleSticky.position.y, before.y, accuracy: 0.0001)
     }
 
+    /// **A ball resting on the paddle cannot be walked along it** (round 312).
+    ///
+    /// James: "if I have sticky paddle and repeatedly ram the paddle into the wall, I can move
+    /// the ball along the paddle in that direction. The ball should remain fixed in position on
+    /// the paddle." And of a shaped paddle: "it can still move around after landing."
+    ///
+    /// One cause. The held *extras* were taken out of the paddle's collision mask in round 291,
+    /// for exactly this; the first ball never was, so the engine resolved it out of the traced
+    /// body a fraction at a time - down the slope on a shaped paddle, and sideways at a wall.
+    ///
+    /// The shove is applied here the way the solver applies it: straight to the position, after
+    /// everything else has had its say.
+    func testTheWaitingBallIsPutBackAfterTheEngineShovesIt() {
+        let game = scene()
+        game.paddle.position.x = 180
+        game.ballIsOnPaddle = true
+        game.ballRelativePositionOnPaddle = -20
+        game.ballStartingPositionY = -150
+        game.ball.physicsBody = SKPhysicsBody(circleOfRadius: 5)
+        game.addChild(game.ball)
+        game.didFinishUpdate()
+
+        let settled = game.ball.position
+        XCTAssertEqual(settled.x, 160, accuracy: 0.01, "twenty points left of the paddle's centre")
+
+        for ram in 1...5 {
+            game.ball.position.x += 3
+            game.ball.physicsBody?.velocity = CGVector(dx: 40, dy: 0)
+            game.didFinishUpdate()
+            XCTAssertEqual(game.ball.position.x, settled.x, accuracy: 0.01,
+                           "ram \(ram) walked the ball along the paddle")
+            XCTAssertEqual(game.ball.physicsBody!.velocity.dx, 0, accuracy: 0.01,
+                           "and it must not be carrying the shove when it launches")
+        }
+    }
+
+    /// It rides the paddle, though - being fixed *on* the paddle is not being fixed in space.
+    func testTheWaitingBallRidesThePaddle() {
+        let game = scene()
+        game.ballIsOnPaddle = true
+        game.ballRelativePositionOnPaddle = 12
+        game.ballStartingPositionY = -150
+        game.ball.physicsBody = SKPhysicsBody(circleOfRadius: 5)
+        game.addChild(game.ball)
+
+        for x in [CGFloat(0), 40, -75, 150] {
+            game.paddle.position.x = x
+            game.didFinishUpdate()
+            XCTAssertEqual(game.ball.position.x, x + 12, accuracy: 0.01)
+        }
+    }
+
+    /// And once it launches, the paddle is a solid thing again.
+    func testTheLaunchGivesThePaddleBackToTheBall() {
+        let game = scene()
+        game.ballIsOnPaddle = true
+        game.ball.physicsBody = SKPhysicsBody(circleOfRadius: 5)
+        game.addChild(game.ball)
+        game.didFinishUpdate()
+
+        let paddleBit = CollisionTypes.paddleCategory.rawValue
+        XCTAssertEqual(game.ball.physicsBody!.collisionBitMask & paddleBit, 0,
+                       "the paddle cannot shove a ball that is resting on it")
+
+        game.setEndlessIIHeldBallRestsOnPaddle(false, for: game.ball)
+        XCTAssertEqual(game.ball.physicsBody!.collisionBitMask & paddleBit, paddleBit,
+                       "and a ball in flight bounces off it as it always has")
+    }
+
     /// **What the retro paddle's six scale factors actually are** (round 310).
     ///
     /// Expand and Shrink run six `scaleX` actions. The plain paddle and its two strips go to

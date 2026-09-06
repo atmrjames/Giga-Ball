@@ -38,10 +38,14 @@ final class WindowSizeTests: XCTestCase {
 
     /// Every shape iPadOS can now give the app, plus the phones for a control.
     ///
-    /// The floor is `SceneDelegate`'s minimum window, so nothing smaller has to work. Short
-    /// and wide is included even though a portrait-only app should never be given it (James,
-    /// round 301: "no landscape"): a layout that survives it survives anything, and if the
-    /// orientation decision is ever revisited this row is already here.
+    /// The floor is `SceneDelegate`'s minimum window, so nothing smaller has to work.
+    ///
+    /// **The short-and-wide rows are live now** (round 312). They were here on the reasoning
+    /// that "a layout that survives it survives anything, and if the orientation decision is
+    /// ever revisited this row is already here" - and it has been: the app declares all four
+    /// orientations on iPad, because iPadOS ignores `sizeRestrictions` for a single-orientation
+    /// app and that was the whole of why James's window would not shrink. So these are no
+    /// longer hypothetical shapes; they are shapes a player can make.
     private let windows: [(name: String, size: CGSize)] = [
         ("iPhone SE", CGSize(width: 375, height: 667)),
         ("iPhone 17 Pro", CGSize(width: 402, height: 874)),
@@ -50,7 +54,11 @@ final class WindowSizeTests: XCTestCase {
         ("iPad split, one third", CGSize(width: 375, height: 1366)),
         ("iPad split, half", CGSize(width: 507, height: 1366)),
         ("iPad split, two thirds", CGSize(width: 639, height: 1366)),
-        ("iPad Pro 13, full screen", CGSize(width: 1032, height: 1376))
+        ("iPad Pro 13, full screen", CGSize(width: 1032, height: 1376)),
+        ("iPad Pro 11, landscape", CGSize(width: 1194, height: 834)),
+        ("iPad Pro 13, landscape", CGSize(width: 1376, height: 1032)),
+        ("a short, wide window", CGSize(width: 900, height: 420)),
+        ("the floor, on its side", CGSize(width: 568, height: 320))
     ]
 
     /// Anything a player has to be able to read, that has ended up outside the window.
@@ -236,6 +244,27 @@ final class WindowSizeTests: XCTestCase {
     func testTheWindowFloorIsTheSmallestPhoneTheAppSupports() {
         XCTAssertEqual(SceneDelegate.smallestWindow, CGSize(width: 320, height: 568),
                        "the iPhone SE, which is the smallest screen iOS 15 runs on")
+    }
+
+    /// **The play zone keeps its ratio and stays inside the window at every shape** (round 312).
+    ///
+    /// The condition James attached to landscape: "it's ok to make it smaller, so long as the
+    /// game view maintains its height to width ratio." `GameSceneLayout` takes the smaller of
+    /// what the height allows and what the width allows, so a short, wide window binds on height
+    /// and the field simply becomes a narrow column with a lot of border - which is the right
+    /// answer and worth pinning, because the obvious wrong one is to derive the width from the
+    /// window's width and let the field run off the bottom.
+    func testThePlayZoneFitsEveryWindowAndKeepsItsRatio() {
+        for window in windows {
+            let layout = GameSceneLayout(screen: window.size)
+            XCTAssertEqual(layout.playHeight/layout.gameWidth, GameSceneLayout.playRatio,
+                           accuracy: 0.0001, window.name)
+            XCTAssertLessThanOrEqual(layout.gameWidth, window.size.width, window.name)
+            XCTAssertLessThanOrEqual(layout.playHeight + layout.topBarHeight,
+                                     window.size.height + 0.5,
+                                     "\(window.name): the field and the bar above it have to fit")
+            XCTAssertGreaterThan(layout.gameWidth, 0, "\(window.name): still a field to play on")
+        }
     }
 
     /// And the play zone keeps its ratio there, which is the condition he attached to it.

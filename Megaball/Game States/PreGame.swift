@@ -98,6 +98,7 @@ class PreGame: GKState {
         }
         // The count is the rack of reserve balls - the ball on the paddle is on top of it
         scene.multiplier = Scoring.multiplierBase
+        logTheRun()
         scene.gameoverStatus = false
         
         scene.deathsPerLevel = 0
@@ -115,5 +116,30 @@ class PreGame: GKState {
     override func isValidNextState(_ stateClass: AnyClass) -> Bool {
         return stateClass is Playing.Type
     }
-}
 
+    /// One line saying what is about to be played.
+    ///
+    /// Round 312, from James's question about what a log should carry. A play-test report is
+    /// always about *a run* - "Endless Mayhem with no power-ups and fog of war, from the 30th" -
+    /// and until now a log said nothing about which run it was watching, so every report had to
+    /// carry that context by hand and a log on its own could not be read at all.
+    private func logTheRun() {
+        let mode = scene.isDailyChallenge ? GameMode.daily.name
+            : (scene.endlessMode ? GameMode.current().name : GameMode.classic.name)
+
+        var detail = ""
+        if let challenge = DailyChallengeSession.shared.active {
+            let twists = challenge.twists.map(\.rawValue).joined(separator: ", ")
+            detail = " \(challenge.dateKey) \(challenge.mode.name)"
+                + (twists.isEmpty ? " no twists" : " twists: \(twists)")
+        } else if scene.startLevelNumber > 0 {
+            let packs = LevelPackSetup()
+            detail = " \(packs.levelPackNameArray[scene.packNumber])"
+                + " / \(packs.levelNameArray[scene.levelNumber])"
+        }
+
+        Log.play.notice("""
+            RUN \(mode, privacy: .public)\(detail, privacy: .public),             rack \(self.scene.numberOfLives, privacy: .public)
+            """)
+    }
+}

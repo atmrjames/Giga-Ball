@@ -2630,6 +2630,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		ballLostBool = false
         // Resets ball on paddle status
 
+		setEndlessIIHeldBallRestsOnPaddle(false, for: ball)
+		// And the paddle goes back into its collisions. `holdTheWaitingBallStill` takes it out
+		// while the ball is waiting - so that the engine cannot shove a resting ball along a
+		// shaped paddle or into a wall - and only a launch can put it back, because that method
+		// stops running the moment `ballIsOnPaddle` goes false
+
 		snapDailyFogShut()
 		// A launch before the fog has finished closing ends the look at once (round 177)
 		
@@ -2804,11 +2810,49 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     /// which is nearly all of them, and it catches *any* mover rather than the one this round
     /// happens to know about.
     override func didFinishUpdate() {
+        holdTheWaitingBallStill()
+
         guard paddleLaser.position.x != paddle.position.x
                 || paddleLaser.position.y != paddle.position.y - paddle.size.height/2
         else { return }
         positionPaddleOverlays()
         positionRetroPaddleLayers()
+    }
+
+    /// A ball sitting on the paddle is put back where it was put, after the engine has had its
+    /// turn.
+    ///
+    /// **James, round 312, twice over.** "If I have sticky paddle and repeatedly ram the paddle
+    /// into the wall, I can move the ball along the paddle in that direction. The ball should
+    /// remain fixed in position on the paddle." And, of a shaped paddle: "it can still move
+    /// around after landing on the paddle."
+    ///
+    /// One cause. The held *extras* were taken out of the paddle's collision mask in round 291,
+    /// for exactly this - "a ball placed anywhere but the middle is placed slightly *inside* the
+    /// traced body, and the engine's job is to push overlapping bodies apart, which on a slope
+    /// means sideways". The **first** ball never was. It is placed by `touchesMoved` and then
+    /// left to the engine, which resolves it out of the paddle a fraction at a time: on a shaped
+    /// paddle down the slope, and at a wall in whatever direction the paddle is being crushed.
+    /// Ramming repeatedly walks it along, which is precisely what he described.
+    ///
+    /// Two halves, both here rather than at the twenty places `ballIsOnPaddle` is written: the
+    /// paddle comes out of the waiting ball's collisions, and the ball is put back on its stored
+    /// offset. `didFinishUpdate` is after physics and after constraints, so this is the last
+    /// word on where it sits.
+    ///
+    /// The offset is `ballRelativePositionOnPaddle`, which is the same number `touchesMoved`
+    /// uses - so the two cannot disagree and the ball cannot jitter between them, which is the
+    /// trap `tickEndlessIIHeldBalls` warns about when it leaves the first ball alone.
+    func holdTheWaitingBallStill() {
+        guard ballIsOnPaddle, ball.parent != nil, ball.physicsBody != nil else { return }
+        setEndlessIIHeldBallRestsOnPaddle(true, for: ball)
+
+        let wanted = CGPoint(x: paddle.position.x + ballRelativePositionOnPaddle,
+                             y: ballStartingPositionY)
+        if ball.position != wanted { ball.position = wanted }
+        if ball.physicsBody?.velocity != .zero { ball.physicsBody?.velocity = .zero }
+        // Velocity too: a body shoved out of another keeps the shove, so a ball freed on the
+        // next tap would leave carrying a nudge nobody aimed
     }
 
     override func didSimulatePhysics() {
@@ -2850,6 +2894,19 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     // The one place a physics body can be moved from. Anything written to one during contact
     // resolution is undone by the rest of the step
 
+    /// One line closing the run's story, beside the two that opened it.
+    ///
+    /// Round 312. The session line says what was launched and the run line says what was
+    /// started; without this a log stops mid-sentence, and the numbers a report quotes -
+    /// "348m, 271 paddle hits, 19 power-ups seen" - had to be read off a screenshot of the
+    /// stats page and typed back in by hand.
+    func logTheRunEnding() {
+        guard let summary = InGameRecents.shared.runSummary else { return }
+        Log.play.notice("""
+            RUN ENDED \(summary.isEndless ? "\(summary.height)m" : "\(summary.score) pts", privacy: .public)             in \(summary.durationSeconds, privacy: .public)s,             \(summary.paddleHits, privacy: .public) paddle hits,             \(summary.bricksDestroyed, privacy: .public) bricks,             \(summary.ballsLost, privacy: .public) balls lost,             power-ups \(summary.powerUpsCollected, privacy: .public)/\(summary.powerUpsSeen, privacy: .public)
+            """)
+    }
+
     /// The crooked-ball tripwire's scene half (§12.0, DEBUG only). Runs last in
     /// `didSimulatePhysics`, after every writer has had its say, and compares the ball's
     /// motion to the frame before. A bend of more than half a degree - or a position jump
@@ -2888,7 +2945,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             if invisible { found.append(sprite.position) }
         }
         guard found.isEmpty == false else { return }
-        print("PHANTOM BRICKS: \(found.count) solid but unseeable, at \(found.prefix(4))")
+        Log.play.error("PHANTOM BRICKS: \(found.count, privacy: .public) solid but unseeable, at \(String(describing: found.prefix(4)), privacy: .public)")
         // Invisible bricks are a real power-up in the older modes, so this will speak up
         // during Hide Bricks - in Mayhem, which has no such power-up, it should never
         #endif
@@ -2929,13 +2986,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                            ball.position.x, ball.position.y, heading)
 
         if excuses.isEmpty {
-            print("CROOKED BALL, unexplained: \(what) \(place), zoom \(parallaxSetting ? "on" : "off")")
+            Log.play.error("CROOKED BALL, unexplained: \(what, privacy: .public) \(place, privacy: .public), zoom \(self.parallaxSetting ? "on" : "off", privacy: .public)")
             // The sighting. No contact, no writer's note, no clock - whatever did this is
             // the regression being hunted. The zoom flag is printed because Perspective
             // Zoom bends the *apparent* path of a physically straight ball: a sighting by
             // eye with zoom on and this line absent is the camera, not the physics
         } else if excuses.allSatisfy({ $0 == "contact" }) == false {
-            print("crooked-ball: \(what) \(place), explained by \(excuses.joined(separator: " + "))")
+            Log.play.debug("crooked-ball: \(what, privacy: .public) \(place, privacy: .public), explained by \(excuses.joined(separator: " + "), privacy: .public)")
             // Ordinary bounces stay silent or the log would be nothing but them
         }
         #endif
@@ -7069,6 +7126,7 @@ laserTimer?.invalidate()
 			isEndless: endlessMode,
 			isMultiLevel: endlessMode == false && numberOfLevels > 1,
 			bestBallHits: max(hitsOnThisBall, runBestBallHits))
+		logTheRunEnding()
 			// `numberOfLevels` is how many the run was given, which is 1 for a Classic daily
 			// and for single-level mode - the same number the pause menu already branches on
 			// to decide whether to print "Level 3 of 10" (round 306)
