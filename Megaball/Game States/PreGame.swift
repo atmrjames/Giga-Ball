@@ -83,6 +83,9 @@ class PreGame: GKState {
         // Set the background texture
         
         scene.totalScore = 0
+        scene.endlessBestBeaten = false
+        // A new run has not beaten anything yet - see `refreshEndlessIIBest`, where the flag is
+        // sticky *within* a run so a resume cannot take the news back
         InGameRecents.shared.reset()
         // A new run starts with nothing seen - the pause reference pages' recents are
         // this run's, never the last one's

@@ -220,12 +220,26 @@ extension GameScene {
         multiplierLabel.fontColor = UIColor(white: 1, alpha: 0.45)
         multiplierLabel.position.x = scoreLabel.position.x
         multiplierLabel.position.y = scoreLabel.position.y - fontSize*1.2
+
+        refreshEndlessIIBest()
+        // **And straight back to the news if the run has already beaten it** (James, round 312:
+        // "when pausing and resuming with a New Best score, the New Best label returned to the
+        // previous best"). This function is what a resume calls, and it writes the old figure
+        // unconditionally - so the label reverted and stayed reverted until the next metre
+        // ticked over and `refreshEndlessIIBest` fired again. Asking it here closes the gap
     }
 
     /// Clears it once the run passes it. Beating your best should feel like it happened.
     func refreshEndlessIIBest() {
         guard endlessMode, multiplierLabel.isHidden == false else { return }
-        guard let best = endlessBestHeight, endlessHeight > best else { return }
+        guard let best = endlessBestHeight else { return }
+        guard endlessHeight > best || endlessBestBeaten else { return }
+        endlessBestBeaten = true
+        // **Sticky for the run** (round 312). Two things can make the live comparison stop
+        // being true after it has once been true: a resume that restores the label before the
+        // height, and the run's own figure reaching the stored bests - `endlessBestHeight` is
+        // `runs.max()`, and an autosave that files this run puts its height in that list. Once
+        // a run has beaten the best it has beaten it, and the HUD should not take that back
 
         clearPlacedDigits(from: multiplierLabel)
         multiplierLabel.text = "NEW HI-SCORE"

@@ -597,7 +597,12 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
             record: totalStatsArray[0].dailyRecord(forKey: viewedKey),
             isToday: viewedOffset == 0,
             mode: challenge.mode,
-            closedOn: DailyChallengeSession.shared.displayName(forKey: viewedKey)) {
+            closedOn: DailyChallengeSession.shared.displayName(forKey: viewedKey).capitalized) {
+            // **In the pop-up's own case** (James, round 312: "on the free play daily challenge
+            // pop up warning, show the date format in a case that matches the rest of the
+            // pop up's text"). `displayName` is the *header's* format and is upper case on
+            // purpose - TODAY, YESTERDAY, SUNDAY, 30 AUGUST 2026 - which reads as shouting
+            // inside a sentence. The resume card already capitalises it for the same reason
             GigaBallAlert.show(on: self, title: "Free play", message: notice,
                                symbol: "gamecontroller.fill",
                                 dismissTitle: "Cancel", confirmTitle: "Play",

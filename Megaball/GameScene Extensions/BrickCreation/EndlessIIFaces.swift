@@ -513,3 +513,27 @@ extension GameScene {
         }
     }
 }
+
+extension CGPath {
+
+    /// This path, turned the way a node turns it.
+    ///
+    /// **Round 312.** A shaped brick's face is built the right way up and the *node* is
+    /// reflected - `xScale = -1` for a mirrored one, `yScale = -1` for a flipped one - because a
+    /// reflected path would take its fill texture with it and light the slope from the wrong
+    /// side. Anything that copies the path alone therefore gets the silhouette without the
+    /// reflection, which is how the Auto-Aim marker came to sit the right shape and the wrong
+    /// way up on an upside-down Wedge (James: "make sure it matches the brick's shape,
+    /// orientation and motion for all bricks").
+    ///
+    /// Composed in SpriteKit's own order - translate, then rotate, then scale - so a face that
+    /// is offset within its cell as well as flipped comes out where it is drawn.
+    func endlessIITurned(like node: SKNode) -> CGPath {
+        guard node.xScale != 1 || node.yScale != 1 || node.zRotation != 0
+                || node.position != .zero else { return self }
+        var transform = CGAffineTransform(translationX: node.position.x, y: node.position.y)
+            .rotated(by: node.zRotation)
+            .scaledBy(x: node.xScale, y: node.yScale)
+        return copy(using: &transform) ?? self
+    }
+}

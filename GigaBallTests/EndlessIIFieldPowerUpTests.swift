@@ -2902,3 +2902,160 @@ extension SKNode {
         sequence(first: self, next: \.parent).map(\.alpha).reduce(1, *)
     }
 }
+
+/// The Auto-Aim marker's shape, orientation and motion (round 312).
+///
+/// James: "with one of the upside down wedge shaped bricks the auto aim glow was the right shape
+/// but the wrong orientation. Make sure it matches the brick's shape, orientation and motion for
+/// all bricks."
+final class AutoAimOutlineTests: XCTestCase {
+
+    /// A path turned by a node comes back turned.
+    func testAFlippedFaceGivesAFlippedOutline() {
+        let wedge = CGMutablePath()
+        wedge.move(to: CGPoint(x: -10, y: -10))
+        wedge.addLine(to: CGPoint(x: 10, y: -10))
+        wedge.addLine(to: CGPoint(x: 10, y: 10))
+        wedge.closeSubpath()
+        // A right-angled triangle with its bulk *below* the mid-line
+
+        let face = SKShapeNode(path: wedge)
+        face.yScale = -1
+        // Which is how a flipped shaped brick is built: the path is the right way up and the
+        // node is turned, so the fill texture goes with it
+
+        let turned = wedge.endlessIITurned(like: face)
+        XCTAssertEqual(turned.boundingBox.height, wedge.boundingBox.height, accuracy: 0.01,
+                       "the same silhouette")
+        XCTAssertNotEqual(turned, wedge,
+                          "but not the same path - which is the whole of the bug: copying the "
+                          + "path alone took the shape and left the flip behind")
+
+        // The bulk has moved to the other side of the hypotenuse, which is what "upside down"
+        // means and what the marker was failing to show. Both points are well clear of the
+        // edges - a point *on* the boundary is not a question `contains` answers usefully
+        XCTAssertTrue(wedge.contains(CGPoint(x: -5, y: -8)), "the wedge fills below its slope")
+        XCTAssertFalse(turned.contains(CGPoint(x: -5, y: -8)), "and the flipped one does not")
+
+        XCTAssertTrue(turned.contains(CGPoint(x: -5, y: 8)), "it fills above it instead")
+        XCTAssertFalse(wedge.contains(CGPoint(x: -5, y: 8)), "which the unflipped one never did")
+    }
+
+    /// A mirrored face is reflected the other way, and both at once compose.
+    func testMirroredAndFlippedCompose() {
+        let corner = CGMutablePath()
+        corner.move(to: .zero)
+        corner.addLine(to: CGPoint(x: 20, y: 0))
+        corner.addLine(to: CGPoint(x: 20, y: 20))
+        corner.closeSubpath()
+
+        let both = SKShapeNode(path: corner)
+        both.xScale = -1
+        both.yScale = -1
+        let turned = corner.endlessIITurned(like: both)
+
+        XCTAssertTrue(turned.contains(CGPoint(x: -18, y: -2)),
+                      "reflected through both axes")
+        XCTAssertFalse(turned.contains(CGPoint(x: 18, y: 2)))
+    }
+
+    /// An untouched node costs nothing and returns the path it was given.
+    func testAnUnturnedFaceIsLeftAlone() {
+        let box = CGPath(rect: CGRect(x: -5, y: -5, width: 10, height: 10), transform: nil)
+        let plain = SKShapeNode(path: box)
+        XCTAssertEqual(box.endlessIITurned(like: plain), box)
+    }
+}
+
+/// The mirror paddle catching drops (round 312).
+///
+/// James, twice - round 209 and round 312: "mirrored paddle isn't able to collect power ups."
+/// Round 209 answered it with a contact branch, set the masks on both sides, and the branch is
+/// still there and correct. It had never once run, because both bodies are static and SpriteKit
+/// reports no contact between two static bodies. The main paddle is dynamic, which is the only
+/// reason the same branch works there.
+final class MirrorPaddleCatchTests: XCTestCase {
+
+    private func scene() -> GameScene {
+        let game = GameScene()
+        game.gameMode = .endlessII
+        game.totalStatsArray = [TotalStats()]
+        return game
+    }
+
+    private func drop(in game: GameScene, x: CGFloat, y: CGFloat) -> SKSpriteNode {
+        let node = SKSpriteNode(color: .white, size: CGSize(width: 20, height: 20))
+        node.name = PowerUpCategoryName
+        node.position = CGPoint(x: x, y: y)
+        node.zPosition = 2
+        node.physicsBody = SKPhysicsBody(rectangleOf: node.size)
+        node.physicsBody!.isDynamic = false
+        node.physicsBody!.categoryBitMask = CollisionTypes.powerUpCategory.rawValue
+        node.physicsBody!.contactTestBitMask = CollisionTypes.paddleCategory.rawValue
+            | CollisionTypes.mirrorPaddleCategory.rawValue
+        // The same body `powerUpGenerator` builds. `isDynamic = false` is the line that matters
+        // and it is set explicitly there - a fixture that left the default `true` would say the
+        // opposite of the truth about why the contact never fires, which is what the first
+        // version of this test did
+        game.addChild(node)
+        return node
+    }
+
+    /// **Both bodies are static, which is the whole bug.** Stated here so the next reader does
+    /// not spend the afternoon on the masks, which are right.
+    func testBothBodiesAreStaticSoNoContactCanEverBeReported() {
+        let game = scene()
+        let mirror = SKSpriteNode(color: .white, size: CGSize(width: 100, height: 12))
+        let body = game.endlessIIMirrorPaddleBody(size: mirror.size)
+        XCTAssertFalse(body.isDynamic, "the mirror is placed by hand, not simulated")
+
+        let falling = drop(in: game, x: 0, y: 0)
+        XCTAssertFalse(falling.physicsBody!.isDynamic, "and a drop is moved by an action")
+        XCTAssertNotEqual(body.contactTestBitMask
+                          & CollisionTypes.powerUpCategory.rawValue, 0,
+                          "the masks say they should meet - and they never do")
+    }
+
+    /// A drop overlapping the mirror is taken.
+    func testADropLandingOnTheMirrorIsCollected() {
+        let game = scene()
+        let mirror = SKSpriteNode(color: .white, size: CGSize(width: 100, height: 12))
+        mirror.position = CGPoint(x: 120, y: -200)
+        game.addChild(mirror)
+
+        let landed = drop(in: game, x: 120, y: -198)
+        game.endlessIIMirrorCollectsDrops(mirror)
+
+        XCTAssertEqual(landed.zPosition, 1,
+                       "taken - `collectPowerUpDrop` drops it out of the falling layer")
+    }
+
+    /// And one that has not reached it is left alone.
+    func testADropElsewhereIsLeftFalling() {
+        let game = scene()
+        let mirror = SKSpriteNode(color: .white, size: CGSize(width: 100, height: 12))
+        mirror.position = CGPoint(x: 120, y: -200)
+        game.addChild(mirror)
+
+        let falling = drop(in: game, x: 120, y: 40)
+        let elsewhere = drop(in: game, x: -200, y: -198)
+        game.endlessIIMirrorCollectsDrops(mirror)
+
+        XCTAssertEqual(falling.zPosition, 2, "still on its way down")
+        XCTAssertEqual(elsewhere.zPosition, 2, "and this one is nowhere near it")
+    }
+
+    /// A drop is not taken twice in one frame, or by a second tick before it is cleaned up.
+    func testADropIsOnlyTakenOnce() {
+        let game = scene()
+        let mirror = SKSpriteNode(color: .white, size: CGSize(width: 100, height: 12))
+        mirror.position = CGPoint(x: 0, y: -200)
+        game.addChild(mirror)
+
+        let landed = drop(in: game, x: 0, y: -198)
+        game.endlessIIMirrorCollectsDrops(mirror)
+        let after = landed.zPosition
+        game.endlessIIMirrorCollectsDrops(mirror)
+        XCTAssertEqual(landed.zPosition, after, "the second tick finds nothing to take")
+    }
+}

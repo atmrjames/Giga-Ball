@@ -585,6 +585,25 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var brickSetting: Int = 0
     var appIconSetting: Int = 0
 	var swipeUpPause: Bool = true
+
+	/// Where the current touch began, for the swipe-up-to-pause distance check.
+	var pauseSwipeStartY: CGFloat?
+
+	/// How far up a finger has to travel before a swipe counts as asking for the pause menu.
+	///
+	/// James, round 312: "make the swipe up to pause feature slightly less sensitive. I seem to
+	/// be accidentally triggering it a lot. Require a slightly larger swipe up, not much more."
+	///
+	/// `UISwipeGestureRecognizer` has no threshold to turn down - it recognises a short flick and
+	/// says nothing about how far the finger went - so the distance is measured here instead,
+	/// against where the touch began.
+	///
+	/// Six ball-widths rather than a number of points, so it is the same gesture on every screen:
+	/// the ball is `layoutUnit*0.67` and the whole layout is derived from the play zone's width,
+	/// so a phone and an iPad ask for the same *proportion* of travel rather than the same
+	/// millimetres. About seventy points on a phone, which is a deliberate flick rather than the
+	/// upward drift at the end of moving the paddle.
+	var pauseSwipeMinimumTravel: CGFloat { ballSize*6 }
 	var gameInProgress: Bool = false
 	var resumeGameToLoad: Bool = false
 	var firstPause: Bool = true
@@ -1001,6 +1020,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	/// The breathing bricks' own clock, so they can keep going while the aim hold pins
 	/// everything else - see `tickEndlessIIBreathing` (round 311).
 	var endlessIIBreathLastTick: TimeInterval = 0
+
+	/// Whether this run has already passed the stored best - see `refreshEndlessIIBest`.
+	/// Cleared with the run, not with the level.
+	var endlessBestBeaten = false
 	/// Which frame this is, counted in `update`.
 	var frameNumber: Int = 0
 	/// The frame each ball's last counted paddle landing was in.
@@ -2269,6 +2292,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         switch gameState.currentState {
         case is Playing:
             touchBeganWhilstPlaying = true
+            pauseSwipeStartY = touches.first.map { $0.location(in: self).y }
+            // Where a swipe-up-to-pause would have to travel *from* - see `swipeGesture`
             endlessIIAimTouchPredatesHold = false
             // **A touch beginning now cannot predate anything**, whatever else is running.
             //
@@ -7862,11 +7887,25 @@ laserTimer?.invalidate()
     // Pause the game if a notifcation from AppDelegate is received that the game will quit
 	
 	@objc func swipeGesture(gesture: UISwipeGestureRecognizer) -> Void {
-		if endlessMoveInProgress == false && gameState.currentState is Playing && swipeUpPause
-			&& dailyPausingIsAllowed {
-			clearSavedGame()
-			gameState.enter(Paused.self)
+		guard endlessMoveInProgress == false, gameState.currentState is Playing,
+			  swipeUpPause, dailyPausingIsAllowed else { return }
+
+		if let start = pauseSwipeStartY, let view {
+			let here = convertPoint(fromView: gesture.location(in: view)).y
+			guard here - start >= pauseSwipeMinimumTravel else { return }
 		}
+		// **Far enough to have meant it** (James, round 312: "I seem to be accidentally
+		// triggering it a lot"). The recogniser fires on a flick and has no threshold of its
+		// own, so the travel is measured against where the touch began - which the scene knows
+		// because it is already tracking the touch to drive the paddle.
+		//
+		// A missing start is let through rather than refused: the gesture and the scene's own
+		// touch handling are two views of the same finger and there is no guarantee the scene
+		// saw the beginning of it, and a pause that occasionally still works is a far better
+		// failure than one that has quietly stopped
+
+		clearSavedGame()
+		gameState.enter(Paused.self)
 	}
 	
 	func saveGameStats() {

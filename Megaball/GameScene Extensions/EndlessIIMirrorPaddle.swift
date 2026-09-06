@@ -94,6 +94,7 @@ extension GameScene {
         mirror.name = GameScene.endlessIIMirrorPaddleName
         mirror.position = CGPoint(x: GameScene.endlessIIMirrorPaddleX(paddleX: paddle.position.x),
                                   y: paddle.position.y)
+        endlessIIMirrorCollectsDrops(mirror)
         mirror.xScale = paddle.xScale
         mirror.yScale = paddle.yScale
         // Born already matching, so a mirror collected while Expand is running does not
@@ -219,6 +220,37 @@ extension GameScene {
         // **It collects drops as well as returning balls** (James, round 209). Contact only,
         // not collision: a drop should be taken, not bounced off
         return body
+    }
+
+    /// Takes any power-up that has landed on the mirror.
+    ///
+    /// **James, round 209 and again in round 312: "mirrored paddle isn't able to collect power
+    /// ups."** Round 209 answered it with a contact branch in `didBegin`, the masks were set on
+    /// both sides, and the branch is still there and correct. It has never once run.
+    ///
+    /// Both bodies are static. The mirror is `isDynamic = false` because it is placed by hand
+    /// every frame rather than simulated, and a falling power-up is `isDynamic = false` because
+    /// it is moved by an action - and **SpriteKit does not report contacts between two static
+    /// bodies**. The main paddle is dynamic, which is the only reason the same branch works
+    /// there, and why this looked finished for a hundred rounds.
+    ///
+    /// Answered geometrically rather than by making either body dynamic. A dynamic mirror gets
+    /// shoved by the ball it is meant to return; a dynamic power-up changes how every drop in
+    /// the game behaves. Overlap is the whole question and the frame already knows both frames -
+    /// which is the same reasoning `catchStickyBallBeforeStep` uses to catch the ball in
+    /// `update` rather than waiting for a contact that comes too late.
+    func endlessIIMirrorCollectsDrops(_ mirror: SKSpriteNode) {
+        let catcher = mirror.frame
+        guard catcher.width > 0, catcher.height > 0 else { return }
+
+        var landed: [SKNode] = []
+        enumerateChildNodes(withName: PowerUpCategoryName) { node, _ in
+            guard node.zPosition == 2 else { return }
+            // Two is "still falling" - `collectPowerUpDrop` drops it to one as it takes it, and
+            // asking here as well keeps a drop from being collected twice in one frame
+            if node.frame.intersects(catcher) { landed.append(node) }
+        }
+        for drop in landed { collectPowerUpDrop(drop) }
     }
 
     /// The shape the twin wears: the paddle's, reflected.

@@ -741,9 +741,14 @@ extension GameScene {
         } else {
             marker = SKShapeNode()
             marker.name = GameScene.autoAimMarkerName
-            marker.strokeColor = GameScene.endlessIIHaloColour.withAlphaComponent(0.9)
-            marker.lineWidth = 3
-            marker.glowWidth = 3
+            marker.strokeColor = GameScene.endlessIIHaloColour.withAlphaComponent(0.45)
+            marker.lineWidth = 2
+            marker.glowWidth = 4
+            // **Quieter** (James, round 312: "the auto aim glow is too opaque. Dial up the
+            // transparency"). Half the alpha and a thinner line, with the glow widened to make
+            // up for it: what the marker is for is saying *which brick*, and at 0.9 on a
+            // three-point stroke it was reading as a thing in its own right rather than as light
+            // on the brick underneath
             marker.fillColor = .clear
             marker.zPosition = 4
             addChild(marker)
@@ -762,17 +767,34 @@ extension GameScene {
         let outline = endlessIIAutoAimOutline(of: target)
         if marker.path != outline { marker.path = outline }
         marker.position = target.position
+        marker.zRotation = target.zRotation
+        // **And the brick's own motion** (round 312, the third of the three James named). A
+        // Spinning brick turns its node rather than its path, so an outline drawn without this
+        // sat square over a brick that was not
     }
 
     /// The path to draw round a brick: its face's own silhouette, or its box.
+    ///
+    /// **Turned the way the face is turned** (James, round 312: "with one of the upside down
+    /// wedge shaped bricks the auto aim glow was the right shape but the wrong orientation. Make
+    /// sure it matches the brick's shape, orientation and motion for all bricks").
+    ///
+    /// A shaped face is built the right way up and the *node* is reflected -
+    /// `shape.xScale = mirrored ? -1 : 1`, `shape.yScale = flipped ? -1 : 1` - because a
+    /// reflected path would take its shading the wrong way up the slope. Copying only the path,
+    /// as this did, takes the silhouette and leaves the reflection behind: right shape, wrong
+    /// way up, which is exactly what he saw on an upside-down Wedge.
+    ///
+    /// The face's whole transform is applied instead, so a mirrored one, a flipped one and a
+    /// face that has been offset within its cell all come out as they are drawn.
     func endlessIIAutoAimOutline(of brick: SKSpriteNode) -> CGPath {
         if let face = brick.childNode(withName: GameScene.brickFaceName) as? SKShapeNode,
            let path = face.path {
-            return path
+            return path.endlessIITurned(like: face)
         }
         if let rounded = brick.childNode(withName: GameScene.roundedBrickOutlineName)
             as? SKShapeNode, let path = rounded.path {
-            return path
+            return path.endlessIITurned(like: rounded)
         }
         let cell = endlessIIFieldSize(of: brick)
         let centre = endlessIIBrickCentre(of: brick)
@@ -809,11 +831,30 @@ extension GameScene {
         path.move(to: subject.position)
         path.addLine(to: target)
         beam.path = path
-        beam.strokeColor = GameScene.endlessIIHaloColour.withAlphaComponent(0.7)
-        beam.lineWidth = 2
+        beam.strokeColor = GameScene.endlessIIHaloColour
+            .withAlphaComponent(FadingLine.glowAlpha(certainty: 1))
+        beam.lineWidth = FadingLine.blurWidth(certainty: 1)
+        beam.glowWidth = FadingLine.blurWidth(certainty: 1)
         beam.zPosition = 4
         addChild(beam)
-        beam.run(.sequence([.fadeOut(withDuration: 0.3), .removeFromParent()]))
+
+        let core = SKShapeNode(path: path)
+        core.strokeColor = GameScene.endlessIIHaloColour
+            .withAlphaComponent(FadingLine.coreAlpha(certainty: 1))
+        core.lineWidth = FadingLine.coreThickness(certainty: 1)
+        core.zPosition = 4.1
+        addChild(core)
+        for line in [beam, core] {
+            line.run(.sequence([.fadeOut(withDuration: 0.3), .removeFromParent()]))
+        }
+        // **The trajectory line's voice, not a hard stroke** (James, round 312: "the auto aim
+        // line that's drawn between the ball and brick after hitting the paddle is too stark.
+        // Use something similar to the ball trajectory line").
+        //
+        // That line is a soft wide blur with a thin bright core inside it, and the numbers live
+        // in `FadingLine` where the game and its render test both read them. Two nodes here for
+        // the same reason it uses two: one stroke cannot be both the haze and the core.
+        //
         // The shot drawn for a beat, so an aimed bounce reads as aimed rather than lucky
 
         return true
