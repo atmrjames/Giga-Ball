@@ -127,6 +127,21 @@ extension UIViewController {
     /// wears the same artwork at 190, so there is a long way to grow before it is large.
     static let inGameModeIconSize: CGFloat = 84
 
+    /// The three numbers the pause screen and the level intro have to agree on.
+    ///
+    /// **James, round 312: "add giga-ball logo on the level intro splash screen to the same
+    /// position as where it is on the pause view. Align the game mode logo and header between
+    /// the level intro splash screen and the pause menu too so these views match up better."**
+    ///
+    /// They are the two screens a player sees seconds apart - the intro on the way into a level
+    /// and the pause menu on the way out of it - and until now the intro had no wordmark at all
+    /// and set its icon six points above the name where the pause menu set it four. Written
+    /// down once so the two cannot drift again, which is the whole reason `inGameModeIconSize`
+    /// is here: round 233 found the same badge at 56 on one screen and 42 on the other.
+    static let inGameLogoTopInset: CGFloat = 46
+    static let inGameLogoHeight: CGFloat = 36
+    static let inGameModeIconGap: CGFloat = 4
+
     /// What that logo shrinks to when a list scrolls up under it.
     ///
     /// The pack grid is what the screen is for, and at rest the logo takes a third of it.

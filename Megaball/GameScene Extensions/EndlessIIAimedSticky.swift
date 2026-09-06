@@ -53,10 +53,9 @@ extension GameScene {
         // Set only once the inert guard has let the catch happen, so a refused catch
         // cannot leave a stale hold behind
 
-        let arriving = ballStateBeforeStep[ObjectIdentifier(subject)]?.velocity
-            ?? subject.physicsBody?.velocity ?? .zero
         endlessIIAimDefaultAngles[ObjectIdentifier(subject)] =
-            EndlessIIPaddleEffects.defaultLaunchAngle(arriving: arriving)
+            endlessIIWouldHaveBouncedAngle(subject, offSurfaceAt: paddle.position.x,
+                                           width: paddle.size.width)
 
         if isExtra {
             subject.physicsBody?.velocity = .zero
@@ -185,6 +184,40 @@ extension GameScene {
               endlessIIAimedStickyClock.isRunning || endlessIIAimOwedHold
         else { return nil }
         return endlessIINextHeldBall
+    }
+
+    /// The angle this ball would have left at, had the surface bounced it instead of catching
+    /// it - the arrow's starting point before the finger has said anything.
+    ///
+    /// **James, round 312: "have the aimed sticky arrow aim where the ball would've bounced off
+    /// the paddle as its starting angle."** It used `defaultLaunchAngle(arriving:)`, which is the
+    /// arriving direction with its vertical flipped - a mirror bounce off a flat plate. That is
+    /// not what this paddle does: a real bounce is steered by *where across the paddle* the ball
+    /// landed, and by the shape, the Inert clock, the Flipped Angle and the grip. So the arrow
+    /// started somewhere the ball would never have gone, and a player who released without
+    /// aiming got a shot they had not been shown.
+    ///
+    /// `PaddleBounce.angleDegrees` is the same call `paddleHit` makes, with the same collision
+    /// offset and the same influence, so the arrow's opening angle and an unaimed bounce cannot
+    /// give different answers.
+    func endlessIIWouldHaveBouncedAngle(_ subject: SKSpriteNode,
+                                        offSurfaceAt surfaceX: CGFloat,
+                                        width: CGFloat) -> Double {
+        let arriving = ballStateBeforeStep[ObjectIdentifier(subject)]?.velocity
+            ?? subject.physicsBody?.velocity ?? .zero
+        guard width > 0 else {
+            return EndlessIIPaddleEffects.defaultLaunchAngle(arriving: arriving)
+        }
+        let collision = PaddleBounce.collision(ballX: subject.position.x,
+                                               paddleX: surfaceX, paddleWidth: width)
+        let degrees = PaddleBounce.angleDegrees(
+            arriving: arriving,
+            collision: PaddleBounce.shaped(min(max(collision, -1), 1),
+                                           by: endlessIIPaddleSurface),
+            adjustmentK: angleAdjustmentK,
+            influence: endlessIIPaddleAngleInfluence,
+            minimumDeg: minAngleDeg)
+        return degrees*Double.pi/180
     }
 
     /// The angle the aim currently points at: the finger's absolute position across the

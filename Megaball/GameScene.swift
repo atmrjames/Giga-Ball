@@ -4749,6 +4749,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 
 		if isOnPaddle == false, endlessIIApplyShapedBounce(to: ball) {
 			endlessIIGripBall(subject, collision: collisionPercentage)
+			_ = endlessIIApplyAutoAim(to: ball)
 			invisibleBrickFlash()
 			return
 		}
@@ -4756,7 +4757,15 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		// the engine has already reflected the ball off the silhouette, and that reflection is
 		// the answer - so the angle calculation above and the control below are both skipped
 		// rather than layered on top of it. The spin and the flash still run, because neither
-		// is about where the ball is going
+		// is about where the ball is going.
+		//
+		// **And so does the aim** (James, round 312: "with a shaped paddle and auto aim active,
+		// the ball should still head towards the aimed brick after bouncing off the paddle").
+		// Auto-Aim is not part of the angle calculation this return is skipping - it is an
+		// override asked at the *end* of the bounce, after everything else has decided, and
+		// there is a copy of that line below this branch which a shaped paddle never reached.
+		// A power-up whose whole promise is "this shot goes where I say" must not quietly stop
+		// being true because the paddle is wearing a different face
 
 		if isOnPaddle == false && collisionPercentage < 1.0 && collisionPercentage > -1.0 {
 		// Only control the ball's angle if it in the centre of the paddle

@@ -153,11 +153,56 @@ extension GameScene {
         ghost.texture = paddle.texture
         ghost.color = paddle.color
         ghost.colorBlendFactor = paddle.colorBlendFactor
+        endlessIIDressTheWrapGhost(ghost)
         ghost.position = CGPoint(
             x: paddle.position.x > 0 ? paddle.position.x - gameWidth
                                      : paddle.position.x + gameWidth,
             y: paddle.position.y)
     }
+
+    /// The strips the paddle is wearing, on its ghost half.
+    ///
+    /// **James, round 312: "sticky paddle texture isn't showing up through the wrap around
+    /// properly."** The ghost has copied the paddle's `texture` since it was built - which is
+    /// the paddle's *base* picture. The sticky band and the laser turrets are not part of that
+    /// picture; they are separate strips laid over the paddle, and the ghost had no equivalent.
+    /// So a paddle straddling an edge showed its sticky face on one half and a bare paddle on
+    /// the other, which is the same object drawn two ways.
+    ///
+    /// Children of the ghost, so they move and resize with it for free, and copied from the
+    /// real strips rather than looked up: whatever decided the paddle's face - Grip, Sticky,
+    /// a theme, a shape - has already decided it once, and asking again is how the two halves
+    /// come to disagree.
+    func endlessIIDressTheWrapGhost(_ ghost: SKSpriteNode) {
+        for (source, name) in [(paddleSticky, GameScene.endlessIIWrapGhostStickyName),
+                               (paddleLaser, GameScene.endlessIIWrapGhostLaserName)] {
+            let showing = source.isHidden == false && source.parent != nil
+            guard showing, let art = source.texture else {
+                ghost.childNode(withName: name)?.removeFromParent()
+                continue
+            }
+
+            let strip: SKSpriteNode
+            if let existing = ghost.childNode(withName: name) as? SKSpriteNode {
+                strip = existing
+            } else {
+                strip = SKSpriteNode()
+                strip.name = name
+                strip.zPosition = 0.1
+                ghost.addChild(strip)
+            }
+            if strip.texture !== art { strip.texture = art }
+            strip.size = source.size
+            strip.centerRect = source.centerRect
+            strip.alpha = source.alpha
+            strip.position = CGPoint(x: 0, y: source.position.y - paddle.position.y)
+            // The strip's offset from the paddle's centre, carried into the ghost's own
+            // coordinates - the two paddles are the same object in two places
+        }
+    }
+
+    static let endlessIIWrapGhostStickyName = "endlessIIWrapGhostSticky"
+    static let endlessIIWrapGhostLaserName = "endlessIIWrapGhostLaser"
 
     // MARK: - The field
 

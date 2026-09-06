@@ -86,6 +86,15 @@ extension GameScene {
     /// all of that into one hue, so the glow stops being a glow and becomes a coloured haze.
     /// What is lost is the colour coding at the top, and what is kept is the effect James drew.
     /// Wrap-Around still says which end is which by tinting the walls themselves.
+    /// How strongly the edge glows while a wrap or a portal is running.
+    ///
+    /// **James, round 312: "make the wrap around and portal graphics on the edges and side of
+    /// the game view slightly more transparent."** It faded to full opacity, which on a field
+    /// with a ball and bricks to watch is a band of colour competing with the play rather than
+    /// framing it. Seven tenths is "slightly", and the walls behind it are already carrying
+    /// their share at a blend of 0.35.
+    static let endlessIIEdgeGlowAlpha: CGFloat = 0.7
+
     func showEndlessIIEdgeGlow(_ edge: EndlessIIEdge, wanted: Bool) {
         let existing = childNode(withName: edge.glowName) as? SKSpriteNode
 
@@ -104,7 +113,7 @@ extension GameScene {
             // A quarter turn anticlockwise puts the bright edge at the top; a negative scale
             // puts it against the right-hand wall. Neither needs a second picture
             addChild(node)
-            node.run(.fadeAlpha(to: 1, duration: 0.2))
+            node.run(.fadeAlpha(to: GameScene.endlessIIEdgeGlowAlpha, duration: 0.2))
             return node
         }()
 

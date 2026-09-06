@@ -362,8 +362,12 @@ extension GameScene {
 
         if endlessIIApplyShapedBounce(to: subject) {
             endlessIIGripBall(subject, collision: endlessIISafetyPaddleCollision(of: subject))
+            _ = endlessIIApplyAutoAim(to: subject)
             return
         }
+        // The aim survives a shaped bounce here too, for the reason `paddleHit` gives: it is an
+        // override asked after everything else has decided, not part of the angle arithmetic
+        // this return is skipping
         // The shape decides, exactly as it does on the paddle and on the mirror: the engine
         // has already reflected the ball off the traced silhouette, and that reflection is the
         // answer rather than something to layer a formula on top of
@@ -467,10 +471,11 @@ extension GameScene {
                 endlessIIAimedStickyOwedTurn = false
                 endlessIIAimOwedHold = true
             }
-            let arriving = ballStateBeforeStep[ObjectIdentifier(subject)]?.velocity
-                ?? subject.physicsBody?.velocity ?? .zero
             endlessIIAimDefaultAngles[ObjectIdentifier(subject)] =
-                EndlessIIPaddleEffects.defaultLaunchAngle(arriving: arriving)
+                endlessIIWouldHaveBouncedAngle(subject, offSurfaceAt: bar.position.x,
+                                               width: bar.size.width)
+            // Off the *bar's* width, which is the only thing that changes between the two
+            // surfaces - the angle rule itself is written once
             endlessIIBeginAimHold()
             // The same three things the paddle's aimed catch does, in the same order: the last
             // catch of an expired clock still catches, the arrow needs somewhere to point

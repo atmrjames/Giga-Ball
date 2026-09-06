@@ -51,6 +51,7 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
     
     @IBOutlet var packNameLabel: UILabel!
     private var modeIconView: UIImageView?
+    private var introLogoView: UIImageView?
     private var runKindLabel: UILabel?
     @IBOutlet var levelNumberLabel: UILabel!
     @IBOutlet var levelNameLabel: UILabel!
@@ -476,12 +477,41 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
         view.addSubview(icon)
         NSLayoutConstraint.activate([
             icon.centerXAnchor.constraint(equalTo: packNameLabel.centerXAnchor),
-            icon.bottomAnchor.constraint(equalTo: packNameLabel.topAnchor, constant: -6),
-            // Close under the icon (play-test round 12: "nearer the title")
+            icon.bottomAnchor.constraint(equalTo: packNameLabel.topAnchor,
+                                         constant: -UIViewController.inGameModeIconGap),
+            // Close under the icon (play-test round 12: "nearer the title"), at the gap the
+            // pause menu uses - the two screens are seconds apart and were six and four
             icon.widthAnchor.constraint(equalToConstant: UIViewController.inGameModeIconSize),
             icon.heightAnchor.constraint(equalToConstant: UIViewController.inGameModeIconSize),
         ])
         modeIconView = icon
+        showIntroLogo()
+    }
+
+    /// The Giga-Ball wordmark, where the pause screen puts it.
+    ///
+    /// James, round 312. The pause and game-over screens have carried it since play-test round
+    /// 10 - "the only full-screen views without the game's name on them" - and the level intro
+    /// is the third of that set and was missed. Same inset, same height, same halo, all three
+    /// read from `MenuLayout` so the two screens cannot drift apart again.
+    private func showIntroLogo() {
+        guard introLogoView == nil else { return }
+        let logo = UIImageView(image: UIImage(named: "Logo"))
+        logo.contentMode = .scaleAspectFit
+        logo.translatesAutoresizingMaskIntoConstraints = false
+        logo.applyGigaBallGlow()
+        view.addSubview(logo)
+        NSLayoutConstraint.activate([
+            logo.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor,
+                                      constant: UIViewController.inGameLogoTopInset),
+            logo.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            logo.heightAnchor.constraint(equalToConstant: UIViewController.inGameLogoHeight),
+            logo.leadingAnchor.constraint(greaterThanOrEqualTo: view.leadingAnchor,
+                                          constant: 60),
+            logo.trailingAnchor.constraint(lessThanOrEqualTo: view.trailingAnchor,
+                                           constant: -60),
+        ])
+        introLogoView = logo
     }
     
 //    func paymentQueue(_ queue: SKPaymentQueue, updatedTransactions transactions: [SKPaymentTransaction]) {

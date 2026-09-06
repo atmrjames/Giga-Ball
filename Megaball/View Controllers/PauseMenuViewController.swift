@@ -248,15 +248,15 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
 
         NSLayoutConstraint.activate([
             logo.topAnchor.constraint(equalTo: containterView.safeAreaLayoutGuide.topAnchor,
-                                      constant: 46),
+                                      constant: UIViewController.inGameLogoTopInset),
             logo.centerXAnchor.constraint(equalTo: containterView.centerXAnchor),
-            logo.heightAnchor.constraint(equalToConstant: 36),
+            logo.heightAnchor.constraint(equalToConstant: UIViewController.inGameLogoHeight),
             logo.leadingAnchor.constraint(greaterThanOrEqualTo: containterView.leadingAnchor,
                                           constant: 60),
 
             modeIcon.centerXAnchor.constraint(equalTo: containterView.centerXAnchor),
             modeIcon.bottomAnchor.constraint(equalTo: packNameLabel.topAnchor,
-                                             constant: -4),
+                                             constant: -UIViewController.inGameModeIconGap),
             modeIcon.widthAnchor.constraint(equalToConstant: UIViewController.inGameModeIconSize),
             modeIcon.heightAnchor.constraint(equalToConstant: UIViewController.inGameModeIconSize),
             // Above the *pack* line, not the level line: in Classic and the daily there
