@@ -138,6 +138,23 @@ extension GameScene {
             // the spinners list, a restored flasher is in the flashers list, and a restored
             // breather breathes - which is what "the same field" has to mean
 
+            if brick.endlessIIFace != nil {
+                resizeEndlessIIFace(brick, to: endlessIIFieldSize(of: brick))
+            }
+            // **The face is fitted last, because the size is decided last** (James, round 312:
+            // "on returning from quitting and resuming, one of the wedge shaped bricks wasn't
+            // lined up properly with the brick's shape grid").
+            //
+            // The face is built above, before `record.styles` - it has to be, because the
+            // orientation must be in place before `makeFace` rolls one. But Big, Square and
+            // Tiny are *styles*, and they change the cell the face is supposed to fill. So a
+            // shaped brick that was also resized came back with its silhouette cut for the
+            // cell it had before the style landed, which is a wedge sitting off its own grid.
+            //
+            // Re-fitting is the generator's own move: `resizeEndlessIIFace` exists because a
+            // Breathing shaped brick has it done again on every breath, and it is written to be
+            // called more than once
+
             brick.endlessIIIsAnchored = record.anchored
             // Set again: `makeFixed` starts a brick unanchored, and a Fixed brick that had
             // already been struck must come back struck

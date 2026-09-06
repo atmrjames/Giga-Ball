@@ -263,8 +263,16 @@ final class SpinningFaceCrossFadeTests: XCTestCase {
         let art = face(brick).childNode(withName: GameScene.faceArtName) as? SKSpriteNode
         let partner = face(brick).childNode(withName: GameScene.facePartnerName) as? SKSpriteNode
         XCTAssertNotNil(partner, "half a turn and there is nothing to have turned into")
-        XCTAssertEqual(partner?.alpha ?? 0, 1, accuracy: 0.001)
-        XCTAssertEqual(art?.alpha ?? 1, 0, accuracy: 0.001)
+        XCTAssertEqual(partner?.alpha ?? 0, 1, accuracy: 0.001,
+                       "at half a turn the partner has taken over completely")
+        XCTAssertEqual(art?.alpha ?? 0, 1, accuracy: 0.001,
+                       "**and the one underneath stays solid** (round 312). This asserted that "
+                       + "the main picture faded to nothing, which is what a symmetric "
+                       + "cross-fade does - and two half-opaque layers composite to three "
+                       + "quarters, so the brick went see-through for the seconds either side "
+                       + "of every quarter turn (James: 'it can go semi transparent for some "
+                       + "time'). The top layer dissolves over an opaque bottom one now: the "
+                       + "same picture at both ends, and no hole in the middle")
         XCTAssertEqual(partner?.texture?.description.contains("Wedge270"), true,
                        "the partner is the rotation, not the mirror")
     }

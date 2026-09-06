@@ -308,7 +308,7 @@ extension GameScene {
         let partner = partnerNode ?? {
             let node = SKSpriteNode(texture: partnerArt, size: cell)
             node.name = GameScene.facePartnerName
-            node.zPosition = main.zPosition
+            node.zPosition = main.zPosition + 0.01
             shape.addChild(node)
             return node
         }()
@@ -335,7 +335,20 @@ extension GameScene {
 
         let blend = GameScene.spinningFaceBlend(zRotation: brick.zRotation)
         partner.alpha = blend
-        main.alpha = 1 - blend
+        main.alpha = 1
+        // **The one underneath stays solid** (James, round 312: "when a rotating brick with
+        // multiple textures is transitioning between its textures so its lighting looks right,
+        // it can go semi transparent for some time. Make sure the 2 textures layered on top of
+        // one another ensure the brick stays opaque").
+        //
+        // This was a symmetric cross-fade - `main.alpha = 1 - blend` against the partner's
+        // `blend` - and two half-opaque layers do not make a whole one. They composite to
+        // `1 - (1-a)(1-b)`, so at the halfway point the brick was three-quarters opaque and the
+        // field showed through it, for the several seconds either side of a quarter turn.
+        //
+        // Dissolving the top layer over an opaque bottom one gives the same picture at both
+        // ends and full opacity throughout. The partner takes a hair of zPosition so which one
+        // is on top is stated rather than left to sibling order
     }
 
     static let facePartnerName = "endlessIIFacePartner"

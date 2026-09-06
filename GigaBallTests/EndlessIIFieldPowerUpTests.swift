@@ -3059,3 +3059,163 @@ final class MirrorPaddleCatchTests: XCTestCase {
         XCTAssertEqual(landed.zPosition, after, "the second tick finds nothing to take")
     }
 }
+
+/// A spinning brick's two pictures, and the hole a symmetric cross-fade leaves (round 312).
+///
+/// James: "when a rotating brick with multiple textures is transitioning between its textures so
+/// its lighting looks right, it can go semi transparent for some time. Make sure the 2 textures
+/// layered on top of one another ensure the brick stays opaque."
+final class SpinningFaceOpacityTests: XCTestCase {
+
+    /// What two alphas actually composite to, which is the whole of the bug.
+    private func composited(_ under: CGFloat, _ over: CGFloat) -> CGFloat {
+        1 - (1 - under)*(1 - over)
+    }
+
+    /// The old pairing left a hole in the middle of every turn.
+    func testASymmetricCrossFadeIsNotOpaque() {
+        for turn in stride(from: 0.0, through: 2*Double.pi, by: Double.pi/12) {
+            let blend = GameScene.spinningFaceBlend(zRotation: CGFloat(turn))
+            let old = composited(1 - blend, blend)
+            if abs(blend - 0.5) < 0.01 {
+                XCTAssertEqual(old, 0.75, accuracy: 0.02,
+                               "two half-opaque layers make three quarters, not one")
+            }
+        }
+    }
+
+    /// Dissolving the top layer over an opaque one is opaque at every angle.
+    func testDissolvingOverAnOpaqueLayerNeverShowsThrough() {
+        for turn in stride(from: 0.0, through: 4*Double.pi, by: Double.pi/60) {
+            let blend = GameScene.spinningFaceBlend(zRotation: CGFloat(turn))
+            XCTAssertEqual(composited(1, blend), 1, accuracy: 0.0001,
+                           "at \(turn) radians the field must not show through the brick")
+        }
+    }
+
+    /// And the blend still reaches both ends, so the lighting effect is unchanged.
+    func testTheBlendStillTravelsTheWholeWay() {
+        XCTAssertEqual(GameScene.spinningFaceBlend(zRotation: 0), 0, accuracy: 0.0001)
+        XCTAssertEqual(GameScene.spinningFaceBlend(zRotation: .pi), 1, accuracy: 0.0001)
+        XCTAssertEqual(GameScene.spinningFaceBlend(zRotation: 2*(.pi)), 0, accuracy: 0.0001)
+    }
+}
+
+/// The three fixes from round 312 that had no guard of their own.
+final class RoundThreeTwelveRegressionTests: XCTestCase {
+
+    private func scene() -> GameScene {
+        let game = GameScene()
+        game.gameMode = .endlessII
+        game.ballSize = 10
+        game.ball.size = CGSize(width: 10, height: 10)
+        game.paddleHeight = 12
+        game.paddle.size = CGSize(width: 100, height: 12)
+        game.paddle.position = CGPoint(x: 0, y: -200)
+        game.totalStatsArray = [TotalStats()]
+        return game
+    }
+
+    // MARK: - The safety paddle asks the approach, not the ball now
+
+    /// **James: "safety paddle doesn't always trigger a haptics when the ball bounces off it."**
+    ///
+    /// The guard read `body.velocity.dy < 0`, and section 8.6's first trap is that a contact
+    /// reports the velocity *after* the engine's bounce - so a ball that genuinely landed was
+    /// already heading back up by the time this asked, and the haptic, the sound, the spent turn
+    /// and the whole angle adjustment were skipped together. "Not always" is what a race with
+    /// the solver looks like from outside.
+    func testTheBarJudgesADescentByTheApproachNotByTheBounce() {
+        let game = scene()
+        game.ball.physicsBody = SKPhysicsBody(circleOfRadius: 5)
+        game.addChild(game.ball)
+        game.showEndlessIISafetyPaddle()
+
+        game.ball.physicsBody!.velocity = CGVector(dx: 0, dy: 400)
+        // What the engine leaves behind: already reflected, already climbing
+        game.ballStateBeforeStep[ObjectIdentifier(game.ball)] =
+            BallState(position: game.ball.position, velocity: CGVector(dx: 0, dy: -400))
+        // What actually arrived
+
+        let before = game.endlessIISafetyPaddleClock.remaining
+        game.endlessIICollectSafetyPaddle()
+        let running = game.endlessIISafetyPaddleClock.remaining
+        XCTAssertGreaterThan(running, before, "the bar is up")
+
+        game.endlessIISafetyPaddleHit(game.ball)
+        XCTAssertLessThan(game.endlessIISafetyPaddleClock.remaining, running,
+                          "a landing was counted - which is the same guard the haptic is behind")
+    }
+
+    /// And a ball genuinely climbing through from below is still passed over.
+    func testAClimbingBallIsStillIgnored() {
+        let game = scene()
+        game.ball.physicsBody = SKPhysicsBody(circleOfRadius: 5)
+        game.addChild(game.ball)
+        game.endlessIICollectSafetyPaddle()
+        let running = game.endlessIISafetyPaddleClock.remaining
+
+        game.ball.physicsBody!.velocity = CGVector(dx: 0, dy: 400)
+        game.ballStateBeforeStep[ObjectIdentifier(game.ball)] =
+            BallState(position: game.ball.position, velocity: CGVector(dx: 0, dy: 400))
+        game.endlessIISafetyPaddleHit(game.ball)
+
+        XCTAssertEqual(game.endlessIISafetyPaddleClock.remaining, running, accuracy: 0.0001,
+                       "a climber is passing through, not bouncing (round 200)")
+    }
+
+    // MARK: - A held ball is not a stuck ball
+
+    /// **James: "the ball does stick to the safety paddle but immediately jumps to the main
+    /// paddle."** A bar-held ball has its velocity zeroed and is *not* `ballIsOnPaddle` - that
+    /// flag belongs to the main paddle - so the stuck-ball recovery read it as stopped and
+    /// teleported it fifty frames later, which is under half a second at 120.
+    func testAQueuedBallIsNotCountedAsStuck() {
+        let game = scene()
+        game.ball.physicsBody = SKPhysicsBody(circleOfRadius: 5)
+        game.addChild(game.ball)
+        game.endlessIIHeldBalls.append(game.ball)
+
+        XCTAssertTrue(game.endlessIIHeldBalls.contains { $0 === game.ball },
+                      "the queue is what tells a held ball from a stuck one - the recovery "
+                      + "asks this rather than `ballIsOnPaddle`, which the bar never sets")
+    }
+
+    // MARK: - The wrap ghost wears what the paddle wears
+
+    /// **James: "sticky paddle texture isn't showing up through the wrap around properly."**
+    func testTheWrapGhostTakesTheStickyStrip() {
+        let game = scene()
+        game.paddleSticky.texture = game.stickyPaddleTexture
+        game.paddleSticky.size = CGSize(width: 100, height: 8)
+        game.paddleSticky.position = CGPoint(x: 0, y: -206)
+        game.paddleSticky.isHidden = false
+        game.addChild(game.paddleSticky)
+
+        let ghost = SKSpriteNode(texture: game.paddle.texture, size: game.paddle.size)
+        game.addChild(ghost)
+        game.endlessIIDressTheWrapGhost(ghost)
+
+        let strip = ghost.childNode(withName: GameScene.endlessIIWrapGhostStickyName)
+        XCTAssertNotNil(strip, "the ghost is the same paddle, so it wears the same face")
+        XCTAssertEqual((strip as? SKSpriteNode)?.size, game.paddleSticky.size)
+    }
+
+    /// And drops it when the paddle does.
+    func testTheWrapGhostDropsTheStripWithThePaddle() {
+        let game = scene()
+        game.paddleSticky.texture = game.stickyPaddleTexture
+        game.paddleSticky.isHidden = false
+        game.addChild(game.paddleSticky)
+
+        let ghost = SKSpriteNode(texture: game.paddle.texture, size: game.paddle.size)
+        game.addChild(ghost)
+        game.endlessIIDressTheWrapGhost(ghost)
+        XCTAssertNotNil(ghost.childNode(withName: GameScene.endlessIIWrapGhostStickyName))
+
+        game.paddleSticky.isHidden = true
+        game.endlessIIDressTheWrapGhost(ghost)
+        XCTAssertNil(ghost.childNode(withName: GameScene.endlessIIWrapGhostStickyName),
+                     "a bare paddle has a bare ghost")
+    }
+}

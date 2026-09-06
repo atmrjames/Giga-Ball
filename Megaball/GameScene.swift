@@ -2868,12 +2868,37 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     /// The offset is `ballRelativePositionOnPaddle`, which is the same number `touchesMoved`
     /// uses - so the two cannot disagree and the ball cannot jitter between them, which is the
     /// trap `tickEndlessIIHeldBalls` warns about when it leaves the first ball alone.
+    /// Where a ball resting on the paddle sits, measured off the paddle as it is *drawn*.
+    ///
+    /// **James, round 312: "with a shaped paddle and sticky paddle active, the ball seems to
+    /// float slightly above the paddle when it should be stuck to it... sometimes it goes below
+    /// the paddle too."**
+    ///
+    /// **The shaped answer already existed and kept being overwritten.**
+    /// `refreshEndlessIIPaddleShape` has written this exact expression into
+    /// `ballStartingPositionY` since round 232 - "where a held ball rests has to follow the
+    /// shape" - and `setBallStartingPositionY` then wrote the *plain* paddle's numbers back over
+    /// it, from any one of its nine callers: a resize, a theme change, a laser collected.
+    ///
+    /// So the resting height was right or stale depending on which ran last. Above and below are
+    /// the two shapes - a dome stands taller than the plain paddle and a wedge tapers past it -
+    /// which is why James saw both. Both now come from here, so they cannot disagree, and asking
+    /// it live means a shape collected mid-hold is followed rather than waited for.
+    ///
+    /// **What this does not fix**: a dome or a dish is not flat *across* its face, and this is
+    /// still one height for the whole width - so a ball held at the very edge of a Convex
+    /// paddle sits a little proud of the slope. Closing that needs a height profile the shapes
+    /// do not currently have, only an angle one - see ENDLESS-2 §12.0.
+    var restingBallY: CGFloat {
+        paddle.position.y + paddle.size.height/2 + ball.size.height/2 + 1
+    }
+
     func holdTheWaitingBallStill() {
         guard ballIsOnPaddle, ball.parent != nil, ball.physicsBody != nil else { return }
         setEndlessIIHeldBallRestsOnPaddle(true, for: ball)
 
         let wanted = CGPoint(x: paddle.position.x + ballRelativePositionOnPaddle,
-                             y: ballStartingPositionY)
+                             y: restingBallY)
         if ball.position != wanted { ball.position = wanted }
         if ball.physicsBody?.velocity != .zero { ball.physicsBody?.velocity = .zero }
         // Velocity too: a body shoved out of another keeps the shove, so a ball freed on the
@@ -2960,19 +2985,34 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         // brick can be destroyed
 
         var found: [CGPoint] = []
-        enumerateChildNodes(withName: BrickCategoryName) { node, _ in
-            guard let sprite = node as? SKSpriteNode,
+        enumerateChildNodes(withName: BrickCategoryName) { [weak self] node, _ in
+            guard let self,
+                  let sprite = node as? SKSpriteNode,
                   let body = sprite.physicsBody,
                   body.categoryBitMask == CollisionTypes.brickCategory.rawValue
             else { return }
+            guard sprite.texture !== self.brickInvisibleTexture else { return }
+            // **A brick that is meant to be unseeable is not a phantom** (round 312). Hide
+            // Bricks in the older modes and Mayhem's own Invisible brick both work by setting
+            // `isHidden` and revealing on the strike, so this watch was reporting the feature
+            // working - 72 of them in one of James's logs, which is a full Classic field under
+            // Hide Bricks, and a handful in a Mayhem run, which is the brick type doing its job.
+            //
+            // The note this replaces said "in Mayhem, which has no such power-up, it should
+            // never", and that was true when it was written: Mayhem gained the Invisible
+            // behaviour afterwards and nothing came back to this. A tripwire that cries at
+            // correct behaviour is one whose next real finding gets skipped over, which matters
+            // more now that these logs are being read.
+
             let invisible = sprite.isHidden || sprite.alpha < 0.05
                 || sprite.xScale < 0.05 || sprite.yScale < 0.05
             if invisible { found.append(sprite.position) }
         }
         guard found.isEmpty == false else { return }
         Log.play.error("PHANTOM BRICKS: \(found.count, privacy: .public) solid but unseeable, at \(String(describing: found.prefix(4)), privacy: .public)")
-        // Invisible bricks are a real power-up in the older modes, so this will speak up
-        // during Hide Bricks - in Mayhem, which has no such power-up, it should never
+        // What is left is what this was built for: a brick solid and unseeable for no declared
+        // reason - a Fog reveal that did not finish, a face left behind its hiding rectangle, a
+        // Breathing brick shrunk to nothing and never grown back
         #endif
     }
 
@@ -6408,12 +6448,26 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	}
 	
 	func setBallStartingPositionY() {
-		ballStartingPositionY = paddlePositionY + paddleHeight/2 + ball.size.height/2 + 1
+		ballStartingPositionY = restingBallY
 		if ballIsOnPaddle {
 			ball.position.y = ballStartingPositionY
 			// Ensure ball remains on paddle
 		}
 	}
+	// **Off the paddle as it is drawn, not off the plain paddle's numbers** (round 312).
+	//
+	// This read `paddlePositionY + paddleHeight/2`, which is where a paddle wearing no shape
+	// sits and how tall it is. `refreshEndlessIIPaddleShape` has written the *shaped* answer
+	// into `ballStartingPositionY` since round 232 - "where a held ball rests has to follow the
+	// shape" - and then any one of the nine callers of this method wrote the plain answer back
+	// over it. A resize, a theme change, a laser collected: all of them call this.
+	//
+	// So the resting height was correct or stale depending on which ran last, which is exactly
+	// James's report in round 312: "the ball seems to float slightly above the paddle when it
+	// should be stuck to it... sometimes it goes below the paddle too." Above and below are the
+	// two shapes: a dome is taller than the plain paddle and a wedge tapers past it.
+	//
+	// The two now compute the same thing from the same place, so they cannot disagree
 	
 	func paddleCenterRectZero() {
 		paddle.centerRect = CGRect(x: 0.0/80.0, y: 0.0/10.0, width: 80.0/80.0, height: 10.0/10.0)
