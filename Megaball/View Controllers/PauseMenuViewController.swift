@@ -154,11 +154,27 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
         runStatsLabel.isHidden = true
         containterView.addSubview(runStatsLabel)
 
+        scoreLabel.font = UIViewController.gameScoreFont(ofSize: scoreLabel.font.pointSize)
+        highscoreLabel.font = UIViewController.gameScoreFont(
+            ofSize: highscoreLabel.font.pointSize)
+        // **The game's own face for the game's own numbers** (James, round 312: "on the game
+        // over / completion screen for the scores, use the same font as the game"). Sized from
+        // whatever the storyboard set, so the layout is untouched and only the face changes -
+        // and the two labels other rows copy their font from stay the single source they were
+
         var stats = AttributedString("Statistics")
         stats.font = .boldSystemFont(ofSize: 14)
         var moreStats = UIButton.Configuration.plain()
         moreStats.attributedTitle = stats
-        moreStats.image = PauseMenuViewController.statsMark(pointSize: 15)
+        moreStats.image = UIImage(systemName: "chevron.right",
+                                  withConfiguration: UIImage.SymbolConfiguration(
+                                    pointSize: 12, weight: .bold))
+        moreStats.imagePlacement = .trailing
+        // **A chevron, on the right** (James, round 312: "remove the 3 dots and have a right
+        // facing chevron instead to indicate a button to more information"). The ellipsis said
+        // "there is more of this text"; a chevron says "this goes somewhere", which is what the
+        // button does. An SF Symbol rather than the app's own mark, because it carries its own
+        // point size - which is the trap round 308 caught this button in from the other side
         // **The app's own statistics mark** (James, round 306: "for the stats label icon, use
         // the same graphic as used elsewhere in the app for stats"). It was a filled star,
         // which is not what statistics look like anywhere else in this app - the information
@@ -169,7 +185,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
         // an SF Symbol carrying `pointSize: 12`, and a `UIImage(named:)` carries no such thing -
         // it arrives at whatever the asset was drawn at, which here is an icon meant for a
         // 44pt table row. A symbol's size travels with it; a PNG's does not.
-        moreStats.imagePadding = 6
+        moreStats.imagePadding = 4
         moreStats.baseForegroundColor = #colorLiteral(red: 0.8235294118, green: 1, blue: 0, alpha: 1)
         moreStatsButton.configuration = moreStats
         moreStatsButton.translatesAutoresizingMaskIntoConstraints = false
@@ -391,6 +407,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
         homeButton.isHidden = sender != "Pause"
         applyRoundGlass(to: homeButton, radius: 25, symbol: "house.fill",
                         pointSize: 20, rimmed: false)
+        setUpGameCentreButton()
         // The last PNG button on this screen. No rim at 50pt, and the helper is a no-op the
         // second time round, so it does not matter that this runs on every appearance
         // Home is in the top-left corner *while paused*, where it is out of the way: it ends
@@ -1536,6 +1553,79 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
     }
 
     /// Today's board, from the finished daily (play-test round 9) - the same sheet the
+    /// The door to Game Center, on the game-over screen, opposite Home.
+    ///
+    /// **James, round 312: "on the game over / completion screen put a button to access Game
+    /// Center in the bottom right opposite where the home button is."** The end of a run is when
+    /// a player wants to know where the run put them, and until now the only way there was back
+    /// out through two menus.
+    ///
+    /// Mirrored with a pair of layout guides rather than by copying Home's inset, which lives in
+    /// the storyboard and would be a second copy of a number that can move. The two guides fill
+    /// the gap between each button and its own edge and are told to be the same width, so the
+    /// two buttons are symmetric about the middle whatever the storyboard says and whatever the
+    /// window is.
+    private func setUpGameCentreButton() {
+        guard sender != "Pause" else {
+            containterView.viewWithTag(PauseMenuViewController.gameCentreButtonTag)?
+                .isHidden = true
+            return
+        }
+        // Pause has a run to go back to and Home in the corner; this is the ending's button
+
+        if let existing = containterView.viewWithTag(PauseMenuViewController.gameCentreButtonTag) {
+            existing.isHidden = GKLocalPlayer.local.isAuthenticated == false
+            return
+        }
+
+        let button = UIButton(type: .system)
+        button.tag = PauseMenuViewController.gameCentreButtonTag
+        button.translatesAutoresizingMaskIntoConstraints = false
+        button.backgroundColor = UIColor(white: 0.92, alpha: 1)
+        button.tintColor = UIColor(red: 0.16, green: 0, blue: 0.24, alpha: 1)
+        button.layer.cornerRadius = 25
+        button.setImage(UIImage(systemName: "rosette",
+                                withConfiguration: UIImage.SymbolConfiguration(
+                                    pointSize: 20, weight: .heavy)), for: .normal)
+        button.addTarget(self, action: #selector(gameCentreTapped), for: .touchUpInside)
+        containterView.addSubview(button)
+        applyRoundGlass(to: button, radius: 25, symbol: "rosette",
+                        pointSize: 20, rimmed: false)
+        // The same plain glass disc Home wears - this is a door, not the screen's positive
+        // action, and the lime is reserved for that
+
+        let leftGap = UILayoutGuide()
+        let rightGap = UILayoutGuide()
+        containterView.addLayoutGuide(leftGap)
+        containterView.addLayoutGuide(rightGap)
+
+        NSLayoutConstraint.activate([
+            button.widthAnchor.constraint(equalToConstant: 50),
+            button.heightAnchor.constraint(equalToConstant: 50),
+            button.centerYAnchor.constraint(equalTo: homeButton.centerYAnchor),
+
+            leftGap.leadingAnchor.constraint(equalTo: containterView.leadingAnchor),
+            leftGap.trailingAnchor.constraint(equalTo: homeButton.leadingAnchor),
+            rightGap.trailingAnchor.constraint(equalTo: containterView.trailingAnchor),
+            rightGap.leadingAnchor.constraint(equalTo: button.trailingAnchor),
+            leftGap.widthAnchor.constraint(equalTo: rightGap.widthAnchor),
+        ])
+
+        button.isHidden = GKLocalPlayer.local.isAuthenticated == false
+        // Nothing to show a player who is not signed in, and a button that opens an
+        // authentication sheet from the end of a run is a door nobody asked to be shown
+    }
+
+    static let gameCentreButtonTag = 909_312
+
+    @objc private func gameCentreTapped() {
+        guard GKLocalPlayer.local.isAuthenticated else { return }
+        if hapticsSetting { interfaceHaptic.impactOccurred() }
+        let boards = GKGameCenterViewController(state: .leaderboards)
+        boards.gameCenterDelegate = self
+        view.window?.rootViewController?.present(boards, animated: true)
+    }
+
     /// briefing screen's leaderboard button shows, so the two doors open the same room.
     func openDailyLeaderboard() {
         guard GKLocalPlayer.local.isAuthenticated else { return }

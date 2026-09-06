@@ -3125,7 +3125,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			// `didSimulatePhysics` now, fading in over the paddle rather than switching -
 			// see `BallGravity` and `applyBallGravity` (round 205)
 			
-			if endlessIIAimHold {
+			if endlessIIAimHold || endlessIIHeldBalls.contains(where: { $0 === ball }) {
 				ballSpeedZeroTracker = 0
 			}
 			// **A frozen ball is not a stuck ball** (round 210). The aim hold zeroes every
@@ -3133,6 +3133,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			// is still in flight - the primary reads as stopped with `ballIsOnPaddle` false,
 			// and fifty frames later the recovery below teleported it onto the paddle. Fifty
 			// frames is under half a second at 120, so an ordinary aim was long enough.
+			//
+			// **And a held ball is not a stuck ball either** (James, round 312: "the ball does
+			// stick to the safety paddle but immediately jumps to the main paddle"). The same
+			// trap by a different door: a ball caught on the safety bar has its velocity zeroed
+			// and is *not* `ballIsOnPaddle` - that flag is the main paddle's - so it read as
+			// stopped and was teleported onto the paddle half a second later. Asking the queue
+			// covers the bar, the paddle's own catches, and anything that holds a ball later.
 			else if ball.physicsBody!.velocity.dx == 0 && ball.physicsBody!.velocity.dy == 0 && ballIsOnPaddle == false {
 				ballSpeedZeroTracker+=1
 				if ballSpeedZeroTracker >= 50 {

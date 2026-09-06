@@ -247,6 +247,7 @@ extension GameScene {
             // directly, and a bar that kept its birth width was the same object at a
             // different size - the mirror learned this in round 180, and the nine-slice
             // has to be re-copied with it or the fresh width stretches the old state
+            refreshEndlessIISafetyPaddleTop(bar)
             return
         }
         bar.name = nil
@@ -255,6 +256,57 @@ extension GameScene {
         bar.physicsBody = nil
         bar.run(.sequence([.fadeOut(withDuration: 0.2), .removeFromParent()]))
     }
+
+    /// The strip across the bar's face: the sticky band, or the grip.
+    ///
+    /// **James, round 312: "safety paddle should get a sticky texture when sticky paddle
+    /// power-ups are active. And a grippy texture when ball spin is active."**
+    ///
+    /// The bar has worn the paddle's *base* picture since round 224, which is why a resize or a
+    /// shape follows it - but the paddle's sticky face is not part of that picture. It is
+    /// `paddleSticky`, a separate strip laid over the top, and the bar had no equivalent. So a
+    /// bar that catches (round 285) looked like a bar that does not.
+    ///
+    /// A child of the bar rather than a fourth sibling of the paddle's strips: it has to move,
+    /// resize and fade with the bar, and being a child is how that comes for free.
+    /// `endlessIIPaddleTopKind` is the one place that decides between the two pictures, so the
+    /// bar cannot end up wearing the sticky face while the paddle wears the grip.
+    func refreshEndlessIISafetyPaddleTop(_ bar: SKSpriteNode) {
+        let wanted = endlessIIWearsGrip
+            || endlessIIAimedStickyClock.isRunning || stickyPaddleCatches != 0
+        // The three states that put a face on the paddle: Ball Spin's grip, Aimed Sticky, and
+        // a plain Sticky Paddle with catches left
+
+        guard wanted else {
+            bar.childNode(withName: GameScene.endlessIISafetyPaddleTopName)?.removeFromParent()
+            return
+        }
+
+        let strip: SKSpriteNode
+        if let existing = bar.childNode(withName: GameScene.endlessIISafetyPaddleTopName)
+            as? SKSpriteNode {
+            strip = existing
+        } else {
+            strip = SKSpriteNode()
+            strip.name = GameScene.endlessIISafetyPaddleTopName
+            strip.zPosition = 0.1
+            bar.addChild(strip)
+        }
+
+        let art = endlessIIPaddleTopTexture
+        if strip.texture !== art { strip.texture = art }
+        strip.size = CGSize(width: bar.size.width, height: paddleSticky.size.height)
+        strip.centerRect = GameScene.paddleStickyCapRect
+        strip.position = CGPoint(x: 0, y: -bar.size.height/2)
+        // Measured in the bar's own coordinates, and off its underside for the reason the
+        // paddle's strip is: the two pictures are drawn to meet at that line
+        strip.color = GameScene.endlessIIHaloColour
+        strip.colorBlendFactor = 1
+        // Tinted with the bar, which is the whole of what makes it read as the bar's own face
+        // rather than as the paddle's having come loose
+    }
+
+    static let endlessIISafetyPaddleTopName = "endlessIISafetyPaddleTop"
 
     /// The ball met the safety paddle. Sends it back up the field.
     ///
@@ -275,13 +327,24 @@ extension GameScene {
 
     func endlessIISafetyPaddleHit(_ subject: SKSpriteNode) {
         guard let body = subject.physicsBody else { return }
-        guard body.velocity.dy < 0 else { return }
+        let approach = ballStateBeforeStep[ObjectIdentifier(subject)]?.velocity ?? body.velocity
+        guard approach.dy < 0 else { return }
         // **A climbing ball is passing through, not bouncing** (round 200: "safety paddle is
         // setting off haptics when ball travels through it from below"). The bits that make
         // the bar solid are restored the moment a ball comes clear above it, and a ball still
         // edge-touching at that instant registers a contact - which then rang the haptic and,
         // worse, rewrote a climbing ball's velocity through the bounce arithmetic below. Only
-        // a ball moving *down* has any business here
+        // a ball moving *down* has any business here.
+        //
+        // **Asked of the approach, not of the ball now** (James, round 312: "safety paddle
+        // doesn't always trigger a haptics when the ball bounces off it"). This read
+        // `body.velocity`, and §8.6's first trap is that a contact reports the velocity *after*
+        // the engine's bounce - so a ball that genuinely landed on the bar was already heading
+        // back up by the time this asked, the guard refused it, and the haptic, the sound, the
+        // turn and the whole angle adjustment below were all skipped. "Not always" is what a
+        // race with the solver looks like from the outside. `ballStateBeforeStep` is the
+        // sample taken in `update` for exactly this, and the arithmetic further down was
+        // already using it
         if endlessIISafetyPaddleCaught(subject) { return }
         // **Before the sound, the haptic and the shape**, because a catch is the surface
         // deciding not to bounce at all - the same order the paddle asks its own catches in,

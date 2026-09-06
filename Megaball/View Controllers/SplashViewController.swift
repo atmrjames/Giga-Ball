@@ -544,9 +544,7 @@ class SplashViewController: UIViewController {
     ///
     /// Falls back to the black system face if the font ever fails to load, because a resume
     /// screen with no score on it would be worse than one in the wrong face.
-    static var scoreFace: UIFont {
-        UIFont(name: "FugazOne-Regular", size: 30) ?? .systemFont(ofSize: 30, weight: .black)
-    }
+    static var scoreFace: UIFont { UIViewController.gameScoreFont(ofSize: 30) }
     // Thirty rather than thirty-five (James, round 311: "perhaps the score could get a little
     // bit smaller"). Fugaz One sets larger on the body than the system face does at the same
     // point size - it is a display face with a tall x-height - so the 35 that was right for

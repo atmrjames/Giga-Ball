@@ -92,6 +92,18 @@ extension UIViewController {
     /// nobody chose ends up on two screens.
     static var menuTitleFont: UIFont { .systemFont(ofSize: 35, weight: .black) }
 
+    /// The face the game's own numbers are set in: the HUD's score, its height, its multiplier.
+    ///
+    /// Fugaz One, the one custom face the app registers. James, round 312: "on the game over /
+    /// completion screen for the scores, use the same font as the game." The number on that
+    /// screen is the number the HUD was showing a moment earlier, so it should look like it.
+    ///
+    /// Falls back to the black system face, because a screen with no score on it would be worse
+    /// than one in the wrong face.
+    static func gameScoreFont(ofSize size: CGFloat) -> UIFont {
+        UIFont(name: "FugazOne-Regular", size: size) ?? .systemFont(ofSize: size, weight: .black)
+    }
+
     /// The near-white the About screen's credits are written in.
     static let menuCreditColour = UIColor(white: 0.8706, alpha: 1)
 
