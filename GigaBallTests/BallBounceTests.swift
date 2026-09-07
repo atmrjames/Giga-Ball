@@ -481,3 +481,130 @@ final class MagnetismChoosesAPaddleTests: XCTestCase {
                                                                 mirrorX: 50), -50)
     }
 }
+
+/// The random kick that was only half removed, and the power-up that is supposed to be the
+/// only thing throwing a bounce off.
+///
+/// James, play-test rounds 84, 88 and 98: the ball "changing direction slightly" with nothing
+/// to blame. Round 98 found the cause - one angle correction in ten got up to five degrees of
+/// random deflection - and took it out of `ballHorizontalControl`. The identical block was
+/// left standing in `ballVerticalControl`, and a brick strike runs both, so it has been firing
+/// on one brick contact in ten ever since, in every mode.
+///
+/// Round 313, alongside it: "Randomised bounce doesn't seem to be working". A bounce thrown
+/// off by an ambient kick nobody knows about, and a power-up whose whole job is to throw
+/// bounces off, are hard to tell apart - which is the second reason this had to go.
+final class BounceIsAFunctionOfTheBounceTests: XCTestCase {
+
+    /// One scene, driven many times.
+    ///
+    /// Deliberately not one scene per repeat: entering `Playing` asks `MusicHandler` for a
+    /// volume, and two hundred of those on a simulator is the audio-server abort CLAUDE.md
+    /// describes, which arrives as a named failing test that never ran.
+    private func playing(mode: GameMode = .classic) -> GameScene {
+        let scene = GameScene()
+        scene.gameMode = mode
+        scene.ballIsOnPaddle = false
+        scene.gameState.enter(Playing.self)
+        scene.ballSpeedLimit = 600
+        scene.ballIsOnPaddle = false
+        scene.addChild(scene.ball)
+        scene.ball.position = CGPoint(x: 40, y: 0)
+        scene.ball.physicsBody = SKPhysicsBody(circleOfRadius: 5)
+        scene.brickWidth = 40
+        return scene
+    }
+
+    /// Somewhere new for each repeat.
+    ///
+    /// The first draft of these bounced the ball off the same point two hundred times and got
+    /// six different headings out of it - which was the loop-breaker being right. Two hundred
+    /// identical bounces from one place *is* a loop, and it escalates its kick the longer the
+    /// same one repeats. What is under test here is an honest bounce, so each repeat has to
+    /// happen somewhere the detector has not seen.
+    private func place(_ scene: GameScene, _ repeatIndex: Int) {
+        scene.frameNumber = repeatIndex
+        scene.ball.position = CGPoint(x: CGFloat(repeatIndex%17)*80 - 640,
+                                      y: CGFloat(repeatIndex)*37)
+        scene.ball.physicsBody!.velocity = CGVector(dx: 180, dy: 400)
+    }
+
+    private let brick: SKSpriteNode = {
+        let node = SKSpriteNode(color: .red, size: CGSize(width: 40, height: 20))
+        node.position = CGPoint(x: 0, y: 120)
+        return node
+    }()
+
+    private func heading(_ scene: GameScene) -> Double {
+        let v = scene.ball.physicsBody!.velocity
+        return atan2(Double(v.dy), Double(v.dx))/Double.pi*180
+    }
+
+    /// The same bounce, two hundred times, must leave the same way.
+    func testTheVerticalCorrectionDoesNotThrowTheOccasionalBounceOffCourse() {
+        let scene = playing()
+        var headings: Set<String> = []
+        for frame in 0..<200 {
+            place(scene, frame)
+            scene.ballVerticalControl(brickNode: brick, for: scene.ball)
+            headings.insert(String(format: "%.4f", heading(scene)))
+        }
+        XCTAssertEqual(headings.count, 1,
+                       "one bounce, one outcome: \(headings.sorted())")
+    }
+
+    /// And the horizontal one, which is where the kick was removed in round 98. Kept so the
+    /// pair cannot drift apart again.
+    func testTheHorizontalCorrectionDoesNotEither() {
+        let scene = playing()
+        var headings: Set<String> = []
+        for frame in 0..<200 {
+            place(scene, frame)
+            scene.ballHorizontalControl(angleDegInput: 65.8, brickNode: brick,
+                                        for: scene.ball)
+            headings.insert(String(format: "%.4f", heading(scene)))
+        }
+        XCTAssertEqual(headings.count, 1,
+                       "one bounce, one outcome: \(headings.sorted())")
+    }
+
+    /// Randomised Bounce is then the one thing that does scatter a bounce, and it reaches a
+    /// real one rather than only its own arithmetic - the round 88 lesson, where Auto-Aim was
+    /// built, documented, tested, and called by nothing.
+    func testRandomisedBounceReachesARealBounce() {
+        let scene = playing(mode: .endlessII)
+        scene.endlessIICollectRandomisedBounce()
+        XCTAssertTrue(scene.endlessIIRandomisedBounceClock.isRunning)
+
+        let honest = 65.8
+        var headings: Set<String> = []
+        var worst = 0.0
+        for frame in 0..<200 {
+            place(scene, frame)
+            // A new frame each time, because the power-up randomises one bounce per ball per
+            // frame - the round 283 stutter fix. Left at one frame this would scatter once
+            // and then look exactly like a power-up that does nothing
+            scene.ballHorizontalControl(angleDegInput: honest, for: scene.ball)
+            headings.insert(String(format: "%.4f", heading(scene)))
+            worst = max(worst, abs(heading(scene) - honest))
+        }
+        XCTAssertGreaterThan(headings.count, 20,
+                             "the power-up has to actually change the angle a bounce leaves at")
+        XCTAssertGreaterThan(worst, 5,
+                             "a power-up nobody can see the effect of is a power-up that does "
+                             + "not work - James, round 313")
+    }
+
+    /// With the clock stopped it is the honest bounce again, which is what makes the scatter
+    /// above the power-up rather than the weather.
+    func testWithoutThePowerUpTheSameBounceIsTheSameBounce() {
+        let scene = playing(mode: .endlessII)
+        var headings: Set<String> = []
+        for frame in 0..<200 {
+            place(scene, frame)
+            scene.ballHorizontalControl(angleDegInput: 65.8, for: scene.ball)
+            headings.insert(String(format: "%.4f", heading(scene)))
+        }
+        XCTAssertEqual(headings.count, 1, "\(headings.sorted())")
+    }
+}

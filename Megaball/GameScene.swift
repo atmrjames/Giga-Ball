@@ -7564,13 +7564,21 @@ laserTimer?.invalidate()
 			}
 			// Correct vertical ball
 			
-			let prob = Int.random(in: 1...10)
-			if prob == 1 {
-				let angleMag = Double.random(in: -5...5)
-				angleDeg = angleDeg+angleMag
-			}
-			// Apply a random angle factor
-			
+			// **The random angle factor is gone here too** (round 313). Round 98 took this
+			// block out of `ballHorizontalControl` after play-test rounds 84, 88 and 98 - the
+			// ball "changing direction slightly" with nothing to blame - and the identical
+			// block was left standing here, where it has been firing ever since on one brick
+			// contact in ten, in every mode, because a brick strike runs both corrections
+			// (`didBegin`, the ball-hits-brick branch). The spec row that says the kick was
+			// removed was half right: it was removed from one of the two functions.
+			//
+			// Nothing replaces it. The anti-loop job it was nominally doing is done properly
+			// by the loop-breaker and the shallow-angle escape jitter in the horizontal
+			// correction, both of which run on the same contact - randomising only the rescue,
+			// rather than one bounce in ten of the honest ones. A bounce must be a function of
+			// what it hit and where; ten percent of them being wrong by up to five degrees is
+			// indistinguishable from a physics bug, because it is one.
+
 			// Vertical Control
 			if ball.position.x >= 0 {
 				// ball is on right side of screen
