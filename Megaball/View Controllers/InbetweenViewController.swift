@@ -115,8 +115,10 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
         UIView.animate(withDuration: 0.25, animations: {
             self.view.transform = CGAffineTransform(scaleX: 1.5, y: 1.5)
             self.view.alpha = 0.0
+            self.fadeIntroLogo(to: 0)
         }) { finished in
             guard finished else { return }
+            self.removeIntroLogo()
             self.view.removeFromSuperview()
             NotificationCenter.default.post(name: .levelIntroDidClear, object: nil)
         }
@@ -286,11 +288,16 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
     }
 
     func showAnimate() {
+        showIntroLogo()
         self.view.transform = CGAffineTransform(scaleX: 1.15, y: 1.15)
         self.view.alpha = 0.0;
+        self.fadeIntroLogo(to: 0)
         UIView.animate(withDuration: showAnimateDuration, animations: {
             self.view.alpha = 1.0
             self.view.transform = CGAffineTransform(scaleX: 1.0, y: 1.0)
+            self.fadeIntroLogo(to: 1)
+            // The wordmark arrives with the screen and holds still while it does - it is
+            // outside the transform now, so only its alpha is animated
         }, completion: { _ in
             NotificationCenter.default.post(name: .levelIntroDidAppear, object: nil)
             // Only now is this actually covering anything. It fades in over a quarter
@@ -340,9 +347,11 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
                                 // is readable
                                 UIView.animate(withDuration: 0.25, animations: {
                                     self.view.transform = CGAffineTransform(scaleX: 1.5, y: 1.5)
-                                    self.view.alpha = 0.0})
+                                    self.view.alpha = 0.0
+                                    self.fadeIntroLogo(to: 0)})
                                 { (finished: Bool) in
                                     if (finished) {
+                                        self.removeIntroLogo()
                                         self.view.removeFromSuperview()
                                         NotificationCenter.default.post(name: .levelIntroDidClear, object: nil)
                                         // The scene waits for this before rolling the lives
@@ -495,23 +504,57 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
     /// is the third of that set and was missed. Same inset, same height, same halo, all three
     /// read from `MenuLayout` so the two screens cannot drift apart again.
     private func showIntroLogo() {
-        guard introLogoView == nil else { return }
+        let host = view.superview ?? view!
+        guard introLogoView?.superview !== host else { return }
+        introLogoView?.removeFromSuperview()
+        // **Asked again once the intro has a parent.** `updateLabels` builds the mode icon,
+        // and the wordmark beside it, from `viewDidLoad` - before the intro's view has been
+        // added to anything, so there is no superview to host it in yet and it lands inside
+        // the intro. `showAnimate` runs when the screen is on the way in, which is the first
+        // moment the right host exists; asking there moves it out. Removing the old one takes
+        // its constraints with it, since every one of them names it.
+        // **Beside the intro rather than inside it** (James, round 313: "the Giga-Ball logo on
+        // the level intro splash screen shouldn't animate along with the game mode title and
+        // icon").
+        //
+        // The icon travelling with the name is deliberate and says so two functions up: "a
+        // child of the intro's own view, so every entrance and exit the intro plays carries
+        // the icon with the name for free". Round 312 added the wordmark the same way and
+        // inherited that for free as well, without anyone deciding it should - and a wordmark
+        // is chrome. It is the same fixed mark the pause and game-over screens wear at the top
+        // of the screen, and those two do not swell and drift.
+        //
+        // Hosted one level out, where the intro's transforms cannot reach it. Its *fade* is
+        // driven by hand below, so it still arrives and leaves with the screen it belongs to.
+
         let logo = UIImageView(image: UIImage(named: "Logo"))
         logo.contentMode = .scaleAspectFit
         logo.translatesAutoresizingMaskIntoConstraints = false
         logo.applyGigaBallGlow()
-        view.addSubview(logo)
+        logo.alpha = view.alpha
+        host.addSubview(logo)
         NSLayoutConstraint.activate([
-            logo.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor,
+            logo.topAnchor.constraint(equalTo: host.safeAreaLayoutGuide.topAnchor,
                                       constant: UIViewController.inGameLogoTopInset),
-            logo.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            logo.centerXAnchor.constraint(equalTo: host.centerXAnchor),
             logo.heightAnchor.constraint(equalToConstant: UIViewController.inGameLogoHeight),
-            logo.leadingAnchor.constraint(greaterThanOrEqualTo: view.leadingAnchor,
+            logo.leadingAnchor.constraint(greaterThanOrEqualTo: host.leadingAnchor,
                                           constant: 60),
-            logo.trailingAnchor.constraint(lessThanOrEqualTo: view.trailingAnchor,
+            logo.trailingAnchor.constraint(lessThanOrEqualTo: host.trailingAnchor,
                                            constant: -60),
         ])
         introLogoView = logo
+    }
+
+    /// Fades the wordmark with the screen it belongs to, since it is no longer inside it.
+    private func fadeIntroLogo(to alpha: CGFloat) {
+        introLogoView?.alpha = alpha
+    }
+
+    /// And takes it away with that screen, so the next intro builds a fresh one.
+    private func removeIntroLogo() {
+        introLogoView?.removeFromSuperview()
+        introLogoView = nil
     }
     
 //    func paymentQueue(_ queue: SKPaymentQueue, updatedTransactions transactions: [SKPaymentTransaction]) {
