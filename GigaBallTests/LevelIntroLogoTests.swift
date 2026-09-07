@@ -21,21 +21,27 @@ import UIKit
 
 final class LevelIntroLogoTests: XCTestCase {
 
-    /// The intro, built and shown the way `GameViewController` builds and shows it.
+    /// The intro, built and shown **in the order `GameViewController` does it**.
+    ///
+    /// The order is the point. `fillSelf(with: inbetweenView.view)` is the line that first
+    /// touches `.view`, so `viewDidLoad` - and with it `showAnimate` and the whole of
+    /// `updateLabels` - runs before `addSubview`. Anything the intro wants to put *outside*
+    /// itself has no host to put it in at that moment, which is what the first draft of this
+    /// fix got wrong and what this arrangement exists to catch.
     private func shownIntro() -> (host: UIView, intro: InbetweenViewController) {
         let host = UIView(frame: CGRect(x: 0, y: 0, width: 393, height: 852))
         let intro = UIStoryboard(name: "Main",
                                  bundle: Bundle(for: InbetweenViewController.self))
             .instantiateViewController(withIdentifier: "inbetweenView")
             as! InbetweenViewController
+
         intro.view.frame = host.bounds
+        // viewDidLoad, showAnimate and updateLabels all run on that line, with no superview
+
         host.addSubview(intro.view)
-        intro.view.layoutIfNeeded()
-        intro.updateLabels()
-        // Builds the mode icon, which is what builds the wordmark beside it
-        intro.showAnimate()
-        // And this is where the intro learns which view it is being shown inside, which is
-        // the first moment the wordmark can be hosted outside it
+        host.setNeedsLayout()
+        host.layoutIfNeeded()
+
         intro.view.transform = .identity
         intro.view.alpha = 1
         host.layoutIfNeeded()

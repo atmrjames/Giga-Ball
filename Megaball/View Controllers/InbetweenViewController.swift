@@ -546,6 +546,17 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
         introLogoView = logo
     }
 
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        showIntroLogo()
+        // **The first moment the right host is known.** `viewDidLoad` calls `showAnimate`, and
+        // `updateLabels` builds the mode icon and the wordmark beside it - all of that runs
+        // when `GameViewController` first touches `.view`, which is the line *before* the one
+        // that adds it to anything. There is no superview to host the wordmark in yet, so it
+        // lands inside the intro; this is where it moves out. Idempotent, so every later
+        // layout pass costs a pointer comparison.
+    }
+
     /// Fades the wordmark with the screen it belongs to, since it is no longer inside it.
     private func fadeIntroLogo(to alpha: CGFloat) {
         introLogoView?.alpha = alpha
