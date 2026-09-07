@@ -107,6 +107,32 @@ struct SavedGame: Codable, Equatable {
     /// Ball position and velocity, flattened.
     var ballProperties: [Double]
 
+    // MARK: - The layout the save was written in
+
+    /// The play area's width when this game was saved, in points.
+    ///
+    /// **Because some of a save is in points** (James, round 313: an iPad run "started by
+    /// resuming an existing game, but the game had misplaced bricks below the low level line
+    /// and no ball in sight"). Most of a save is not - a brick's cell, a falling power-up's
+    /// cell, every counter - and on a phone, where the layout is the same size every time the
+    /// app opens, the rest never mattered. On an iPad it does: the window can be a different
+    /// size on the next launch, and since round 312a it can be a different *orientation*, so
+    /// the ball's saved point lands outside the play area and Mayhem's brick records - which
+    /// keep an exact position and size, for bricks that drift and shrink - land wherever
+    /// those numbers now point.
+    ///
+    /// Optional so every save written before this decodes, and reads as "no scaling", which
+    /// is what those saves have always got.
+    var savedGameWidth: Double? = nil
+
+    /// Where the top of the brick field was, in the same points.
+    ///
+    /// The vertical companion: a scale about the origin is right for x, which is centred on
+    /// it, and wrong for y, which is measured from a top bar whose height does not scale with
+    /// the play area. Distance below the top of the field, in bricks, is the thing that
+    /// actually has to be preserved.
+    var savedFieldTop: Double? = nil
+
     /// Every ball beyond the first, four values each: x, y, dx, dy.
     ///
     /// Endless 2.0 only, and only while a Multi-Ball is in play. Without it a run paused with
@@ -435,4 +461,50 @@ struct SavedGame: Codable, Equatable {
         defaults.removeObject(forKey: defaultsKey)
         legacyKeys.forEach { defaults.removeObject(forKey: $0) }
     }
+}
+
+/// Reads a save's point coordinates into the layout the game is running at now.
+///
+/// Round 313, from James's iPad resume. The identity case is the common one - the same device
+/// opening the same-sized window - and it is checked for rather than being multiplied through,
+/// so a phone's resume does exactly what it always did, to the last bit.
+///
+/// Pure arithmetic, so the rule can be tested without a scene: the same reason
+/// `GameSceneLayout` is a struct.
+struct ResumeGeometry {
+
+    /// How much wider the play area is now than it was, as a ratio.
+    let scale: CGFloat
+    /// Where the top of the brick field was, and where it is now.
+    let savedFieldTop: CGFloat
+    let fieldTop: CGFloat
+
+    /// Nothing to do: either the save predates the two fields, or the layout has not changed.
+    var isIdentity: Bool { scale == 1 && savedFieldTop == fieldTop }
+
+    init(scale: CGFloat, savedFieldTop: CGFloat, fieldTop: CGFloat) {
+        self.scale = scale
+        self.savedFieldTop = savedFieldTop
+        self.fieldTop = fieldTop
+    }
+
+    /// Built from a save, or nil when the save cannot say what it was written in.
+    init?(saved: SavedGame, gameWidth: CGFloat, fieldTop: CGFloat) {
+        guard let savedWidth = saved.savedGameWidth, savedWidth > 0,
+              let savedTop = saved.savedFieldTop, gameWidth > 0 else { return nil }
+        scale = gameWidth/CGFloat(savedWidth)
+        savedFieldTop = CGFloat(savedTop)
+        self.fieldTop = fieldTop
+    }
+
+    /// A horizontal position, which is measured from the centre of the play area.
+    func x(_ value: CGFloat) -> CGFloat { value*scale }
+
+    /// A vertical position, which is measured down from the top of the field.
+    func y(_ value: CGFloat) -> CGFloat { fieldTop - (savedFieldTop - value)*scale }
+
+    /// A width, a height, a radius: anything that is a distance rather than a place.
+    func length(_ value: CGFloat) -> CGFloat { value*scale }
+
+    func point(_ value: CGPoint) -> CGPoint { CGPoint(x: x(value.x), y: y(value.y)) }
 }

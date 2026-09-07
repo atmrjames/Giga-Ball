@@ -20,6 +20,17 @@ extension GameScene {
         endlessMode ? yBrickOffsetEndless : yBrickOffset
     }
 
+    /// How to read a save's point coordinates into the layout running now.
+    ///
+    /// Round 313, from James's iPad: a resume with "misplaced bricks below the low level line
+    /// and no ball in sight". A save written before this - or one written in exactly this
+    /// layout - gives the identity, so nothing that already worked changes.
+    func resumeGeometry(for saved: SavedGame) -> ResumeGeometry {
+        ResumeGeometry(saved: saved, gameWidth: gameWidth, fieldTop: resumedBrickTopRow)
+            ?? ResumeGeometry(scale: 1, savedFieldTop: resumedBrickTopRow,
+                              fieldTop: resumedBrickTopRow)
+    }
+
     /// One brick, described well enough to be put back exactly (round 150).
     ///
     /// Everything the four legacy arrays cannot say: the size a Tiny or Big brick actually
@@ -85,6 +96,8 @@ extension GameScene {
             return false
         }
 
+        let intoThisLayout = resumeGeometry(for: savedGame!)
+
         for record in saved {
             let brick = SKSpriteNode(imageNamed: "BrickNormal")
             brick.texture = resumedTexture(record.texture) ?? brickNormalTexture
@@ -93,9 +106,15 @@ extension GameScene {
                 brick.color = colour
                 brick.colorBlendFactor = 1
             }
-            brick.size = CGSize(width: record.width, height: record.height)
+            brick.size = CGSize(width: intoThisLayout.length(record.width),
+                                height: intoThisLayout.length(record.height))
             brick.anchorPoint = CGPoint(x: record.anchorX, y: record.anchorY)
-            brick.position = CGPoint(x: record.x, y: record.y)
+            brick.position = intoThisLayout.point(CGPoint(x: record.x, y: record.y))
+            // **The one part of a save that is in points** (James, round 313). A brick's cell
+            // travels between layouts on its own, but Mayhem's record keeps an exact position
+            // and size, because its bricks drift, shrink and sit between rows - and an iPad
+            // does not always open at the size, or the orientation, the save was written in.
+            // The anchor is a fraction of the size and needs no scaling
             brick.zPosition = 1
             brick.name = BrickCategoryName
 

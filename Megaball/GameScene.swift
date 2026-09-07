@@ -8604,6 +8604,12 @@ laserTimer?.invalidate()
 			brickXPositions: savedXs,
 			brickYPositions: savedYs,
 			ballProperties: savedBall,
+			savedGameWidth: Double(gameWidth),
+			savedFieldTop: Double(resumedBrickTopRow),
+			// The layout the points in this save mean something in. Everything else here is a
+			// cell or a counter and travels between layouts on its own; the ball, the paddle
+			// and Mayhem's brick records are points, and on an iPad the next launch is not
+			// always the same size or even the same way up (James, round 313)
 			extraBallProperties: savedExtras,
 			endlessIIProgression: savedSchedule,
 			// Mayhem's only, because it is the only mode that reads one. Written every save
@@ -9093,10 +9099,19 @@ laserTimer?.invalidate()
 				// guard - a short array traps here, during resume, at launch.
 				ballIsOnPaddle = false
 				ballLostBool = false
-				ball.position.x = CGFloat(savedGame.ballProperties[0])
-				ball.position.y = CGFloat(savedGame.ballProperties[1])
-				paddle.position.x = CGFloat(savedGame.ballProperties[4])
-				endlessIIRestoreExtraBalls(from: EndlessIIBalls.unflattened(savedGame.extraBallProperties))
+				let intoThisLayout = resumeGeometry(for: savedGame)
+				ball.position = intoThisLayout.point(
+					CGPoint(x: CGFloat(savedGame.ballProperties[0]),
+							y: CGFloat(savedGame.ballProperties[1])))
+				paddle.position.x = intoThisLayout.x(CGFloat(savedGame.ballProperties[4]))
+				// **Read into the layout the game is running at now** (James, round 313: an
+				// iPad resume with "no ball in sight"). These three are points, and an iPad's
+				// next launch is not always the same size or the same way up as the one the
+				// save was written in. On a phone the geometry is the identity and this is the
+				// same three assignments it always was
+				endlessIIRestoreExtraBalls(from: EndlessIIBalls.unflattened(savedGame.extraBallProperties)
+					.map { EndlessIIBalls.Saved(position: intoThisLayout.point($0.position),
+												velocity: $0.velocity) })
 				// A run paused with a Multi-Ball in play comes back with it
 				positionPaddleOverlays()
 				positionRetroPaddleLayers()

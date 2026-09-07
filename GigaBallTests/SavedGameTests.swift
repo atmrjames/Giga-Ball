@@ -965,3 +965,100 @@ final class SavedMayhemFieldTests: XCTestCase {
         XCTAssertFalse(scene.resumeEndlessIIBricks())
     }
 }
+
+/// Reading a save written in one layout into another.
+///
+/// James, round 313, from an iPad play test: the run "started by resuming an existing game,
+/// but the game had misplaced bricks below the low level line and no ball in sight".
+///
+/// Almost none of a save is in points - a brick's cell, a falling power-up's cell, every
+/// counter - which is why this survived four years on phones, where the layout is the same
+/// size every launch. The parts that are in points are the ball, the paddle, and Mayhem's
+/// brick records, which keep an exact position and size because those bricks drift, shrink and
+/// sit between rows. An iPad opens at whatever size the window has, and since round 312a it
+/// can be a different orientation from the one the save was written in.
+final class ResumeGeometryTests: XCTestCase {
+
+    /// A save from a narrower layout: 360 wide, its field starting 400 above the origin.
+    private func saved(gameWidth: Double? = 360, fieldTop: Double? = 400) -> SavedGame {
+        var game = SavedGame(
+            levelNumber: 1, endLevelNumber: 1, packNumber: 1,
+            levelScore: 0, totalScore: 0, numberOfLives: 3,
+            endlessHeight: 0, numberOfLevels: 1,
+            levelTimerValue: 0, packTimerValue: 0,
+            deathsPerLevel: 0, deathsPerPack: 0,
+            powerUpsGeneratedPerLevel: 0, powerUpsCollectedPerLevel: 0,
+            powerUpsGeneratedPerPack: 0, powerUpsCollectedPerPack: 0,
+            paddleHitsPerLevel: 0, multiplier: 1,
+            brickTextures: [], brickColours: [],
+            brickXPositions: [], brickYPositions: [],
+            ballProperties: [],
+            fallingPowerUpXPositions: [], fallingPowerUpYPositions: [],
+            fallingPowerUps: [],
+            activePowerUps: [], activePowerUpDurations: [],
+            activePowerUpTimers: [], activePowerUpMagnitudes: [])
+        game.savedGameWidth = gameWidth
+        game.savedFieldTop = fieldTop
+        return game
+    }
+
+    /// A save from before this existed asks for nothing, and gets nothing.
+    func testASaveThatCannotSayWhatItWasWrittenInIsLeftAlone() {
+        XCTAssertNil(ResumeGeometry(saved: saved(gameWidth: nil, fieldTop: nil),
+                                    gameWidth: 720, fieldTop: 800))
+        XCTAssertNil(ResumeGeometry(saved: saved(gameWidth: 0), gameWidth: 720, fieldTop: 800))
+    }
+
+    /// The phone case, which is every resume this app has ever done: nothing moves.
+    func testTheSameLayoutIsTheIdentity() throws {
+        let same = try XCTUnwrap(ResumeGeometry(saved: saved(), gameWidth: 360, fieldTop: 400))
+        XCTAssertTrue(same.isIdentity)
+        XCTAssertEqual(same.x(-137.5), -137.5, accuracy: 0.0001)
+        XCTAssertEqual(same.y(112.25), 112.25, accuracy: 0.0001)
+        XCTAssertEqual(same.length(40), 40, accuracy: 0.0001)
+    }
+
+    /// A wider layout: everything grows about the centre, which is where x is measured from.
+    func testAWiderLayoutSpreadsThePlayfieldFromItsCentre() throws {
+        let wider = try XCTUnwrap(ResumeGeometry(saved: saved(), gameWidth: 540, fieldTop: 600))
+        XCTAssertEqual(wider.scale, 1.5, accuracy: 0.0001)
+        XCTAssertEqual(wider.x(0), 0, accuracy: 0.0001, "the centre stays the centre")
+        XCTAssertEqual(wider.x(-100), -150, accuracy: 0.0001)
+        XCTAssertEqual(wider.length(20), 30, accuracy: 0.0001, "a brick is bigger too")
+    }
+
+    /// The vertical rule is the one that matters: distance below the top of the field, in
+    /// bricks. A plain scale about the origin would put the field somewhere else entirely,
+    /// because the top bar's height does not scale with the play area.
+    func testHeightIsMeasuredDownFromTheTopOfTheField() throws {
+        let taller = try XCTUnwrap(ResumeGeometry(saved: saved(), gameWidth: 540, fieldTop: 600))
+
+        XCTAssertEqual(taller.y(400), 600, accuracy: 0.0001,
+                       "a brick on the top row is still on the top row")
+        XCTAssertEqual(taller.y(340), 510, accuracy: 0.0001,
+                       "and one 60 below it - three bricks at the old size - is 90 below now, "
+                       + "which is the same three bricks")
+    }
+
+    /// The report itself: a ball saved in a tall narrow layout, read into a short wide one.
+    func testTheBallComesBackInsideThePlayArea() throws {
+        let saveWidth: CGFloat = 360, saveTop: CGFloat = 700
+        let nowWidth: CGFloat = 300, nowTop: CGFloat = 420
+        let into = try XCTUnwrap(ResumeGeometry(saved: saved(gameWidth: Double(saveWidth),
+                                                             fieldTop: Double(saveTop)),
+                                                 gameWidth: nowWidth, fieldTop: nowTop))
+
+        // Two thirds of the way down a 22-row field, a third of the way right
+        let rows = CGFloat(GameSceneLayout.brickRows)
+        let brickHeightThen = saveWidth/rows
+        let ball = CGPoint(x: saveWidth/3, y: saveTop - brickHeightThen*14)
+        let moved = into.point(ball)
+
+        let brickHeightNow = nowWidth/rows
+        XCTAssertEqual(moved.x, nowWidth/3, accuracy: 0.01,
+                       "still a third of the way across")
+        XCTAssertEqual(moved.y, nowTop - brickHeightNow*14, accuracy: 0.01,
+                       "still fourteen rows down - not below the line the run is lost at")
+        XCTAssertLessThan(abs(moved.x), nowWidth/2, "and inside the walls")
+    }
+}
