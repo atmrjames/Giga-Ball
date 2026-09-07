@@ -353,3 +353,63 @@ final class GameSceneFitsTheWindowTests: XCTestCase {
                        accuracy: 0.0001)
     }
 }
+
+/// A screen that was already open when the window changed shape.
+///
+/// James, round 313: "This was during windowed mode on the iPad so I was pulling the window
+/// into all sorts of shapes." Every other test in this file lays a screen out *at* a size,
+/// which is a different question and the one that already passed: what broke on his iPad was
+/// a screen laid out at one size and then given another.
+final class ResizedWhileOpenTests: XCTestCase {
+
+    private let shapes: [(String, CGSize)] = [
+        ("phone", CGSize(width: 393, height: 852)),
+        ("half an iPad", CGSize(width: 507, height: 1366)),
+        ("square", CGSize(width: 950, height: 975)),
+        ("wide", CGSize(width: 1280, height: 975)),
+        ("narrow", CGSize(width: 430, height: 1180)),
+    ]
+
+    /// The daily's pager holds an offset in points, and a page is the width of the viewport.
+    ///
+    /// Change the width underneath it and that offset stops naming the day it named: the card
+    /// sits part way between two pages, showing the right-hand edge of one and the left of the
+    /// next. That is the picture he sent - "CLASSIC" and "Food Pack" running off the right
+    /// edge of the window - and in a smaller window the middle of the card was missing
+    /// altogether, which is the same offset landing further out.
+    func testTheDailyPagerStillLandsOnAWholeDayAfterAResize() {
+        for (fromName, from) in shapes {
+            for (toName, to) in shapes where to != from {
+                let screen = DailyChallengeViewController()
+                screen.view.frame = CGRect(origin: .zero, size: from)
+                screen.view.setNeedsLayout()
+                screen.view.layoutIfNeeded()
+
+                screen.view.frame = CGRect(origin: .zero, size: to)
+                screen.view.setNeedsLayout()
+                screen.view.layoutIfNeeded()
+
+                guard let pager = pager(in: screen.view) else {
+                    return XCTFail("the pager has moved")
+                }
+                let page = pager.bounds.width
+                guard page > 0 else { continue }
+                let offset = pager.contentOffset.x
+                let landed = (offset/page).rounded()
+
+                XCTAssertEqual(offset, landed*page, accuracy: 1,
+                               "\(fromName) -> \(toName): the card is \(offset) into pages of "
+                               + "\(page), which is part way between two days")
+            }
+        }
+    }
+
+    private func pager(in view: UIView) -> UICollectionView? {
+        for child in view.subviews {
+            if let collection = child as? UICollectionView,
+               collection.isPagingEnabled { return collection }
+            if let found = pager(in: child) { return found }
+        }
+        return nil
+    }
+}

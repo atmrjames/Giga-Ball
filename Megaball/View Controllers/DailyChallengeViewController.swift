@@ -100,14 +100,47 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
 
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
-        guard days.bounds.width > 0, landedOnOpening == false else { return }
-        landedOnOpening = true
-        days.reloadData()
-        scrollToViewedDay(animated: false)
+        guard days.bounds.width > 0 else { return }
+
+        if landedOnOpening == false {
+            landedOnOpening = true
+            pagedAt = days.bounds.size
+            days.reloadData()
+            scrollToViewedDay(animated: false)
+            return
+        }
         // The pager opens on today, which is the last page - and it can only be put there
         // once the collection view knows how wide a page is. Once, hence the flag: doing
         // it on every layout pass would drag the screen back to today mid-browse
+
+        guard days.bounds.size != pagedAt else { return }
+        pagedAt = days.bounds.size
+        days.collectionViewLayout.invalidateLayout()
+        days.layoutIfNeeded()
+        scrollToViewedDay(animated: false)
+        // **A page is the viewport, so a resized viewport is a resized page** (James, round
+        // 313: on an iPad in windowed mode the day's card was cut off down its right-hand
+        // edge, and in a smaller window its middle was missing altogether).
+        //
+        // `sizeForItemAt` already answers `collectionView.bounds.size`, which is what makes
+        // paging land on whole days - but a flow layout works from the sizes it has cached,
+        // and the scroll offset it is holding is a number of points, not a day. Change the
+        // width underneath it and that offset stops naming the day it named: the card sits
+        // part way between two pages, showing the right-hand edge of one and the left of the
+        // next, which is exactly the two pictures he sent.
+        //
+        // Re-snapped to the day being *viewed* rather than to today, so a resize while
+        // browsing an older day does not throw the browse away - which is the same thing the
+        // flag above is protecting.
     }
+
+    /// The size the pages were last laid out at.
+    ///
+    /// A size rather than a bool, because the question is not "has this happened" but "is what
+    /// is on screen still built for the screen it is on". Compared rather than assigned every
+    /// pass, because re-snapping the offset triggers another layout pass and two of those in a
+    /// row is a loop.
+    private var pagedAt: CGSize = .zero
 
     func loadData() {
         if let totalData = try? Data(contentsOf: totalStatsStore!) {
