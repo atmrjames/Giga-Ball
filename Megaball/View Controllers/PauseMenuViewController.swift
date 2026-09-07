@@ -1510,7 +1510,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
         let itemsView = self.storyboard?.instantiateViewController(withIdentifier: "itemsView") as! ItemsViewController
         itemsView.navigatedFrom = "PauseMenu"
         self.addChild(itemsView)
-        itemsView.view.frame = self.view.frame
+        fillSelf(with: itemsView.view)
         self.view.addSubview(itemsView.view)
         itemsView.didMove(toParent: self)
     }
@@ -1546,7 +1546,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
         hideAnimate()
         let statsView = RunStatsViewController()
         self.addChild(statsView)
-        statsView.view.frame = self.view.frame
+        fillSelf(with: statsView.view)
         self.view.addSubview(statsView.view)
         statsView.didMove(toParent: self)
         statsView.showAnimate()
@@ -1703,7 +1703,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
         let settingsView = self.storyboard?.instantiateViewController(withIdentifier: "settingsVC") as! SettingsViewController
         settingsView.navigatedFrom = "PauseMenu"
         self.addChild(settingsView)
-        settingsView.view.frame = self.view.frame
+        fillSelf(with: settingsView.view)
         self.view.addSubview(settingsView.view)
         settingsView.didMove(toParent: self)
     }

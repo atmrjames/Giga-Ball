@@ -153,10 +153,16 @@ final class MenuNavigation: NSObject, UIGestureRecognizerDelegate {
 
         screen.view.transform = .identity
         screen.view.frame = parent.view.bounds
+        screen.view.autoresizingMask = [.flexibleWidth, .flexibleHeight]
         // The transform first: the view still carries the 1.15 scale its dismissal left it
         // with, and setting a frame on a transformed view garbles the bounds - the screen
         // came back at the wrong size, which is most of what "no background" looked like.
-        // And bounds, not frame: the parent's frame lives in the grandparent's coordinates
+        // And bounds, not frame: the parent's frame lives in the grandparent's coordinates.
+        //
+        // The mask is round 313's half: a frame assigned once is a frame that never changes,
+        // and on an iPad in windowed mode the window changes shape under a screen that is
+        // already open. `fillSelf` has carried this line since round 188 and this site, which
+        // predates it, had the other two thirds of it and not this one
         parent.view.addSubview(screen.view)
         screen.menuNavigationFadeIn()
         self.screen = nil

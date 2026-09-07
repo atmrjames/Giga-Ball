@@ -305,3 +305,99 @@ final class ResumeCardRenderTests: XCTestCase {
                              "and the heading is still on the screen")
     }
 }
+
+/// The resuming card on a screen much taller than a phone.
+///
+/// James, round 313: the iPad's "layouts need work with resizing". This screen is the one a
+/// resume opens on, and it is where he was standing when he reported the bad resume, so it is
+/// the first thing an iPad player sees.
+///
+/// The card is anchored to the bottom of the screen so it grows upwards however long the
+/// detail line runs (round 310: "everything grouped towards the bottom"). On a phone that
+/// leaves it a comfortable distance under the wordmark. On a 1366-point iPad the same two
+/// anchors put the logo in the middle and the card a third of a screen below it, with nothing
+/// in between.
+final class ResumeCardOnATallScreenTests: XCTestCase {
+
+    private let phone = CGSize(width: 393, height: 852)
+    private let iPadPortrait = CGSize(width: 1024, height: 1366)
+    private let iPadLandscape = CGSize(width: 1366, height: 1024)
+
+    override func tearDown() {
+        UserDefaults.standard.set(false, forKey: SavedGame.resumeFlagKey)
+        DailyChallengeSession.shared.active = nil
+        super.tearDown()
+    }
+
+    private func game() -> SavedGame {
+        SavedGame(
+            levelNumber: LevelPackSetup().startLevelNumber[2] + 3, endLevelNumber: 10,
+            packNumber: 2, levelScore: 120, totalScore: 34_210, numberOfLives: 2,
+            endlessHeight: 0, numberOfLevels: 10,
+            levelTimerValue: 45, packTimerValue: 300,
+            deathsPerLevel: 1, deathsPerPack: 3,
+            powerUpsGeneratedPerLevel: 4, powerUpsCollectedPerLevel: 2,
+            powerUpsGeneratedPerPack: 20, powerUpsCollectedPerPack: 11,
+            paddleHitsPerLevel: 33, multiplier: 1.4,
+            brickTextures: [], brickColours: [], brickXPositions: [], brickYPositions: [],
+            ballProperties: [], fallingPowerUpXPositions: [], fallingPowerUpYPositions: [],
+            fallingPowerUps: [], activePowerUps: [], activePowerUpDurations: [],
+            activePowerUpTimers: [], activePowerUpMagnitudes: [])
+    }
+
+    private func laidOut(in size: CGSize) -> SplashViewController {
+        game().save(to: UserDefaults.standard)
+        UserDefaults.standard.set(true, forKey: SavedGame.resumeFlagKey)
+        let board = UIStoryboard(name: "Main", bundle: Bundle(for: SplashViewController.self))
+        let splash = board.instantiateViewController(withIdentifier: "splashView")
+            as! SplashViewController
+        splash.gameToResume = true
+        splash.view.frame = CGRect(origin: .zero, size: size)
+        splash.view.layoutIfNeeded()
+        return splash
+    }
+
+    /// How far the top of the card sits below the bottom of the wordmark.
+    private func drop(_ splash: SplashViewController) -> CGFloat {
+        let root = splash.view!
+        let logo = splash.splashScreenLogo1.convert(splash.splashScreenLogo1.bounds, to: root)
+        let card = splash.resumingLabel.convert(splash.resumingLabel.bounds, to: root)
+        return card.minY - logo.maxY
+    }
+
+    func testAPhoneIsExactlyWhereItWas() {
+        let splash = laidOut(in: phone)
+        XCTAssertLessThan(drop(splash), SplashViewController.resumeCardMaximumDrop,
+                          "the cap must not bind on a phone, or round 310's arrangement has "
+                          + "quietly moved on every device that ships")
+    }
+
+    func testTheCardStaysWithTheLogoOnAnIPad() {
+        for size in [iPadPortrait, iPadLandscape] {
+            let splash = laidOut(in: size)
+            XCTAssertLessThanOrEqual(drop(splash),
+                                     SplashViewController.resumeCardMaximumDrop + 1,
+                                     "\(size): four lines and a button a third of a screen "
+                                     + "below the logo read as two screens, not one card")
+        }
+    }
+
+    /// It still sits low rather than centred, which is the arrangement James asked for.
+    func testItIsStillGroupedTowardsTheBottom() {
+        let splash = laidOut(in: iPadPortrait)
+        let root = splash.view!
+        let card = splash.resumingLabel.convert(splash.resumingLabel.bounds, to: root)
+        XCTAssertGreaterThan(card.minY, root.bounds.height/2,
+                             "\"everything grouped towards the bottom\" - round 310")
+    }
+
+    /// And the lines do not run the full width of a 13-inch iPad.
+    func testTheLinesDoNotRunTheWidthOfTheScreen() {
+        let splash = laidOut(in: iPadLandscape)
+        let root = splash.view!
+        let card = splash.resumingLabel.convert(splash.resumingLabel.bounds, to: root)
+        XCTAssertLessThanOrEqual(card.width,
+                                 SplashViewController.resumeCardMaximumWidth + 1)
+        XCTAssertLessThan(card.width, root.bounds.width/2)
+    }
+}

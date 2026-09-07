@@ -277,3 +277,79 @@ final class WindowSizeTests: XCTestCase {
         XCTAssertGreaterThan(layout.gameWidth, 0, "and there is still a field to play on")
     }
 }
+
+/// What a window resize does to the scene already on screen.
+///
+/// James, round 313, playing in iPadOS 26's windowed mode and dragging the window into every
+/// shape he could: "In the game view, yes the top and bottom were cut off when the app was
+/// more square and the sides were cut off when the app was more tall and thin."
+///
+/// Those are the two halves of what `SKSceneScaleMode.aspectFill` is. It scales the scene
+/// until it *covers* the view and discards whatever hangs over the edge, and the scene's size
+/// is taken once, when it is presented, from the window the app opened in. On a phone that
+/// window never changes shape, so fill and fit draw the same picture and this went unseen for
+/// five years.
+final class GameSceneFitsTheWindowTests: XCTestCase {
+
+    /// The shape the scene was presented at: a portrait phone, which is what the layout solves
+    /// for and what every scene starts life as.
+    private let presented = CGSize(width: 393, height: 852)
+
+    /// The shapes a window can be dragged into on an iPad.
+    private let dragged: [(String, CGSize)] = [
+        ("square", CGSize(width: 950, height: 975)),
+        ("wide", CGSize(width: 1280, height: 975)),
+        ("tall and thin", CGSize(width: 430, height: 1180)),
+        ("very thin", CGSize(width: 320, height: 1366)),
+        ("short and wide", CGSize(width: 1366, height: 420)),
+        ("unchanged", CGSize(width: 393, height: 852)),
+    ]
+
+    /// How much of the scene survives, as a fraction of its area, under a scale mode.
+    ///
+    /// Pure arithmetic against SpriteKit's own definitions: fill takes the larger of the two
+    /// ratios and crops, fit takes the smaller and letterboxes.
+    private func visibleShare(of scene: CGSize, in view: CGSize, fill: Bool) -> CGFloat {
+        let scale = fill ? max(view.width/scene.width, view.height/scene.height)
+                         : min(view.width/scene.width, view.height/scene.height)
+        let drawn = CGSize(width: scene.width*scale, height: scene.height*scale)
+        let shown = CGSize(width: min(drawn.width, view.width),
+                           height: min(drawn.height, view.height))
+        return (shown.width*shown.height)/(drawn.width*drawn.height)
+    }
+
+    /// The report, as arithmetic: fill loses the top and bottom on a squarer window and the
+    /// sides on a thin one.
+    func testFillIsWhatWasCuttingTheGameOff() {
+        let square = visibleShare(of: presented, in: CGSize(width: 950, height: 975), fill: true)
+        XCTAssertLessThan(square, 0.5,
+                          "more than half the scene gone on a square window - the HUD and the "
+                          + "paddle are the two ends it takes")
+
+        let thin = visibleShare(of: presented, in: CGSize(width: 320, height: 1366), fill: true)
+        XCTAssertLessThan(thin, 0.75, "and the walls go on a tall thin one")
+    }
+
+    /// The fix: at every shape, all of it is on screen.
+    func testFitShowsTheWholeSceneAtEveryShape() {
+        for (name, view) in dragged {
+            XCTAssertEqual(visibleShare(of: presented, in: view, fill: false), 1,
+                           accuracy: 0.0001,
+                           "\(name): James asked that the game view is always fully visible, "
+                           + "including the power-up HUD and the buttons at the top, "
+                           + "regardless of the size or shape of the app")
+        }
+    }
+
+    /// And nothing is lost by fitting, because there was never more to show.
+    ///
+    /// The play zone holds a fixed 1.8236 ratio on every device - the promise that a run plays
+    /// identically across a player's devices - so a window of a different shape has no more of
+    /// the game to reveal. What fill was doing was not using the extra room; it was hiding the
+    /// game and leaving the room where it was.
+    func testTheScenesShapeIsTheRatioTheGamePromises() {
+        let layout = GameSceneLayout(screen: presented)
+        XCTAssertEqual(layout.playHeight/layout.gameWidth, GameSceneLayout.playRatio,
+                       accuracy: 0.0001)
+    }
+}

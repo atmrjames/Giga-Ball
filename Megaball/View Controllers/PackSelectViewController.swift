@@ -559,7 +559,7 @@ class PackSelectViewController: UIViewController, UICollectionViewDelegate, UICo
         levelSelectorView.numberOfLevels = numberOfLevels
         levelSelectorView.startLevel = startLevel
         self.addChild(levelSelectorView)
-        levelSelectorView.view.frame = self.view.frame
+        fillSelf(with: levelSelectorView.view)
         self.view.addSubview(levelSelectorView.view)
         levelSelectorView.didMove(toParent: self)
     }

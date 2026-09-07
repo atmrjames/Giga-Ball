@@ -229,7 +229,7 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
             }
             
             self.addChild(splashView)
-            splashView.view.frame = self.view.frame
+            fillSelf(with: splashView.view)
             self.view.addSubview(splashView.view)
             splashView.didMove(toParent: self)
         }
@@ -488,7 +488,7 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
     func moveToPackSelector() {
         let packSelectorView = self.storyboard?.instantiateViewController(withIdentifier: "packSelectorView") as! PackSelectViewController
         self.addChild(packSelectorView)
-        packSelectorView.view.frame = self.view.frame
+        fillSelf(with: packSelectorView.view)
         self.view.addSubview(packSelectorView.view)
         packSelectorView.didMove(toParent: self)
     }
@@ -499,7 +499,7 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         levelStatsView.levelNumber = levelNumber
         levelStatsView.packNumber = packNumber
         self.addChild(levelStatsView)
-        levelStatsView.view.frame = self.view.frame
+        fillSelf(with: levelStatsView.view)
         self.view.addSubview(levelStatsView.view)
         levelStatsView.didMove(toParent: self)
     }
@@ -509,7 +509,7 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         let settingsView = self.storyboard?.instantiateViewController(withIdentifier: "settingsVC") as! SettingsViewController
         settingsView.navigatedFrom = "MainMenu"
         self.addChild(settingsView)
-        settingsView.view.frame = self.view.frame
+        fillSelf(with: settingsView.view)
         self.view.addSubview(settingsView.view)
         settingsView.didMove(toParent: self)
     }
@@ -518,7 +518,7 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
     func moveToItems() {
         let itemsView = self.storyboard?.instantiateViewController(withIdentifier: "itemsView") as! ItemsViewController
         self.addChild(itemsView)
-        itemsView.view.frame = self.view.frame
+        fillSelf(with: itemsView.view)
         self.view.addSubview(itemsView.view)
         itemsView.didMove(toParent: self)
     }
@@ -527,7 +527,7 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         let daily = DailyChallengeViewController()
         daily.menu = self
         self.addChild(daily)
-        daily.view.frame = self.view.frame
+        fillSelf(with: daily.view)
         self.view.addSubview(daily.view)
         daily.didMove(toParent: self)
         daily.showAnimate()
@@ -537,7 +537,7 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         let introView = self.storyboard?.instantiateViewController(withIdentifier: "introVC") as! IntroViewController
         introView.sender = "Main"
         self.addChild(introView)
-        introView.view.frame = self.view.frame
+        fillSelf(with: introView.view)
         self.view.addSubview(introView.view)
         introView.didMove(toParent: self)
     }

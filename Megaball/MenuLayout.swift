@@ -428,6 +428,15 @@ extension UIViewController {
     /// changes, so nothing triggers the layout pass that would notice a bad one and correct
     /// it - which is why a wrong answer *stuck* rather than being fixed on the next pass. With
     /// the mask the child tracks the parent, on rotation and on an iPad window resize too.
+    /// **Round 313 made this the only way a screen is presented.** James, playing in iPadOS
+    /// 26's windowed mode and dragging the window into every shape it would take: "iPad
+    /// layouts need work with resizing as there's quite a few issues". Eighteen call sites
+    /// were still writing `child.view.frame = self.view.frame` by hand - the exact line this
+    /// function was written in round 188 to replace, carrying both of its bugs: the frame is
+    /// measured in the *grandparent's* coordinates, and without the mask it is a frame
+    /// assigned once that nothing ever revisits. On a phone the window never changes shape
+    /// after a screen opens, so neither bug could show; on an iPad every drag of the window
+    /// left the screen on top laid out for the window before it.
     func fillSelf(with child: UIView) {
         child.transform = .identity
         child.frame = view.bounds

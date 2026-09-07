@@ -479,7 +479,7 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         let aboutView = self.storyboard?.instantiateViewController(withIdentifier: "aboutVC") as! AboutViewController
         aboutView.sender = "Info"
         self.addChild(aboutView)
-        aboutView.view.frame = self.view.frame
+        fillSelf(with: aboutView.view)
         self.view.addSubview(aboutView.view)
         aboutView.didMove(toParent: self)
     }
@@ -489,7 +489,7 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         let statsView = self.storyboard?.instantiateViewController(withIdentifier: "statsView") as! StatsViewController
         statsView.sender = "Info"
         self.addChild(statsView)
-        statsView.view.frame = self.view.frame
+        fillSelf(with: statsView.view)
         self.view.addSubview(statsView.view)
         statsView.didMove(toParent: self)
     }
@@ -499,7 +499,7 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         let introView = self.storyboard?.instantiateViewController(withIdentifier: "introVC") as! IntroViewController
         introView.sender = "Info"
         self.addChild(introView)
-        introView.view.frame = self.view.frame
+        fillSelf(with: introView.view)
         self.view.addSubview(introView.view)
         introView.didMove(toParent: self)
     }

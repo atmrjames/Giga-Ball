@@ -116,12 +116,35 @@ class GameViewController: UIViewController, GameViewControllerDelegate {
                 gameScene.gameViewControllerDelegate = self
                 // Set the GameViewController as the delegate for the gameViewControllerDelegate in GameScene
                 
-                scene.scaleMode = .aspectFill
+                scene.scaleMode = .aspectFit
                 scene.size = view.bounds.size
-                // Scales the size of the GameView to the size of the device
-                // Present the scene
+                // **Fit, not fill** (James, round 313: on an iPad in windowed mode, "the top
+                // and bottom were cut off when the app was more square and the sides were cut
+                // off when the app was more tall and thin").
+                //
+                // Those are the two halves of what `aspectFill` *is*: it scales the scene
+                // until it covers the view and throws away whatever hangs over the edge. The
+                // scene's size is taken once, here, from the window the app opened in - so on
+                // a phone, where that window never changes shape, fill and fit are the same
+                // picture and this went unnoticed for five years. iPadOS 26 lets a window be
+                // dragged into any shape at all, and every drag away from the shape the scene
+                // was built at cropped it, on the axis that had grown: squarer took the HUD
+                // and the paddle, thinner took the walls.
+                //
+                // `aspectFit` letterboxes instead, which is the right answer for this game
+                // rather than merely the safe one. The play zone holds a fixed 1.8236 ratio on
+                // every device by design - it is the promise that a run plays identically
+                // across a player's devices - so there is no shape of window in which more of
+                // the scene could honestly be shown. What fill was doing was not using the
+                // extra room, it was hiding the game.
                 view.presentScene(scene)
             }
+            view.backgroundColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1)
+            // The letterbox `aspectFit` leaves on a window the scene's shape does not fill.
+            // The app's own deep purple rather than black, and the same literal the launch
+            // cover above uses, so the bands read as the app's own margin rather than as the
+            // game having been cut out and pasted onto the desktop
+
             view.ignoresSiblingOrder = true
             view.showsFPS = false
             view.showsNodeCount = false

@@ -719,7 +719,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         let itemsDetailView = self.storyboard?.instantiateViewController(withIdentifier: "itemsDetailView") as! ItemsDetailViewController
         itemsDetailView.senderID = senderID
         self.addChild(itemsDetailView)
-        itemsDetailView.view.frame = self.view.frame
+        fillSelf(with: itemsDetailView.view)
         self.view.addSubview(itemsDetailView.view)
         itemsDetailView.didMove(toParent: self)
     }
@@ -750,7 +750,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
             // row behind it has to be told rather than left showing "on" over silence
         }
         addChild(musicView)
-        musicView.view.frame = view.frame
+        fillSelf(with: musicView.view)
         view.addSubview(musicView.view)
         musicView.didMove(toParent: self)
         musicView.showAnimate()
@@ -763,7 +763,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
             self?.settingsTableView.reloadData()
         }
         addChild(paddleSpeedView)
-        paddleSpeedView.view.frame = view.frame
+        fillSelf(with: paddleSpeedView.view)
         view.addSubview(paddleSpeedView.view)
         paddleSpeedView.didMove(toParent: self)
         paddleSpeedView.showAnimate()
@@ -775,7 +775,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
     func moveToBackgroundSelect() {
         let backgroundSelectView = self.storyboard?.instantiateViewController(withIdentifier: "backgroundSelectView") as! BackgroundSelectViewController
         self.addChild(backgroundSelectView)
-        backgroundSelectView.view.frame = self.view.frame
+        fillSelf(with: backgroundSelectView.view)
         self.view.addSubview(backgroundSelectView.view)
         backgroundSelectView.didMove(toParent: self)
     }

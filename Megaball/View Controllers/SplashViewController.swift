@@ -477,24 +477,62 @@ class SplashViewController: UIViewController {
         // confirm - and cancelling a resume is not that. Every close and back button in the app
         // is the plain purple glass, and this is that button at `largeButtonSize` because it is
         // the only one on the screen
+        let sitsAtTheBottom = cancel.bottomAnchor.constraint(
+            equalTo: container.safeAreaLayoutGuide.bottomAnchor, constant: -26)
+        sitsAtTheBottom.priority = .defaultHigh
+        // Wanted, not required, so the cap below can lift the card off the bottom without the
+        // two of them conflicting
+
         NSLayoutConstraint.activate([
             stack.centerXAnchor.constraint(equalTo: container.centerXAnchor),
             stack.leadingAnchor.constraint(greaterThanOrEqualTo: container.leadingAnchor,
                                            constant: 24),
             stack.trailingAnchor.constraint(lessThanOrEqualTo: container.trailingAnchor,
                                             constant: -24),
+            stack.widthAnchor.constraint(
+                lessThanOrEqualToConstant: SplashViewController.resumeCardMaximumWidth),
             cancel.topAnchor.constraint(equalTo: stack.bottomAnchor, constant: 26),
             cancel.centerXAnchor.constraint(equalTo: container.centerXAnchor),
             cancel.widthAnchor.constraint(equalToConstant: size),
             cancel.heightAnchor.constraint(equalToConstant: size),
             cancel.bottomAnchor.constraint(
-                equalTo: container.safeAreaLayoutGuide.bottomAnchor, constant: -26),
+                lessThanOrEqualTo: container.safeAreaLayoutGuide.bottomAnchor, constant: -26),
+            sitsAtTheBottom,
+            stack.topAnchor.constraint(
+                lessThanOrEqualTo: splashScreenLogo1.bottomAnchor,
+                constant: SplashViewController.resumeCardMaximumDrop),
         ])
         // The button is pinned to the *bottom* and the stack hangs off its top, so the whole
         // card grows upwards out of the corner it is anchored in however long the detail runs.
         // Twenty-six under the safe area puts the disc where the Cancel row's capsule sat, and
         // twenty-six above it is the pause screen's gap between its result and its button row
+        //
+        // **And it stops following the bottom on a tall screen** (James, round 313: the iPad
+        // "layouts need work with resizing"; this screen is the one a resume opens on, and it
+        // is where he was when he reported the bad resume). A phone is short enough that the
+        // card sits a comfortable distance under the wordmark on its own. A 13-inch iPad is
+        // 1366 points tall, and the same two anchors put the logo in the middle of the screen
+        // and the card a third of a screen below it, with nothing in between - four lines and
+        // a button spread over a distance that reads as two unrelated screens rather than one
+        // card.
+        //
+        // The cap is a distance from the *logo* rather than a size for the screen, for the
+        // same reason `menuMaximumAspectRatio` caps a shape rather than a size: what is wrong
+        // on the iPad is the relationship between the two things, not how big either is. On
+        // every phone the natural gap is already inside the cap, so the required constraint
+        // never binds and the wanted one holds - the card is exactly where it was, to the point
     }
+
+    /// How far below the wordmark the resuming card may sit before it stops following the
+    /// bottom of the screen.
+    ///
+    /// Measured rather than chosen: a 393x852 phone lays the card out about 250 points under
+    /// the logo, and the tallest phone the app supports is not far past that, so this sits
+    /// clear of every one of them and binds only on an iPad.
+    static let resumeCardMaximumDrop: CGFloat = 300
+
+    /// And how wide its lines may run, for the same reason the menus cap theirs.
+    static let resumeCardMaximumWidth: CGFloat = 420
 
     /// The card's stack, kept so the spacing can be adjusted once the words are known.
     private weak var resumeStack: UIStackView?
