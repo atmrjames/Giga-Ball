@@ -346,6 +346,115 @@ final class PaddleHaloArtworkTests: XCTestCase {
         let second = try XCTUnwrap(scene.endlessIIPaddleHaloNode as? SKSpriteNode).size.width
         XCTAssertGreaterThan(second, first)
     }
+
+    // MARK: - The fade below the paddle line
+
+    // James, round 313: "The halo graphic looks good, but it stops very harshly at the paddle
+    // level. Let's add a gradual fade out of it from the paddle level and below."
+
+    private func skirt(of halo: SKSpriteNode) -> SKSpriteNode? {
+        halo.childNode(withName: GameScene.endlessIIHaloSkirtName) as? SKSpriteNode
+    }
+
+    func testTheGlowKeepsGoingBelowTheDiameter() throws {
+        let scene = mayhem()
+        let node = try XCTUnwrap(halo(scene))
+        let below = try XCTUnwrap(skirt(of: node), "the hard edge is what was reported")
+
+        XCTAssertEqual(below.anchorPoint, CGPoint(x: 0.5, y: 1),
+                       "hung from the diameter, so it starts exactly where the halo stops")
+        XCTAssertEqual(below.position, CGPoint.zero,
+                       "at the parent's anchor, which is the paddle line")
+        XCTAssertEqual(below.size.width, node.size.width, accuracy: 0.01,
+                       "the same width, or the silhouette steps in at the seam")
+        XCTAssertEqual(below.size.height,
+                       node.size.height*GameScene.endlessIIHaloSkirtShare, accuracy: 0.01)
+        XCTAssertLessThan(below.size.height, node.size.height,
+                          "the cut is softened, not turned into a whole disc - the lower half "
+                          + "would be drawing a reach `haloTouches` refuses")
+    }
+
+    func testTheFadeFollowsTheGlowAsItGrows() throws {
+        let scene = mayhem()
+        let node = try XCTUnwrap(halo(scene))
+        let firstDepth = try XCTUnwrap(skirt(of: node)).size.height
+
+        scene.endlessIICollectPaddleHalo()
+        scene.tickEndlessIIPaddleHalo()
+        let grown = try XCTUnwrap(scene.endlessIIPaddleHaloNode as? SKSpriteNode)
+        let secondDepth = try XCTUnwrap(skirt(of: grown)).size.height
+
+        XCTAssertGreaterThan(secondDepth, firstDepth,
+                             "a sprite's size does not reach its children, so this is the one "
+                             + "that silently stops following")
+    }
+
+    /// It is a fade, not a second block of glow: the strip is solid where it meets the
+    /// diameter and gone at its bottom edge.
+    func testTheStripActuallyFadesOut() throws {
+        let texture = try XCTUnwrap(GameScene.endlessIIHaloSkirtTexture)
+        let image = texture.cgImage()
+        let width = image.width, height = image.height
+        var pixels = [UInt8](repeating: 0, count: width*height*4)
+        let context = try XCTUnwrap(CGContext(
+            data: &pixels, width: width, height: height, bitsPerComponent: 8,
+            bytesPerRow: width*4, space: CGColorSpaceCreateDeviceRGB(),
+            bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue))
+        context.draw(image, in: CGRect(x: 0, y: 0, width: width, height: height))
+
+        // A bitmap context's memory runs top-down whatever its drawing origin is, so row
+        // zero is the top of the strip - which is the edge that meets the diameter, since the
+        // skirt hangs from its own top edge
+        func alphaAcross(row: Int) -> Int {
+            (0..<width).reduce(0) { $0 + Int(pixels[(row*width + $1)*4 + 3]) }
+        }
+        let atTheDiameter = alphaAcross(row: 0)
+        let atTheBottom = alphaAcross(row: height - 1)
+
+        XCTAssertGreaterThan(atTheDiameter, 0, "the glow carries on past the paddle line")
+        XCTAssertLessThan(atTheBottom, atTheDiameter/20,
+                          "and has gone by the bottom of the strip, or the hard edge has "
+                          + "simply moved down")
+    }
+
+    /// Drawn to a file so the fade can be looked at, which is the only way this one is judged.
+    ///
+    /// Its own small scene rather than the game's: what is being looked at is the seam at the
+    /// diameter, and in a real scene the halo sits at the paddle with most of the frame taken
+    /// up by the field above it. The first draft of this rendered the game scene and caught
+    /// the corner of the glow in the corner of the picture.
+    func testTheHaloAndItsFadeCanBeLookedAt() throws {
+        let stage = SKScene(size: CGSize(width: 640, height: 420))
+        stage.backgroundColor = .black
+        stage.anchorPoint = .zero
+
+        let glow = SKSpriteNode(texture: try XCTUnwrap(GameScene.endlessIIHaloTexture))
+        glow.anchorPoint = CGPoint(x: 0.5, y: 0)
+        glow.alpha = GameScene.endlessIIHaloAlpha
+        glow.size = CGSize(width: 520, height: 260)
+        glow.position = CGPoint(x: 320, y: 140)
+        stage.addChild(glow)
+
+        let skirt = SKSpriteNode(texture: try XCTUnwrap(GameScene.endlessIIHaloSkirtTexture))
+        skirt.anchorPoint = CGPoint(x: 0.5, y: 1)
+        skirt.size = CGSize(width: glow.size.width,
+                            height: glow.size.height*GameScene.endlessIIHaloSkirtShare)
+        glow.addChild(skirt)
+
+        // The paddle line, so the seam can be seen against something straight
+        let line = SKSpriteNode(color: .white, size: CGSize(width: 640, height: 1))
+        line.position = CGPoint(x: 320, y: 140)
+        line.alpha = 0.25
+        stage.addChild(line)
+
+        let view = SKView(frame: CGRect(origin: .zero, size: stage.size))
+        let texture = try XCTUnwrap(view.texture(from: stage),
+                                    "no renderer here, so there is nothing to look at")
+        let file = URL(fileURLWithPath: NSTemporaryDirectory())
+            .appendingPathComponent("halo-fade.png")
+        try XCTUnwrap(UIImage(cgImage: texture.cgImage()).pngData()).write(to: file)
+        print("\n  The halo and its fade: \(file.path)\n")
+    }
 }
 
 /// The bricks page shows a power-up as a power-up.

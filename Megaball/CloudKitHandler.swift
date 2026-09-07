@@ -56,6 +56,20 @@ final class CloudKitHandler: NSObject {
     
     let defaults = UserDefaults.standard
     // User settings
+
+    /// The key-value store every sync in this file reads and writes.
+    ///
+    /// One property rather than the nine identical `let iCloudStore = .default` locals it
+    /// replaces, so a test can hand this file a store of its own. §12.0 has carried "the
+    /// iCloud sync has no seam for a test" since the sync was written, and the CRAP pass in
+    /// round 313 put `updateToiCloud` and `updateFromiCloud` fourth and fifth in the whole
+    /// app - a hundred branches apiece with nothing exercising any of them, on the code that
+    /// decides which of a player's two devices keeps its years of scores.
+    ///
+    /// It stays `NSUbiquitousKeyValueStore` rather than becoming a protocol: the class can be
+    /// subclassed for a test, and a protocol would have to restate the handful of methods used
+    /// here - a second description of the store that could disagree with the store.
+    var iCloudStore: NSUbiquitousKeyValueStore = .default
     var appOpenCount: Int = 0
     var resumeGameToLoad: Bool = false
     var firstPause: Bool = true
@@ -88,7 +102,6 @@ final class CloudKitHandler: NSObject {
     /// that once crashed the app on launch for a player with years of synced data, and the
     /// reason `padded(_:toMatch:)` exists.
     private func pushMetres() {
-        let iCloudStore = NSUbiquitousKeyValueStore.default
         // Taken locally, the way every other method here takes it
         for (key, path) in CloudKitHandler.metresKeys {
             guard let local = totalStatsArray[0][keyPath: path] else { continue }
@@ -127,7 +140,6 @@ final class CloudKitHandler: NSObject {
     /// and it has to be the same rule, or a device could end up with one device's heights and
     /// another's durations, which would pair a run with a stranger's clock.
     private func pushModeTimes() {
-        let iCloudStore = NSUbiquitousKeyValueStore.default
         for (key, path) in CloudKitHandler.modeTimeKeys {
             guard let local = totalStatsArray[0][keyPath: path] else { continue }
             if local > Int(iCloudStore.longLong(forKey: key)) {
@@ -145,7 +157,6 @@ final class CloudKitHandler: NSObject {
 
     /// Brings another device's per-mode times and run durations down, by the same rules.
     private func pullModeTimes() {
-        let iCloudStore = NSUbiquitousKeyValueStore.default
         for (key, path) in CloudKitHandler.modeTimeKeys {
             let stored = Int(iCloudStore.longLong(forKey: key))
             if stored > (totalStatsArray[0][keyPath: path] ?? 0) {
@@ -163,7 +174,6 @@ final class CloudKitHandler: NSObject {
 
     /// Brings another device's metres down, highest wins per slot.
     private func pullMetres() {
-        let iCloudStore = NSUbiquitousKeyValueStore.default
         for (key, path) in CloudKitHandler.metresKeys {
             guard let stored = iCloudStore.array(forKey: key) as? [Int] else { continue }
             var local = totalStatsArray[0][keyPath: path] ?? TotalStats.freshPowerUpMetres
@@ -183,6 +193,8 @@ final class CloudKitHandler: NSObject {
     var packsCompleted: Int?
     var endlessModeHeight: [Int]?
     var endlessModeHeightDate: [Date]?
+    var endlessIIModeHeight: [Int]?
+    var endlessIIModeHeightDate: [Date]?
     var levelPackUnlockedArray: [Bool]?
     var themeUnlockedArray: [Bool]?
     var appIconUnlockedArray: [Bool]?
@@ -261,7 +273,6 @@ final class CloudKitHandler: NSObject {
     }
     
     func updateToiCloud() {
-        let iCloudStore = NSUbiquitousKeyValueStore.default
 
         switch statsSyncResolution(against: iCloudStore) {
         case .adoptCloud:
@@ -434,13 +445,45 @@ final class CloudKitHandler: NSObject {
         }
         
         endlessModeHeight = totalStatsArray[0].endlessModeHeight
+        endlessModeHeightDate = totalStatsArray[0].endlessModeHeightDate
         if let endlessModeHeightCloud = iCloudStore.array(forKey: "endlessModeHeight") as? [Int] {
             if endlessModeHeight!.reduce(0, +) > endlessModeHeightCloud.reduce(0, +) {
                 iCloudStore.set(endlessModeHeight, forKey: "endlessModeHeight")
+                iCloudStore.set(endlessModeHeightDate, forKey: "endlessModeHeightDate")
             }
         } else {
             iCloudStore.set(endlessModeHeight, forKey: "endlessModeHeight")
+            iCloudStore.set(endlessModeHeightDate, forKey: "endlessModeHeightDate")
         }
+
+        endlessIIModeHeight = totalStatsArray[0].endlessIIHeights
+        endlessIIModeHeightDate = totalStatsArray[0].endlessIIModeHeightDate ?? []
+        if let endlessIIModeHeightCloud = iCloudStore.array(forKey: "endlessIIModeHeight") as? [Int] {
+            if endlessIIModeHeight!.reduce(0, +) > endlessIIModeHeightCloud.reduce(0, +) {
+                iCloudStore.set(endlessIIModeHeight, forKey: "endlessIIModeHeight")
+                iCloudStore.set(endlessIIModeHeightDate, forKey: "endlessIIModeHeightDate")
+            }
+        } else {
+            iCloudStore.set(endlessIIModeHeight, forKey: "endlessIIModeHeight")
+            iCloudStore.set(endlessIIModeHeightDate, forKey: "endlessIIModeHeightDate")
+        }
+        // **Endless Mayhem's runs sync too** (James, round 313: "I think the Endless Mode and
+        // Endless Mayhem scores should be synced between devices on the same iCloud account.
+        // On my iPad, there were no scores on the Endless Mayhem mode as I'd only played it on
+        // my phone"). The mode's own height list was the one thing in the stats file that
+        // never reached the store - every other field of the fifty-four was already here, which
+        // is why nothing looked broken from the inside.
+        //
+        // The dates travel with the heights rather than separately, which they did not before:
+        // they were written only by the reset path, so a device that pulled twenty heights kept
+        // its own three dates and the run list read them out of step. Whichever list wins, its
+        // dates win with it.
+        //
+        // The rule is the original mode's, deliberately - the larger total wins and replaces,
+        // rather than the two lists being merged. It is not the rule a fresh design would pick,
+        // since a device that played less loses its runs, but two endless modes answering the
+        // same question two different ways is worse than either answer on its own, and changing
+        // it is a change to a mode with years of scores on it. §12.0 carries it
         
         levelPackUnlockedArray = totalStatsArray[0].levelPackUnlockedArray
         if let levelPackUnlockedArrayCloudCheck = iCloudStore.array(forKey: "levelPackUnlockedArray") as? [Bool] {
@@ -770,7 +813,6 @@ final class CloudKitHandler: NSObject {
     }
     
     func updateFromiCloud() {
-        let iCloudStore = NSUbiquitousKeyValueStore.default
 
         switch statsSyncResolution(against: iCloudStore) {
         case .adoptCloud:
@@ -914,8 +956,23 @@ final class CloudKitHandler: NSObject {
         if let endlessModeHeightCloud = iCloudStore.array(forKey: "endlessModeHeight") as? [Int] {
             if endlessModeHeightCloud.reduce(0, +) > endlessModeHeight!.reduce(0, +) {
                 totalStatsArray[0].endlessModeHeight = endlessModeHeightCloud
+                if let dates = iCloudStore.array(forKey: "endlessModeHeightDate") as? [Date] {
+                    totalStatsArray[0].endlessModeHeightDate = dates
+                }
             }
         }
+
+        endlessIIModeHeight = totalStatsArray[0].endlessIIHeights
+        if let endlessIIModeHeightCloud = iCloudStore.array(forKey: "endlessIIModeHeight") as? [Int] {
+            if endlessIIModeHeightCloud.reduce(0, +) > endlessIIModeHeight!.reduce(0, +) {
+                totalStatsArray[0].endlessIIModeHeight = endlessIIModeHeightCloud
+                if let dates = iCloudStore.array(forKey: "endlessIIModeHeightDate") as? [Date] {
+                    totalStatsArray[0].endlessIIModeHeightDate = dates
+                }
+            }
+        }
+        // The other half of James's report, and the half his iPad needed: a device that has
+        // never played Mayhem has an empty list, so any cloud list at all beats it
         
 
         levelPackUnlockedArray = totalStatsArray[0].levelPackUnlockedArray
@@ -1169,7 +1226,6 @@ final class CloudKitHandler: NSObject {
         // iCloud off and turns it on later would otherwise still be at
         // generation zero, and the stats they cleared would flow straight back
         // down on the first sync.
-        let iCloudStore = NSUbiquitousKeyValueStore.default
         let generation = StatsSync.generationAfterReset(
             localGeneration: defaults.integer(forKey: StatsSync.generationKey),
             cloudGeneration: Int(iCloudStore.longLong(forKey: StatsSync.generationKey)))
@@ -1191,7 +1247,6 @@ final class CloudKitHandler: NSObject {
     /// Assumes the caller has already run loadLocalData() and confirmed
     /// iCloudSetting, as the two sync paths do.
     func pushLocalDataWholesale() {
-        let iCloudStore = NSUbiquitousKeyValueStore.default
 
         appOpenCount = defaults.integer(forKey: "appOpenCount")
         firstPause = defaults.bool(forKey: "firstPause")
@@ -1215,6 +1270,8 @@ final class CloudKitHandler: NSObject {
         packsCompleted = totalStatsArray[0].packsCompleted
         endlessModeHeight = totalStatsArray[0].endlessModeHeight
         endlessModeHeightDate = totalStatsArray[0].endlessModeHeightDate
+        endlessIIModeHeight = totalStatsArray[0].endlessIIHeights
+        endlessIIModeHeightDate = totalStatsArray[0].endlessIIModeHeightDate ?? []
         levelPackUnlockedArray = totalStatsArray[0].levelPackUnlockedArray
         themeUnlockedArray = totalStatsArray[0].themeUnlockedArray
         appIconUnlockedArray = totalStatsArray[0].appIconUnlockedArray
@@ -1257,6 +1314,8 @@ final class CloudKitHandler: NSObject {
         iCloudStore.set(packsCompleted, forKey: "packsCompleted")
         iCloudStore.set(endlessModeHeight, forKey: "endlessModeHeight")
         iCloudStore.set(endlessModeHeightDate, forKey: "endlessModeHeightDate")
+        iCloudStore.set(endlessIIModeHeight, forKey: "endlessIIModeHeight")
+        iCloudStore.set(endlessIIModeHeightDate, forKey: "endlessIIModeHeightDate")
         iCloudStore.set(levelPackUnlockedArray, forKey: "levelPackUnlockedArray")
         iCloudStore.set(themeUnlockedArray, forKey: "themeUnlockedArray")
         iCloudStore.set(appIconUnlockedArray, forKey: "appIconUnlockedArray")
@@ -1302,7 +1361,6 @@ final class CloudKitHandler: NSObject {
         if !iCloudSetting {
             return
         }
-        let iCloudStore = NSUbiquitousKeyValueStore.default
         
         appOpenCount = Int(iCloudStore.longLong(forKey: "appOpenCount"))
         firstPause = iCloudStore.bool(forKey: "firstPause")
@@ -1324,6 +1382,8 @@ final class CloudKitHandler: NSObject {
         packsCompleted = Int(iCloudStore.longLong(forKey: "packsCompleted"))
         endlessModeHeight = iCloudStore.array(forKey: "endlessModeHeight") as? [Int]
         endlessModeHeightDate = iCloudStore.array(forKey: "endlessModeHeightDate") as? [Date]
+        endlessIIModeHeight = iCloudStore.array(forKey: "endlessIIModeHeight") as? [Int]
+        endlessIIModeHeightDate = iCloudStore.array(forKey: "endlessIIModeHeightDate") as? [Date]
         levelPackUnlockedArray = iCloudStore.array(forKey: "levelPackUnlockedArray") as? [Bool]
         themeUnlockedArray = iCloudStore.array(forKey: "themeUnlockedArray") as? [Bool]
         appIconUnlockedArray = iCloudStore.array(forKey: "appIconUnlockedArray") as? [Bool]
@@ -1396,6 +1456,12 @@ final class CloudKitHandler: NSObject {
         }
         if self.endlessModeHeight != nil {
             totalStatsArray[0].endlessModeHeight = endlessModeHeight!
+        }
+        if self.endlessIIModeHeight != nil {
+            totalStatsArray[0].endlessIIModeHeight = endlessIIModeHeight!
+        }
+        if self.endlessIIModeHeightDate != nil {
+            totalStatsArray[0].endlessIIModeHeightDate = endlessIIModeHeightDate!
         }
         if self.endlessModeHeightDate != nil {
             totalStatsArray[0].endlessModeHeightDate = endlessModeHeightDate!

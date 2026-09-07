@@ -1322,6 +1322,29 @@ extension GameScene {
             // on the canvas to within half a per cent, so the sub-texture's bottom edge *is*
             // the diameter - and anchoring there means the position the rest of this function
             // already computes needs no adjusting
+
+            if let skirtTexture = GameScene.endlessIIHaloSkirtTexture {
+                let skirt = SKSpriteNode(texture: skirtTexture)
+                skirt.anchorPoint = CGPoint(x: 0.5, y: 1)
+                skirt.name = GameScene.endlessIIHaloSkirtName
+                skirt.zPosition = 0
+                sprite.addChild(skirt)
+            }
+            // **The fade below the paddle line** (James, round 313: "The halo graphic looks
+            // good, but it stops very harshly at the paddle level. Let's add a gradual fade
+            // out of it from the paddle level and below").
+            //
+            // The hard edge is the semicircle being a semicircle: the halo only reaches
+            // upwards, so the texture is the top half of the square and the diameter is a cut
+            // straight across. This hangs the strip immediately below that cut underneath it,
+            // faded to nothing over its own depth - the disc's own pixels, so the silhouette
+            // carries on rather than a second shape starting.
+            //
+            // A child of the sprite rather than a node of its own: the halo is positioned,
+            // resized and removed in three places that all say `endlessIIPaddleHaloNode`, and
+            // a second node beside it is a second thing to remember at each of them. Alpha
+            // and position come free, since SpriteKit multiplies a parent's alpha into its
+            // children
         } else {
             let shape = SKShapeNode()
             shape.fillColor = GameScene.endlessIIHaloColour.withAlphaComponent(0.14)
@@ -1340,6 +1363,13 @@ extension GameScene {
         if let sprite = halo as? SKSpriteNode {
             let width = reach*2/GameScene.endlessIIHaloVisibleShare
             sprite.size = CGSize(width: width, height: width/2)
+            if let skirt = sprite.childNode(withName: GameScene.endlessIIHaloSkirtName)
+                as? SKSpriteNode {
+                skirt.size = CGSize(width: width,
+                                    height: width/2*GameScene.endlessIIHaloSkirtShare)
+            }
+            // The skirt is sized here rather than scaling with its parent, because a sprite's
+            // `size` is not a scale and does not reach its children
             // Half as tall as it is wide because the texture is the top half of a square
             // canvas. The disc inside it is `endlessIIHaloVisibleShare` of that width across,
             // so dividing by the share is what puts its edge on the reach rather than
@@ -1393,6 +1423,53 @@ extension GameScene {
     }
 
     static let endlessIIHaloColour = #colorLiteral(red: 0.8235294118, green: 1, blue: 0, alpha: 1)
+
+    static let endlessIIHaloSkirtName = "endlessIIHaloSkirt"
+
+    /// How far below the paddle line the glow keeps going, as a share of the halo's radius.
+    ///
+    /// Short on purpose. What James asked for is the cut softened, not the halo made into a
+    /// full disc - the lower half of the disc would be drawing a reach that does not exist,
+    /// and `haloTouches` refuses every brick whose top is below the centre. A third of the
+    /// radius is enough for the edge to read as a glow falling away rather than as a line.
+    static let endlessIIHaloSkirtShare: CGFloat = 0.35
+
+    /// The strip of the halo immediately below its diameter, faded out over its own depth.
+    ///
+    /// The disc's own pixels rather than a drawn gradient, so what continues below the paddle
+    /// line is the same glow that is above it, thinning: a second shape with its own falloff
+    /// would meet the semicircle at a seam, which is the thing being removed.
+    ///
+    /// Built once, at the picture's own resolution, by drawing the cropped strip and then
+    /// painting a vertical alpha ramp over it in `.destinationIn` - which multiplies the
+    /// ramp into what is already there rather than covering it, so the disc's own soft rim
+    /// survives the fade instead of being replaced by it.
+    static let endlessIIHaloSkirtTexture: SKTexture? = {
+        guard let image = UIImage(named: "Halo"), let full = image.cgImage else { return nil }
+        let pixels = CGSize(width: CGFloat(full.width), height: CGFloat(full.height))
+        let depth = (pixels.height/2*endlessIIHaloSkirtShare).rounded()
+        guard depth >= 1 else { return nil }
+
+        // Top-left origin, which is how a CGImage is cropped: the diameter is halfway down
+        let strip = CGRect(x: 0, y: pixels.height/2, width: pixels.width, height: depth)
+        guard let cropped = full.cropping(to: strip) else { return nil }
+
+        let size = CGSize(width: strip.width, height: strip.height)
+        let format = UIGraphicsImageRendererFormat.default()
+        format.scale = 1
+        format.opaque = false
+        let faded = UIGraphicsImageRenderer(size: size, format: format).image { context in
+            UIImage(cgImage: cropped).draw(in: CGRect(origin: .zero, size: size))
+            context.cgContext.setBlendMode(.destinationIn)
+            let colours = [UIColor(white: 1, alpha: 1).cgColor,
+                           UIColor(white: 1, alpha: 0).cgColor] as CFArray
+            guard let ramp = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(),
+                                        colors: colours, locations: [0, 1]) else { return }
+            context.cgContext.drawLinearGradient(
+                ramp, start: .zero, end: CGPoint(x: 0, y: size.height), options: [])
+        }
+        return SKTexture(image: faded)
+    }()
 
     // MARK: - The ring HUD
 
