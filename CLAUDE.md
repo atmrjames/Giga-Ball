@@ -104,6 +104,17 @@ xcodebuild -project Megaball.xcodeproj -scheme Megaball \
   that class alone before believing it, and do not go looking for the bug in the code it names.
   Adding an app-side guard is not the answer - round 118 established the fix is on the Mac.
 
+  **Round 313: it is no longer rare.** Four full-suite runs in one session, four of these -
+  `EndlessIILockAndKeyTests`, `EndlessIISquareBrickArtTests`, then
+  `EndlessIIStickyPaddleQueueTests` twice - one per run, each preceded by exactly one
+  `Restarting after unexpected exit`, each passing on its own immediately afterwards. The
+  totals still say `0 failures`, and the count they report (848) is the relaunched run's
+  alone rather than the ~1,145 that actually executed, so **read the `Failing tests:` list
+  and the relaunch count, not the total**. CoreAudio was complaining in the same logs
+  (`HALC_ProxyIOContext::IOWorkLoop: skipping cycle due to overload`), which points back at
+  round 118's diagnosis, so the remedy is still James's: a reboot, or `sudo killall
+  coreaudiod`.
+
 - **Stale derived data has twice hidden a new file from the test target**, producing "cannot
   find X in scope" for code that builds fine in the app. If a brand-new file's symbols are
   missing from tests, `xcodebuild clean` before believing the error.
