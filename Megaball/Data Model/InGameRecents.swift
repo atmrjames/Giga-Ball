@@ -84,6 +84,20 @@ final class InGameRecents {
         bricksDestroyedThisRun += 1
     }
 
+    /// Paddle hits this run, counted beside the scene's `paddleHitsPerLevel`.
+    ///
+    /// Round 313, from James's own log: a completed Classic level reported `0 paddle hits`.
+    /// The scene's counter is a *level* counter and the level-completion achievement block
+    /// zeroes it the moment the level is cleared, which is a few lines before the pause menu
+    /// builds the summary the log prints - so the number the summary read was always the one
+    /// after the reset. The per-level counter has to keep resetting, because two achievements
+    /// ask "in one level"; the run's total is a second count rather than a change to the first.
+    private(set) var paddleHitsThisRun = 0
+
+    func paddleHit() {
+        paddleHitsThisRun += 1
+    }
+
     /// The finished run's numbers, set by the scene as the game-over screen goes up -
     /// the screen and the detail page read, never compute. Grown to a proper record in
     /// round 8: the detail screen wants more than the game-over line shows.
@@ -227,6 +241,7 @@ final class InGameRecents {
         fallingPowerUpIndices = []
         brickHeldPowerUpIndices = []
         bricksDestroyedThisRun = 0
+        paddleHitsThisRun = 0
         runSummary = nil
         brickNames = []
     }

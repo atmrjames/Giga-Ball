@@ -127,8 +127,13 @@ class PreGame: GKState {
     /// and until now a log said nothing about which run it was watching, so every report had to
     /// carry that context by hand and a log on its own could not be read at all.
     private func logTheRun() {
-        let mode = scene.isDailyChallenge ? GameMode.daily.name
-            : (scene.endlessMode ? GameMode.current().name : GameMode.classic.name)
+        let mode = GameMode.forRun(isDailyChallenge: scene.isDailyChallenge,
+                                   startLevelNumber: scene.startLevelNumber).name
+        // Round 313: this asked `scene.endlessMode`, and a Mayhem run logged itself as
+        // "Classic Mode". Nothing has set that flag yet at pre-game - the pause menu sets it,
+        // from `levelNumber == 0`, and the pause menu has not been built. `startLevelNumber`
+        // is the same test made against a value the scene already holds, and the choice now
+        // lives on GameMode where a test can reach it.
 
         var detail = ""
         if let challenge = DailyChallengeSession.shared.active {

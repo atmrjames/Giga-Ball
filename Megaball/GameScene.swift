@@ -2320,10 +2320,27 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             break
         }
 		
-		if ballIsOnPaddle {
-			ballRelativePositionOnPaddle = ball.position.x - paddle.position.x
-		}
-		// Define the current position of the ball relative to the paddle
+		// **The offset is not re-derived here any more** (James, round 313: "I can still make the
+		// ball move along the sticky paddle by ramming the paddle into the side walls" - the
+		// third report, and the reason round 312's fix did not close it).
+		//
+		// This read `ballRelativePositionOnPaddle = ball.position.x - paddle.position.x` on every
+		// touch down, which sounds harmless and is the whole bug. The offset is *decided* by the
+		// things that place the ball - a sticky catch, a ball loss, a launch, a wrap - and
+		// `holdTheWaitingBallStill` then pins the ball to it every frame. Reading it back off the
+		// ball's live position turns the pin inside out: a touch that lands in the window between
+		// the engine shoving the resting ball and `didFinishUpdate` putting it back samples the
+		// shoved position and writes it in as the new truth. The pin then holds the ball at its
+		// new, drifted place.
+		//
+		// Which is exactly why it takes *repeated* rams. Each ram is a new touch, each new touch
+		// banked whatever that frame's shove had managed, and the ball walked along the paddle a
+		// fraction at a time. Round 312 stopped the shove from lasting and left the one line that
+		// was writing it down.
+		//
+		// Nothing needs it: an ordinary waiting serve is placed at the paddle's centre with the
+		// offset set to zero by `ballLost` and by the launch, and a caught ball has its offset
+		// set by the catch that decided where it landed.
         
         if gameState.currentState is Playing || gameState.currentState is Paused {
 			userSettings()
@@ -2950,7 +2967,14 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     /// started; without this a log stops mid-sentence, and the numbers a report quotes -
     /// "348m, 271 paddle hits, 19 power-ups seen" - had to be read off a screenshot of the
     /// stats page and typed back in by hand.
-    func logTheRunEnding() {
+    /// Round 313, from James's own log: `RUN ENDED 0 pts in 0s` printed the moment the
+    /// pause menu went up on a run that had barely started. The summary is built by
+    /// `showPauseMenu` because every one of its numbers is a question about *this moment*,
+    /// and pausing is one of the three things that opens that menu - but a pause is not an
+    /// ending, and a log that says a run ended four times in one run cannot be read. Only
+    /// the two senders that close a run print: the game-over screen, and a finished pack.
+    func logTheRunEnding(sender: String) {
+        guard sender == "Game Over" || sender == "Complete" else { return }
         guard let summary = InGameRecents.shared.runSummary else { return }
         Log.play.notice("""
             RUN ENDED \(summary.isEndless ? "\(summary.height)m" : "\(summary.score) pts", privacy: .public)             in \(summary.durationSeconds, privacy: .public)s,             \(summary.paddleHits, privacy: .public) paddle hits,             \(summary.bricksDestroyed, privacy: .public) bricks,             \(summary.ballsLost, privacy: .public) balls lost,             power-ups \(summary.powerUpsCollected, privacy: .public)/\(summary.powerUpsSeen, privacy: .public)
@@ -4655,6 +4679,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		}
 
 		paddleHitsPerLevel+=1
+		InGameRecents.shared.paddleHit()
+		// The level's count and the run's. The level one is zeroed at every level completion,
+		// for the two "in one level" achievements, so it cannot also answer the run summary
 
         totalStatsArray[0].ballHits+=1
 		hitsOnThisBall += 1
@@ -7211,7 +7238,7 @@ laserTimer?.invalidate()
 		InGameRecents.shared.runSummary = InGameRecents.RunSummary(
 			height: endlessHeight,
 			durationSeconds: levelTimerValue,
-			paddleHits: paddleHitsPerLevel,
+			paddleHits: InGameRecents.shared.paddleHitsThisRun,
 			bricksDestroyed: InGameRecents.shared.bricksDestroyedThisRun,
 			ballsLost: deathsPerLevel,
 			powerUpsSeen: InGameRecents.shared.powerUpsSeen,
@@ -7221,7 +7248,7 @@ laserTimer?.invalidate()
 			isEndless: endlessMode,
 			isMultiLevel: endlessMode == false && numberOfLevels > 1,
 			bestBallHits: max(hitsOnThisBall, runBestBallHits))
-		logTheRunEnding()
+		logTheRunEnding(sender: sender)
 			// `numberOfLevels` is how many the run was given, which is 1 for a Classic daily
 			// and for single-level mode - the same number the pause menu already branches on
 			// to decide whether to print "Level 3 of 10" (round 306)

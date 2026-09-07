@@ -167,6 +167,20 @@ enum GameMode: Int, CaseIterable {
         GameMode(rawValue: defaults.integer(forKey: defaultsKey)) ?? .classic
     }
 
+    /// The mode a run belongs to at pre-game, when nothing has been asked yet.
+    ///
+    /// Round 313. The run log asked the scene's `endlessMode`, which the *pause menu* sets
+    /// and which is therefore still false when the run starts - so a Mayhem run logged
+    /// itself as "Classic Mode". An endless run of either kind starts at level zero; which
+    /// of the two it is, is the stored current mode. A named helper rather than a ternary
+    /// repeated at each caller, so the next reader of a log and the next writer of one
+    /// agree.
+    static func forRun(isDailyChallenge: Bool, startLevelNumber: Int,
+                       defaults: UserDefaults = .standard) -> GameMode {
+        if isDailyChallenge { return .daily }
+        return startLevelNumber == 0 ? current(in: defaults) : .classic
+    }
+
     func makeCurrent(in defaults: UserDefaults = .standard) {
         defaults.set(rawValue, forKey: GameMode.defaultsKey)
     }

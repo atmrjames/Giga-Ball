@@ -411,6 +411,41 @@ final class StickyBandAlignmentTests: XCTestCase {
                        "and a ball in flight bounces off it as it always has")
     }
 
+    /// **A touch does not re-read the ball's offset off the ball** (round 313).
+    ///
+    /// James's third report of the same thing: "I can still make the ball move along the sticky
+    /// paddle by ramming the paddle into the side walls." Round 312 stopped the engine's shove
+    /// from *lasting* - the ball is pinned to its offset every frame now - and left the one line
+    /// that was writing the shove down. `touchesBegan` re-derived the offset from the ball's live
+    /// position, so a touch landing between the shove and the correction banked it as the new
+    /// truth, and the pin then held the ball at its drifted place.
+    ///
+    /// Which is why it took *repeated* rams: one ram, one touch, one fraction of a ball.
+    func testATouchDoesNotBankAShoveAsTheNewOffset() {
+        let game = scene()
+        game.paddle.position.x = 100
+        game.ballIsOnPaddle = true
+        game.ballRelativePositionOnPaddle = -15
+        game.ballStartingPositionY = -150
+        game.ball.physicsBody = SKPhysicsBody(circleOfRadius: 5)
+        game.addChild(game.ball)
+        game.didFinishUpdate()
+        XCTAssertEqual(game.ball.position.x, 85, accuracy: 0.01)
+
+        for ram in 1...6 {
+            game.ball.position.x += 4
+            // The engine shoving the resting ball, mid-frame
+            game.touchesBegan([], with: nil)
+            // A touch landing in that window - which used to bank the shove
+            game.didFinishUpdate()
+
+            XCTAssertEqual(game.ballRelativePositionOnPaddle, -15, accuracy: 0.01,
+                           "ram \(ram) rewrote the offset")
+            XCTAssertEqual(game.ball.position.x, 85, accuracy: 0.01,
+                           "ram \(ram) walked the ball along the paddle")
+        }
+    }
+
     /// **What the retro paddle's six scale factors actually are** (round 310).
     ///
     /// Expand and Shrink run six `scaleX` actions. The plain paddle and its two strips go to
