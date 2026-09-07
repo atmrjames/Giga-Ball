@@ -389,6 +389,7 @@
 		1AF1700000000A02 /* RunLogTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000A01 /* RunLogTests.swift */; };
 		1AF1700000000B02 /* ICloudSyncTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000B01 /* ICloudSyncTests.swift */; };
 		1AF1700000000D02 /* ScreenPresentationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000D01 /* ScreenPresentationTests.swift */; };
+		1AF1700000000E02 /* MenuLayoutTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000E01 /* MenuLayoutTests.swift */; };
 		1AF1700000000912 /* ResumeCardRenderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000911 /* ResumeCardRenderTests.swift */; };
 		1AF1700000000922 /* DailyAchievementsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000921 /* DailyAchievementsTests.swift */; };
 		1AF1700000000932 /* AchievementAwardTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000931 /* AchievementAwardTests.swift */; };
@@ -781,6 +782,7 @@
 		1AF1700000000A01 /* RunLogTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunLogTests.swift; sourceTree = "<group>"; };
 		1AF1700000000B01 /* ICloudSyncTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ICloudSyncTests.swift; sourceTree = "<group>"; };
 		1AF1700000000D01 /* ScreenPresentationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenPresentationTests.swift; sourceTree = "<group>"; };
+		1AF1700000000E01 /* MenuLayoutTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuLayoutTests.swift; sourceTree = "<group>"; };
 		1AF1700000000911 /* ResumeCardRenderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResumeCardRenderTests.swift; sourceTree = "<group>"; };
 		1AF1700000000921 /* DailyAchievementsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyAchievementsTests.swift; sourceTree = "<group>"; };
 		1AF1700000000931 /* AchievementAwardTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AchievementAwardTests.swift; sourceTree = "<group>"; };
@@ -839,6 +841,7 @@
 				1AF1700000000A01 /* RunLogTests.swift */,
 				1AF1700000000B01 /* ICloudSyncTests.swift */,
 				1AF1700000000D01 /* ScreenPresentationTests.swift */,
+				1AF1700000000E01 /* MenuLayoutTests.swift */,
 				1AF1700000000931 /* AchievementAwardTests.swift */,
 				1AF1700000000921 /* DailyAchievementsTests.swift */,
 				1AF1700000000911 /* ResumeCardRenderTests.swift */,
@@ -1676,6 +1679,7 @@
 				1AF1700000000A02 /* RunLogTests.swift in Sources */,
 				1AF1700000000B02 /* ICloudSyncTests.swift in Sources */,
 				1AF1700000000D02 /* ScreenPresentationTests.swift in Sources */,
+				1AF1700000000E02 /* MenuLayoutTests.swift in Sources */,
 				1AF1700000000932 /* AchievementAwardTests.swift in Sources */,
 				1AF1700000000922 /* DailyAchievementsTests.swift in Sources */,
 				1AF1700000000912 /* ResumeCardRenderTests.swift in Sources */,

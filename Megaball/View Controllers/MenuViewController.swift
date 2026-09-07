@@ -75,6 +75,43 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         
 //        SKPaymentQueue.default().add(self)
                 
+        NSLayoutConstraint.activate([
+            modeSelectTableView.topAnchor.constraint(
+                greaterThanOrEqualTo: tableViewContainer.topAnchor),
+            modeSelectTableView.bottomAnchor.constraint(
+                lessThanOrEqualTo: tableViewContainer.bottomAnchor),
+        ])
+
+        let rows = modeSelectTableView.heightAnchor.constraint(equalToConstant: 0)
+        rows.isActive = true
+        modeRowsHeight = rows
+        // **Said outright rather than left to the content** (round 313). Without this the
+        // table's height is its intrinsic content size, and that does not update inside the
+        // same layout pass that changes the row height - `reloadData` does not invalidate it -
+        // so the table spent a pass at four rows of the *previous* height. On a phone that
+        // left 495 points of rows in 450 points of table: a main menu that scrolls, which is
+        // the one thing this menu is not allowed to do.
+        // **The rows cannot leave the room they were given** (James, round 313). The row
+        // height above is what decides how tall the table wants to be, and getting that
+        // arithmetic right is what makes it fit - but the table is centred in its container
+        // with nothing pinning its ends, so a wrong answer does not crowd the rows, it hangs
+        // them out of both ends of the container and over the two things either side.
+        //
+        // Within rather than equal to, so the rows stay *centred* in the room by the
+        // storyboard's `centerY` when there is more of it than they need. A tall thin window
+        // gives the container 823 points and the rows are capped at 150 apiece, so 600 of
+        // table has 223 to spare - pinned to both ends it would sit that gap under the last
+        // mode instead of splitting it, and the four buttons would bunch at the top.
+        //
+        // A table's height comes from its content at the ordinary compression-resistance
+        // priority, so these two win over it when the room runs out. In a window too short
+        // for four cards the rows scroll rather than escaping, which is the graceful way for
+        // "the main menu never scrolls" to fail: the player can still reach every mode.
+        //
+        // In code rather than in the storyboard because the storyboard's own three
+        // constraints for this table are size-class variations of each other and adding a
+        // fourth by hand there is how that set stops being readable.
+
         logoImage.image = UIImage(named: "Logo")
         logoImage.applyGigaBallGlow(radius: GigaBallGlow.wordmarkRadius)
         // Radiating evenly rather than downward (play-test round 13): the offset version
@@ -162,15 +199,55 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
 
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
-        let modeCount = CGFloat(GameMode.allCases.count)
-        let fitted = min(150, modeSelectTableView.bounds.height/modeCount)
-        if modeSelectTableView.bounds.height > 0, modeSelectTableView.rowHeight != fitted {
+        let room = menuRoomForModeRows
+        guard room > 0 else { return }
+        let fitted = MenuViewController.modeRowHeight(inRoomOf: room)
+        let wanted = min(room, fitted*CGFloat(GameMode.allCases.count))
+
+        if modeSelectTableView.rowHeight != fitted {
             modeSelectTableView.rowHeight = fitted
             modeSelectTableView.reloadData()
         }
+        if let modeRowsHeight, abs(modeRowsHeight.constant - wanted) > 0.5 {
+            modeRowsHeight.constant = wanted
+        }
         // The first cells can be asked for before the table has its size, and a row height
         // computed from a zero-height table would stick. Re-fitted here once the layout is
-        // real, and only when it actually changed - reloadData in a layout pass loops
+        // real, and only when it actually changed - reloadData in a layout pass loops, and so
+        // does assigning a constraint's constant
+    }
+
+    /// The height of the four rows together, so the table is exactly as tall as they are.
+    private var modeRowsHeight: NSLayoutConstraint?
+
+    /// The height the four mode rows have to share.
+    ///
+    /// **The container's, not the table's** (James, round 313: the iPad's "layouts need work
+    /// with resizing", and two of his screenshots show the wordmark sitting on top of Classic
+    /// Mode and the information and settings buttons sitting on top of Daily Challenge).
+    ///
+    /// The old line asked `modeSelectTableView.bounds.height`, and that is circular: a table
+    /// with no vertical pin takes its height from its content, and its content is four rows of
+    /// whatever this returns. Every height is its own fixed point, so the answer was simply
+    /// whatever the table happened to start at - 150 a row, 600 points of table - and in a
+    /// windowed iPad the container it is centred in is 248 points tall. The table then hangs
+    /// 158 points out of each end of it: over the logo above, and over the icon row below.
+    /// Measured, in a 931x708 window: container 275 to 523, table 117 to 680, logo 140 to 185.
+    ///
+    /// The container's height is the room that actually exists, and it is not defined in terms
+    /// of the answer, so there is nothing circular left.
+    private var menuRoomForModeRows: CGFloat { tableViewContainer.bounds.height }
+
+    /// Every mode fits on screen at once - the main menu never scrolls (play-test rule).
+    ///
+    /// Four rows at the old fixed 150 overflowed the 450pt table and the fourth mode was below
+    /// the fold. The card inside the cell is 75pt, so rows can bunch to a quarter of the room
+    /// and the gap between the cards is what gives.
+    static func modeRowHeight(inRoomOf room: CGFloat) -> CGFloat {
+        guard room > 0 else { return 150 }
+        return max(75, min(150, room/CGFloat(GameMode.allCases.count)))
+        // Never below the card itself, or the cards start overlapping each other instead -
+        // a window short enough to force that is one the rows should crowd in, not stack
     }
     
     func setBlur() {
@@ -242,13 +319,10 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "modeSelectCell", for: indexPath) as! ModeSelectTableViewCell
 
-        let modeCount = CGFloat(GameMode.allCases.count)
-        let tableHeight = modeSelectTableView.bounds.height
-        modeSelectTableView.rowHeight = tableHeight > 0 ? min(150, tableHeight/modeCount) : 150
-        // Every mode fits on screen at once - the main menu never scrolls (play-test rule).
-        // Four rows at the old fixed 150 overflowed the 450pt table, and the fourth mode
-        // was below the fold. The card inside the cell is 75pt, so rows can bunch to the
-        // table's quarter-height and the gap between cards is what gives
+        modeSelectTableView.rowHeight =
+            MenuViewController.modeRowHeight(inRoomOf: menuRoomForModeRows)
+        // The same rule as the layout pass, from the same place. Asked here too because the
+        // first cells can be built before any layout has happened
 
         let mode = GameMode(rawValue: indexPath.row) ?? .classic
         cell.modeTextLabel.text = mode.name
