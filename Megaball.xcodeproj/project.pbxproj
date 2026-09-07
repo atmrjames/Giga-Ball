@@ -28,6 +28,7 @@
 		1AF1700000000097 /* EndlessIIStickyPaddle.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000096 /* EndlessIIStickyPaddle.swift */; };
 		000000001AF18000000000A1 /* DailyChallenge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000001AF18000000000A0 /* DailyChallenge.swift */; };
 		000000001AF18000000000C1 /* InGameRecents.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000001AF18000000000C0 /* InGameRecents.swift */; };
+		1AF1700000000F02 /* PauseSwipe.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000F01 /* PauseSwipe.swift */; };
 		000000001AF18000000000A3 /* DailyTwists.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000001AF18000000000A2 /* DailyTwists.swift */; };
 		000000001AF18000000000A5 /* DailyChallengeViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000001AF18000000000A4 /* DailyChallengeViewController.swift */; };
 		000000001AF1800000000201 /* PaddleSpeedViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 000000001AF1800000000200 /* PaddleSpeedViewController.swift */; };
@@ -389,6 +390,7 @@
 		1AF1700000000A02 /* RunLogTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000A01 /* RunLogTests.swift */; };
 		1AF1700000000B02 /* ICloudSyncTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000B01 /* ICloudSyncTests.swift */; };
 		1AF1700000000D02 /* ScreenPresentationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000D01 /* ScreenPresentationTests.swift */; };
+		1AF1710000000102 /* PauseSwipeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1710000000101 /* PauseSwipeTests.swift */; };
 		1AF1700000000E02 /* MenuLayoutTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000E01 /* MenuLayoutTests.swift */; };
 		1AF1700000000912 /* ResumeCardRenderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000911 /* ResumeCardRenderTests.swift */; };
 		1AF1700000000922 /* DailyAchievementsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000921 /* DailyAchievementsTests.swift */; };
@@ -417,6 +419,7 @@
 		1AF1700000000096 /* EndlessIIStickyPaddle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndlessIIStickyPaddle.swift; sourceTree = "<group>"; };
 		000000001AF18000000000A0 /* DailyChallenge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyChallenge.swift; sourceTree = "<group>"; };
 		000000001AF18000000000C0 /* InGameRecents.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InGameRecents.swift; sourceTree = "<group>"; };
+		1AF1700000000F01 /* PauseSwipe.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PauseSwipe.swift; sourceTree = "<group>"; };
 		000000001AF18000000000A2 /* DailyTwists.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyTwists.swift; sourceTree = "<group>"; };
 		000000001AF18000000000A4 /* DailyChallengeViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyChallengeViewController.swift; sourceTree = "<group>"; };
 		000000001AF1800000000200 /* PaddleSpeedViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaddleSpeedViewController.swift; sourceTree = "<group>"; };
@@ -782,6 +785,7 @@
 		1AF1700000000A01 /* RunLogTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunLogTests.swift; sourceTree = "<group>"; };
 		1AF1700000000B01 /* ICloudSyncTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ICloudSyncTests.swift; sourceTree = "<group>"; };
 		1AF1700000000D01 /* ScreenPresentationTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenPresentationTests.swift; sourceTree = "<group>"; };
+		1AF1710000000101 /* PauseSwipeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PauseSwipeTests.swift; sourceTree = "<group>"; };
 		1AF1700000000E01 /* MenuLayoutTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuLayoutTests.swift; sourceTree = "<group>"; };
 		1AF1700000000911 /* ResumeCardRenderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResumeCardRenderTests.swift; sourceTree = "<group>"; };
 		1AF1700000000921 /* DailyAchievementsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyAchievementsTests.swift; sourceTree = "<group>"; };
@@ -841,6 +845,7 @@
 				1AF1700000000A01 /* RunLogTests.swift */,
 				1AF1700000000B01 /* ICloudSyncTests.swift */,
 				1AF1700000000D01 /* ScreenPresentationTests.swift */,
+				1AF1710000000101 /* PauseSwipeTests.swift */,
 				1AF1700000000E01 /* MenuLayoutTests.swift */,
 				1AF1700000000931 /* AchievementAwardTests.swift */,
 				1AF1700000000921 /* DailyAchievementsTests.swift */,
@@ -1411,6 +1416,7 @@
 			children = (
 				000000001AF18000000000A0 /* DailyChallenge.swift */,
 		000000001AF18000000000C0 /* InGameRecents.swift */,
+		1AF1700000000F01 /* PauseSwipe.swift */,
 				000000001AF1800000000030 /* EndlessIIClock.swift */,
 				000000001AF1800000000032 /* EndlessIIPaddleEffects.swift */,
 				000000001AF1800000000314 /* EndlessIIExclusions.swift */,
@@ -1679,6 +1685,7 @@
 				1AF1700000000A02 /* RunLogTests.swift in Sources */,
 				1AF1700000000B02 /* ICloudSyncTests.swift in Sources */,
 				1AF1700000000D02 /* ScreenPresentationTests.swift in Sources */,
+				1AF1710000000102 /* PauseSwipeTests.swift in Sources */,
 				1AF1700000000E02 /* MenuLayoutTests.swift in Sources */,
 				1AF1700000000932 /* AchievementAwardTests.swift in Sources */,
 				1AF1700000000922 /* DailyAchievementsTests.swift in Sources */,
@@ -1735,6 +1742,7 @@
 				1AF1700000000097 /* EndlessIIStickyPaddle.swift in Sources */,
 				000000001AF18000000000A1 /* DailyChallenge.swift in Sources */,
 		000000001AF18000000000C1 /* InGameRecents.swift in Sources */,
+		1AF1700000000F02 /* PauseSwipe.swift in Sources */,
 				000000001AF18000000000A3 /* DailyTwists.swift in Sources */,
 				000000001AF18000000000A5 /* DailyChallengeViewController.swift in Sources */,
 				000000001AF1800000000201 /* PaddleSpeedViewController.swift in Sources */,

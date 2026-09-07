@@ -586,8 +586,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     var appIconSetting: Int = 0
 	var swipeUpPause: Bool = true
 
-	/// Where the current touch began, for the swipe-up-to-pause distance check.
-	var pauseSwipeStartY: CGFloat?
+	/// Whether the current touch has asked for the pause menu - see `PauseSwipe`, which owns
+	/// the rule, and `swipeGesture`, which owns the half UIKit contributes.
+	var pauseSwipe = PauseSwipe()
 
 	/// How far up a finger has to travel before a swipe counts as asking for the pause menu.
 	///
@@ -1973,8 +1974,15 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		
 		let swipeUp = UISwipeGestureRecognizer(target: self, action: #selector(swipeGesture))
 		swipeUp.direction = .up
+		swipeUp.cancelsTouchesInView = false
 		view.addGestureRecognizer(swipeUp)
-		// Setup swipe gesture
+		// **It must not cancel the scene's touches** (round 313). It recognises about forty
+		// points into the flick and, cancelling, stopped the scene's `touchesMoved` there -
+		// so the scene's own measurement of the travel stopped at forty too, and the six
+		// ball-widths the pause asks for were unreachable from either side. Left running, the
+		// scene follows the finger to the end of the swipe and pauses the moment it is far
+		// enough. It also means the paddle is no longer yanked out from under a flick that
+		// turns out to be too short.
 		
 		gameState.enter(PreGame.self)
         // Tell the state machine to enter the waiting for tap state
@@ -2098,6 +2106,18 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             let touchLocation = touch!.location(in: self)
             let previousLocation = touch!.previousLocation(in: self)
             // Define the current touch position and previous touch position
+
+            pauseSwipe.moved(to: touchLocation.y)
+            if pauseSwipe.shouldPause(travellingAtLeast: pauseSwipeMinimumTravel),
+               swipeUpPauseIsAllowed {
+                pauseFromSwipe()
+                return
+            }
+            // **The distance is measured here, not by the recogniser** (James, round 313:
+            // "swipe up to pause is no longer working at all"). UIKit recognises the flick
+            // about forty points in and hands over a location that is still the *start* of
+            // the gesture, so at that moment nobody knows how far the finger is going. The
+            // recogniser says it was a flick; this says when it has gone far enough.
             
 			var paddleX0 = CGFloat(0)
             var paddleX1 = CGFloat(0)
@@ -2292,7 +2312,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         switch gameState.currentState {
         case is Playing:
             touchBeganWhilstPlaying = true
-            pauseSwipeStartY = touches.first.map { $0.location(in: self).y }
+            if let began = touches.first?.location(in: self).y { pauseSwipe.began(at: began) }
             // Where a swipe-up-to-pause would have to travel *from* - see `swipeGesture`
             endlessIIAimTouchPredatesHold = false
             // **A touch beginning now cannot predate anything**, whatever else is running.
@@ -2363,6 +2383,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     }
     
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
+        defer { pauseSwipe.ended() }
+        // One touch, one chance to ask for the pause menu. Deferred so every early return
+        // below clears it too - a start left behind from the last touch is a distance
+        // measured from the wrong place
+
         if finishEndlessIIBuildIn() {
             touchBeganWhilstPlaying = false
             return
@@ -4308,14 +4333,22 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	/// Whether this brick has reached the field's bottom zone - where it blocks the
 	/// descent, and past which nothing may draw.
 	///
-	/// The row test answers for ordinary bricks: the final row is the last one. The frame
+	/// The row test answers for ordinary bricks: the final row is the last one. The cell
 	/// test answers for the oversized: a Big brick keeps its node on a row centre and
 	/// hangs its body below it (§8.6), so its *body* reaches the lower-limit line a full
 	/// row before its row centre does - and one row above the line is where it stops
 	/// (play-test round 10: a Big brick's lower half sat below the kill line).
+	///
+	/// **The cell rather than the sprite** (James, round 313: "a square brick was over the
+	/// low brick line by one brick height. It should stop at the bottom of the brick"). This
+	/// read `sprite.frame`, and a styled brick's sprite is not its cell: `makeFace` and
+	/// `makeRounded` both shrink it and tuck it behind the picture they draw, which is the
+	/// same trap round 270 closed for `endlessIIFieldSize`. A Square brick is two rows tall,
+	/// so the shrink is worth about a row - and a row is exactly how far past the line it
+	/// went. `endlessIIFieldRect` is the one that still knows where the cell is.
 	func brickHasReachedTheBottomZone(_ sprite: SKSpriteNode) -> Bool {
 		if sprite.position.y <= finalBrickRowHeight + brickHeight/2 { return true }
-		return sprite.frame.minY <= finalBrickRowHeight - brickHeight/2 + 1
+		return endlessIIFieldRect(of: sprite).minY <= finalBrickRowHeight - brickHeight/2 + 1
 	}
 
 	func countBricks() {
@@ -8012,26 +8045,34 @@ laserTimer?.invalidate()
     }
     // Pause the game if a notifcation from AppDelegate is received that the game will quit
 	
-	@objc func swipeGesture(gesture: UISwipeGestureRecognizer) -> Void {
-		guard endlessMoveInProgress == false, gameState.currentState is Playing,
-			  swipeUpPause, dailyPausingIsAllowed else { return }
+	/// Whether a swipe up may open the pause menu at this moment.
+	var swipeUpPauseIsAllowed: Bool {
+		endlessMoveInProgress == false && gameState.currentState is Playing
+			&& swipeUpPause && dailyPausingIsAllowed
+	}
 
-		if let start = pauseSwipeStartY, let view {
-			let here = convertPoint(fromView: gesture.location(in: view)).y
-			guard here - start >= pauseSwipeMinimumTravel else { return }
-		}
-		// **Far enough to have meant it** (James, round 312: "I seem to be accidentally
-		// triggering it a lot"). The recogniser fires on a flick and has no threshold of its
-		// own, so the travel is measured against where the touch began - which the scene knows
-		// because it is already tracking the touch to drive the paddle.
-		//
-		// A missing start is let through rather than refused: the gesture and the scene's own
-		// touch handling are two views of the same finger and there is no guarantee the scene
-		// saw the beginning of it, and a pause that occasionally still works is a far better
-		// failure than one that has quietly stopped
-
+	func pauseFromSwipe() {
 		clearSavedGame()
 		gameState.enter(Paused.self)
+	}
+
+	/// UIKit's half of the gesture: that this was a flick, and that it was upwards.
+	///
+	/// **Not how far it went.** A discrete recogniser reports the location the gesture *began*
+	/// from, so round 312's `here - start` was always exactly zero and the distance check it
+	/// added could never pass - which is what James is reporting as "no longer working at all".
+	/// Measured on a 450-point swipe: `here` and `start` agreed to six decimal places.
+	///
+	/// It fires about forty points into the swipe, well short of the six ball-widths the check
+	/// asks for, so it usually cannot answer yes on its own either. It asks anyway, for the
+	/// flick that was already long enough by then, and otherwise leaves the note that
+	/// `touchesMoved` is watching for.
+	@objc func swipeGesture(gesture: UISwipeGestureRecognizer) -> Void {
+		guard swipeUpPauseIsAllowed else { return }
+		pauseSwipe.recognisedAFlick()
+		if pauseSwipe.shouldPause(travellingAtLeast: pauseSwipeMinimumTravel) {
+			pauseFromSwipe()
+		}
 	}
 	
 	func saveGameStats() {

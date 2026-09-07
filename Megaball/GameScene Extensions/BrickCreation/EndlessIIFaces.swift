@@ -305,14 +305,24 @@ extension GameScene {
 
     /// The room a brick takes up, as a rectangle in the field's own coordinates.
     ///
-    /// `brick.frame` for everything that is not shaped - which is what a Big brick needs,
-    /// since its sprite genuinely hangs off its node. A shaped brick's silhouette is centred
-    /// on the node, so its rectangle is the cell around the node rather than the sprite's.
+    /// The cell, from the two things that still know it after a style has been put on: its
+    /// size from `endlessIIFieldSize`, and where it is drawn from `endlessIIBrickCentre`.
+    /// For a brick nothing has shrunk this is exactly `brick.frame` - the anchor arithmetic
+    /// reduces to it - which is what a Big brick needs, since its sprite genuinely hangs off
+    /// its node.
+    ///
+    /// **Not the node, and not the sprite** (round 313, from James: "a square brick was over
+    /// the low brick line by one brick height"). Two separate ways of getting this wrong meet
+    /// on a Square brick, whose cell is two rows tall with the node on the *upper* row's
+    /// centre - so the cell is half a cell below the node, and every style shrinks the sprite
+    /// to hide it behind the face it draws. Centring the cell on the node is wrong by half a
+    /// row; reading the sprite is wrong by however much the style shrank it, which for a face
+    /// is most of a row. `brickHasReachedTheBottomZone` was asking the sprite.
     func endlessIIFieldRect(of brick: SKSpriteNode) -> CGRect {
-        guard brick.endlessIIFace != nil else { return brick.frame }
         let size = endlessIIFieldSize(of: brick)
-        return CGRect(x: brick.position.x - size.width/2,
-                      y: brick.position.y - size.height/2,
+        let centre = endlessIIBrickCentre(of: brick)
+        return CGRect(x: brick.position.x + centre.x - size.width/2,
+                      y: brick.position.y + centre.y - size.height/2,
                       width: size.width, height: size.height)
     }
 
