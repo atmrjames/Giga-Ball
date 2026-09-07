@@ -3008,6 +3008,18 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         // Once a second: this walks every brick, and the answer cannot change faster than a
         // brick can be destroyed
 
+        let found = phantomBrickPositions()
+        guard found.isEmpty == false else { return }
+        Log.play.error("PHANTOM BRICKS: \(found.count, privacy: .public) solid but unseeable, at \(String(describing: found.prefix(4)), privacy: .public)")
+        // What is left is what this was built for: a brick solid and unseeable for no declared
+        // reason - a Fog reveal that did not finish, a face left behind its hiding rectangle, a
+        // Breathing brick shrunk to nothing and never grown back
+        #endif
+    }
+
+    /// Every brick the ball can hit and the player cannot see. The watch's decision, apart
+    /// from the watch, so it can be asked without a running game.
+    func phantomBrickPositions() -> [CGPoint] {
         var found: [CGPoint] = []
         enumerateChildNodes(withName: BrickCategoryName) { [weak self] node, _ in
             guard let self,
@@ -3028,16 +3040,25 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             // correct behaviour is one whose next real finding gets skipped over, which matters
             // more now that these logs are being read.
 
+            guard sprite.hasActions() == false else { return }
+            // **A brick mid-animation is not a phantom** (round 313). James's log carried
+            // `PHANTOM BRICKS: 142` from a vanilla Classic daily at the level build-in, and
+            // 142 is most of a Classic field: the build-in sets every brick to alpha zero and
+            // scale zero and pops the rows in from the top on a stagger, so for that second
+            // every brick still waiting its turn is solid and unseeable, correctly.
+            //
+            // Asking for actions rather than for a build-in flag, because it is the general
+            // form of the same thing and it needs no list: §8.6's rule is that **nothing runs
+            // a repeating action on a brick** - `countBricks` gates row generation on
+            // `hasActions()`, so a permanent one would stop the field descending for ever -
+            // which means an action on a brick is always a transient animation in progress.
+            // The next animation to fade a brick in is covered without anyone remembering.
+
             let invisible = sprite.isHidden || sprite.alpha < 0.05
                 || sprite.xScale < 0.05 || sprite.yScale < 0.05
             if invisible { found.append(sprite.position) }
         }
-        guard found.isEmpty == false else { return }
-        Log.play.error("PHANTOM BRICKS: \(found.count, privacy: .public) solid but unseeable, at \(String(describing: found.prefix(4)), privacy: .public)")
-        // What is left is what this was built for: a brick solid and unseeable for no declared
-        // reason - a Fog reveal that did not finish, a face left behind its hiding rectangle, a
-        // Breathing brick shrunk to nothing and never grown back
-        #endif
+        return found
     }
 
     func crookedBallWatch() {

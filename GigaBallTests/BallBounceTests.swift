@@ -608,3 +608,78 @@ final class BounceIsAFunctionOfTheBounceTests: XCTestCase {
         XCTAssertEqual(headings.count, 1, "\(headings.sorted())")
     }
 }
+
+/// The phantom-brick tripwire, and the one thing it kept crying at.
+///
+/// James's round 313 log, from a vanilla Classic daily with no twists in it:
+/// `PHANTOM BRICKS: 142 solid but unseeable`. 142 is most of a Classic field, and the moment
+/// it fired at was the level build-in - which sets every brick to alpha zero and scale zero
+/// and pops the rows in from the top on a stagger. Every brick still waiting its turn was
+/// solid and unseeable, correctly.
+///
+/// A tripwire that cries at correct behaviour is one whose next real finding gets skipped
+/// over, which is the second time that has been said about this one (round 312 was Hide
+/// Bricks).
+final class PhantomBrickWatchTests: XCTestCase {
+
+    private func scene() -> GameScene {
+        let scene = GameScene(size: CGSize(width: 400, height: 800))
+        scene.brickWidth = 40
+        scene.brickHeight = 20
+        return scene
+    }
+
+    @discardableResult
+    private func brick(in scene: GameScene, at x: CGFloat) -> SKSpriteNode {
+        let brick = SKSpriteNode(color: .red, size: CGSize(width: 40, height: 20))
+        brick.name = BrickCategoryName
+        brick.position = CGPoint(x: x, y: 100)
+        brick.physicsBody = SKPhysicsBody(rectangleOf: brick.size)
+        brick.physicsBody?.categoryBitMask = CollisionTypes.brickCategory.rawValue
+        scene.addChild(brick)
+        return brick
+    }
+
+    /// The report: a field mid-build-in is not a field of phantoms.
+    func testAFieldWaitingItsTurnInTheBuildInIsNotReported() {
+        let scene = self.scene()
+        for column in 0..<11 {
+            let waiting = brick(in: scene, at: CGFloat(column)*40 - 200)
+            waiting.alpha = 0
+            waiting.setScale(0)
+            waiting.run(.sequence([.wait(forDuration: Double(column)*0.04),
+                                   .group([.fadeIn(withDuration: GameScene.classicBuildInPop),
+                                           .scale(to: 1, duration: GameScene.classicBuildInPop)])]))
+        }
+        XCTAssertEqual(scene.phantomBrickPositions().count, 0,
+                       "the build-in is the animation working, not 142 phantoms")
+    }
+
+    /// And it still finds the thing it was built for: solid, unseeable, and nothing running.
+    func testABrickLeftInvisibleWithNothingRunningIsStillReported() {
+        let scene = self.scene()
+        let stranded = brick(in: scene, at: 0)
+        stranded.alpha = 0
+
+        XCTAssertEqual(scene.phantomBrickPositions(), [stranded.position],
+                       "a Fog reveal that did not finish, or a brick shrunk and never grown "
+                       + "back, is exactly what this watch is for")
+    }
+
+    func testAVisibleBrickIsNeverReported() {
+        let scene = self.scene()
+        brick(in: scene, at: 0)
+        XCTAssertTrue(scene.phantomBrickPositions().isEmpty)
+    }
+
+    /// Round 312's exclusion, kept: a brick meant to be unseeable is not a phantom.
+    func testAnInvisibleTexturedBrickIsStillExcluded() {
+        let scene = self.scene()
+        let hidden = brick(in: scene, at: 0)
+        hidden.texture = scene.brickInvisibleTexture
+        hidden.isHidden = true
+
+        XCTAssertTrue(scene.phantomBrickPositions().isEmpty,
+                      "Hide Bricks and Mayhem's Invisible brick both work this way")
+    }
+}

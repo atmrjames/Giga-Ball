@@ -956,8 +956,9 @@ final class CloudKitHandler: NSObject {
         if let endlessModeHeightCloud = iCloudStore.array(forKey: "endlessModeHeight") as? [Int] {
             if endlessModeHeightCloud.reduce(0, +) > endlessModeHeight!.reduce(0, +) {
                 totalStatsArray[0].endlessModeHeight = endlessModeHeightCloud
-                if let dates = iCloudStore.array(forKey: "endlessModeHeightDate") as? [Date] {
-                    totalStatsArray[0].endlessModeHeightDate = dates
+                if let endlessModeHeightDateCloud =
+                    iCloudStore.array(forKey: "endlessModeHeightDate") as? [Date] {
+                    totalStatsArray[0].endlessModeHeightDate = endlessModeHeightDateCloud
                 }
             }
         }
@@ -966,8 +967,9 @@ final class CloudKitHandler: NSObject {
         if let endlessIIModeHeightCloud = iCloudStore.array(forKey: "endlessIIModeHeight") as? [Int] {
             if endlessIIModeHeightCloud.reduce(0, +) > endlessIIModeHeight!.reduce(0, +) {
                 totalStatsArray[0].endlessIIModeHeight = endlessIIModeHeightCloud
-                if let dates = iCloudStore.array(forKey: "endlessIIModeHeightDate") as? [Date] {
-                    totalStatsArray[0].endlessIIModeHeightDate = dates
+                if let endlessIIModeHeightDateCloud =
+                    iCloudStore.array(forKey: "endlessIIModeHeightDate") as? [Date] {
+                    totalStatsArray[0].endlessIIModeHeightDate = endlessIIModeHeightDateCloud
                 }
             }
         }
