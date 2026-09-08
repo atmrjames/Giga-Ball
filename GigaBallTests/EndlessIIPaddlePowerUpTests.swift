@@ -3514,6 +3514,63 @@ final class PaddleSurfaceTests: XCTestCase {
               + "\(file.path)\n")
     }
 
+    /// **The same picture, drawn by the game rather than by the test.**
+    ///
+    /// The render above places its markers from the profile directly, which checks the
+    /// arithmetic and not the wiring. This one catches real balls with `endlessIICatchExtraBall`
+    /// and lets `tickEndlessIIHeldBalls` place them, which is the path a sticky paddle actually
+    /// takes - so what is on screen is what a player would see, and a height profile that was
+    /// right in a formula and never reached the balls would show here and nowhere else.
+    func testTheGamesOwnHeldBallsOnAShapedPaddleCanBeLookedAt() throws {
+        let shapes: [PaddleBounce.Surface] = [.convex, .concave, .wavy, .wedgeLeft]
+        let rowHeight: CGFloat = 74
+        let scene = GameScene(size: CGSize(width: 300,
+                                           height: rowHeight*CGFloat(shapes.count) + 16))
+        scene.backgroundColor = UIColor(red: 0.06, green: 0.05, blue: 0.14, alpha: 1)
+        scene.anchorPoint = CGPoint(x: 0.5, y: 0.5)
+
+        for (row, surface) in shapes.enumerated() {
+            let built = self.scene(wearing: surface)
+            guard let texture = built.paddle.texture else { continue }
+            let y = scene.size.height/2 - rowHeight*(CGFloat(row) + 0.5)
+
+            // A paddle drawn where the built one stands, moved into the render's own row
+            let face = SKSpriteNode(texture: texture, size: built.paddle.size)
+            face.position = CGPoint(x: 0, y: y)
+            scene.addChild(face)
+
+            built.stickyPaddleCatches = 5
+            let half = built.paddle.size.width/2
+            for step in stride(from: CGFloat(-0.8), through: 0.8, by: 0.4) {
+                let extra = SKSpriteNode(color: UIColor(red: 0.82, green: 1, blue: 0, alpha: 1),
+                                         size: built.ball.size)
+                extra.position = CGPoint(x: built.paddle.position.x + step*half, y: 0)
+                built.addChild(extra)
+                built.endlessIICatchExtraBall(extra)
+            }
+            built.tickEndlessIIHeldBalls()
+            // The game's own catch and the game's own per-frame placement, in that order
+
+            for held in built.endlessIIHeldBalls {
+                let marker = SKSpriteNode(color: UIColor(red: 0.82, green: 1, blue: 0, alpha: 1),
+                                          size: held.size)
+                marker.position = CGPoint(x: held.position.x - built.paddle.position.x,
+                                          y: y + (held.position.y - built.paddle.position.y))
+                scene.addChild(marker)
+                // Placed relative to the paddle it was caught on, so the row shows the offset
+                // the game produced rather than the scene it produced it in
+            }
+        }
+
+        let view = SKView(frame: CGRect(origin: .zero, size: scene.size))
+        let rendered = try XCTUnwrap(view.texture(from: scene),
+                                     "no renderer here, so there is nothing to look at")
+        let file = URL(fileURLWithPath: NSTemporaryDirectory())
+            .appendingPathComponent("caught-ball-heights.png")
+        try XCTUnwrap(UIImage(cgImage: rendered.cgImage()).pngData()).write(to: file)
+        print("\n  Balls caught by the game's own sticky path: \(file.path)\n")
+    }
+
     /// Past either end, the end's own height - not a curve carried on into thin air.
     ///
     /// A ball is only ever placed within the paddle's width, so this is a guard rather than a
