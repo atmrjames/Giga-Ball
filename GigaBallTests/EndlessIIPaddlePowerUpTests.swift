@@ -2653,16 +2653,46 @@ final class HeldBallRestsOnTheShapeTests: XCTestCase {
     }
 
     /// And it is never inside the paddle, which is the whole complaint.
-    func testTheBallIsNeverInsideThePaddle() {
-        for surface in PaddleBounce.Surface.allCases where surface != .jagged {
+    ///
+    /// **Against the silhouette, not the bounding box** (round 313). This compared the ball's
+    /// bottom with `paddle.position.y + paddle.size.height/2`, which is the top of the box -
+    /// the same number the resting height was, so the assertion was true by construction and
+    /// could only ever have caught an arithmetic slip. The moment the resting height began
+    /// following the face across as well as up, it failed on four of the five shapes for the
+    /// *right* reason: on a dish or a wedge the box top is well above the surface, so a ball
+    /// resting on the surface is legitimately below it.
+    ///
+    /// It asks the silhouette now, which is what "inside its own silhouette" always meant, and
+    /// it asks across the whole face rather than at the centre alone - because the answer that
+    /// replaced the box is a curve and a curve has to be checked at more than one place. That
+    /// is how it caught the footprint: see `PaddleOutline.highest`.
+    func testTheBallIsNeverInsideThePaddle() throws {
+        for surface in PaddleBounce.Surface.allCases {
             let scene = shapedScene()
             scene.endlessIICollectPaddleSurface(surface)
             scene.refreshEndlessIIPaddleShapeArt()
+            guard scene.endlessIIPaddleShapeArtName != nil else { continue }
+            // Jagged has no picture and keeps the plain paddle's flat answer
 
-            let paddleTop = scene.paddle.position.y + scene.paddle.size.height/2
-            let ballBottom = scene.ballStartingPositionY - scene.ball.size.height/2
-            XCTAssertGreaterThanOrEqual(ballBottom, paddleTop,
-                                        "\(surface) leaves the ball inside its own silhouette")
+            let texture = try XCTUnwrap(scene.paddle.texture)
+            let half = scene.paddle.size.width/2
+            let radius = scene.ball.size.width/2
+
+            for step in stride(from: CGFloat(-1), through: 1, by: 0.05) {
+                let centre = step*half
+                let ballBottom = scene.restingBallY(atOffsetFromCentre: centre)
+                    - scene.ball.size.height/2
+
+                for flank in stride(from: -radius, through: radius, by: max(radius, 0.001)/3) {
+                    guard let there = PaddleOutline.top(for: texture, size: scene.paddle.size,
+                                                        atOffsetFromCentre: centre + flank)
+                    else { continue }
+                    XCTAssertGreaterThanOrEqual(
+                        ballBottom, scene.paddle.position.y + there - 0.001,
+                        "\(surface) at \(centre): no part of the ball's width may be inside "
+                        + "the face it is resting on")
+                }
+            }
         }
     }
 
@@ -3133,6 +3163,14 @@ final class PaddleSurfaceTests: XCTestCase {
         scene.paddle.texture = scene.paddleTexture
         scene.paddle.size = CGSize(width: 75, height: 12)
         scene.paddle.position = CGPoint(x: 0, y: -300)
+        scene.ball.size = CGSize(width: 12, height: 12)
+        // **A ball with a size, because the resting height is measured against one** (round
+        // 313). `ballSize` above is the scene's setting; `ball.size` is the node, and this
+        // helper had only ever set the first - so every test here ran with a ball zero points
+        // across. That was invisible while the height was one number, and it made the first
+        // version of the footprint tests assert nothing at all: a ball no wider than a point
+        // has no flanks to put inside anything. The stride over its own width then divided by
+        // zero and took the whole batch down, which is the only reason it was noticed
         scene.paddle.physicsBody = SKPhysicsBody(rectangleOf: scene.paddle.size)
         scene.addChild(scene.paddle)
         if shaped {
@@ -3284,41 +3322,51 @@ final class PaddleSurfaceTests: XCTestCase {
             let texture = try XCTUnwrap(scene.paddle.texture)
             let half = scene.paddle.size.width/2
 
+            let radius = scene.ball.size.width/2
             for step in stride(from: CGFloat(-1), through: 1, by: 0.1) {
                 let offset = step*half
-                guard let top = PaddleOutline.top(for: texture, size: scene.paddle.size,
-                                                  atOffsetFromCentre: offset) else { continue }
-                let surfaceY = scene.paddle.position.y + top
                 let ballBottom = scene.restingBallY(atOffsetFromCentre: offset)
                     - scene.ball.size.height/2
 
-                XCTAssertGreaterThanOrEqual(ballBottom, surfaceY - 0.001,
-                                            "\(surface) at \(offset): the ball has to rest on "
-                                            + "the face, never in it")
+                for flank in stride(from: -radius, through: radius, by: max(radius, 0.001)/3) {
+                    guard let top = PaddleOutline.top(for: texture, size: scene.paddle.size,
+                                                      atOffsetFromCentre: offset + flank)
+                    else { continue }
+                    XCTAssertGreaterThanOrEqual(ballBottom, scene.paddle.position.y + top - 0.001,
+                                                "\(surface) at \(offset): the ball has to rest "
+                                                + "on the face, never in it - at any part of "
+                                                + "its own width")
+                }
             }
         }
     }
 
     /// And it never rests far above it either, which is the whole complaint.
     ///
-    /// One point of clearance is what the resting height has always carried; this says the
-    /// profile spends that and no more, so "floating" cannot come back by a different door.
+    /// **The ball touches the face at one point and bridges the rest**, so the clearance is
+    /// measured against the highest the face reaches under the ball's own width rather than
+    /// against the point beneath its centre. One point there, exactly, which is what the
+    /// resting height has always carried - so "floating" cannot come back by a different door,
+    /// and the footprint cannot quietly grow into a new float either.
     func testTheBallRestsOnTheFaceRatherThanAboveIt() throws {
         for surface in PaddleBounce.Surface.allCases {
             let scene = self.scene(wearing: surface)
             guard scene.endlessIIPaddleShapeArtName != nil else { continue }
             let texture = try XCTUnwrap(scene.paddle.texture)
             let half = scene.paddle.size.width/2
+            let radius = scene.ball.size.width/2
 
             for step in stride(from: CGFloat(-1), through: 1, by: 0.1) {
                 let offset = step*half
-                guard let top = PaddleOutline.top(for: texture, size: scene.paddle.size,
-                                                  atOffsetFromCentre: offset) else { continue }
+                guard let top = PaddleOutline.highest(for: texture, size: scene.paddle.size,
+                                                      from: offset - radius,
+                                                      to: offset + radius) else { continue }
                 let gap = scene.restingBallY(atOffsetFromCentre: offset)
                     - scene.ball.size.height/2 - (scene.paddle.position.y + top)
 
                 XCTAssertEqual(gap, 1, accuracy: 0.001,
-                               "\(surface) at \(offset): one point of clearance, everywhere")
+                               "\(surface) at \(offset): one point of clearance above the "
+                               + "highest the face reaches under the ball")
             }
         }
     }
@@ -3370,6 +3418,41 @@ final class PaddleSurfaceTests: XCTestCase {
         }
     }
 
+    /// **Does resting at the height under the ball's *centre* put its flanks in the wall?**
+    ///
+    /// A dish curves up on both sides, so a twelve-point ball whose lowest point is one above
+    /// the surface directly beneath it may still overlap the surface six points to either
+    /// side - and a ball the engine finds inside a body is one it shoves out every frame,
+    /// which is round 232's "the ball was sliding about on the paddle". Measured rather than
+    /// reasoned about, because the answer decides whether the profile needs a footprint.
+    func testHowFarTheFlanksOfABallReachIntoAConcaveFace() throws {
+        let radius: CGFloat = 6
+        print("\n  How far a ball's flanks reach below the surface, resting on the height")
+        print("    directly under its centre (points; positive means overlapping)")
+        for surface in PaddleBounce.Surface.allCases {
+            let scene = self.scene(wearing: surface)
+            guard scene.endlessIIPaddleShapeArtName != nil,
+                  let texture = scene.paddle.texture else { continue }
+            let half = scene.paddle.size.width/2
+
+            var worst: CGFloat = 0, worstAt: CGFloat = 0
+            for step in stride(from: CGFloat(-1), through: 1, by: 0.02) {
+                let centre = step*half
+                guard let under = PaddleOutline.top(for: texture, size: scene.paddle.size,
+                                                    atOffsetFromCentre: centre) else { continue }
+                for flank in [-radius, radius] {
+                    guard let there = PaddleOutline.top(for: texture, size: scene.paddle.size,
+                                                        atOffsetFromCentre: centre + flank)
+                    else { continue }
+                    let overlap = there - under
+                    if overlap > worst { worst = overlap; worstAt = centre }
+                }
+            }
+            print(String(format: "    %-11@ worst %5.2f at x = %6.2f", "\(surface)" as NSString,
+                         worst, worstAt))
+        }
+    }
+
     /// **The picture of it**, because this project's rule is that visual work gets looked at
     /// and a ball resting on a slope is as visual as it gets.
     ///
@@ -3397,12 +3480,16 @@ final class PaddleSurfaceTests: XCTestCase {
                 face.position = CGPoint(x: centre, y: y)
                 scene.addChild(face)
 
+                let reach: CGFloat = 5.5
                 for step in stride(from: CGFloat(-0.85), through: 0.85, by: 0.425) {
                     let offset = step*size.width/2
                     let top = old
                         ? size.height/2
-                        : (PaddleOutline.top(for: texture, size: size,
-                                             atOffsetFromCentre: offset) ?? size.height/2)
+                        : (PaddleOutline.highest(for: texture, size: size,
+                                                 from: offset - reach,
+                                                 to: offset + reach) ?? size.height/2)
+                    // The footprint, so the picture shows what the game actually does rather
+                    // than the first version of it
                     let ball = SKSpriteNode(color: old ? .systemRed : UIColor(red: 0.82,
                                                                              green: 1,
                                                                              blue: 0, alpha: 1),
@@ -3435,13 +3522,21 @@ final class PaddleSurfaceTests: XCTestCase {
     func testBeyondTheEndsTheHeightHolds() {
         let scene = self.scene(wearing: .convex)
         let half = scene.paddle.size.width/2
+        let clear = half + scene.ball.size.width
+        // Far enough out that the ball's own width no longer reaches back into the curve.
+        // At exactly `half` it still does, which is right and is why this asks past it -
+        // the first version compared the far answer with the answer *at* the end and failed
+        // honestly, because the footprint had made those two different things
 
-        XCTAssertEqual(scene.restingBallY(atOffsetFromCentre: half*4),
-                       scene.restingBallY(atOffsetFromCentre: half),
-                       accuracy: 0.001)
-        XCTAssertEqual(scene.restingBallY(atOffsetFromCentre: -half*4),
-                       scene.restingBallY(atOffsetFromCentre: -half),
-                       accuracy: 0.001)
+        for beyond in [clear, clear*2, clear*8] {
+            XCTAssertEqual(scene.restingBallY(atOffsetFromCentre: beyond),
+                           scene.restingBallY(atOffsetFromCentre: clear),
+                           accuracy: 0.001,
+                           "past the end the height holds rather than carrying on")
+            XCTAssertEqual(scene.restingBallY(atOffsetFromCentre: -beyond),
+                           scene.restingBallY(atOffsetFromCentre: -clear),
+                           accuracy: 0.001)
+        }
     }
 }
 

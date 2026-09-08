@@ -552,6 +552,33 @@ extension PaddleOutline {
         return last.top
     }
 
+    /// The highest the surface reaches between two points across the face.
+    ///
+    /// **A ball rests on the highest point under its own width, not the point under its
+    /// centre.** Round 313's first version asked for the height directly beneath the ball, and
+    /// the test round 232 left behind caught it: a twelve-point ball is six points wide either
+    /// side of its centre, and every one of these faces climbs within that reach. Measured
+    /// (`testHowFarTheFlanksOfABallReachIntoAConcaveFace`), the worst overlap is **3.09 points
+    /// on the dome, 3.07 on the wave, 2.90 on the wedges and 2.71 on the dish** - a quarter of
+    /// a ball buried in the face, on all five, not just the concave one the flaw was predicted
+    /// for. A ball the engine finds inside a body is one it shoves out every frame, which is
+    /// exactly what "the ball was sliding about on the paddle" was.
+    ///
+    /// So the resting height is the maximum over the ball's own footprint. That is what a
+    /// circle on a curve does - it touches at one point and bridges the rest - and it is
+    /// bounded on both sides by answers already known to be safe: never lower than the height
+    /// under the centre, never higher than the top of the box.
+    static func highest(for texture: SKTexture, size: CGSize,
+                        from left: CGFloat, to right: CGFloat) -> CGFloat? {
+        guard let run = profile(for: texture, size: size) else { return nil }
+        let ends = [top(for: texture, size: size, atOffsetFromCentre: left),
+                    top(for: texture, size: size, atOffsetFromCentre: right)].compactMap { $0 }
+        let inside = run.filter { $0.x >= left && $0.x <= right }.map(\.top)
+        // The ends are interpolated and the boundaries between them are taken as they are, so
+        // a peak that falls between two samples is still seen by whichever end reaches it
+        return (ends + inside).max()
+    }
+
     private struct Key: Hashable {
         let texture: ObjectIdentifier
         let width: Int

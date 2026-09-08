@@ -2970,12 +2970,20 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     /// was before and is exactly right for a flat top - so nothing moves by a point in Classic
     /// or the original Endless, neither of which has a shaped paddle to ask about.
     func paddleSurfaceHeight(atOffsetFromCentre offset: CGFloat) -> CGFloat {
+        let reach = ball.size.width/2
         guard endlessIIPaddleShapeArtName != nil,
               let texture = paddle.texture,
-              let top = PaddleOutline.top(for: texture, size: paddle.size,
-                                          atOffsetFromCentre: offset)
+              let top = PaddleOutline.highest(for: texture, size: paddle.size,
+                                              from: offset - reach, to: offset + reach)
         else { return paddle.size.height/2 }
         return top
+        // **The highest point under the ball's own width, not the point under its centre.** The
+        // first version asked for the height directly beneath, and round 232's own test caught
+        // it: every one of these faces climbs within six points of anywhere, so a ball resting
+        // on the height below its middle had up to a quarter of itself inside the face - which
+        // is the shoving-out that "the ball was sliding about on the paddle" was. See
+        // `PaddleOutline.highest` for the measurement.
+        //
         // Falls back to the box, so a shape whose picture cannot be read holds a ball where it
         // held one yesterday - the same rule `rebuildEndlessIIPaddleBody` follows for the body
     }
