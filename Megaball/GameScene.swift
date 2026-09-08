@@ -3035,11 +3035,52 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 
         let found = phantomBrickPositions()
         guard found.isEmpty == false else { return }
-        Log.play.error("PHANTOM BRICKS: \(found.count, privacy: .public) solid but unseeable, at \(String(describing: found.prefix(4)), privacy: .public)")
+        Log.play.error("PHANTOM BRICKS: \(found.count, privacy: .public) solid but unseeable - \(self.phantomBrickReasons(), privacy: .public)")
+        // **Says how, not just how many** (round 313). "11 solid but unseeable" in an Endless
+        // log was as far as reading it could get: eleven is a row, and a row could be a
+        // build-in caught mid-animation, a reveal that did not finish, or a whole row left
+        // behind by something that stripped its actions - three different bugs with one line.
+        // The reason and the kind of brick separate them without another build.
         // What is left is what this was built for: a brick solid and unseeable for no declared
         // reason - a Fog reveal that did not finish, a face left behind its hiding rectangle, a
         // Breathing brick shrunk to nothing and never grown back
         #endif
+    }
+
+    /// What is wrong with each phantom, in the fewest words that separate the causes.
+    ///
+    /// Grouped rather than listed, because eleven of one thing is one finding and the count is
+    /// the part that identifies it - eleven is a row, one is a straggler.
+    func phantomBrickReasons() -> String {
+        var tally: [String: Int] = [:]
+        enumerateChildNodes(withName: BrickCategoryName) { [weak self] node, _ in
+            guard let self, let sprite = node as? SKSpriteNode,
+                  let body = sprite.physicsBody,
+                  body.categoryBitMask == CollisionTypes.brickCategory.rawValue,
+                  sprite.texture !== self.brickInvisibleTexture,
+                  sprite.hasActions() == false,
+                  self.endlessIIFieldRect(of: sprite).minY
+                    < self.yBrickOffsetEndless + self.brickHeight/2
+            else { return }
+            // The same exclusions as `phantomBrickPositions`, or the count and the reasons
+            // beside it are answers to two different questions
+
+            var why: [String] = []
+            if sprite.isHidden { why.append("hidden") }
+            if sprite.alpha < 0.05 { why.append(String(format: "alpha %.2f", sprite.alpha)) }
+            if sprite.xScale < 0.05 || sprite.yScale < 0.05 {
+                why.append(String(format: "scale %.2f x %.2f", sprite.xScale, sprite.yScale))
+            }
+            guard why.isEmpty == false else { return }
+
+            let role = sprite.endlessIIRole?.rawValue ?? "plain"
+            let row = self.brickHeight > 0
+                ? Int(((self.yBrickOffsetEndless - sprite.position.y)/self.brickHeight).rounded())
+                : 0
+            tally["\(why.joined(separator: ", ")) \(role) row \(row)", default: 0] += 1
+        }
+        return tally.sorted { $0.key < $1.key }
+            .map { "\($0.value)x \($0.key)" }.joined(separator: "; ")
     }
 
     /// Every brick the ball can hit and the player cannot see. The watch's decision, apart
@@ -3064,6 +3105,20 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             // behaviour afterwards and nothing came back to this. A tripwire that cries at
             // correct behaviour is one whose next real finding gets skipped over, which matters
             // more now that these logs are being read.
+
+            guard self.endlessIIFieldRect(of: sprite).minY
+                    < self.yBrickOffsetEndless + self.brickHeight/2 else { return }
+            // **A brick that has not arrived yet is not a phantom** (round 313, the second
+            // pass). The enriched report answered it in one line: `16x alpha 0.00 plain
+            // row -1`. Row minus one is *above* the top row - the next row, staged over the
+            // field with its alpha at nothing, waiting for its turn to descend in. Sixteen of
+            // them, all the same, every second.
+            //
+            // The watch was right that they are solid and unseeable and wrong that it matters:
+            // they are above the play area, where no ball can reach them, and they are
+            // invisible because showing a row before it has arrived is what would be the bug.
+            // The whole cell has to be above the line, not just the node, or a Square brick
+            // hanging its lower row into the field would be excused with it.
 
             guard sprite.hasActions() == false else { return }
             // **A brick mid-animation is not a phantom** (round 313). James's log carried

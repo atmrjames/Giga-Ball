@@ -626,6 +626,7 @@ final class PhantomBrickWatchTests: XCTestCase {
         let scene = GameScene(size: CGSize(width: 400, height: 800))
         scene.brickWidth = 40
         scene.brickHeight = 20
+        scene.yBrickOffsetEndless = 300
         return scene
     }
 
@@ -670,6 +671,34 @@ final class PhantomBrickWatchTests: XCTestCase {
         let scene = self.scene()
         brick(in: scene, at: 0)
         XCTAssertTrue(scene.phantomBrickPositions().isEmpty)
+    }
+
+    /// The row waiting above the field, which is what the enriched report caught.
+    ///
+    /// A live Endless log said `16x alpha 0.00 plain row -1` - row minus one being *above* the
+    /// top row, where the next row is staged with its alpha at nothing until its turn comes.
+    /// Solid and unseeable, and neither one matters: no ball can reach above the play area,
+    /// and showing a row before it arrives is what would be the bug.
+    func testARowStagedAboveTheFieldIsNotReported() {
+        let scene = self.scene()
+        for column in 0..<11 {
+            let waiting = brick(in: scene, at: CGFloat(column)*40 - 200)
+            waiting.position.y = scene.yBrickOffsetEndless + scene.brickHeight
+            waiting.alpha = 0
+        }
+        XCTAssertTrue(scene.phantomBrickPositions().isEmpty,
+                      "the next row has not arrived yet")
+    }
+
+    /// And the row that *has* arrived is still watched.
+    func testTheTopRowOfTheFieldIsStillWatched() {
+        let scene = self.scene()
+        let arrived = brick(in: scene, at: 0)
+        arrived.position.y = scene.yBrickOffsetEndless
+        arrived.alpha = 0
+
+        XCTAssertEqual(scene.phantomBrickPositions(), [arrived.position],
+                       "one row lower is in the field, where a ball can hit it")
     }
 
     /// Round 312's exclusion, kept: a brick meant to be unseeable is not a phantom.
