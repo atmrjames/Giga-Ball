@@ -2284,6 +2284,14 @@ still change.
 
 ~~**Still blocked on something outside the code:** the Endless 2.0 leaderboards existing in App
 Store Connect (until they do, scores fail to post silently)~~ - **James had those approved on
-21 August 2026**, which this table records elsewhere and this note did not. What is still
+21 August 2026**, which this table records elsewhere and this note did not. ~~What is still
 blocked is the ring HUD in Classic and Endless, which changes `layoutUnit` and therefore brick
-size on levels people hold years of scores on.
+size on levels people hold years of scores on.~~ **That is stale too, and in the same way**
+(round 313): the second play-test round dissolved that blocker by deciding the old modes keep
+their tray, order and geometry so `layoutUnit` never moves, and the ring shipped - `updateTrayRings`
+draws it around each tray icon every frame, reading the same bars Mayhem's row reads, and round
+214 moved it inside the icon on James's report about it. The backlog table and the built row
+both say so; this sentence went on saying the opposite. **Nothing here is blocked on anything
+outside the code any more** except §8.5's art and audio and the Quick Start Guide, which are
+James's. Struck rather than deleted, because the pattern is the finding: this is the third
+place in one round where a note about what is *not* done outlived the work that did it.
