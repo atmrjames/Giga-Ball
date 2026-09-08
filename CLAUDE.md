@@ -114,6 +114,13 @@ xcodebuild -project Megaball.xcodeproj -scheme Megaball \
   (`HALC_ProxyIOContext::IOWorkLoop: skipping cycle due to overload`), which points back at
   round 118's diagnosis, so the remedy is still James's: a reboot, or `sudo killall
   coreaudiod`.
+  **Round 313: he ran it, and it helped without curing it.** The reported total went from
+  around 870 to **1,059** - far more of the suite now survives into the final launch - and the
+  run still ended with exactly one relaunch and one named test, the first of
+  `EndlessIIPowerUpBrickCountTests`, which passed alone straight afterwards. So `killall
+  coreaudiod` is worth doing and is not the whole answer: treat one relaunch per full run as
+  the current normal, read the `Failing tests:` list rather than the total, and re-run the
+  named class alone before believing it.
 
 - **Stale derived data has twice hidden a new file from the test target**, producing "cannot
   find X in scope" for code that builds fine in the app. If a brand-new file's symbols are
