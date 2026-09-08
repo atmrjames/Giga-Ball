@@ -121,6 +121,17 @@ xcodebuild -project Megaball.xcodeproj -scheme Megaball \
   coreaudiod` is worth doing and is not the whole answer: treat one relaunch per full run as
   the current normal, read the `Failing tests:` list rather than the total, and re-run the
   named class alone before believing it.
+  **Round 313, a full clean run after that: the gap between the total and the truth is much
+  wider than it looks.** 2,244 tests executed with **not one assertion failure** anywhere in
+  the log, one relaunch, and the summary still said `** TEST FAILED **` with
+  `Executed 883 tests` - so the reported total was under **40%** of what actually ran. The
+  named test was `EndlessIIStickyPaddleQueueTests.testAnExtraBallIsCaughtRatherThanBounced()`,
+  which printed neither `passed` nor `failed`, and its class ran 12 of 12 alone in eight
+  seconds immediately afterwards. The CoreAudio errors are right above the relaunch in the log
+  (`AQMEIO.cpp:379 error -66680 finding/initializing`, `HALDefaultDevice.cpp:742 Could not
+  find default device`), which is the same signature round 118 diagnosed. So: **count the
+  `passed` lines** - `grep -c "' passed "` - rather than reading the summary's total, because
+  the summary is counting one launch and the suite ran across two.
 
 - **Stale derived data has twice hidden a new file from the test target**, producing "cannot
   find X in scope" for code that builds fine in the app. If a brand-new file's symbols are
