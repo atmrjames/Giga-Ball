@@ -282,3 +282,99 @@ final class SplitPaddleTintTests: XCTestCase {
         }
     }
 }
+
+/// Where a split paddle's own strips sit.
+///
+/// Round 313, found by rendering the four power-ups together and looking at them.
+/// `refreshEndlessIISplitOverlay` builds a fresh `SKSpriteNode` for each piece, and a fresh
+/// sprite is anchored in its middle - but `paddleSticky` and `paddleLaser` are both anchored
+/// (0.5, 0) in the scene file, so they stand on the line they are placed on and grow upward
+/// over the paddle. Every split piece therefore sat half a strip lower than the strip it was
+/// standing in for: the same mistake the safety paddle's face was making, in the same round.
+final class SplitOverlayAnchorTests: XCTestCase {
+
+    func testASplitStripStandsWhereTheWholeStripStood() {
+        let scene = GameScene(size: CGSize(width: 400, height: 800))
+        scene.gameMode = .endlessII
+        scene.totalStatsArray = [TotalStats()]
+        scene.gameWidth = 400
+        scene.ballSize = 12
+        scene.paddleWidth = 150
+        scene.paddle.size = CGSize(width: 150, height: 12)
+        scene.addChild(scene.paddle)
+
+        scene.paddleSticky.anchorPoint = CGPoint(x: 0.5, y: 0)
+        scene.paddleSticky.size = CGSize(width: 150, height: 14)
+        scene.paddleSticky.position = CGPoint(x: 0, y: -66)
+        scene.paddleSticky.texture = scene.stickyPaddleTexture
+        scene.addChild(scene.paddleSticky)
+
+        scene.endlessIICollectDoublePaddle()
+        scene.refreshEndlessIIDoublePaddle()
+        scene.refreshEndlessIISplitDress()
+
+        let pieces = scene.children.compactMap { $0 as? SKSpriteNode }
+            .filter { $0 !== scene.paddleSticky && $0.texture === scene.paddleSticky.texture }
+        XCTAssertFalse(pieces.isEmpty, "the split has to dress itself for this to be about "
+                       + "anything")
+        for piece in pieces {
+            XCTAssertEqual(piece.anchorPoint, scene.paddleSticky.anchorPoint,
+                           "a piece standing in for a strip has to stand where it stood")
+            XCTAssertEqual(piece.frame.minY, scene.paddleSticky.frame.minY, accuracy: 0.5,
+                           "its bottom edge is the strip's bottom edge")
+        }
+    }
+}
+
+/// The four power-ups from James's screenshot, drawn to a file so they can be looked at.
+///
+/// "Sticky paddle plus safety paddle plus split paddle plus paddle portal" is four power-ups
+/// dressing two surfaces at once, and the project's rule is that visual work is verified by
+/// looking. Reachable in play only by collecting four specific drops in one run.
+final class PaddleDressRenderTests: XCTestCase {
+
+    func testTheFourPowerUpsTogetherCanBeLookedAt() throws {
+        let scene = GameScene(size: CGSize(width: 420, height: 260))
+        scene.gameMode = .endlessII
+        scene.totalStatsArray = [TotalStats()]
+        scene.gameWidth = 400
+        scene.brickHeight = 20
+        scene.brickWidth = 40
+        scene.ballSize = 12
+        scene.paddleWidth = 150
+        scene.backgroundColor = UIColor(red: 0.06, green: 0.05, blue: 0.14, alpha: 1)
+        scene.anchorPoint = CGPoint(x: 0.5, y: 0.5)
+
+        scene.paddle.size = CGSize(width: 150, height: 12)
+        scene.paddle.position = CGPoint(x: 0, y: -60)
+        scene.paddle.texture = scene.paddleTexture
+        scene.addChild(scene.paddle)
+
+        scene.paddleSticky.size = CGSize(width: 150, height: 14)
+        scene.paddleSticky.anchorPoint = CGPoint(x: 0.5, y: 0)
+        scene.paddleSticky.position = CGPoint(x: 0, y: -66)
+        scene.addChild(scene.paddleSticky)
+        // The anchor the scene file gives it. A `GameScene` built here rather than loaded from
+        // the .sks starts with a bare `SKSpriteNode` for each of these, and a picture that
+        // stands on the paddle in the game would float in the middle of it in a render
+
+        scene.finalBrickRowHeight = 80
+        scene.stickyPaddleCatches = 3
+        scene.endlessIICollectSafetyPaddle()
+        scene.endlessIICollectDoublePaddle()
+        scene.endlessIICollectPortalPaddle()
+        scene.tickEndlessIIPaddlePowerUps(0)
+        scene.tickEndlessIISafetyPaddle()
+        scene.refreshEndlessIISplitDress()
+        (scene.childNode(withName: GameScene.endlessIISafetyPaddleName))?.alpha = 1
+        // The bar fades in over 0.15 seconds with an action, and actions do not run in a test
+
+        let view = SKView(frame: CGRect(origin: .zero, size: scene.size))
+        let texture = try XCTUnwrap(view.texture(from: scene),
+                                    "no renderer here, so there is nothing to look at")
+        let file = URL(fileURLWithPath: NSTemporaryDirectory())
+            .appendingPathComponent("paddle-dress.png")
+        try XCTUnwrap(UIImage(cgImage: texture.cgImage()).pngData()).write(to: file)
+        print("\n  The paddle and its twin, with all four on: \(file.path)\n")
+    }
+}

@@ -349,6 +349,14 @@ extension GameScene {
         while pieces.count < centres.count {
             let piece = SKSpriteNode(texture: source.texture)
             piece.zPosition = source.zPosition
+            piece.anchorPoint = source.anchorPoint
+            // **The source's anchor, not a fresh sprite's** (round 313, found by rendering the
+            // four power-ups together and looking). `paddleSticky` and `paddleLaser` are both
+            // anchored (0.5, 0) in the scene file, so they stand on the line they are placed
+            // on and grow upward over the paddle. A new `SKSpriteNode` is anchored in its
+            // middle, so every split piece sat half a strip lower than the strip it was
+            // standing in for - the same mistake the safety paddle's own face was making, in
+            // the same round, for the same reason.
             addChild(piece)
             pieces.append(piece)
         }
