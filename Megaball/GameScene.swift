@@ -3079,6 +3079,26 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     /// Flashing bricks are the deliberate exception. They spend half their life passable, and
     /// `setBrickSolid` takes their category away when they do, so a *solid* flashing brick is
     /// always a visible one - the check reads the body rather than the role and needs no list.
+    /// Whether Hide Bricks is running, which is the one time `isHidden` on an ordinary brick
+    /// is the game working rather than a fault.
+    ///
+    /// **Round 312 believed the texture guard covered this and it does not** (found in round
+    /// 313 by reading the power-up rather than the note). `powerUpNormalToInvisibleBricks`
+    /// sets `isHidden` on every brick that is not multi-hit or indestructible and **leaves the
+    /// texture alone** - the brick is still `brickNormalTexture` - so
+    /// `texture !== brickInvisibleTexture` lets every one of them through. That guard only ever
+    /// excluded Mayhem's Invisible brick *type*, which is a different thing wearing the same
+    /// word. So the watch has gone on crying at Hide Bricks in Classic and the original
+    /// Endless for the whole ten seconds it runs, which is exactly the fault round 312 set out
+    /// to close.
+    ///
+    /// Asked of the tray bar rather than of a flag, because that bar's hidden state *is* how
+    /// this power-up says it is running - it is what the timer, the ring and the save all
+    /// read - and a second opinion in a new property is one that can disagree with it.
+    var endlessHiddenBricksIsRunning: Bool {
+        hiddenBricksIconBar.isHidden == false
+    }
+
     func phantomBrickWatch() {
         #if DEBUG
         guard gameState.currentState is Playing, isPaused == false else { return }
@@ -3121,7 +3141,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             // beside it are answers to two different questions
 
             var why: [String] = []
-            if sprite.isHidden { why.append("hidden") }
+            if sprite.isHidden && self.endlessHiddenBricksIsRunning == false {
+                why.append("hidden")
+            }
             if sprite.alpha < 0.05 { why.append(String(format: "alpha %.2f", sprite.alpha)) }
             if sprite.xScale < 0.05 || sprite.yScale < 0.05 {
                 why.append(String(format: "scale %.2f x %.2f", sprite.xScale, sprite.yScale))
@@ -3149,11 +3171,15 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                   body.categoryBitMask == CollisionTypes.brickCategory.rawValue
             else { return }
             guard sprite.texture !== self.brickInvisibleTexture else { return }
-            // **A brick that is meant to be unseeable is not a phantom** (round 312). Hide
-            // Bricks in the older modes and Mayhem's own Invisible brick both work by setting
-            // `isHidden` and revealing on the strike, so this watch was reporting the feature
-            // working - 72 of them in one of James's logs, which is a full Classic field under
-            // Hide Bricks, and a handful in a Mayhem run, which is the brick type doing its job.
+            // **A brick that is meant to be unseeable is not a phantom** (round 312). Mayhem's
+            // Invisible brick *type* is built wearing `brickInvisibleTexture` and revealed on
+            // the strike, so this watch was reporting the brick type doing its job.
+            //
+            // **Round 312's note claimed this covered Hide Bricks in the older modes as well,
+            // and it never did** (round 313). That power-up leaves the texture alone and only
+            // writes `isHidden`, so every brick it hid came straight through this guard - see
+            // `endlessHiddenBricksIsRunning`, which is where the older modes are answered. The
+            // two were described as one thing because they look like one thing from the log.
             //
             // The note this replaces said "in Mayhem, which has no such power-up, it should
             // never", and that was true when it was written: Mayhem gained the Invisible
@@ -3189,9 +3215,14 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             // which means an action on a brick is always a transient animation in progress.
             // The next animation to fade a brick in is covered without anyone remembering.
 
-            let invisible = sprite.isHidden || sprite.alpha < 0.05
+            let hiddenOnPurpose = sprite.isHidden && self.endlessHiddenBricksIsRunning
+            let invisible = (sprite.isHidden && hiddenOnPurpose == false) || sprite.alpha < 0.05
                 || sprite.xScale < 0.05 || sprite.yScale < 0.05
             if invisible { found.append(sprite.position) }
+            // `isHidden` stops being evidence while Hide Bricks runs, and only `isHidden`:
+            // a brick faded or shrunk to nothing during that window is still a fault, and
+            // narrowing the exclusion to the one property the power-up writes is what keeps
+            // it from becoming a ten-second hole in the watch
         }
         return found
     }

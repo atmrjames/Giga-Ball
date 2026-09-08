@@ -690,6 +690,61 @@ final class PhantomBrickWatchTests: XCTestCase {
                       "the next row has not arrived yet")
     }
 
+    /// **Hide Bricks is the game working, and the texture guard never covered it.**
+    ///
+    /// Round 312 closed this watch against "a brick that is meant to be unseeable" and its own
+    /// note said Hide Bricks was one of the two cases handled. It was not:
+    /// `powerUpNormalToInvisibleBricks` writes `isHidden` and leaves the texture alone, so
+    /// every brick it hid walked through a guard that asks about the texture. The watch has
+    /// been crying at that power-up in Classic and the original Endless for the whole ten
+    /// seconds it runs.
+    ///
+    /// The signal is the tray bar, because that is how this power-up already says it is
+    /// running - the timer, the ring and the save all read it.
+    func testHideBricksIsNotAFieldOfPhantoms() {
+        let scene = self.scene()
+        for column in 0..<11 {
+            brick(in: scene, at: CGFloat(column)*40 - 200).isHidden = true
+        }
+        scene.hiddenBricksIconBar.isHidden = false
+
+        XCTAssertTrue(scene.endlessHiddenBricksIsRunning, "the state this is about")
+        XCTAssertTrue(scene.phantomBrickPositions().isEmpty,
+                      "eleven hidden bricks with Hide Bricks running is the power-up, not "
+                      + "eleven phantoms")
+        XCTAssertFalse(scene.phantomBrickReasons().contains("hidden"),
+                       "and the reasons line has to agree with the count, or they answer "
+                       + "two different questions")
+    }
+
+    /// And the moment it stops, they are watched again.
+    func testHiddenBricksAreWatchedAgainWhenThePowerUpEnds() {
+        let scene = self.scene()
+        let hidden = brick(in: scene, at: 0)
+        hidden.isHidden = true
+        scene.hiddenBricksIconBar.isHidden = false
+        XCTAssertTrue(scene.phantomBrickPositions().isEmpty)
+
+        scene.hiddenBricksIconBar.isHidden = true
+        XCTAssertEqual(scene.phantomBrickPositions(), [hidden.position],
+                       "a brick still hidden after the power-up ended is a reveal that did "
+                       + "not finish, which is precisely what this watch is for")
+    }
+
+    /// The exclusion is `isHidden` alone, not a ten-second hole in the watch.
+    ///
+    /// Hide Bricks writes one property. A brick faded or shrunk to nothing while it runs is
+    /// still a fault, and would be missed by an exclusion drawn any wider.
+    func testAFadedBrickIsStillReportedWhileHideBricksRuns() {
+        let scene = self.scene()
+        let faded = brick(in: scene, at: 0)
+        faded.alpha = 0
+        scene.hiddenBricksIconBar.isHidden = false
+
+        XCTAssertEqual(scene.phantomBrickPositions(), [faded.position],
+                       "Hide Bricks does not fade bricks, so a faded one is not it")
+    }
+
     /// And the row that *has* arrived is still watched.
     func testTheTopRowOfTheFieldIsStillWatched() {
         let scene = self.scene()
