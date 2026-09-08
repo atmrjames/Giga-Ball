@@ -5327,6 +5327,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		// Power-up collection animation
 		
 		powerUpScore = 0
+		powerUpMultiplierScore = 0
+		// **Both of them, so an arm that says nothing means nothing** (round 313). `powerUpScore`
+		// has been reset here all along and its twin never was, and after the switch runs
+		// `multiplier = Scoring.adjusted(multiplier, by: powerUpMultiplierScore)` - so an arm
+		// that does not set it applies *the last collection's* change a second time. Sixty-four
+		// of the sixty-five set it, which is why nothing ever showed; the one that does not is
+		// Multi-Ball, so catching one after a bad power-up docked the multiplier again for it.
 		
 		if totalStatsArray[0].achievementsUnlockedArray[24] == false {
 			totalStatsArray[0].achievementsUnlockedArray[24] = true
@@ -6437,7 +6444,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			// The whole effect. Everything that makes an extra ball work - its contacts, its
 			// share of the speed and size, the run continuing while any of them survives - is
 			// the collection the scene already holds, so collecting this is one call
-			powerUpMultiplierScore = 0.1
 			totalStatsArray[0].powerupsCollected[28] += 1
 			// **The tally every other arm keeps** (round 313, found by the first test to drive
 			// this switch). Sixty-four of the sixty-five bump their own slot and this one
@@ -6448,6 +6454,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			// Counted on collection rather than on a ball actually being added, which is what
 			// every other arm does - `endlessIIAddBall` refuses when the field is already full
 			// and that is the power-up doing its job, not the player failing to collect it
+			//
+			// It sets no `powerUpMultiplierScore`, deliberately: whether an extra ball should
+			// also move the multiplier is a balance question rather than a bug, and the reset
+			// above means saying nothing now means no change rather than "whatever the last
+			// one did"
 
 		case powerUpDecreaseBallSize:
         // Decrease ball size

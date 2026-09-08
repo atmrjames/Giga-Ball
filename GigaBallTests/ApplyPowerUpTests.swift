@@ -32,6 +32,10 @@ final class ApplyPowerUpTests: XCTestCase {
         scene.paddleWidth = 90
         scene.hapticsSetting = false
         scene.soundsSetting = false
+        scene.ballLostBool = false
+        // **It starts true.** A scene begins with no ball in play, and `applyPowerUp` refuses
+        // everything while that is so - which is right, and is also how the first draft of the
+        // multiplier test below spent two runs measuring nothing
         scene.powerUpTextureArray = scene.powerUpTexturesInOrder
         scene.addChild(scene.ball)
         scene.ball.physicsBody = SKPhysicsBody(circleOfRadius: 6)
@@ -134,6 +138,33 @@ final class ApplyPowerUpTests: XCTestCase {
 
         scene.numberOfLives = 1
         scene.rollInGainedLife()
+    }
+
+    /// One collection's multiplier change does not carry into the next.
+    ///
+    /// `powerUpScore` is reset before the switch and `powerUpMultiplierScore` was not, and
+    /// afterwards the scene runs `multiplier = Scoring.adjusted(multiplier, by:)` on it - so an
+    /// arm that never sets it applied the *previous* collection's change a second time.
+    /// Sixty-four of the sixty-five set it, which is why nothing ever showed. The one that does
+    /// not is Multi-Ball, so catching one after a bad power-up docked the multiplier again.
+    func testAMultiplierChangeDoesNotCarryIntoTheNextCollection() {
+        let scene = self.scene()
+        let all = scene.powerUpTexturesInOrder
+
+        scene.powerUpMultiplierScore = -0.1
+        // Where a bad power-up leaves it. Set directly rather than by collecting one, because
+        // the obvious way to arrange it - collect a Lose a Life first - sets `ballLostBool`,
+        // and the next collection is then refused at the top of the function
+
+        scene.multiplier = 2
+        scene.applyPowerUp(node: drop(all[28], on: scene), silently: true)
+
+        XCTAssertEqual(scene.totalStatsArray[0].powerupsCollected[28], 1,
+                       "the collection has to have happened for this to be about anything")
+        XCTAssertEqual(scene.powerUpMultiplierScore, 0,
+                       "Multi-Ball sets none, so it must find none")
+        XCTAssertEqual(scene.multiplier, 2, accuracy: 0.0001,
+                       "and the multiplier is left where the last power-up put it")
     }
 
     /// A ball already lost takes nothing with it.
