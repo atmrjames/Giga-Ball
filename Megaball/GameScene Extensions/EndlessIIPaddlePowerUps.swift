@@ -450,8 +450,14 @@ extension GameScene {
         endlessIIPaddleShapeLift = (grown - paddleHeight)/2
         paddle.position.y += endlessIIPaddleShapeLift
 
-        ballStartingPositionY = paddle.position.y + paddle.size.height/2
-            + ball.size.height/2 + 1
+        ballStartingPositionY = restingBallY
+        // **Through `restingBallY`, not a second copy of its arithmetic** (round 313). This
+        // held the expression itself, which was the same thing until the resting height
+        // learned to follow the face *across* as well as up - at which point a hand-written
+        // copy of the old one here would have quietly reinstated the flat answer for every
+        // caller that reads the stored number. Round 312 fixed exactly this fault in the
+        // other direction, and the note below is its report.
+        //
         // **Where a held ball rests has to follow the shape** (James, round 232: "with an
         // aimed sticky and a shaped paddle, the ball was sliding about on the paddle. The ball
         // should remain fixed on the paddle").

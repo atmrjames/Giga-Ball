@@ -84,7 +84,11 @@ extension GameScene {
         guard endlessIIHeldBalls.contains(where: { $0 === extra }) == false else { return true }
 
         extra.physicsBody?.velocity = .zero
-        extra.position.y = ballStartingPositionY
+        extra.position.y = restingBallY(atOffsetFromCentre: extra.position.x - paddle.position.x)
+        // At the ball's own place across the face, not the shape's highest point (round 313).
+        // The tick below would put it right on the next frame either way, so this is the catch
+        // frame itself - where a ball caught near the end of a wedge appeared most of its own
+        // width above the paddle and then dropped onto it
         endlessIIHeldBalls.append(extra)
         endlessIIHeldOffsets.append(endlessIIHeldShare(of: extra))
         setEndlessIIHeldBallRestsOnPaddle(true, for: extra)
