@@ -679,9 +679,17 @@ final class PhantomBrickWatchTests: XCTestCase {
     /// top row, where the next row is staged with its alpha at nothing until its turn comes.
     /// Solid and unseeable, and neither one matters: no ball can reach above the play area,
     /// and showing a row before it arrives is what would be the bug.
+    ///
+    /// **A whole row wide, read off the layout** (round 313). The other open report against
+    /// this watch was `PHANTOM BRICKS: 11 solid but unseeable` in the original Endless mode,
+    /// all at one y, two seconds into a run - and `GameSceneLayout.brickColumns` is
+    /// `brickRows/2`, which is **eleven**. So that report is one full row at one height with
+    /// nothing drawn, which is precisely what a staged build-in row is; original Endless stages
+    /// its rows exactly as Mayhem does, through `prepareEndlessIIBuildIn`. Taking the count
+    /// from the layout rather than typing it again is what lets the test say so.
     func testARowStagedAboveTheFieldIsNotReported() {
         let scene = self.scene()
-        for column in 0..<11 {
+        for column in 0..<GameSceneLayout.brickColumns {
             let waiting = brick(in: scene, at: CGFloat(column)*40 - 200)
             waiting.position.y = scene.yBrickOffsetEndless + scene.brickHeight
             waiting.alpha = 0
