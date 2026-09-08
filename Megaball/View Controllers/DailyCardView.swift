@@ -96,7 +96,7 @@ final class DailyCardView: UIView {
         // title, which now mis-matches against the menu views"). The card was built before the
         // menus were turned round in rounds 210 and 211, and it is the same header in
         // miniature - so it reads the same way up
-        stack.setCustomSpacing(18, after: levelLabel)
+        stack.setCustomSpacing(DailyCardView.twistsGap, after: levelLabel)
         detailsCard.addSubview(stack)
         // Tighter at the top than it was: the mode's name, its picture and the level's
         // line belong together as a heading, and only the twists below them need air
@@ -135,7 +135,8 @@ final class DailyCardView: UIView {
             stack.topAnchor.constraint(equalTo: detailsCard.topAnchor, constant: 16),
             stack.leadingAnchor.constraint(equalTo: detailsCard.leadingAnchor, constant: 16),
             stack.trailingAnchor.constraint(equalTo: detailsCard.trailingAnchor, constant: -16),
-            stack.bottomAnchor.constraint(equalTo: detailsCard.bottomAnchor, constant: -18),
+            stack.bottomAnchor.constraint(equalTo: detailsCard.bottomAnchor,
+                                          constant: -DailyCardView.twistsGap),
 
             resultLabel.topAnchor.constraint(equalTo: resultCard.topAnchor, constant: 14),
             resultLabel.leadingAnchor.constraint(equalTo: resultCard.leadingAnchor, constant: 16),
@@ -148,6 +149,34 @@ final class DailyCardView: UIView {
             // otherwise has room to spare, and a glimpse of a level from a pack the player
             // has not opened is the whole tasting-menu idea
         ])
+    }
+
+    /// The air above the twists, and the card's own inset below them.
+    ///
+    /// **One number, because they are the same gap** (James, round 313: "on endless mode or
+    /// endless mayhem in the daily challenge menu view, centre the twists in the gap between
+    /// the game mode heading and the bottom of the container. It looks a bit awkward").
+    ///
+    /// A classic day carries a pack-and-level line under its mode name and the twists sit this
+    /// far below that. An endless day has no such line - "the mode name and the twists are the
+    /// day" (round 306) - and the label was left in place holding an empty string: not hidden,
+    /// so zero tall but still taking the stack's spacing on *both* sides. Measured before this,
+    /// on an endless day: the mode name ended at 148 and the card at 218, with the twists at
+    /// 178 to 200 - thirty points of air above them and eighteen below.
+    static let twistsGap: CGFloat = 18
+
+    /// Puts the twists the same distance below whatever is above them as the card's own edge is
+    /// below the twists, whether or not there is a level line in between.
+    private func spaceTheTwists(underALevelLine hasLevelLine: Bool) {
+        levelLabel.isHidden = hasLevelLine == false
+        stack.setCustomSpacing(hasLevelLine ? stack.spacing : DailyCardView.twistsGap,
+                               after: modeLabel)
+        // Hidden rather than merely empty, so the stack stops giving it any spacing at all -
+        // and a hidden view is also the one thing that makes `setCustomSpacing(_:after:)` skip
+        // its entry, which is why the gap after the *mode* name is the one being set here. The
+        // classic day's is put back to the stack's ordinary spacing rather than left at
+        // whatever the last day set, since one card is reused by the pager for every day.
+
     }
 
     /// Whether a twist name was tapped, and which one - the pause and briefing screens
@@ -175,6 +204,7 @@ final class DailyCardView: UIView {
                 icon: setup.packIcon(pack),
                 font: levelLabel.font,
                 colour: levelLabel.textColor ?? .white)
+            spaceTheTwists(underALevelLine: true)
             // The level by its name, home and picture, not its number: a number says
             // nothing, and a glimpse of a level from a pack you have not opened is the
             // tasting menu.
@@ -194,6 +224,7 @@ final class DailyCardView: UIView {
             levelImageView.image = GameMode.menuIcon(for: challenge.mode)
             levelLabel.attributedText = nil
             levelLabel.text = nil
+            spaceTheTwists(underALevelLine: false)
             // Nothing under an endless day's mode name either, by the same instruction: the
             // mode name and the twists are the day (round 306). This line used to read "How
             // high can you get?" on both endless modes, which said the same thing twice on

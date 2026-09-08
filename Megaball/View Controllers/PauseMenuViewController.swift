@@ -1026,8 +1026,22 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
         case 2:
             if self.sender == "Pause" {
                 cell.setButton("ButtonSettings.png")
-            } else if dailyGameOver {
+            } else if dailyGameOver || gameCentreIsOffered {
                 cell.setButton("ButtonLeaderboard.png")
+                // **The Game Center door lives here now** (James, round 313: "the Game Center
+                // button on the game over / complete screen is in the top right. Move it to
+                // the bottom right to line up with the other buttons, using the small
+                // right-side button position and style").
+                //
+                // It was a loose disc added over the container and pinned to `homeButton`'s
+                // centre - and `homeButton` is hidden on this screen, sitting where the
+                // storyboard leaves it, which is the top corner. So the button was mirrored
+                // across the top rather than lining up with anything.
+                //
+                // This slot is the run's detail (play-test round 10) and it was already the
+                // leaderboard for a daily; a classic or endless ending had nothing to put in
+                // it, which is what left the door homeless. Same picture as the mode menus
+                // use for the same door, same small right-hand size, same row.
             } else {
                 cell.setButton("ButtonNull.png")
                 // The endless run's detail moved to the More Stats… button under the
@@ -1088,6 +1102,8 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
                 moveToSettings()
             } else if dailyGameOver {
                 openDailyLeaderboard()
+            } else if gameCentreIsOffered {
+                gameCentreTapped()
             }
         }
         
@@ -1565,60 +1581,30 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
     /// the gap between each button and its own edge and are told to be the same width, so the
     /// two buttons are symmetric about the middle whatever the storyboard says and whatever the
     /// window is.
+    /// Whether this screen has a Game Center door to offer, and room to put it.
+    ///
+    /// Round 313. The rules the loose button carried, kept exactly: not while paused - that
+    /// screen's right-hand slot is Settings and there is a run to go back to - not for a
+    /// daily, whose own board takes the slot, and not for a player who is not signed in,
+    /// because a button that opens an authentication sheet at the end of a run is a door
+    /// nobody asked to be shown.
+    var gameCentreIsOffered: Bool {
+        sender != "Pause" && dailyGameOver == false && GKLocalPlayer.local.isAuthenticated
+    }
+
     private func setUpGameCentreButton() {
-        guard sender != "Pause" else {
-            containterView.viewWithTag(PauseMenuViewController.gameCentreButtonTag)?
-                .isHidden = true
-            return
-        }
-        // Pause has a run to go back to and Home in the corner; this is the ending's button
-
-        if let existing = containterView.viewWithTag(PauseMenuViewController.gameCentreButtonTag) {
-            existing.isHidden = GKLocalPlayer.local.isAuthenticated == false
-            return
-        }
-
-        let button = UIButton(type: .system)
-        button.tag = PauseMenuViewController.gameCentreButtonTag
-        button.translatesAutoresizingMaskIntoConstraints = false
-        button.backgroundColor = UIColor(white: 0.92, alpha: 1)
-        button.tintColor = UIColor(red: 0.16, green: 0, blue: 0.24, alpha: 1)
-        button.layer.cornerRadius = 25
-        button.setImage(UIImage(systemName: "rosette",
-                                withConfiguration: UIImage.SymbolConfiguration(
-                                    pointSize: 20, weight: .heavy)), for: .normal)
-        button.addTarget(self, action: #selector(gameCentreTapped), for: .touchUpInside)
-        containterView.addSubview(button)
-        applyRoundGlass(to: button, radius: 25, symbol: "rosette",
-                        pointSize: 20, rimmed: false)
-        // The same plain glass disc Home wears - this is a door, not the screen's positive
-        // action, and the lime is reserved for that
-
-        let leftGap = UILayoutGuide()
-        let rightGap = UILayoutGuide()
-        containterView.addLayoutGuide(leftGap)
-        containterView.addLayoutGuide(rightGap)
-
-        NSLayoutConstraint.activate([
-            button.widthAnchor.constraint(equalToConstant: 50),
-            button.heightAnchor.constraint(equalToConstant: 50),
-            button.centerYAnchor.constraint(equalTo: homeButton.centerYAnchor),
-
-            leftGap.leadingAnchor.constraint(equalTo: containterView.leadingAnchor),
-            leftGap.trailingAnchor.constraint(equalTo: homeButton.leadingAnchor),
-            rightGap.trailingAnchor.constraint(equalTo: containterView.trailingAnchor),
-            rightGap.leadingAnchor.constraint(equalTo: button.trailingAnchor),
-            leftGap.widthAnchor.constraint(equalTo: rightGap.widthAnchor),
-        ])
-
-        button.isHidden = GKLocalPlayer.local.isAuthenticated == false
-        // Nothing to show a player who is not signed in, and a button that opens an
-        // authentication sheet from the end of a run is a door nobody asked to be shown
+        containterView.viewWithTag(PauseMenuViewController.gameCentreButtonTag)?
+            .removeFromSuperview()
+        // **The loose disc is gone** (round 313). It lived over the container, pinned to a
+        // hidden `homeButton`'s centre, which put it in the top corner. Its job is slot two of
+        // the button row now. Kept as a removal rather than deleted outright because this
+        // screen is reused between runs and a disc built by an older layout pass would
+        // otherwise stay on it.
     }
 
     static let gameCentreButtonTag = 909_312
 
-    @objc private func gameCentreTapped() {
+    @objc func gameCentreTapped() {
         guard GKLocalPlayer.local.isAuthenticated else { return }
         if hapticsSetting { interfaceHaptic.impactOccurred() }
         let boards = GKGameCenterViewController(state: .leaderboards)
