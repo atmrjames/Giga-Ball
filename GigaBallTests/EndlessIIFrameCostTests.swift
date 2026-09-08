@@ -1310,6 +1310,35 @@ final class EndlessIIFrameCostTests: XCTestCase {
                          early*180/CGFloat.pi))
         }
 
+        print("\n  Ball Spin with a *still* paddle, by the angle the ball arrived at")
+        print("    (James, rounds 305 and 313: it should curve when the paddle is still too)")
+        for degrees in [15.0, 30.0, 45.0, 60.0, 75.0, 89.0] {
+            let radians = degrees*Double.pi/180
+            let arriving = CGVector(dx: CGFloat(cos(radians))*600,
+                                    dy: CGFloat(-sin(radians))*600)
+            let rate = EndlessIIBallSpin.turnRate(paddleSpeed: 0, collision: 0,
+                                                  arriving: arriving)
+            let whole = rate/log(1/EndlessIIBallSpin.decayPerSecond)
+            let early = whole*(1 - pow(EndlessIIBallSpin.decayPerSecond, 0.25))
+            print(String(format: "    arriving at %2.0f deg, dead centre -> %5.1f deg/s, "
+                         + "%5.1f deg in all, %4.1f deg in the first quarter second",
+                         degrees, abs(rate)*180/CGFloat.pi, abs(whole)*180/CGFloat.pi,
+                         abs(early)*180/CGFloat.pi))
+        }
+
+        print("\n  ...and by where it struck, at a 45 degree arrival")
+        for hit in [0.0, 0.25, 0.5, 1.0] as [CGFloat] {
+            let arriving = CGVector(dx: 424, dy: -424)
+            let rate = EndlessIIBallSpin.turnRate(paddleSpeed: 0, collision: hit,
+                                                  arriving: arriving)
+            let whole = rate/log(1/EndlessIIBallSpin.decayPerSecond)
+            let early = whole*(1 - pow(EndlessIIBallSpin.decayPerSecond, 0.25))
+            print(String(format: "    hit at %4.2f -> %5.1f deg/s, %5.1f deg in all, "
+                         + "%4.1f deg in the first quarter second",
+                         hit, abs(rate)*180/CGFloat.pi, abs(whole)*180/CGFloat.pi,
+                         abs(early)*180/CGFloat.pi))
+        }
+
         print("\n  Random Bounce: how far a bounce can be nudged, at spread "
               + "\(GameScene.endlessIIRandomisedBounceSpread)")
         let spread = GameScene.endlessIIRandomisedBounceSpread

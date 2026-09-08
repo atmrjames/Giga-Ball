@@ -4787,27 +4787,74 @@ final class AimedStickyReachesTheSafetyBarTests: XCTestCase {
 /// lost tests to that.
 final class EndlessIIBallSpinGripTests: XCTestCase {
 
-    /// James: "the ball spin power up only seems to curve the ball if the paddle is moving when
-    /// the ball hits it. I think it should cause the ball to curve even if it's not moving, it
-    /// should just cause more of a curve the faster it's moving."
+    /// James, round 305: "the ball spin power up only seems to curve the ball if the paddle is
+    /// moving when the ball hits it. I think it should cause the ball to curve even if it's not
+    /// moving, it should just cause more of a curve the faster it's moving."
     ///
-    /// The baseline comes from *where* the ball struck, not from nothing: a ball meeting a
-    /// grippy surface off-centre is already sliding across it, and that is friction whether or
-    /// not the surface is travelling.
-    func testAStillPaddleStillCurvesABallStruckOffCentre() {
-        XCTAssertEqual(EndlessIIBallSpin.turnRate(paddleSpeed: 0, collision: 0), 0,
-                       "dead centre on a still paddle is the one case with no friction at all")
+    /// **And round 313, after that answer shipped: "ball spin power still doesn't seem to be
+    /// putting spin on the ball unless the paddle is moving."** Round 305 took the baseline
+    /// from *where* the ball struck, and measured, that gives nothing at all dead centre - which
+    /// is exactly where a player holding the paddle still has put it. The slide is the ball's
+    /// own horizontal speed instead: a ball arriving at 45 degrees crosses the surface at 0.7 of
+    /// its speed whether it lands in the middle or the corner.
+    func testAStillPaddleCurvesEveryBallThatIsSlidingAcrossIt() {
+        let steep = CGVector(dx: 100, dy: -600)
+        let slanted = CGVector(dx: 424, dy: -424)
+        let shallow = CGVector(dx: 580, dy: -155)
 
-        let edge = EndlessIIBallSpin.turnRate(paddleSpeed: 0, collision: 1)
-        XCTAssertEqual(edge, EndlessIIBallSpin.edgeTurn, accuracy: 0.0001,
-                       "the very edge of a still paddle gives the whole baseline")
+        for arriving in [steep, slanted, shallow] {
+            XCTAssertNotEqual(EndlessIIBallSpin.turnRate(paddleSpeed: 0, collision: 0,
+                                                          arriving: arriving), 0,
+                              "a still paddle grips a ball that is sliding across it")
+        }
 
-        XCTAssertEqual(EndlessIIBallSpin.turnRate(paddleSpeed: 0, collision: 0.5),
-                       EndlessIIBallSpin.edgeTurn/2, accuracy: 0.0001,
-                       "and it grows with how far off centre the ball landed")
+        XCTAssertGreaterThan(
+            abs(EndlessIIBallSpin.turnRate(paddleSpeed: 0, arriving: shallow)),
+            abs(EndlessIIBallSpin.turnRate(paddleSpeed: 0, arriving: slanted)),
+            "the shallower the arrival the faster it is sliding, and the harder it grips")
+        XCTAssertGreaterThan(
+            abs(EndlessIIBallSpin.turnRate(paddleSpeed: 0, arriving: slanted)),
+            abs(EndlessIIBallSpin.turnRate(paddleSpeed: 0, arriving: steep)))
+    }
 
-        XCTAssertEqual(EndlessIIBallSpin.turnRate(paddleSpeed: 0, collision: -1), -edge,
-                       accuracy: 0.0001, "the other side curves the other way")
+    /// A ball falling straight down is not sliding, so it is not gripped.
+    func testABallFallingStraightDownIsNotSliding() {
+        XCTAssertEqual(EndlessIIBallSpin.turnRate(paddleSpeed: 0,
+                                                   arriving: CGVector(dx: 0, dy: -600)),
+                       0, accuracy: 0.0001,
+                       "the one arrival with no slip in it")
+    }
+
+    /// The grip acts *against* the slide, which is what friction is - so it steepens the
+    /// bounce rather than flattening it, and the game's whole angle discipline exists to keep
+    /// bounces from going flat.
+    func testTheGripActsAgainstTheSlide() {
+        let rightward = EndlessIIBallSpin.turnRate(paddleSpeed: 0,
+                                                    arriving: CGVector(dx: 400, dy: -400))
+        let leftward = EndlessIIBallSpin.turnRate(paddleSpeed: 0,
+                                                   arriving: CGVector(dx: -400, dy: -400))
+        XCTAssertLessThan(rightward, 0, "sliding right, dragged left")
+        XCTAssertGreaterThan(leftward, 0)
+        XCTAssertEqual(rightward, -leftward, accuracy: 0.0001)
+    }
+
+    /// Where it lands no longer changes the surface's own grip.
+    ///
+    /// Round 305's baseline came from the collision offset, and it disagreed with the slide
+    /// about which way friction acts: a ball travelling right lands right, so the two nearly
+    /// cancelled half way out. Measured with both in place, a 45-degree arrival fell from 15.3
+    /// degrees of curve dead centre to 4.5 at the mid-point - a power-up that got weaker the
+    /// harder the ball was cut.
+    func testTheSurfaceGripsTheSameWhereverTheBallLands() {
+        let arriving = CGVector(dx: 424, dy: -424)
+        let centre = EndlessIIBallSpin.turnRate(paddleSpeed: 0, collision: 0,
+                                                 arriving: arriving)
+        for hit in [-1.0, -0.5, 0.5, 1.0] as [CGFloat] {
+            XCTAssertEqual(EndlessIIBallSpin.turnRate(paddleSpeed: 0, collision: hit,
+                                                       arriving: arriving),
+                           centre, accuracy: 0.0001,
+                           "hit at \(hit): the slip is the ball's, not the landing spot's")
+        }
     }
 
     /// And moving still means more, which is the half that already worked.

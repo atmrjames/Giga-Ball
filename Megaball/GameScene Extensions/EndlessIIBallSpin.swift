@@ -72,22 +72,38 @@ enum EndlessIIBallSpin {
     /// ordinary flick is already under `gripThreshold`.
     static let gripMemoryPerSecond: CGFloat = 0.001
 
-    /// The turn the *contact itself* gives, at the very edge of the paddle.
+    /// The turn a ball earns by *sliding* across a grippy surface that is not keeping up
+    /// with it, at the very shallowest arrival.
     ///
-    /// **A still paddle curves the ball too** (James, round 305: "the ball spin power up only
-    /// seems to curve the ball if the paddle is moving when the ball hits it. I think it should
-    /// cause the ball to curve even if it's not moving, it should just cause more of a curve
-    /// the faster it's moving").
+    /// **James, round 313: "ball spin power still doesn't seem to be putting spin on the ball
+    /// unless the paddle is moving"** - the same note as round 305, after round 305's answer.
     ///
-    /// Where the extra curve comes from is the part worth choosing rather than inventing: a
-    /// ball meeting a grippy surface off-centre is already sliding across it, and that is
-    /// friction whether or not the surface is travelling. So the baseline is the *collision
-    /// offset* - dead centre gives nothing, the edge gives all of this - and the paddle's own
-    /// speed adds to it. A third of the flick's turn, so a swipe is still the bigger half of
-    /// the power-up and the still-paddle curve reads as grip rather than as a second flick.
-    static let edgeTurn: CGFloat = .pi/6
+    /// That answer was the collision offset: dead centre gives nothing, the edge gives
+    /// `edgeTurn`. Measured, it delivers **nothing at all in the middle**, 5.4 degrees over a
+    /// whole flight a quarter of the way out, and 21.6 at the very edge - against 34.5 for a
+    /// 400 pt/s swipe and 54.8 for a brisk 600. And a player holding the paddle still is a
+    /// player who has put it under the ball, which is exactly where the term is zero. So the
+    /// power-up really did nothing unless the paddle moved, and the reason was that the
+    /// quantity chosen to stand for the slide does not measure the slide.
+    ///
+    /// What does is the ball's own horizontal speed. A ball arriving at 45 degrees is crossing
+    /// the surface at 0.7 of its speed whether it lands in the middle or the corner, and that
+    /// is the friction the note is about. Taken as a *fraction* of the ball's speed rather than
+    /// in points per second, so a Decrease Ball Speed does not quietly turn the grip off.
+    ///
+    /// A third of the flick's turn: a swipe is still the bigger half of the power-up, and this
+    /// reads as grip rather than as a second flick.
+    ///
+    /// **It replaces round 305's `edgeTurn` rather than joining it**, because the two are the
+    /// same claim about the same friction and they disagree about which way it acts. The edge
+    /// term curved the ball *towards* the side it landed on, and a ball travelling right lands
+    /// right - so it curved along the slide where friction acts against it. Measured with both
+    /// in place: at a 45-degree arrival the two nearly cancelled half way out, 15.3 degrees of
+    /// curve dead centre falling to 4.5 at the mid-point of the paddle, which is a power-up
+    /// that gets weaker the harder you cut the ball.
+    static let slideTurn: CGFloat = .pi/6
 
-    /// The most the two together may ask for, so a fast flick into the corner stays playable.
+    /// The most the three together may ask for, so a fast flick into the corner stays playable.
     static let steepestTurn: CGFloat = .pi*2/3
 
     /// The turn rate a paddle grips the ball with.
@@ -99,7 +115,14 @@ enum EndlessIIBallSpin {
     /// `collision` is where the ball struck, from -1 at the left end through 0 at the middle
     /// to 1 at the right, which is what `PaddleBounce.collision` already answers for the
     /// bounce angle. Defaulted so the arithmetic can still be asked the old question.
-    static func turnRate(paddleSpeed: CGFloat, collision: CGFloat = 0) -> CGFloat {
+    /// - Parameter collision: where the ball struck, -1 to 1. **No longer part of the
+    ///   arithmetic** - see `slideTurn` for why the slide replaced it - but still taken,
+    ///   because every caller knows it, it is the natural thing to reach for here, and a
+    ///   parameter quietly removed is a parameter quietly re-added by the next person who
+    ///   wants a baseline. Its test says the surface's own grip is the same wherever a ball
+    ///   lands on it.
+    static func turnRate(paddleSpeed: CGFloat, collision: CGFloat = 0,
+                         arriving: CGVector = .zero) -> CGFloat {
         let magnitude = abs(paddleSpeed)
         var rate: CGFloat = 0
         if magnitude > gripThreshold {
@@ -110,7 +133,20 @@ enum EndlessIIBallSpin {
         // The threshold still guards the *speed* term only: a paddle creeping along under a
         // ball is noise, and that was always what the floor was for
 
-        rate += min(max(collision, -1), 1)*edgeTurn
+        let speed = hypot(arriving.dx, arriving.dy)
+        if speed > 0 {
+            rate -= (arriving.dx/speed)*slideTurn
+            // **Against the slide, which is what friction is.** The ball is crossing the
+            // surface to the right, so the surface drags its contact point to the left and the
+            // heading turns that way - which steepens the bounce rather than flattening it,
+            // and a steeper bounce is the one the rest of the game already wants
+            // (`minAngleDeg` exists to stop shallow ones). Curving it further along its own
+            // path would fight that discipline on every grip.
+            //
+            // No threshold: a ball with any horizontal travel at all is sliding, and the
+            // fraction is already near nothing for one falling nearly straight down
+        }
+
         return min(max(rate, -steepestTurn), steepestTurn)
     }
 
@@ -200,8 +236,16 @@ extension GameScene {
     func endlessIIGripBall(_ subject: SKSpriteNode, collision: CGFloat = 0) {
         guard endlessIIBallSpinIsRunning else { return }
         guard endlessIIHeldBalls.contains(where: { $0 === subject }) == false else { return }
-        let rate = EndlessIIBallSpin.turnRate(paddleSpeed: endlessIIPaddleGripSpeed,
-                                              collision: collision)
+        let rate = EndlessIIBallSpin.turnRate(
+            paddleSpeed: endlessIIPaddleGripSpeed,
+            collision: collision,
+            arriving: ballStateBeforeStep[ObjectIdentifier(subject)]?.velocity
+                ?? subject.physicsBody?.velocity ?? .zero)
+        // **The velocity before the step, not the one the contact reports** (§8.6's first
+        // trap). By the time this runs the engine has already turned the ball round, so the
+        // reported `dx` is the *outgoing* slide - which is the same size but tells the grip to
+        // curve the wrong way on every bounce off a vertical face. `ballStateBeforeStep` is
+        // the sample taken in `update`, before physics.
         guard rate != 0 else { return }
         endlessIIBallSpinRates[ObjectIdentifier(subject)] = rate
     }
