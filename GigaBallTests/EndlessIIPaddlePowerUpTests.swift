@@ -3205,6 +3205,244 @@ final class PaddleSurfaceTests: XCTestCase {
         XCTAssertEqual(scene(shaped: true).livesRowY, scene(shaped: false).livesRowY,
                        accuracy: 0.01)
     }
+
+    // MARK: - The height profile (round 313)
+
+    /// A shaped scene wearing one named surface, so each shape can be asked in turn.
+    private func scene(wearing surface: PaddleBounce.Surface) -> GameScene {
+        let scene = self.scene(shaped: false)
+        scene.endlessIIPaddleSurface = surface
+        scene.endlessIIPaddleSurfaceClock.collect(10)
+        scene.refreshEndlessIIPaddleShapeArt()
+        return scene
+    }
+
+    /// **The report this closes**: a ball held anywhere but the middle of a shaped paddle sits
+    /// above the face rather than on it, because the resting height was the top of the
+    /// sprite's box and a curve only touches its box at one point.
+    ///
+    /// Asserted as a *comparison* rather than against the measured 8.96 points, because that
+    /// number belongs to one picture at one size and would have to be re-typed the first time
+    /// James redraws a dome. What has to be true is that the ends are lower than the middle.
+    func testAHeldBallSitsOnTheSlopeRatherThanAtThePeak() {
+        let scene = self.scene(wearing: .convex)
+        let half = scene.paddle.size.width/2
+
+        let middle = scene.restingBallY(atOffsetFromCentre: 0)
+        let end = scene.restingBallY(atOffsetFromCentre: half)
+
+        XCTAssertLessThan(end, middle,
+                          "the end of a dome is lower than its peak, so a ball held there "
+                          + "rests lower")
+        XCTAssertGreaterThan(middle - end, 1,
+                            "and by enough to see - this was nearly a whole ball")
+    }
+
+    /// Both wedges, which measured worst: their low end is the furthest a ball floated.
+    func testAWedgeHoldsTheBallDownItsSlope() {
+        for surface in [PaddleBounce.Surface.wedgeLeft, .wedgeRight] {
+            let scene = self.scene(wearing: surface)
+            let half = scene.paddle.size.width/2
+            let left = scene.restingBallY(atOffsetFromCentre: -half)
+            let right = scene.restingBallY(atOffsetFromCentre: half)
+
+            XCTAssertNotEqual(left, right, accuracy: 0.001,
+                              "\(surface): a slope that holds both ends at one height is not "
+                              + "a slope")
+        }
+    }
+
+    /// **Nothing moves where there is no shape**, which is the promise to Classic and the
+    /// original Endless: neither has a shaped paddle, so neither may shift by a point.
+    ///
+    /// The old expression is written out here rather than referred to, because this is the
+    /// one place it still has to be true and a test that read it from the code under test
+    /// would agree with itself whatever that code said.
+    func testAPaddleWearingNoShapeAnswersExactlyWhatItAlwaysDid() {
+        let scene = self.scene(shaped: false)
+        let before = scene.paddle.position.y + scene.paddle.size.height/2
+            + scene.ball.size.height/2 + 1
+
+        for offset in stride(from: CGFloat(-60), through: 60, by: 7.5) {
+            XCTAssertEqual(scene.restingBallY(atOffsetFromCentre: offset), before,
+                           accuracy: 0.0001,
+                           "a flat top is the same height everywhere, at offset \(offset)")
+        }
+    }
+
+    /// The ball is never placed inside the shape it is resting on.
+    ///
+    /// This is the failure mode round 232 fixed and the one a height profile could bring back:
+    /// a body the engine finds inside another body is one it shoves out, every frame, which is
+    /// what "the ball was sliding about on the paddle" was. Asked against the same silhouette
+    /// the physics body is cut from, at every point across every shape.
+    func testTheBallIsNeverPlacedInsideTheFace() throws {
+        for surface in PaddleBounce.Surface.allCases {
+            let scene = self.scene(wearing: surface)
+            guard scene.endlessIIPaddleShapeArtName != nil else { continue }
+            // Jagged has no picture - see `testAShapeWithNoArtHoldsTheBallLikeAPlainPaddle`
+            let texture = try XCTUnwrap(scene.paddle.texture)
+            let half = scene.paddle.size.width/2
+
+            for step in stride(from: CGFloat(-1), through: 1, by: 0.1) {
+                let offset = step*half
+                guard let top = PaddleOutline.top(for: texture, size: scene.paddle.size,
+                                                  atOffsetFromCentre: offset) else { continue }
+                let surfaceY = scene.paddle.position.y + top
+                let ballBottom = scene.restingBallY(atOffsetFromCentre: offset)
+                    - scene.ball.size.height/2
+
+                XCTAssertGreaterThanOrEqual(ballBottom, surfaceY - 0.001,
+                                            "\(surface) at \(offset): the ball has to rest on "
+                                            + "the face, never in it")
+            }
+        }
+    }
+
+    /// And it never rests far above it either, which is the whole complaint.
+    ///
+    /// One point of clearance is what the resting height has always carried; this says the
+    /// profile spends that and no more, so "floating" cannot come back by a different door.
+    func testTheBallRestsOnTheFaceRatherThanAboveIt() throws {
+        for surface in PaddleBounce.Surface.allCases {
+            let scene = self.scene(wearing: surface)
+            guard scene.endlessIIPaddleShapeArtName != nil else { continue }
+            let texture = try XCTUnwrap(scene.paddle.texture)
+            let half = scene.paddle.size.width/2
+
+            for step in stride(from: CGFloat(-1), through: 1, by: 0.1) {
+                let offset = step*half
+                guard let top = PaddleOutline.top(for: texture, size: scene.paddle.size,
+                                                  atOffsetFromCentre: offset) else { continue }
+                let gap = scene.restingBallY(atOffsetFromCentre: offset)
+                    - scene.ball.size.height/2 - (scene.paddle.position.y + top)
+
+                XCTAssertEqual(gap, 1, accuracy: 0.001,
+                               "\(surface) at \(offset): one point of clearance, everywhere")
+            }
+        }
+    }
+
+    /// The height moves smoothly across the face rather than in steps.
+    ///
+    /// The run is twenty-one boundaries across seventy-five points, so an answer snapped to the
+    /// nearest one would step the ball by up to a third of its own width as it slid along -
+    /// the staircase `PaddleOutline` exists to remove, put back one layer up. A ball sliding
+    /// along a paddle is exactly what a sticky paddle and a resize both do.
+    func testTheHeightDoesNotStepAsTheBallSlidesAlong() {
+        for surface in PaddleBounce.Surface.allCases {
+            let scene = self.scene(wearing: surface)
+            let half = scene.paddle.size.width/2
+
+            var previous = scene.restingBallY(atOffsetFromCentre: -half)
+            for step in stride(from: CGFloat(-0.99), through: 1, by: 0.01) {
+                let now = scene.restingBallY(atOffsetFromCentre: step*half)
+                XCTAssertLessThan(abs(now - previous), 1,
+                                  "\(surface) at \(step): a hundredth of the width should not "
+                                  + "move the ball a whole point")
+                previous = now
+            }
+        }
+    }
+
+    /// **Jagged has no picture, and so keeps the plain paddle's flat answer.**
+    ///
+    /// Found by the two tests above failing on it, which is the right way round: they were
+    /// asking the *plain* paddle's silhouette - rounded ends that taper away - about a ball
+    /// resting at the box top, and getting three points of clearance at the corners.
+    ///
+    /// `endlessIIPaddleShapeSuffix` returns nil for jagged: it is the one shape nobody has
+    /// drawn, so the paddle keeps `regularPaddle` and only the *angle* half of the shape is in
+    /// play. A flat picture wants the flat answer, which is what the fallback gives - and this
+    /// says so out loud, because a jagged paddle that one day gets artwork must stop taking
+    /// this path, and a silent fallback is how that would go unnoticed.
+    func testAShapeWithNoArtHoldsTheBallLikeAPlainPaddle() {
+        let jagged = self.scene(wearing: .jagged)
+        XCTAssertNil(jagged.endlessIIPaddleShapeArtName,
+                     "if jagged has been drawn, this test is the one that has to change")
+
+        let plain = self.scene(shaped: false)
+        for offset in stride(from: CGFloat(-40), through: 40, by: 8) {
+            XCTAssertEqual(jagged.restingBallY(atOffsetFromCentre: offset),
+                           plain.restingBallY(atOffsetFromCentre: offset),
+                           accuracy: 0.0001,
+                           "at \(offset): no picture, no height profile to read")
+        }
+    }
+
+    /// **The picture of it**, because this project's rule is that visual work gets looked at
+    /// and a ball resting on a slope is as visual as it gets.
+    ///
+    /// Draws each shaped paddle twice with five balls spread across it: once at the old
+    /// resting height, which is one number for the whole face, and once at the new one. The
+    /// old row hangs in a straight line above the curve; the new row sits on it.
+    func testTheHeldBallsOnAShapedPaddleCanBeLookedAt() throws {
+        let shapes: [PaddleBounce.Surface] = [.convex, .concave, .wavy, .wedgeLeft]
+        let width: CGFloat = 200, rowHeight: CGFloat = 70
+        let scene = GameScene(size: CGSize(width: 460,
+                                           height: rowHeight*CGFloat(shapes.count) + 20))
+        scene.backgroundColor = UIColor(red: 0.06, green: 0.05, blue: 0.14, alpha: 1)
+        scene.anchorPoint = CGPoint(x: 0.5, y: 0.5)
+
+        for (row, surface) in shapes.enumerated() {
+            let built = self.scene(wearing: surface)
+            guard let texture = built.paddle.texture else { continue }
+            let size = CGSize(width: width,
+                              height: built.paddle.size.height*width/built.paddle.size.width)
+            let y = scene.size.height/2 - rowHeight*(CGFloat(row) + 0.5)
+
+            for (column, old) in [false, true].enumerated() {
+                let centre = CGFloat(column) == 0 ? -CGFloat(115) : CGFloat(115)
+                let face = SKSpriteNode(texture: texture, size: size)
+                face.position = CGPoint(x: centre, y: y)
+                scene.addChild(face)
+
+                for step in stride(from: CGFloat(-0.85), through: 0.85, by: 0.425) {
+                    let offset = step*size.width/2
+                    let top = old
+                        ? size.height/2
+                        : (PaddleOutline.top(for: texture, size: size,
+                                             atOffsetFromCentre: offset) ?? size.height/2)
+                    let ball = SKSpriteNode(color: old ? .systemRed : UIColor(red: 0.82,
+                                                                             green: 1,
+                                                                             blue: 0, alpha: 1),
+                                            size: CGSize(width: 11, height: 11))
+                    ball.position = CGPoint(x: centre + offset, y: y + top + 5.5 + 1)
+                    scene.addChild(ball)
+                }
+            }
+        }
+        // **Left column green at the new height, right column red at the old one.** Squares
+        // rather than circles on purpose: a textureless sprite with a colour draws a solid
+        // rectangle (§8.6), and a marker that is honestly a marker is better here than one
+        // pretending to be a ball
+
+        let view = SKView(frame: CGRect(origin: .zero, size: scene.size))
+        let rendered = try XCTUnwrap(view.texture(from: scene),
+                                     "no renderer here, so there is nothing to look at")
+        let file = URL(fileURLWithPath: NSTemporaryDirectory())
+            .appendingPathComponent("held-ball-heights.png")
+        try XCTUnwrap(UIImage(cgImage: rendered.cgImage()).pngData()).write(to: file)
+        print("\n  Held balls, the profile (green, left) against the old height (red, right): "
+              + "\(file.path)\n")
+    }
+
+    /// Past either end, the end's own height - not a curve carried on into thin air.
+    ///
+    /// A ball is only ever placed within the paddle's width, so this is a guard rather than a
+    /// case. It is asserted because the alternative reads as harmless and is not: a dome
+    /// extrapolated far enough goes underground, and the guard is the only thing saying so.
+    func testBeyondTheEndsTheHeightHolds() {
+        let scene = self.scene(wearing: .convex)
+        let half = scene.paddle.size.width/2
+
+        XCTAssertEqual(scene.restingBallY(atOffsetFromCentre: half*4),
+                       scene.restingBallY(atOffsetFromCentre: half),
+                       accuracy: 0.001)
+        XCTAssertEqual(scene.restingBallY(atOffsetFromCentre: -half*4),
+                       scene.restingBallY(atOffsetFromCentre: -half),
+                       accuracy: 0.001)
+    }
 }
 
 
@@ -3306,6 +3544,43 @@ final class PaddleOutlineTests: XCTestCase {
                 return (1 - CGFloat(y)/CGFloat(rows) - 0.5)*size.height
             }
             return -size.height/2
+        }
+    }
+
+    /// **How far a held ball sits proud of the shape it is resting on.**
+    ///
+    /// The queue has carried "a shaped paddle has an angle profile but no height profile"
+    /// since round 312, with the note that the remaining error is "a fraction of a ball at
+    /// the extreme ends of two of the six shapes". That was an estimate, never a measurement,
+    /// and this is the measurement - because whether it is worth building is entirely a
+    /// question of how big it is against a ball.
+    ///
+    /// `restingBallY` is `paddle.position.y + paddle.size.height/2 + ball/2 + 1`: the top of
+    /// the sprite's *box*, which on a curve is the highest point of the curve and nothing
+    /// else. So the error at any x is how far the silhouette has fallen away from its own
+    /// peak by then.
+    func testHowFarAHeldBallFloatsAboveAShapedPaddle() throws {
+        let size = CGSize(width: 75, height: 18)
+        let ball: CGFloat = 12
+        // A ball is about 12 points across at the sizes these are drawn for, which is the
+        // yardstick the note's "a fraction of a ball" is measured in
+
+        print("\n  How far the surface falls below the sprite's own top, in points")
+        print("    (the box top is what `restingBallY` uses, at every x)")
+        for name in ["regularPaddleConvex", "regularPaddleConcave", "regularPaddleWave",
+                     "regularPaddleWedgeLeft", "regularPaddleWedgeRight"] {
+            guard let art = UIImage(named: name)?.cgImage else { continue }
+            let run = PaddleOutline.boundaries(of: art, size: size)
+            guard run.isEmpty == false else { continue }
+
+            let peak = run.map(\.top).max() ?? 0
+            let atEnd = min(run.first?.top ?? 0, run.last?.top ?? 0)
+            let half = run.min { abs($0.x - size.width/4) < abs($1.x - size.width/4) }?.top ?? 0
+
+            print(String(format: "    %-26@ peak %5.2f   half way %5.2f (%4.2f low)   "
+                         + "at the end %5.2f (%4.2f low, %3.0f%% of a ball)",
+                         name as NSString, peak, half, peak - half,
+                         atEnd, peak - atEnd, (peak - atEnd)/ball*100))
         }
     }
 

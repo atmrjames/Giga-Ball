@@ -489,6 +489,69 @@ extension PaddleOutline {
         // shapes over and over
     }
 
+    /// **How high the surface stands, across the paddle.** The other half of a shape.
+    ///
+    /// `shaped(_:by:)` answers where a ball behaves as though it landed - the *angle* half of
+    /// a shaped face - and until round 313 there was no answer to the matching question, which
+    /// is how high the face is at that point. A held ball was placed at
+    /// `paddle.position.y + paddle.size.height/2`: the top of the sprite's box, which on a
+    /// curve is the single highest point of the curve and nothing else.
+    ///
+    /// **Measured before it was built** (`testHowFarAHeldBallFloatsAboveAShapedPaddle`), and
+    /// the queue's estimate of "a fraction of a ball at the extreme ends of two of the six
+    /// shapes" was badly out. Against a twelve-point ball: a dome's ends are **8.96 points
+    /// low, three quarters of a ball**; a wave's are 6.38; and both wedges' low ends are
+    /// **11.07, ninety-two per cent of a ball** - the whole ball hanging in the air beside the
+    /// slope. The dish is the one that breaks the estimate's shape as well as its size, being
+    /// worst **half way out** at 6.08 rather than at its ends at 1.82, because a dish turns up
+    /// into its corners. Five shapes, not two, and most of a ball, not a fraction of one.
+    ///
+    /// The run is the same silhouette the body is cut from, so the ball rests on the surface
+    /// it will bounce off rather than on a second opinion about where that surface is - and it
+    /// costs nothing extra, because it is read from the same measurement and cached beside it.
+    static func profile(for texture: SKTexture, size: CGSize) -> [(x: CGFloat, top: CGFloat)]? {
+        guard size.width > 1, size.height > 1 else { return nil }
+        let key = Key(texture: ObjectIdentifier(texture),
+                      width: Int((size.width*10).rounded()),
+                      height: Int((size.height*10).rounded()))
+        if let kept = profiles[key] { return kept }
+
+        guard let image = UIImage(named: texture.description.name)?.cgImage
+                ?? texture.cgImage() as CGImage? else { return nil }
+        let run = boundaries(of: image, size: size).map { (x: $0.x, top: $0.top) }
+        guard run.count > 1 else { return nil }
+        profiles[key] = run
+        return run
+    }
+
+    /// Where the surface is, at one distance from the paddle's centre, in points about the
+    /// paddle's own centre.
+    ///
+    /// **Interpolated between boundaries rather than snapped to the nearest one.** The run is
+    /// twenty-one points across seventy-five, so snapping would step the ball by up to a third
+    /// of its own width as it slid along - which is the staircase `PaddleOutline` exists to
+    /// get rid of, reintroduced one layer up.
+    ///
+    /// Past either end it holds the end's height. A ball is only ever placed within the
+    /// paddle's own width, so this is a guard rather than a case: the alternative is
+    /// extrapolating a curve beyond the picture it was read from, and a dome extrapolated
+    /// far enough goes underground.
+    static func top(for texture: SKTexture, size: CGSize,
+                    atOffsetFromCentre offset: CGFloat) -> CGFloat? {
+        guard let run = profile(for: texture, size: size) else { return nil }
+        guard let first = run.first, let last = run.last else { return nil }
+        if offset <= first.x { return first.top }
+        if offset >= last.x { return last.top }
+
+        for (left, right) in zip(run, run.dropFirst()) where offset <= right.x {
+            let span = right.x - left.x
+            guard span > 0.0001 else { return left.top }
+            let share = (offset - left.x)/span
+            return left.top + (right.top - left.top)*share
+        }
+        return last.top
+    }
+
     private struct Key: Hashable {
         let texture: ObjectIdentifier
         let width: Int
@@ -496,9 +559,10 @@ extension PaddleOutline {
     }
 
     private static var cache: [Key: SKPhysicsBody] = [:]
+    private static var profiles: [Key: [(x: CGFloat, top: CGFloat)]] = [:]
 
     /// For the tests, which must be able to measure a cold build.
-    static func empty() { cache.removeAll() }
+    static func empty() { cache.removeAll(); profiles.removeAll() }
 }
 
 private extension String {

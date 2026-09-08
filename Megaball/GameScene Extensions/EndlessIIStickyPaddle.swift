@@ -248,11 +248,18 @@ extension GameScene {
                 // a surface nothing is writing a position for
             }
             let share = endlessIIHeldOffsets.indices.contains(index) ? endlessIIHeldOffsets[index] : 0
-            held.position.x = paddle.position.x + share*endlessIIPaddleHalfWidth
-            held.position.y = ballStartingPositionY
+            let across = share*endlessIIPaddleHalfWidth
+            held.position.x = paddle.position.x + across
+            held.position.y = restingBallY(atOffsetFromCentre: across)
             held.physicsBody?.velocity = .zero
             // The share is reconstituted against the paddle's *current* half-width, which is
             // what carries the ball with a resize instead of leaving it behind
+            //
+            // And the height is asked at that same place rather than taken from
+            // `ballStartingPositionY`, which is one number for the whole face (round 313). A
+            // sticky paddle holds several balls at once and spreads them across the paddle, so
+            // it is the power-up that shows a missing height profile most: on a wedge the ball
+            // at the low end floated ninety-two per cent of its own width above the slope
         }
 
         endlessIIDropHeldBallsThatLeft()

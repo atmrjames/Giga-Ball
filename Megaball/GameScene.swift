@@ -2943,12 +2943,41 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     /// which is why James saw both. Both now come from here, so they cannot disagree, and asking
     /// it live means a shape collected mid-hold is followed rather than waited for.
     ///
-    /// **What this does not fix**: a dome or a dish is not flat *across* its face, and this is
-    /// still one height for the whole width - so a ball held at the very edge of a Convex
-    /// paddle sits a little proud of the slope. Closing that needs a height profile the shapes
-    /// do not currently have, only an angle one - see ENDLESS-2 §12.0.
-    var restingBallY: CGFloat {
-        paddle.position.y + paddle.size.height/2 + ball.size.height/2 + 1
+    /// **And it follows the shape across its face as well as up** (round 313). This was one
+    /// height for the whole width - the top of the sprite's *box*, which on a curve is the
+    /// single highest point of the curve - so a ball held anywhere but the peak floated.
+    ///
+    /// The queue had that as "a fraction of a ball at the extreme ends of two of the six
+    /// shapes", which was an estimate and is wrong in both halves. Measured against a
+    /// twelve-point ball: a dome's ends are **8.96 points low, three quarters of a ball**, a
+    /// wave's are 6.38, and both wedges' low ends are **11.07 - ninety-two per cent of a
+    /// ball** hanging in the air beside the slope. And the dish is worst **half way out** at
+    /// 6.08 rather than at its ends at 1.82, because a dish turns up into its corners. Five
+    /// shapes, and most of a ball.
+    var restingBallY: CGFloat { restingBallY(atOffsetFromCentre: 0) }
+
+    /// The same, at one point across the paddle's face.
+    func restingBallY(atOffsetFromCentre offset: CGFloat) -> CGFloat {
+        paddle.position.y + paddleSurfaceHeight(atOffsetFromCentre: offset)
+            + ball.size.height/2 + 1
+    }
+
+    /// How far above the paddle node's own centre its surface stands, at one point across it.
+    ///
+    /// **The same silhouette the body is cut from**, so a ball rests on the surface it will
+    /// bounce off rather than on a second opinion about where that surface is. A paddle
+    /// wearing no shape answers with half its height, which is exactly what this expression
+    /// was before and is exactly right for a flat top - so nothing moves by a point in Classic
+    /// or the original Endless, neither of which has a shaped paddle to ask about.
+    func paddleSurfaceHeight(atOffsetFromCentre offset: CGFloat) -> CGFloat {
+        guard endlessIIPaddleShapeArtName != nil,
+              let texture = paddle.texture,
+              let top = PaddleOutline.top(for: texture, size: paddle.size,
+                                          atOffsetFromCentre: offset)
+        else { return paddle.size.height/2 }
+        return top
+        // Falls back to the box, so a shape whose picture cannot be read holds a ball where it
+        // held one yesterday - the same rule `rebuildEndlessIIPaddleBody` follows for the body
     }
 
     func holdTheWaitingBallStill() {
@@ -2956,7 +2985,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         setEndlessIIHeldBallRestsOnPaddle(true, for: ball)
 
         let wanted = CGPoint(x: paddle.position.x + ballRelativePositionOnPaddle,
-                             y: restingBallY)
+                             y: restingBallY(atOffsetFromCentre: ballRelativePositionOnPaddle))
+        // The height is asked *at the ball's own place on the paddle*, so a ball waiting near
+        // the end of a dome sits on the slope rather than at the height of the peak
         if ball.position != wanted { ball.position = wanted }
         if ball.physicsBody?.velocity != .zero { ball.physicsBody?.velocity = .zero }
         // Velocity too: a body shoved out of another keeps the shove, so a ball freed on the

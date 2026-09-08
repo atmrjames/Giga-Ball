@@ -59,7 +59,8 @@ extension GameScene {
 
         if isExtra {
             subject.physicsBody?.velocity = .zero
-            subject.position.y = ballStartingPositionY
+            subject.position.y = restingBallY(
+                atOffsetFromCentre: subject.position.x - paddle.position.x)
             if endlessIIHeldBalls.contains(where: { $0 === subject }) == false {
                 endlessIIHeldBalls.append(subject)
                 endlessIIHeldOffsets.append(endlessIIHeldShare(of: subject))
@@ -75,12 +76,19 @@ extension GameScene {
             //
             // The paddle also comes out of its collisions here, for round 291's reason - a
             // held ball placed inside a shaped paddle's traced body slides down the slope
+            //
+            // **Both branches take the height at the ball's own place across the face** (round
+            // 313), rather than `ballStartingPositionY`, which is the height of the shape's
+            // highest point wherever the ball actually is. The ticks would have corrected it on
+            // the next frame either way - so this is about the catch frame itself, where a ball
+            // caught near the end of a wedge appeared most of its own width above the paddle
+            // and then dropped onto it
         } else {
             removeAction(forKey: "gameTimer")
             ballIsOnPaddle = true
             subject.physicsBody?.velocity = .zero
-            subject.position.y = ballStartingPositionY
             ballRelativePositionOnPaddle = subject.position.x - paddle.position.x
+            subject.position.y = restingBallY(atOffsetFromCentre: ballRelativePositionOnPaddle)
             // **Where it landed, not where the last launch left off** (James, round 169:
             // "all of a sudden, the other ball appeared on the middle of the paddle";
             // round 180, mid-Ghost Ball: "the ball suddenly appeared back on my paddle").
