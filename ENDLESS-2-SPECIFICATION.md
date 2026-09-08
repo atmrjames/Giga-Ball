@@ -1530,6 +1530,19 @@ lines further down the same file, and reported it passing off a run that had nev
 strikes the entry in the same commit**, and an item picked up off the queue is checked against
 the code before any work starts on it - which is how three of these five were found.
 
+**Round 313 found four more, and then swept for them instead of waiting.** Three turned up by
+accident in two rounds - §12.2 still calling the ring HUD blocked, three rounds committed with
+no row at all, and a taste call never written down - which is a pattern rather than bad luck.
+The sweep that found the fourth is mechanical and takes seconds, so run it rather than reading:
+**every backticked identifier in every row of this table, checked against the whole Swift source
+and the asset catalogue.** 783 distinct tokens, 22 without a match, and most of those 22 are the
+table working correctly - a row saying "X became Y" has to name X. What is worth looking at is a
+row claiming in the *present tense* that a symbol exists. That is how `pendingLegendSupport` was
+found: a row saying Millrace was deliberately held out of the generator's pool awaiting builder
+support that had, in fact, been built, while Millrace had been shipping to players for dozens of
+rounds. **A note that describes shipped behaviour as withheld is worse than one that describes
+finished work as owed**, because the second only wastes a round and the first hides a feature.
+
 **"Speeding up and slowing down" means uneven frames, not slow ones.** The ball's speed is
 held exactly constant every frame (`holdBallSpeeds`), so what varies when frames vary is how far
 it travels in each one - which reads as acceleration and braking rather than as lag. A report
