@@ -45,14 +45,50 @@ extension GameScene {
     /// Portal blue wins over magnet red when both run at once - the portal changes where the
     /// ball *goes*, which is the more important thing to be reading. No power-up, no tint.
     private func dressEndlessIIPaddle() {
+        let tint: UIColor?
         if endlessIIPortalPaddleClock.isRunning {
-            paddle.color = GameScene.portalBlueColour
-            paddle.colorBlendFactor = 0.75
+            tint = GameScene.portalBlueColour
         } else if endlessIIMagnetismClock.isRunning {
-            paddle.color = GameScene.endlessIIMagnetColour
-            paddle.colorBlendFactor = 0.75
-        } else if paddle.colorBlendFactor != 0 {
-            paddle.colorBlendFactor = 0
+            tint = GameScene.endlessIIMagnetColour
+        } else {
+            tint = nil
+        }
+
+        let halves = paddle.children.filter { $0.name == GameScene.doublePaddleHalfName }
+        guard halves.isEmpty else {
+            paint(halves.compactMap { $0 as? SKSpriteNode }, tint)
+            if paddle.colorBlendFactor != 1 || paddle.color != .clear {
+                paddle.color = .clear
+                paddle.colorBlendFactor = 1
+            }
+            return
+        }
+        // **The pieces wear the tint, and the span underneath them stays invisible** (James,
+        // round 313: with a split paddle and a Portal Paddle together, "blue portal texture
+        // between the sections of the paddle").
+        //
+        // A split paddle stops drawing itself - `refreshEndlessIIDoublePaddle` ends with
+        // `texture = nil`, `color = .clear` - and what the player sees is its two children.
+        // The node keeps its full span, because the bounce measures where the ball landed
+        // across the whole of it. This function then ran on the next frame and painted that
+        // span portal blue at 0.75, and a textureless sprite with a colour draws a solid
+        // rectangle: the halves covered the ends of it and the gap between them did not.
+        //
+        // So the gap was not a portal texture at all. It was the paddle itself, showing
+        // through the hole it is supposed to have.
+
+        paint([paddle], tint)
+    }
+
+    /// Puts a power-up's colour on whatever is currently standing for the paddle.
+    private func paint(_ nodes: [SKSpriteNode], _ tint: UIColor?) {
+        for node in nodes {
+            guard let tint else {
+                if node.colorBlendFactor != 0 { node.colorBlendFactor = 0 }
+                continue
+            }
+            node.color = tint
+            node.colorBlendFactor = 0.75
         }
     }
 

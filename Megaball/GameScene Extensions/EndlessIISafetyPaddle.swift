@@ -195,7 +195,21 @@ extension GameScene {
         endlessIISafetyPaddleBodyArt = endlessIIShapeOwnsTheBounce
             ? endlessIIPaddleShapeArtName : nil
         let body: SKPhysicsBody
-        if endlessIIShapeOwnsTheBounce, let art = endlessIISafetyPaddleDress {
+        if let pieces = endlessIISafetyPaddleSegmentCentres(span: size.width) {
+            body = SKPhysicsBody(bodies: pieces.centres.map {
+                SKPhysicsBody(rectangleOf: CGSize(width: pieces.segment, height: size.height),
+                              center: CGPoint(x: $0, y: 0))
+            })
+            // **A bar with the paddle's holes in it** (James, round 313: with a Split Paddle,
+            // "the safety paddle should also be split"). One body of several rectangles, the
+            // way the paddle's own split is built - every contact still arrives as a safety
+            // paddle contact, and the gaps carry no rectangle, so a ball down a gap falls
+            // through the bar exactly as it falls through the paddle.
+            //
+            // A shaped bar gives its traced outline up while it is split: the trace is of one
+            // whole picture and there is no honest way to cut it into pieces. A Split Paddle
+            // is the shape that is showing, and it is the one the ball must agree with.
+        } else if endlessIIShapeOwnsTheBounce, let art = endlessIISafetyPaddleDress {
             body = TracedBodyCache.body(texture: art, size: size)
                 ?? SKPhysicsBody(rectangleOf: size)
         } else {
@@ -247,7 +261,9 @@ extension GameScene {
             // directly, and a bar that kept its birth width was the same object at a
             // different size - the mirror learned this in round 180, and the nine-slice
             // has to be re-copied with it or the fresh width stretches the old state
-            refreshEndlessIISafetyPaddleTop(bar)
+            refreshEndlessIISafetyPaddleSplit(bar)
+            // Last, because it owns whether the bar draws itself or its pieces do - and the
+            // face above is put on whichever of those is showing
             return
         }
         bar.name = nil
@@ -255,6 +271,98 @@ extension GameScene {
         // removal on the same node
         bar.physicsBody = nil
         bar.run(.sequence([.fadeOut(withDuration: 0.2), .removeFromParent()]))
+    }
+
+    /// Where the bar's pieces sit, or nil when it is one whole bar.
+    ///
+    /// The paddle's own layout, asked rather than restated: the twin has followed the paddle's
+    /// width, scale, picture and shape since round 203's parity list, and its holes are the
+    /// last of those. A second copy of the segment arithmetic would be wrong the first time
+    /// the gap changed.
+    func endlessIISafetyPaddleSegmentCentres(span: CGFloat)
+        -> (centres: [CGFloat], segment: CGFloat)? {
+        guard endlessIIPaddleIsSplit, span > 0, paddleWidth > 0, ballSize > 0 else { return nil }
+        let layout = GameScene.endlessIIDoublePaddleLayout(span: span,
+                                                           standardWidth: paddleWidth,
+                                                           ballSize: ballSize)
+        guard layout.count > 0, layout.segment > 0 else { return nil }
+        let pitch = layout.segment + layout.gap
+        let first = -span/2 + layout.segment/2
+        return ((0..<layout.count).map { first + pitch*CGFloat($0) }, layout.segment)
+    }
+
+    static let endlessIISafetyPaddleSegmentName = "endlessIISafetyPaddleSegment"
+
+    /// Draws the bar as pieces while the paddle is in pieces, and as one bar otherwise.
+    ///
+    /// The same bargain the split itself makes: put back exactly. A bar left in pieces after
+    /// the Double Paddle's clock stopped would be a power-up that never ended.
+    func refreshEndlessIISafetyPaddleSplit(_ bar: SKSpriteNode) {
+        let pieces = bar.children
+            .compactMap { $0 as? SKSpriteNode }
+            .filter { $0.name == GameScene.endlessIISafetyPaddleSegmentName }
+
+        guard let split = endlessIISafetyPaddleSegmentCentres(span: bar.size.width) else {
+            if pieces.isEmpty == false {
+                pieces.forEach { $0.removeFromParent() }
+                bar.texture = endlessIISafetyPaddleDress
+                bar.color = GameScene.endlessIIHaloColour
+                bar.colorBlendFactor = 1
+                bar.centerRect = endlessIIPaddleDressCenterRect
+                bar.physicsBody = endlessIISafetyPaddleBody(size: bar.size)
+            }
+            refreshEndlessIISafetyPaddleTop(bar)
+            return
+            // The face is asked for on every frame either way - a Sticky Paddle collected
+            // while the bar already stands has to reach it, which is the whole of round 312's
+            // note - so it sits outside the rebuild rather than inside it
+        }
+
+        let size = CGSize(width: split.segment, height: bar.size.height)
+        let stale = pieces.count != split.centres.count
+            || zip(pieces, split.centres).contains { abs($0.position.x - $1) > 0.5 }
+            || pieces.contains { abs($0.size.width - size.width) > 0.5
+                              || abs($0.size.height - size.height) > 0.5 }
+        // Rebuilt when the pieces are wrong rather than every frame, which is the rule the
+        // paddle's own split follows - two fresh sprites a frame is a habit an update loop
+        // does not survive
+
+        if stale {
+            pieces.forEach { $0.removeFromParent() }
+            bar.childNode(withName: GameScene.endlessIISafetyPaddleTopName)?
+                .removeFromParent()
+            // The whole bar's own face goes with it - each piece grows its own below
+
+            for centre in split.centres {
+                let piece = SKSpriteNode(texture: endlessIISafetyPaddleDress, size: size)
+                piece.name = GameScene.endlessIISafetyPaddleSegmentName
+                piece.color = GameScene.endlessIIHaloColour
+                piece.colorBlendFactor = 1
+                piece.centerRect = endlessIIPaddleDressCenterRect
+                piece.position = CGPoint(x: centre, y: 0)
+                piece.zPosition = 0.1
+                bar.addChild(piece)
+            }
+            // Nine-sliced from the paddle's own cap rect, for round 182's reason: a strip cut
+            // to a fraction of its width squashes its own end caps in proportion to how short
+            // it is
+
+            bar.texture = nil
+            bar.color = .clear
+            bar.colorBlendFactor = 1
+            // The bar keeps its span - the bounce measures where the ball landed across the
+            // whole of it - and stops drawing itself, because what is drawn now is its children
+
+            bar.physicsBody = endlessIISafetyPaddleBody(size: bar.size)
+        }
+
+        for piece in bar.children.compactMap({ $0 as? SKSpriteNode })
+        where piece.name == GameScene.endlessIISafetyPaddleSegmentName {
+            refreshEndlessIISafetyPaddleTop(piece)
+        }
+        // Each piece wears its own sticky band or grip, which is what the paddle's split does
+        // with `paddleSticky`. A face drawn across the gap would be the same mistake the
+        // portal tint was making on the paddle itself
     }
 
     /// The strip across the bar's face: the sticky band, or the grip.
@@ -289,8 +397,19 @@ extension GameScene {
         } else {
             strip = SKSpriteNode()
             strip.name = GameScene.endlessIISafetyPaddleTopName
+            strip.anchorPoint = CGPoint(x: 0.5, y: 0)
             strip.zPosition = 0.1
             bar.addChild(strip)
+            // **Standing on the line rather than straddling it** (James, round 313: with a
+            // Sticky Paddle and a Safety Paddle together, "the sticky texture is on the
+            // underside of the safety paddle").
+            //
+            // The line below puts this at the bar's underside because that is where the
+            // paddle's own strip goes - and the paddle's `paddleSticky` is anchored (0.5, 0),
+            // so *its* eleven points grow upward over the paddle. This one was a fresh
+            // `SKSpriteNode`, which is anchored in its middle, so the same position hung five
+            // and a half points of it below the bar. Measured off the scene file: the paddle
+            // is ten points tall and its sticky strip eleven, both bottom-anchored.
         }
 
         let art = endlessIIPaddleTopTexture
@@ -299,7 +418,8 @@ extension GameScene {
         strip.centerRect = GameScene.paddleStickyCapRect
         strip.position = CGPoint(x: 0, y: -bar.size.height/2)
         // Measured in the bar's own coordinates, and off its underside for the reason the
-        // paddle's strip is: the two pictures are drawn to meet at that line
+        // paddle's strip is: the two pictures are drawn to meet at that line, and both stand
+        // on it rather than being centred across it
         strip.color = GameScene.endlessIIHaloColour
         strip.colorBlendFactor = 1
         // Tinted with the bar, which is the whole of what makes it read as the bar's own face
