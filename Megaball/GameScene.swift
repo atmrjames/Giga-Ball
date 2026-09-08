@@ -1298,6 +1298,22 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	let decoder = PropertyListDecoder()
 	// NSCoder data store & encoder setup
 	
+	/// The pictures, in the order every power-up array is indexed.
+	///
+	/// **A property rather than a line inside `didMove`** (round 313, from the CRAP pass).
+	/// `applyPowerUp` is the riskiest function in the app by that measure - complexity 168 at
+	/// one per cent covered - and the reason it had no tests is that the list it works from was
+	/// built halfway through five hundred lines of scene setup, behind a dozen force-cast
+	/// `childNode(withName:)` lookups that only a presented .sks scene can answer.
+	///
+	/// The order is the thing worth reaching: it is what ties the texture that identifies a
+	/// power-up to the counter that records it, sixty-five times, by hand. Read here rather
+	/// than copied into a test, because a second copy of an order is wrong the first time the
+	/// order changes.
+	var powerUpTexturesInOrder: [SKTexture] {
+		[powerUpGetALife, powerUpLoseALife, powerUpDecreaseBallSpeed, powerUpIncreaseBallSpeed, powerUpIncreasePaddleSize, powerUpDecreasePaddleSize, powerUpStickyPaddle, powerUpGravityBall, powerUpPointsBonusSmall, powerUpPointsPenaltySmall, powerUpPointsBonus, powerUpPointsPenalty, powerUpMultiplier, powerUpMultiplierReset, powerUpNextLevel, powerUpShowInvisibleBricks, powerUpNormalToInvisibleBricks, powerUpMultiHitToNormalBricks, powerUpMultiHitBricksReset, powerUpRemoveIndestructibleBricks, powerUpGigaBall, powerUpUndestructiBall, powerUpLasers, powerUpBricksDown, powerUpMystery, powerUpBackstop, powerUpIncreaseBallSize, powerUpDecreaseBallSize, powerUpMultiBall, powerUpTrajectoryLine, powerUpLandingMarker, powerUpAimedSticky, powerUpMagnetism, powerUpPortalPaddle, powerUpPaddleHalo, powerUpBallSteering, powerUpInertPaddle, powerUpFlippedAngle, powerUpReversedControls, powerUpCull, powerUpClearAndRetreat, powerUpLaserBeam, powerUpWreckingBall, powerUpAura, powerUpInfill, powerUpDescent, powerUpAutoAim, powerUpWrapAround, powerUpLock, powerUpKey, powerUpWipe, powerUpRandomisedBounce, powerUpGhostBall, powerUpSafetyPaddle, powerUpDrift, powerUpConvexPaddle, powerUpConcavePaddle, powerUpWavyPaddle, powerUpJaggedPaddle, powerUpDoublePaddle, powerUpMirrorPaddle, powerUpCluster, powerUpBallSpin, powerUpDriftLeft, powerUpWedgeLeftPaddle, powerUpWedgeRightPaddle]
+	}
+
     override func didMove(to view: SKView) {
 		
 //MARK: - Scene Setup
@@ -1438,7 +1454,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		ballSizeIconEmptyBar = self.childNode(withName: "ballSizeIconEmptyBar") as! SKSpriteNode
 		// Power-up icon timer bar creation
 		
-		powerUpTextureArray = [powerUpGetALife, powerUpLoseALife, powerUpDecreaseBallSpeed, powerUpIncreaseBallSpeed, powerUpIncreasePaddleSize, powerUpDecreasePaddleSize, powerUpStickyPaddle, powerUpGravityBall, powerUpPointsBonusSmall, powerUpPointsPenaltySmall, powerUpPointsBonus, powerUpPointsPenalty, powerUpMultiplier, powerUpMultiplierReset, powerUpNextLevel, powerUpShowInvisibleBricks, powerUpNormalToInvisibleBricks, powerUpMultiHitToNormalBricks, powerUpMultiHitBricksReset, powerUpRemoveIndestructibleBricks, powerUpGigaBall, powerUpUndestructiBall, powerUpLasers, powerUpBricksDown, powerUpMystery, powerUpBackstop, powerUpIncreaseBallSize, powerUpDecreaseBallSize, powerUpMultiBall, powerUpTrajectoryLine, powerUpLandingMarker, powerUpAimedSticky, powerUpMagnetism, powerUpPortalPaddle, powerUpPaddleHalo, powerUpBallSteering, powerUpInertPaddle, powerUpFlippedAngle, powerUpReversedControls, powerUpCull, powerUpClearAndRetreat, powerUpLaserBeam, powerUpWreckingBall, powerUpAura, powerUpInfill, powerUpDescent, powerUpAutoAim, powerUpWrapAround, powerUpLock, powerUpKey, powerUpWipe, powerUpRandomisedBounce, powerUpGhostBall, powerUpSafetyPaddle, powerUpDrift, powerUpConvexPaddle, powerUpConcavePaddle, powerUpWavyPaddle, powerUpJaggedPaddle, powerUpDoublePaddle, powerUpMirrorPaddle, powerUpCluster, powerUpBallSpin, powerUpDriftLeft, powerUpWedgeLeftPaddle, powerUpWedgeRightPaddle]
+		powerUpTextureArray = powerUpTexturesInOrder
 		// Power up texture array
 
 		SKTexture.preload(powerUpTextureArray + [SKTexture(imageNamed: "PowerUpPreSet")]) { }
@@ -6416,11 +6432,22 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			totalStatsArray[0].powerupsCollected[65] += 1
 
 		case powerUpMultiBall:
-		// Multi-Ball
+		// 28 - Multi-Ball
 			endlessIIAddBall()
 			// The whole effect. Everything that makes an extra ball work - its contacts, its
 			// share of the speed and size, the run continuing while any of them survives - is
 			// the collection the scene already holds, so collecting this is one call
+			powerUpMultiplierScore = 0.1
+			totalStatsArray[0].powerupsCollected[28] += 1
+			// **The tally every other arm keeps** (round 313, found by the first test to drive
+			// this switch). Sixty-four of the sixty-five bump their own slot and this one
+			// bumped none, so Multi-Ball has read zero collected since it shipped, wherever
+			// that number is shown. It is the parallel-arrays trap in its quietest form: the
+			// power-up works perfectly, and only the counting is missing.
+			//
+			// Counted on collection rather than on a ball actually being added, which is what
+			// every other arm does - `endlessIIAddBall` refuses when the field is already full
+			// and that is the power-up doing its job, not the player failing to collect it
 
 		case powerUpDecreaseBallSize:
         // Decrease ball size
@@ -7155,8 +7182,20 @@ laserTimer?.invalidate()
 
 	func rollInGainedLife() {
 		livesAwaitingRollIn = false
-		let shown = min(numberOfLives, GameScene.maxLivesShown)
+		let shown = min(numberOfLives, GameScene.maxLivesShown, lifeIcons.count)
 		guard shown > 0, !livesRowSuppressed else { refreshLivesRow(); return }
+		// **Clamped by the icons that exist, not only by the most that may be shown** (round
+		// 313, found by the first test ever to drive `applyPowerUp`). The row below reads
+		// `shown..<lifeIcons.count`, and a range whose lower bound is above its upper *traps* -
+		// the same shape of crash as round 312's `Int.random(in: 0...(-1))`, on the Extra Ball
+		// arm, which is the first of the sixty-five.
+		//
+		// The other two uses of `lifeIcons` in this function were already defended - the loop
+		// takes `max(0, shown-1)` and `rollInLife` refuses an index past the end - so a short
+		// list was clearly expected here by whoever wrote those, and the third use was missed.
+		// One clamp answers all three, and changes nothing when the icons are built: they are
+		// made `maxLivesShown` at a time, so the new term only ever binds before that has
+		// happened.
 
 		layoutLivesContainer()
 		livesContainer.isHidden = false

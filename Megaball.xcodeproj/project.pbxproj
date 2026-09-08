@@ -393,6 +393,7 @@
 		1AF1710000000102 /* PauseSwipeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1710000000101 /* PauseSwipeTests.swift */; };
 		1AF1710000000202 /* LevelIntroLogoTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1710000000201 /* LevelIntroLogoTests.swift */; };
 		1AF1710000000302 /* BottomZoneTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1710000000301 /* BottomZoneTests.swift */; };
+		1AF1710000000402 /* ApplyPowerUpTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1710000000401 /* ApplyPowerUpTests.swift */; };
 		1AF1700000000E02 /* MenuLayoutTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000E01 /* MenuLayoutTests.swift */; };
 		1AF1700000000912 /* ResumeCardRenderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000911 /* ResumeCardRenderTests.swift */; };
 		1AF1700000000922 /* DailyAchievementsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000921 /* DailyAchievementsTests.swift */; };
@@ -790,6 +791,7 @@
 		1AF1710000000101 /* PauseSwipeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PauseSwipeTests.swift; sourceTree = "<group>"; };
 		1AF1710000000201 /* LevelIntroLogoTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LevelIntroLogoTests.swift; sourceTree = "<group>"; };
 		1AF1710000000301 /* BottomZoneTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BottomZoneTests.swift; sourceTree = "<group>"; };
+		1AF1710000000401 /* ApplyPowerUpTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApplyPowerUpTests.swift; sourceTree = "<group>"; };
 		1AF1700000000E01 /* MenuLayoutTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuLayoutTests.swift; sourceTree = "<group>"; };
 		1AF1700000000911 /* ResumeCardRenderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResumeCardRenderTests.swift; sourceTree = "<group>"; };
 		1AF1700000000921 /* DailyAchievementsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyAchievementsTests.swift; sourceTree = "<group>"; };
@@ -852,6 +854,7 @@
 				1AF1710000000101 /* PauseSwipeTests.swift */,
 				1AF1710000000201 /* LevelIntroLogoTests.swift */,
 				1AF1710000000301 /* BottomZoneTests.swift */,
+				1AF1710000000401 /* ApplyPowerUpTests.swift */,
 				1AF1700000000E01 /* MenuLayoutTests.swift */,
 				1AF1700000000931 /* AchievementAwardTests.swift */,
 				1AF1700000000921 /* DailyAchievementsTests.swift */,
@@ -1694,6 +1697,7 @@
 				1AF1710000000102 /* PauseSwipeTests.swift in Sources */,
 				1AF1710000000202 /* LevelIntroLogoTests.swift in Sources */,
 				1AF1710000000302 /* BottomZoneTests.swift in Sources */,
+				1AF1710000000402 /* ApplyPowerUpTests.swift in Sources */,
 				1AF1700000000E02 /* MenuLayoutTests.swift in Sources */,
 				1AF1700000000932 /* AchievementAwardTests.swift in Sources */,
 				1AF1700000000922 /* DailyAchievementsTests.swift in Sources */,
