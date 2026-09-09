@@ -31,6 +31,110 @@ final class CloudKitHandler: NSObject {
         return cloud + local[cloud.count...]
     }
 
+    /// One endless run, as the three parallel arrays hold it.
+    struct Run: Hashable {
+        let height: Int
+        let date: Date
+        /// Nil for a run recorded before round 111 added the durations, which is most of the
+        /// history on a long-standing device.
+        let duration: Int?
+    }
+
+    /// The parallel arrays read as runs.
+    ///
+    /// Short arrays are tolerated rather than trusted: the durations were added in round 111
+    /// and the dates before them, so a device with years of history has three arrays of
+    /// different lengths and every one of them is honest about what it knows.
+    /// **Nil when the list cannot be merged**, which is not the same as an empty list.
+    ///
+    /// A run is identified by when it was played, so a run with no date cannot be told apart
+    /// from anybody else's. Heights and dates have been appended together for as long as both
+    /// have existed, but a device carrying history from before the dates has heights with
+    /// nothing to identify them - and the first version of this quietly *dropped* those,
+    /// which the existing sync tests caught by holding heights with no dates at all and
+    /// getting an empty list back. Losing a player's run history to a sync is the worst thing
+    /// this file could do.
+    ///
+    /// So an undateable list says so, and the caller keeps the old rule for it: the longer
+    /// list wins, nothing is lost, and nothing is merged that cannot be. Every list written
+    /// since the dates arrived merges normally.
+    static func runs(heights: [Int]?, dates: [Date]?, durations: [Int]?) -> [Run]? {
+        guard let heights else { return [] }
+        guard let dates, dates.count >= heights.count else { return nil }
+        return heights.indices.map { index in
+            Run(height: heights[index],
+                date: dates[index],
+                duration: (durations?.indices.contains(index) ?? false)
+                    ? durations?[index] : nil)
+        }
+    }
+
+    /// **Two devices' run lists merged, rather than one replacing the other** (James, round
+    /// 314: "yes, merge the lists").
+    ///
+    /// The rule until now was that a sync compared the two lists by total metres and the
+    /// larger won outright, so a device that had played less lost its runs. That is what the
+    /// original Endless has done for years and what Endless Mayhem was made to match, on the
+    /// grounds that two modes answering the same question two different ways would be worse
+    /// than either answer. It is still not what a fresh design would pick, and this is the
+    /// fresh design.
+    ///
+    /// **Merged by date, which is why the dates travel with the heights.** Two devices that
+    /// each played runs the other has never heard of have lists that cannot be reconciled by
+    /// index, and pairing them index-wise would pair unrelated runs.
+    /// `DailyChallengeRecord.merged` reaches the same conclusion for the same reason, one
+    /// screen along.
+    ///
+    /// **The identity is the height *and* the date, not the date alone**, and the first
+    /// version of this got that wrong. Two `Date()` values taken in quick succession can be
+    /// equal, so keying on the date collapsed distinct runs into one - the existing sync
+    /// tests, which stamp three runs with three `Date()` calls, caught it immediately and
+    /// three runs arrived as one. In real play a run takes seconds and this could not happen,
+    /// which is exactly why it would never have shown up until it did. A run's height never
+    /// changes once written, so the pair is a safe identity and it cannot lose a run.
+    ///
+    /// **A duration is carried by whichever side has one.** The two arrays fell out of step
+    /// under the old rule if the heights came from one device and the durations from another,
+    /// which `pushModeTimes` guarded against by sending both under the same comparison. Merged
+    /// as a triple, that guard is not needed: a run keeps its own clock because it never gets
+    /// separated from it.
+    ///
+    /// Chronological, which is append order, so the merged list is the list either device
+    /// would have had if it had played every run itself. The screens sort for display.
+    static func mergedRuns(_ mine: [Run], _ theirs: [Run]) -> [Run] {
+        struct Identity: Hashable { let height: Int; let date: Date }
+
+        var found: [Identity: Run] = [:]
+        var order: [Identity] = []
+        for run in theirs + mine {
+            let id = Identity(height: run.height, date: run.date)
+            if let existing = found[id] {
+                found[id] = Run(height: run.height, date: run.date,
+                                duration: existing.duration ?? run.duration)
+                // The same run from both devices: one copy may predate round 111's durations,
+                // so whichever knows the clock keeps it
+            } else {
+                found[id] = run
+                order.append(id)
+            }
+        }
+        var placed: [(position: Int, run: Run)] = []
+        for (position, id) in order.enumerated() {
+            guard let run = found[id] else { continue }
+            placed.append((position: position, run: run))
+        }
+        placed.sort { left, right in
+            if left.run.date == right.run.date { return left.position < right.position }
+            return left.run.date < right.run.date
+        }
+        return placed.map(\.run)
+        // **Chronological, and stable within a date.** `sorted(by:)` gives no stability
+        // guarantee, and two runs can carry the same `Date` (see above), so the position each
+        // run was first seen at is carried through the sort. Without it a device's own run
+        // order was quietly rearranged by a sync that changed nothing else, which the existing
+        // tests caught by stamping three runs with three equal dates.
+    }
+
     /// The daily records travel through the key-value store as one encoded blob rather
     /// than as parallel arrays, because their merge is by *date*, not by index - two
     /// devices that each played different days have records the other has never heard
@@ -133,6 +237,18 @@ final class CloudKitHandler: NSObject {
         ("endlessIIDurations", \TotalStats.endlessIIDurations),
     ]
 
+    /// The three keys each endless mode's run list travels under.
+    ///
+    /// **One table naming all three, because they move as one thing now** (round 314). A run
+    /// is a height, a date and a duration, and the merge that replaced "biggest total wins"
+    /// keeps them together by construction. Three keys written out at each of the four call
+    /// sites - push and pull, twice over - is four chances to pair one mode's heights with the
+    /// other's dates, which is the fault this whole change is about, one level up.
+    static let runKeys: [(heights: String, dates: String, durations: String)] = [
+        ("endlessModeHeight", "endlessModeHeightDate", "endlessModeDurations"),
+        ("endlessIIModeHeight", "endlessIIModeHeightDate", "endlessIIDurations"),
+    ]
+
     /// Sends this device's per-mode times and run durations up.
     ///
     /// The counters go highest-wins, like every other total here. The duration arrays go as
@@ -146,13 +262,12 @@ final class CloudKitHandler: NSObject {
                 iCloudStore.set(local, forKey: key)
             }
         }
-        for (key, path) in CloudKitHandler.runDurationKeys {
-            guard let local = totalStatsArray[0][keyPath: path] else { continue }
-            let stored = iCloudStore.array(forKey: key) as? [Int]
-            if local.reduce(0, +) > (stored?.reduce(0, +) ?? -1) {
-                iCloudStore.set(local, forKey: key)
-            }
-        }
+        // **The run durations are not here any more** (round 314). They used to travel as
+        // whole arrays under "biggest total wins", matching how the heights beside them
+        // travelled, because the two had to move under the same rule or a device could end up
+        // with one device's heights and another's durations - a run paired with a stranger's
+        // clock. The heights merge by date now, and a duration goes with its own run through
+        // `pushRuns`, so the pairing is structural rather than a rule two places have to keep
     }
 
     /// Brings another device's per-mode times and run durations down, by the same rules.
@@ -163,13 +278,69 @@ final class CloudKitHandler: NSObject {
                 totalStatsArray[0][keyPath: path] = stored
             }
         }
-        for (key, path) in CloudKitHandler.runDurationKeys {
-            guard let stored = iCloudStore.array(forKey: key) as? [Int] else { continue }
-            let local = totalStatsArray[0][keyPath: path] ?? []
-            if stored.reduce(0, +) > local.reduce(0, +) {
-                totalStatsArray[0][keyPath: path] = stored
+        // The durations come down with their runs in `pullRuns` - see `pushModeTimes`
+    }
+
+    /// Sends this device's runs up, merged with whatever is already there.
+    ///
+    /// Both directions go through `mergedRuns`, and both write the *whole* merged list back,
+    /// so the store converges: whichever device syncs last, the answer is the union either
+    /// way, and a device that syncs twice writes the same thing the second time.
+    private func pushRuns(heights: [Int]?, dates: [Date]?, durations: [Int]?,
+                          keys: (heights: String, dates: String, durations: String)) {
+        let (heightKey, dateKey, durationKey) = keys
+        let storedHeights = iCloudStore.array(forKey: heightKey) as? [Int]
+        guard let mine = CloudKitHandler.runs(heights: heights, dates: dates,
+                                              durations: durations),
+              let theirs = CloudKitHandler.runs(
+                heights: storedHeights,
+                dates: iCloudStore.array(forKey: dateKey) as? [Date],
+                durations: iCloudStore.array(forKey: durationKey) as? [Int])
+        else {
+            // One side has runs that cannot be identified - see `runs`. The old rule stands
+            // for those: the longer list wins and nothing is thrown away that can be kept
+            guard let heights, heights.count > (storedHeights?.count ?? -1) else { return }
+            iCloudStore.set(heights, forKey: heightKey)
+            if let dates { iCloudStore.set(dates, forKey: dateKey) }
+            if let durations { iCloudStore.set(durations, forKey: durationKey) }
+            return
+        }
+        let merged = CloudKitHandler.mergedRuns(mine, theirs)
+        guard merged.isEmpty == false else { return }
+
+        iCloudStore.set(merged.map(\.height), forKey: heightKey)
+        iCloudStore.set(merged.map(\.date), forKey: dateKey)
+        if merged.contains(where: { $0.duration != nil }) {
+            iCloudStore.set(merged.map { $0.duration ?? 0 }, forKey: durationKey)
+        }
+    }
+
+    /// Brings another device's runs down, by the same merge.
+    private func pullRuns(heights: [Int]?, dates: [Date]?, durations: [Int]?,
+                          keys: (heights: String, dates: String, durations: String))
+        -> [CloudKitHandler.Run]? {
+        let (heightKey, dateKey, durationKey) = keys
+        let storedHeights = iCloudStore.array(forKey: heightKey) as? [Int]
+        let storedDates = iCloudStore.array(forKey: dateKey) as? [Date]
+        guard let mine = CloudKitHandler.runs(heights: heights, dates: dates,
+                                              durations: durations),
+              let theirs = CloudKitHandler.runs(
+                heights: storedHeights, dates: storedDates,
+                durations: iCloudStore.array(forKey: durationKey) as? [Int])
+        else {
+            // As in `pushRuns`: undateable runs keep the old longer-list-wins rule rather
+            // than being dropped, and `nil` here means "leave this device exactly as it is"
+            guard let storedHeights, storedHeights.count > (heights?.count ?? -1) else {
+                return nil
+            }
+            return storedHeights.indices.map {
+                Run(height: storedHeights[$0],
+                    date: storedDates?.indices.contains($0) ?? false
+                        ? storedDates![$0] : Date(timeIntervalSince1970: 0),
+                    duration: nil)
             }
         }
+        return CloudKitHandler.mergedRuns(mine, theirs)
     }
 
     /// Brings another device's metres down, highest wins per slot.
@@ -444,29 +615,24 @@ final class CloudKitHandler: NSObject {
             iCloudStore.set(packsCompleted, forKey: "packsCompleted")
         }
         
+        pushRuns(heights: totalStatsArray[0].endlessModeHeight,
+                 dates: totalStatsArray[0].endlessModeHeightDate,
+                 durations: totalStatsArray[0].endlessModeDurations,
+                 keys: CloudKitHandler.runKeys[0])
         endlessModeHeight = totalStatsArray[0].endlessModeHeight
         endlessModeHeightDate = totalStatsArray[0].endlessModeHeightDate
-        if let endlessModeHeightCloud = iCloudStore.array(forKey: "endlessModeHeight") as? [Int] {
-            if endlessModeHeight!.reduce(0, +) > endlessModeHeightCloud.reduce(0, +) {
-                iCloudStore.set(endlessModeHeight, forKey: "endlessModeHeight")
-                iCloudStore.set(endlessModeHeightDate, forKey: "endlessModeHeightDate")
-            }
-        } else {
-            iCloudStore.set(endlessModeHeight, forKey: "endlessModeHeight")
-            iCloudStore.set(endlessModeHeightDate, forKey: "endlessModeHeightDate")
-        }
 
+        pushRuns(heights: totalStatsArray[0].endlessIIHeights,
+                 dates: totalStatsArray[0].endlessIIModeHeightDate ?? [],
+                 durations: totalStatsArray[0].endlessIIDurations,
+                 keys: CloudKitHandler.runKeys[1])
         endlessIIModeHeight = totalStatsArray[0].endlessIIHeights
         endlessIIModeHeightDate = totalStatsArray[0].endlessIIModeHeightDate ?? []
-        if let endlessIIModeHeightCloud = iCloudStore.array(forKey: "endlessIIModeHeight") as? [Int] {
-            if endlessIIModeHeight!.reduce(0, +) > endlessIIModeHeightCloud.reduce(0, +) {
-                iCloudStore.set(endlessIIModeHeight, forKey: "endlessIIModeHeight")
-                iCloudStore.set(endlessIIModeHeightDate, forKey: "endlessIIModeHeightDate")
-            }
-        } else {
-            iCloudStore.set(endlessIIModeHeight, forKey: "endlessIIModeHeight")
-            iCloudStore.set(endlessIIModeHeightDate, forKey: "endlessIIModeHeightDate")
-        }
+        // **Merged, not replaced** (round 314). Both of these compared the two lists by total
+        // metres and sent the whole array up only if this device's was larger, so a device
+        // that had played less overwrote nothing and a device that had played more threw the
+        // other's runs away. `mergedRuns` unions them by date instead, and the durations go
+        // through the same call so a run can never be separated from its own clock
         // **Endless Mayhem's runs sync too** (James, round 313: "I think the Endless Mode and
         // Endless Mayhem scores should be synced between devices on the same iCloud account.
         // On my iPad, there were no scores on the Endless Mayhem mode as I'd only played it on
@@ -952,27 +1118,35 @@ final class CloudKitHandler: NSObject {
             totalStatsArray[0].packsCompleted = packsCompletedCloud
         }
 
+        let mergedEndless = pullRuns(heights: totalStatsArray[0].endlessModeHeight,
+                                     dates: totalStatsArray[0].endlessModeHeightDate,
+                                     durations: totalStatsArray[0].endlessModeDurations,
+                                     keys: CloudKitHandler.runKeys[0])
+        if let mergedEndless {
+            totalStatsArray[0].endlessModeHeight = mergedEndless.map(\.height)
+            totalStatsArray[0].endlessModeHeightDate = mergedEndless.map(\.date)
+            if mergedEndless.contains(where: { $0.duration != nil }) {
+                totalStatsArray[0].endlessModeDurations = mergedEndless.map { $0.duration ?? 0 }
+            }
+        }
         endlessModeHeight = totalStatsArray[0].endlessModeHeight
-        if let endlessModeHeightCloud = iCloudStore.array(forKey: "endlessModeHeight") as? [Int] {
-            if endlessModeHeightCloud.reduce(0, +) > endlessModeHeight!.reduce(0, +) {
-                totalStatsArray[0].endlessModeHeight = endlessModeHeightCloud
-                if let endlessModeHeightDateCloud =
-                    iCloudStore.array(forKey: "endlessModeHeightDate") as? [Date] {
-                    totalStatsArray[0].endlessModeHeightDate = endlessModeHeightDateCloud
-                }
-            }
-        }
 
-        endlessIIModeHeight = totalStatsArray[0].endlessIIHeights
-        if let endlessIIModeHeightCloud = iCloudStore.array(forKey: "endlessIIModeHeight") as? [Int] {
-            if endlessIIModeHeightCloud.reduce(0, +) > endlessIIModeHeight!.reduce(0, +) {
-                totalStatsArray[0].endlessIIModeHeight = endlessIIModeHeightCloud
-                if let endlessIIModeHeightDateCloud =
-                    iCloudStore.array(forKey: "endlessIIModeHeightDate") as? [Date] {
-                    totalStatsArray[0].endlessIIModeHeightDate = endlessIIModeHeightDateCloud
-                }
+        let mergedMayhem = pullRuns(heights: totalStatsArray[0].endlessIIHeights,
+                                    dates: totalStatsArray[0].endlessIIModeHeightDate ?? [],
+                                    durations: totalStatsArray[0].endlessIIDurations,
+                                    keys: CloudKitHandler.runKeys[1])
+        if let mergedMayhem {
+            totalStatsArray[0].endlessIIModeHeight = mergedMayhem.map(\.height)
+            totalStatsArray[0].endlessIIModeHeightDate = mergedMayhem.map(\.date)
+            if mergedMayhem.contains(where: { $0.duration != nil }) {
+                totalStatsArray[0].endlessIIDurations = mergedMayhem.map { $0.duration ?? 0 }
             }
         }
+        endlessIIModeHeight = totalStatsArray[0].endlessIIHeights
+        // **Merged, not replaced** (round 314) - see `mergedRuns`. The durations are only
+        // written back when at least one run in the merged list has one, so a pair of devices
+        // that both predate round 111 are not handed an array of zeros where they had nil,
+        // which is the difference between "no opinion" and "every run took no time".
         // The other half of James's report, and the half his iPad needed: a device that has
         // never played Mayhem has an empty list, so any cloud list at all beats it
         

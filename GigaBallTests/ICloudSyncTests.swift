@@ -161,4 +161,133 @@ final class ICloudSyncTests: XCTestCase {
                        "these are in the stats file and never reach iCloud, which is how "
                        + "Endless Mayhem's heights went missing on James's iPad")
     }
+
+    // MARK: - Merging rather than replacing (round 314)
+
+    /// Three runs played on two devices, at three known times.
+    private func moment(_ minutes: Int) -> Date {
+        Date(timeIntervalSince1970: 1_700_000_000 + Double(minutes)*60)
+    }
+
+    private func run(_ height: Int, _ minutes: Int,
+                     _ duration: Int? = nil) -> CloudKitHandler.Run {
+        CloudKitHandler.Run(height: height, date: moment(minutes), duration: duration)
+    }
+
+    /// **The report this closes.** James, round 314: "yes, merge the lists".
+    ///
+    /// Until now a sync compared the two lists by total metres and the larger won outright,
+    /// so a device that had played less lost every run it held. Both devices keep everything
+    /// now, and neither ordering of the sync changes the answer.
+    func testTwoDevicesRunsAreBothKept() {
+        let mine = [run(80, 0), run(120, 10)]
+        let theirs = [run(45, 5), run(300, 20)]
+
+        let merged = CloudKitHandler.mergedRuns(mine, theirs)
+
+        XCTAssertEqual(merged.map(\.height), [80, 45, 120, 300],
+                       "every run either device played, oldest first")
+        XCTAssertEqual(CloudKitHandler.mergedRuns(theirs, mine), merged,
+                       "and the answer cannot depend on which device syncs first")
+    }
+
+    /// The device that had played less used to lose everything, which is the fault itself.
+    func testTheSmallerListIsNoLongerThrownAway() {
+        let busy = (0..<10).map { run(500, $0*10) }
+        let quiet = [run(3, 5)]
+
+        XCTAssertEqual(CloudKitHandler.mergedRuns(quiet, busy).count, 11,
+                       "the quiet device's single run survives meeting a much larger list")
+        XCTAssertTrue(CloudKitHandler.mergedRuns(busy, quiet).contains(quiet[0]))
+    }
+
+    /// The same run seen twice is one run, because a run's identity is when it was played.
+    func testARunSyncedBackIsNotCountedTwice() {
+        let shared = run(150, 30)
+        let merged = CloudKitHandler.mergedRuns([shared, run(20, 0)], [shared])
+
+        XCTAssertEqual(merged.count, 2, "the shared run is the same run, not two")
+    }
+
+    /// **A run is never separated from its own clock.**
+    ///
+    /// The durations used to travel as a whole array under their own "biggest total wins",
+    /// matching how the heights moved - and `pushModeTimes` said in as many words that the
+    /// two had to move under the same rule, or a device could end up with one device's
+    /// heights and another's durations. Merged as a triple that cannot happen, and a run that
+    /// predates round 111 keeps its nil rather than being handed a stranger's seconds.
+    func testADurationTravelsWithItsOwnRun() {
+        let merged = CloudKitHandler.mergedRuns([run(80, 0, 45)], [run(300, 10, 600)])
+
+        XCTAssertEqual(merged.map(\.duration), [45, 600])
+    }
+
+    func testARunWithNoDurationTakesOneFromTheOtherCopy() {
+        let merged = CloudKitHandler.mergedRuns([run(80, 0)], [run(80, 0, 45)])
+
+        XCTAssertEqual(merged.map(\.duration), [45],
+                       "one side predates round 111 and the other does not")
+    }
+
+    /// The arrays are read as far as they agree, and no further.
+    ///
+    /// A device with years of history has heights from 2020, dates added later and durations
+    /// added in round 111, so the three are honestly different lengths. Reading past the
+    /// shortest is the crash `padded` exists to stop, one field along.
+    func testShorterArraysAreReadAsFarAsTheyGo() {
+        XCTAssertNil(CloudKitHandler.runs(heights: [10, 20, 30],
+                                          dates: [moment(0), moment(1)],
+                                          durations: [99]),
+                     "a run with no date cannot be identified, so this list says so rather "
+                     + "than quietly dropping the third run")
+
+        let dated = CloudKitHandler.runs(heights: [10, 20],
+                                         dates: [moment(0), moment(1)],
+                                         durations: [99])
+        XCTAssertEqual(dated?.map(\.height), [10, 20])
+        XCTAssertEqual(dated?.map(\.duration), [99, nil],
+                       "the durations arrived in round 111 and may be shorter, which is "
+                       + "honest rather than broken")
+    }
+
+    /// And an undateable list keeps the old rule rather than losing the runs.
+    ///
+    /// The worst thing this file could do is lose somebody's history to a sync, so a list
+    /// that cannot be merged falls back to longer-list-wins, which is what it did before.
+    func testAListWithNoDatesFallsBackRatherThanEmptying() {
+        let store = InMemoryCloudStore()
+        store.contents["endlessIIModeHeight"] = [50]
+
+        var stats = TotalStats()
+        stats.endlessIIModeHeight = [120, 340, 260]
+        // No dates at all, which is what a device from before they existed carries
+
+        let handler = self.handler(store: store, stats: stats)
+        handler.updateToiCloud()
+
+        XCTAssertEqual(store.array(forKey: "endlessIIModeHeight") as? [Int], [120, 340, 260],
+                       "the longer list still wins when neither can be merged")
+    }
+
+    /// End to end, through the store: two devices, one account.
+    func testAPhoneAndAnIPadEndUpWithTheSameRuns() {
+        let store = InMemoryCloudStore()
+
+        var phone = TotalStats()
+        phone.endlessIIModeHeight = [120, 340]
+        phone.endlessIIModeHeightDate = [moment(0), moment(10)]
+        handler(store: store, stats: phone).updateToiCloud()
+
+        var pad = TotalStats()
+        pad.endlessIIModeHeight = [55]
+        pad.endlessIIModeHeightDate = [moment(5)]
+        let padHandler = handler(store: store, stats: pad)
+        padHandler.updateToiCloud()
+        padHandler.updateFromiCloud()
+
+        XCTAssertEqual(padHandler.totalStatsArray[0].endlessIIModeHeight, [120, 55, 340],
+                       "the iPad ends up with its own run and both of the phone's")
+        XCTAssertEqual(store.array(forKey: "endlessIIModeHeight") as? [Int], [120, 55, 340],
+                       "and the cloud holds the union rather than whichever synced last")
+    }
 }
