@@ -479,14 +479,49 @@ final class MenuResizeTests: XCTestCase {
         XCTAssertLessThan(ratio, 0.70, "and a 13-inch iPad's own 0.75 is the shape being refused")
     }
 
-    func testAFullScreenIPadIsNarrowedToTheShapeAndKeepsItsHeight() {
+    /// **The absolute width is what binds on a large iPad, not the shape** (round 314).
+    ///
+    /// This asserted the shape cap exactly, and the shape cap alone leaves a 13-inch iPad 853
+    /// points of content: narrower than its window and still twice a phone. James, seeing it:
+    /// "can we limit how tall and wide the UI elements become. It should really just look like
+    /// the phone app with everything centred on the larger background." So the two ceilings are
+    /// taken together and the lower wins, which here is the width.
+    ///
+    /// The half that has not changed is the half round 181 cared about: not one point of
+    /// height is given away, so the pack grid still cannot be made to scroll with room to
+    /// spare.
+    func testAFullScreenIPadIsNarrowedToAPhonesWidthAndKeepsItsHeight() {
         let size = CGSize(width: 1032, height: 1376)   // 13-inch iPad Pro, portrait
         let insets = UIViewController.menuContentInsets(available: size)
+        let content = size.width - insets.left - insets.right
 
-        XCTAssertEqual(shape(size), ratio, accuracy: 0.001, "no squarer than the cap")
+        XCTAssertEqual(content, UIViewController.menuMaximumWidth, accuracy: 0.001,
+                       "the width ceiling binds here, being lower than the shape's 853")
+        XCTAssertLessThan(shape(size), ratio, "and so the result is narrower than the shape cap")
         XCTAssertEqual(insets.top, 0, "and not one point of height given away")
         XCTAssertEqual(insets.bottom, 0)
         XCTAssertEqual(insets.left, insets.right, accuracy: 0.001, "centred, not pushed aside")
+    }
+
+    /// No phone is touched by the width ceiling, which is what makes it safe to add.
+    ///
+    /// The widest phone the app supports is about 440 across. If the ceiling ever drops to or
+    /// below that, every large phone starts losing width, and this is the assertion that
+    /// notices rather than a play test.
+    func testTheWidthCeilingIsAboveEveryPhone() {
+        XCTAssertGreaterThan(UIViewController.menuMaximumWidth, 440,
+                             "or a 17 Pro Max would be clamped by a cap meant for iPads")
+    }
+
+    /// A window narrower than the ceiling keeps every point it has.
+    func testAWindowNarrowerThanTheCeilingIsUntouched() {
+        for width in stride(from: CGFloat(320), through: UIViewController.menuMaximumWidth,
+                            by: 20) {
+            let size = CGSize(width: width, height: width*3)
+            // Tall enough that the shape cap cannot be what binds
+            XCTAssertEqual(UIViewController.menuContentInsets(available: size), .zero,
+                           "\(width) wide")
+        }
     }
 
     func testAPhoneIsLeftAloneEntirely() {

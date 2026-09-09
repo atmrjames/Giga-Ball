@@ -119,14 +119,36 @@ final class MenuLayoutTests: XCTestCase {
     /// The old line was circular - `min(150, tableHeight/4)` asked of a table four rows tall -
     /// so any height at all was a fixed point and the answer was an accident of which layout
     /// pass got there first. This one is a function of room the table does not decide.
+    ///
+    /// **The ceiling is read, not restated** (round 314). These three assertions were written
+    /// as the literal 150 and all three failed the moment James asked for the rows to stop
+    /// growing on an iPad, reporting a change that was the point of the change. What the test
+    /// is actually for is the *shape* of the rule - capped above, floored at the card, linear
+    /// between, and never zero - so it asks `tallestModeRow` for the number.
     func testTheRowHeightIsAFunctionOfTheRoom() {
-        XCTAssertEqual(MenuViewController.modeRowHeight(inRoomOf: 600), 150,
+        let ceiling = MenuViewController.tallestModeRow
+        XCTAssertEqual(MenuViewController.modeRowHeight(inRoomOf: ceiling*8), ceiling,
                        "capped, or a tall window gives four enormous buttons")
-        XCTAssertEqual(MenuViewController.modeRowHeight(inRoomOf: 495), 123.75)
+        XCTAssertEqual(MenuViewController.modeRowHeight(inRoomOf: 495),
+                       min(ceiling, 495/4),
+                       "and linear in the room between the floor and the ceiling")
         XCTAssertEqual(MenuViewController.modeRowHeight(inRoomOf: 248), 75,
                        "and floored at the card inside the cell, or the cards overlap")
-        XCTAssertEqual(MenuViewController.modeRowHeight(inRoomOf: 0), 150,
+        XCTAssertEqual(MenuViewController.modeRowHeight(inRoomOf: 0), ceiling,
                        "a table with no size yet must not stick at nothing")
+    }
+
+    /// And the ceiling itself is a phone's, which is the thing James asked for.
+    ///
+    /// A separate assertion because it is a separate claim: the rule above is about shape and
+    /// this is about the number. The card inside a row is 75, so this says the gap between two
+    /// cards never exceeds 45 points however large the screen - against roughly 33 on a phone,
+    /// and 75 under the old ceiling of 150.
+    func testTheModeRowCeilingStaysPhoneSized() {
+        XCTAssertLessThanOrEqual(MenuViewController.tallestModeRow - 75, 45,
+                                 "the four modes have to read as one block on an iPad")
+        XCTAssertGreaterThan(MenuViewController.tallestModeRow, 108,
+                             "and still be no tighter than a phone, which fits about 108")
     }
 
     /// Four rows always fit the height the table is given.

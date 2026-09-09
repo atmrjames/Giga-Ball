@@ -99,9 +99,11 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         //
         // Within rather than equal to, so the rows stay *centred* in the room by the
         // storyboard's `centerY` when there is more of it than they need. A tall thin window
-        // gives the container 823 points and the rows are capped at 150 apiece, so 600 of
-        // table has 223 to spare - pinned to both ends it would sit that gap under the last
-        // mode instead of splitting it, and the four buttons would bunch at the top.
+        // gives the container 823 points and the rows are capped at `tallestModeRow` apiece,
+        // so 480 of table has 343 to spare - pinned to both ends it would sit that gap under
+        // the last mode instead of splitting it, and the four buttons would bunch at the top.
+        // There is more spare room since round 314 lowered that ceiling, so the centring
+        // matters more than it did, not less.
         //
         // A table's height comes from its content at the ordinary compression-resistance
         // priority, so these two win over it when the room runs out. In a window too short
@@ -244,11 +246,24 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
     /// the fold. The card inside the cell is 75pt, so rows can bunch to a quarter of the room
     /// and the gap between the cards is what gives.
     static func modeRowHeight(inRoomOf room: CGFloat) -> CGFloat {
-        guard room > 0 else { return 150 }
-        return max(75, min(150, room/CGFloat(GameMode.allCases.count)))
+        guard room > 0 else { return tallestModeRow }
+        return max(75, min(tallestModeRow, room/CGFloat(GameMode.allCases.count)))
         // Never below the card itself, or the cards start overlapping each other instead -
         // a window short enough to force that is one the rows should crowd in, not stack
     }
+
+    /// The most room a mode row may take, however tall the window is.
+    ///
+    /// **120, down from 150** (James, round 314: "limit how tall and wide the UI elements
+    /// become"). The card inside a row is 75 points and never changes, so all a taller row
+    /// buys is a bigger gap between cards. A phone has room for about 108 a row, which is a
+    /// gap of 33; the old ceiling of 150 was only ever reached on a large iPad, where it made
+    /// the gap 75 - more than twice the phone's, and the four modes drifted apart down the
+    /// screen instead of reading as one block.
+    ///
+    /// This is a ceiling and not a fixed height: every phone is still below it and so is
+    /// unchanged, to the point.
+    static let tallestModeRow: CGFloat = 120
     
     func setBlur() {
         backgroundBlurView.backgroundColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 0)

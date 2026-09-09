@@ -78,6 +78,27 @@ extension UIViewController {
     /// was never the problem - only the absolute cap on height was.
     static let menuMaximumAspectRatio: CGFloat = 0.62
 
+    /// And how wide a menu's contents may ever run, in points, whatever shape the window is.
+    ///
+    /// **The ratio alone is not enough on a large iPad** (James, round 314: "can we limit how
+    /// tall and wide the UI elements become. It should really just look like the phone app
+    /// with everything centred on the larger background"). A 13-inch iPad in portrait is 1032
+    /// by 1376, and 0.62 of that height is 853 points - narrower than the window and still
+    /// twice a phone. The run list on the endless screens ran the full width of it, with the
+    /// sort control at the far left edge and the run count at the far right.
+    ///
+    /// Round 180 capped 500 by 820 and round 181 took it out again, and its note is the reason
+    /// this is safe: "its *ratio* was 0.61, so the shape was never the problem - only the
+    /// absolute cap on height was". The height cap is what left 40% of a 13-inch screen empty
+    /// with two packs scrolled out of sight. **Nothing is ever taken off the height here**, so
+    /// that cannot come back.
+    ///
+    /// 460 because the widest phone the app supports is about 440 across, so no phone is ever
+    /// clamped by this - on every one of them the inset is zero and the layout is exactly what
+    /// it was - and an iPad gets a column the width of a large phone rather than a stretched
+    /// copy of one.
+    static let menuMaximumWidth: CGFloat = 460
+
     /// How large a mode's own logo is at the head of its menu.
     ///
     /// The three mode menus are a set and their logos should be the same size (play-test
@@ -394,8 +415,12 @@ extension UIViewController {
     ///   makes this idempotent however deep the stack goes.
     static func menuContentInsets(available: CGSize,
                                   inherited: UIEdgeInsets = .zero) -> UIEdgeInsets {
-        let widest = available.height*menuMaximumAspectRatio
+        let widest = min(available.height*menuMaximumAspectRatio, menuMaximumWidth)
         let horizontal = max(0, (available.width - widest)/2)
+        // Two ceilings, whichever is lower: a *shape* for windows that are merely too square,
+        // and an absolute width for windows that are simply large. The ratio on its own leaves
+        // a 13-inch iPad 853 points of content, which is not the phone app centred on a bigger
+        // background - it is the phone app stretched across one
         // **Width only, and only when the window is too square.** A window that is *taller*
         // than a phone's shape is not the thing being guarded against - a tall thin slide-over
         // is a narrow phone, which the menus were built for - so nothing is ever taken off the
