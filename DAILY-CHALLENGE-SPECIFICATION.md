@@ -25,8 +25,15 @@ player reads it (round 12). **Both play-test queues are closed (round 300).** Ro
 similar-days rule was built in round 118 and its level naming in round 119; round 96's score
 tally was built in round 210 and its screen reorder was superseded by round 241. All four
 went on being listed as open for between ninety and a hundred and eighty rounds after they
-landed - see §8.6 on what a queue entry is actually claiming. **Boards (round 95):** the Daily Challenge leaderboard *set* is live;
-three individual boards are still in App Store Connect review. **Round 100 pulls into
+landed - see §8.6 on what a queue entry is actually claiming. ~~**Boards (round 95):** the Daily Challenge leaderboard *set* is live;
+three individual boards are still in App Store Connect review.~~ **All live, and there were
+never three** (round 314, James: "2 Daily Leaderboards are live in ASC, plus the Daily
+Leaderboard group. What's the third that you're expecting?"). The app posts to exactly two
+daily identifiers - `DailyChallengeBoards.daily` and `.total` - and both are Live in App
+Store Connect inside `leaderboardSetDailyChallenge`. The "three" was written in round 97 and
+was never true of the code: most likely the set was counted alongside its two boards. It is
+the kind of note that has somebody looking in App Store Connect for a thing that does not
+exist, which is why it is struck here rather than quietly deleted. **Round 100 pulls into
 1.3:** the remaining written twists (§4's unbuilt ten, with the round-99 choose-your
 ideas as candidates), per-day results on the card, §11.5's notifications and the share
 card. Round 101 pulls **streaks and themes** into 1.3 as well, so phases 4, 5 and 6 are all

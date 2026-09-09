@@ -1224,10 +1224,15 @@ test: "I should make some unique icons for the different twists"):
 
 ### The scrolling backdrop
 
-One vertically-looping tile, screen-wide, named `EndlessMayhemBackdrop` in the asset
+~~One vertically-looping tile, screen-wide, named `EndlessMayhemBackdrop` in the asset
 catalogue - the machinery in §7.2 picks it up by name the moment it exists. Quiet artwork
 wanted: it sits behind the whole field, and a backdrop that competes with the bricks is
-worse than none.
+worse than none.~~ **Dropped for 1.3** (James, round 314: "let's drop EndlessMayhemBackdrop,
+it's not critical"). No code changes: `EndlessIIScrollingBackground` already runs on its
+placeholder and picks the tile up by name if one is ever added, so this is a decision not to
+draw it rather than a feature to take out. Left here struck, because "the machinery is
+waiting for an asset" is worth knowing by whoever wonders later why the name is in the code
+and not in the catalogue.
 
 ### In-scene drawing that may stay drawn
 

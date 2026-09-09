@@ -1072,8 +1072,12 @@ enum DailyChallengePosting {
 
 enum DailyChallengeBoards {
     /// The Game Center recurring leaderboard with a daily recurrence aligned to 00:00
-    /// UTC (§7). Both boards are James's App Store Connect side; until they exist there,
-    /// submissions fail silently - the same standing state as the Endless Mayhem boards.
+    /// UTC (§7).
+    ///
+    /// **Both are live in App Store Connect** (confirmed round 314), inside
+    /// `leaderboardSetDailyChallenge`, so submissions land rather than failing silently.
+    /// These two are the whole of the daily's Game Center surface: a spec note claiming a
+    /// third was in review had James looking for a board that does not exist.
     static let daily = "leaderboardDailyChallenge"
     /// The classic (non-recurring) board holding each player's running total of posted
     /// daily scores. Game Center keeps the highest submission, and a running total only
