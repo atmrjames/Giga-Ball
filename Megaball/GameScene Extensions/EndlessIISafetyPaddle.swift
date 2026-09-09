@@ -135,6 +135,7 @@ extension GameScene {
         // way down is easier to believe if it is seen arriving
 
         if hapticsSetting { heavyHaptic.impactOccurred() }
+        playMayhemSound("safetyPaddle")
     }
 
     /// **A ball coming up from underneath goes straight through it** (James, round 166).

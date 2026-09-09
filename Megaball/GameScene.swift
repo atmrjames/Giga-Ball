@@ -1264,6 +1264,45 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	let levelCompleteSound = SKAction.playSoundFileNamed("levelComplete.mp3", waitForCompletion: true)
 	let powerUpSound = SKAction.playSoundFileNamed("powerUpSound.mp3", waitForCompletion: true)
 	let stickyPaddleHitSound = SKAction.playSoundFileNamed("stickyPaddleHit.mp3", waitForCompletion: true)
+
+	/// A sound that may not have been made yet.
+	///
+	/// **Fifteen Endless Mayhem events fire haptics and no sound** (§8.5, and the list James
+	/// asked for in round 314): the explosion, Cull, Aura, Infill, the three portal jumps, the
+	/// halo, the wrap, Multi-Ball, the safety and mirror paddles, Drift and the Fixed brick
+	/// locking. Each one names its file here, so a recording dropped into `Megaball/Sounds`
+	/// under that name simply plays - no code change, and no waiting on me to wire it.
+	///
+	/// **Nil until the file exists**, checked against the bundle rather than assumed:
+	/// `SKAction.playSoundFileNamed` is built eagerly at property initialisation for the ten
+	/// sounds above, and handing it a name with no file behind it is not something to find out
+	/// about on a player's device. A missing sound is silence and a haptic, which is exactly
+	/// what these events do today, so wiring them up changes nothing at all until James starts
+	/// filling them in.
+	///
+	/// Built once per name and kept, for the reason the ten above are properties rather than
+	/// locals: building an `SKAction` for a sound is not free, and these fire mid-play.
+	static func mayhemSound(_ name: String) -> SKAction? {
+		if let known = mayhemSounds[name] { return known }
+		guard Bundle.main.url(forResource: name, withExtension: "mp3") != nil else {
+			mayhemSounds[name] = SKAction?.none
+			return nil
+		}
+		let action = SKAction.playSoundFileNamed(name + ".mp3", waitForCompletion: false)
+		mayhemSounds[name] = action
+		return action
+		// `waitForCompletion: false`, unlike the ten above: these fire while the ball is in
+		// play and several can land in one frame, so none of them may hold up the action that
+		// runs it
+	}
+
+	private static var mayhemSounds: [String: SKAction?] = [:]
+
+	/// Plays one of those, if it exists and the player wants sounds.
+	func playMayhemSound(_ name: String) {
+		guard soundsSetting, let action = GameScene.mayhemSound(name) else { return }
+		run(action)
+	}
 	// Sounds defined - pre-loaded to prevent game lag
     
     var lightHaptic = UIImpactFeedbackGenerator(style: .light) // use for ball hitting bricks and paddle

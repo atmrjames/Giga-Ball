@@ -53,6 +53,7 @@ extension GameScene {
         }
         countBricks()
         if hapticsSetting { heavyHaptic.impactOccurred() }
+        playMayhemSound("cull")
     }
 
     // MARK: - Clear And Retreat
@@ -566,6 +567,7 @@ extension GameScene {
         if struck.isEmpty == false {
             countBricks()
             if hapticsSetting { lightHaptic.impactOccurred(intensity: 0.5) }
+            playMayhemSound("aura")
         }
     }
 
@@ -944,6 +946,7 @@ extension GameScene {
 
         countBricks()
         if hapticsSetting { rigidHaptic.impactOccurred() }
+        playMayhemSound("infill")
     }
 
     /// How many bricks one Infill adds. Enough to feel, few enough that the field is still

@@ -645,6 +645,7 @@ extension GameScene {
         // are about to be removed and would take the animation with them
 
         if hapticsSetting { heavyHaptic.impactOccurred() }
+        playMayhemSound("explosion")
     }
 
     /// Runs an explosion, and any it sets off.
@@ -934,6 +935,7 @@ extension GameScene {
         brick.run(.sequence([.scale(to: 1.15, duration: 0.06),
                              .scale(to: 1, duration: 0.1)]))
         if hapticsSetting { heavyHaptic.impactOccurred() }
+        playMayhemSound("brickLocked")
         return true
     }
 
@@ -1209,6 +1211,7 @@ extension GameScene {
 
         endlessIIShowPortalJump(from: from, to: to)
         if hapticsSetting { mediumHaptic.impactOccurred() }
+        playMayhemSound("brickPortal")
         partner?.run(.sequence([.fadeAlpha(to: 0.35, duration: 0.08),
                                 .fadeAlpha(to: 1, duration: 0.12)]))
 

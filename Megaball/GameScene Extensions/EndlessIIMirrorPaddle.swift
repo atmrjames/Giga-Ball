@@ -116,6 +116,7 @@ extension GameScene {
 
         showEndlessIIPaddleShadow()
         if hapticsSetting { heavyHaptic.impactOccurred() }
+        playMayhemSound("mirrorPaddle")
     }
 
     static let endlessIIPaddleShadowName = "mirrorPaddleShadow"

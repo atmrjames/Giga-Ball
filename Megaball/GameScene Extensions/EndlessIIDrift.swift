@@ -115,6 +115,7 @@ extension GameScene {
             endlessIIDriftPhase -= GameScene.endlessIIDriftColumnSeconds
             endlessIIDriftMoved = 0
             if hapticsSetting { lightHaptic.impactOccurred() }
+            playMayhemSound("drift")
             // The descent's own tap, on the step rather than on the frames between: a row
             // arriving and a column moving are the same event to a thumb
             // Subtracted rather than zeroed, so a long frame does not throw away the overshoot

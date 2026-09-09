@@ -178,3 +178,58 @@ final class ApplyPowerUpTests: XCTestCase {
                        "the run is over; the drop cannot be caught")
     }
 }
+
+/// **The fifteen Mayhem events that fire a haptic and no sound** (§8.5, round 314).
+///
+/// James is writing the sounds; the code is wired to play them the moment a file appears
+/// under the right name, so he needs nothing from here to iterate. These say the wiring is
+/// safe while the files do not exist, which is the whole of what could go wrong before then.
+final class MayhemSoundTests: XCTestCase {
+
+    /// Every name the scene asks for, which is the list James works from.
+    private let names = ["explosion", "cull", "aura", "infill", "brickPortal", "brickLocked",
+                         "paddlePortal", "paddleHalo", "wrapAround", "multiBall",
+                         "safetyPaddle", "mirrorPaddle", "drift"]
+
+    /// **Nil until the file exists, and never a crash.**
+    ///
+    /// `SKAction.playSoundFileNamed` is handed a name at property-initialisation time for the
+    /// ten sounds the game already has, and what it does with a name that has no file behind
+    /// it is not something to discover on a player's device. `mayhemSound` asks the bundle
+    /// first, so an unrecorded sound is silence and a haptic - exactly what these events do
+    /// today, which is what makes wiring them up ahead of the audio a safe thing to do.
+    func testAnUnrecordedSoundIsSilenceRatherThanAnything() {
+        for name in names {
+            XCTAssertNil(GameScene.mayhemSound(name),
+                         "\(name).mp3 is not in the bundle yet, so this has to answer nil")
+        }
+    }
+
+    /// And asking twice is the same answer, because these fire mid-play.
+    func testTheAnswerIsKept() {
+        for name in names {
+            XCTAssertNil(GameScene.mayhemSound(name))
+            XCTAssertNil(GameScene.mayhemSound(name), "\(name): asked twice, cached once")
+        }
+    }
+
+    /// A scene with sounds switched off plays nothing, and one with them on plays nothing
+    /// either while the files are missing. Neither may throw.
+    func testPlayingOneIsSafeWithOrWithoutTheSetting() {
+        let scene = GameScene(size: CGSize(width: 400, height: 800))
+        for setting in [true, false] {
+            scene.soundsSetting = setting
+            for name in names { scene.playMayhemSound(name) }
+        }
+    }
+
+    /// The ten that do exist still resolve, so the bundle check is not simply always false.
+    ///
+    /// Without this the three tests above would pass just as well if `mayhemSound` returned
+    /// nil unconditionally, and the day James adds a file nothing would play.
+    func testASoundThatDoesExistIsFound() {
+        XCTAssertNotNil(GameScene.mayhemSound("brickHit"),
+                        "brickHit.mp3 ships with the app, so the bundle lookup has to find "
+                        + "it - or these tests are asserting that a broken lookup is broken")
+    }
+}

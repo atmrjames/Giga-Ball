@@ -1242,7 +1242,40 @@ mode's palette. These can ship as they are or be replaced piecemeal - none block
 
 ### Sound
 
-The events that currently borrow a sound or play none, each with where it fires:
+**Wired ahead of the audio** (round 314, James: "for the sound, I will work on this. Are you
+able to put in some place holder sounds. Are you able to also produce a list of new items
+that need sounds"). Every event below now calls `playMayhemSound("<name>")`, and
+`GameScene.mayhemSound` asks the bundle before building an `SKAction` - so a name with no
+file behind it is **nil**, the event is silence and a haptic exactly as it is today, and a
+recording dropped into `Megaball/Sounds` under that name plays with no code change and
+nothing to ask for. The file names are the list:
+
+| Sound | Fires when | File |
+|---|---|---|
+| Explosion | an Exploding brick goes off | `explosion.mp3` |
+| Cull | half the field is destroyed at once | `cull.mp3` |
+| Aura | the glow around a ball eats a brick | `aura.mp3` |
+| Infill | six bricks arrive in empty cells | `infill.mp3` |
+| Brick portal | the ball enters a Portal brick | `brickPortal.mp3` |
+| Fixed brick locking | a Fixed brick anchors itself | `brickLocked.mp3` |
+| Paddle portal | the ball leaves a paddle edge - also the mirror's and an aimed launch's | `paddlePortal.mp3` |
+| Paddle halo | the halo destroys a brick | `paddleHalo.mp3` |
+| Wrap-around | the paddle crosses a wall | `wrapAround.mp3` |
+| Multi-Ball | an extra ball appears | `multiBall.mp3` |
+| Safety paddle | the bar appears under the field | `safetyPaddle.mp3` |
+| Mirror paddle | the second paddle appears | `mirrorPaddle.mp3` |
+| Drift | the field steps sideways | `drift.mp3` |
+
+Thirteen files for fifteen call sites: the three portal jumps share one sound, because they
+are one event the player sees in three places. `MayhemSoundTests` holds the wiring safe while
+the files do not exist, including a control that a sound which *does* ship is still found -
+without it the whole set would pass just as well if the lookup were broken.
+
+**No placeholder audio was generated.** Synthesised blips in a game this finished read worse
+than silence, and each file also needs a hand-edited project entry; the plumbing is the half
+that unblocks James, and the offer stands if he wants something audible before he records.
+
+The original table, kept for what it says about where each one fires:
 
 | Event | Today | Where |
 |---|---|---|

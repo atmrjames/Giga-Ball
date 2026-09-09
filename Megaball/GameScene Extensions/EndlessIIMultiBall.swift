@@ -84,6 +84,7 @@ extension GameScene {
         extra.run(.scale(to: 1, duration: 0.15))
 
         if hapticsSetting { mediumHaptic.impactOccurred() }
+        playMayhemSound("multiBall")
         return true
     }
 
