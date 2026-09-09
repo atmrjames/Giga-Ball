@@ -1240,6 +1240,19 @@ The halo, aura glow, laser beam flash, portal jump trail, aim arrow, pull lines,
 strips, wall tints and the landing triangle are `SKShapeNode`/tint work, styled to the
 mode's palette. These can ship as they are or be replaced piecemeal - none blocks release.
 
+### Twist badges
+
+**All twenty-two redrawn** (James, round 314), bolder glyphs filling more of each tile.
+Twenty-one imported; **`DroughtTwistIcon` is still owed** and keeps its previous art. The
+delivered file has square corners with a pale border where every other badge fades to
+nothing - 177 of 255 opaque at one corner against a set that runs 0 to 2 - and its glyph runs
+off the bottom of the tile. It reads as a screenshot of an icon rather than an icon.
+
+`ArtStillToDrawTests.testEveryTwistBadgeHasTransparentCorners` measures the four corner
+pixels of every badge at 3x from now on, so this cannot arrive unnoticed again. The bar is 40,
+which clears both the anti-aliasing below it (Vanilla's 14, which looked like a hairline on a
+contact sheet and is not one) and Drought's 177 above.
+
 ### Sound
 
 **Wired ahead of the audio** (round 314, James: "for the sound, I will work on this. Are you
