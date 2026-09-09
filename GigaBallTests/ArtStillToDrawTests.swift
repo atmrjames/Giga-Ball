@@ -246,6 +246,56 @@ final class ArtStillToDrawTests: XCTestCase {
         }
     }
 
+    /// **Every badge has transparent corners, because they are rounded tiles.**
+    ///
+    /// Round 314's redraw of all twenty-two arrived with one broken file: `DroughtTwistIcon`
+    /// had square corners and a pale border where every other badge fades to nothing, and its
+    /// glyph ran off the bottom edge. Against twenty-one rounded tiles it would have read as a
+    /// mistake in the app rather than a mistake in a file, and the only reason it was caught
+    /// was a contact sheet drawn to look at the delivery before importing it.
+    ///
+    /// Looking is not repeatable, so this is: the four corner pixels of every badge, which are
+    /// the cheapest possible statement of "this is a rounded tile and not a photograph of
+    /// one". Measured at 3x, where the corner radius is widest in pixels and a square corner
+    /// has nowhere to hide.
+    ///
+    /// A few points of alpha are anti-aliasing and pass - Mirrored and Upside Down have
+    /// carried 2 for as long as they have existed, and the delivered Vanilla carries 14, which
+    /// looked like a hairline on the contact sheet and is not one. Drought's worst corner was
+    /// **177 of 255**, so the two are not close and the bar does not have to be delicate.
+    func testEveryTwistBadgeHasTransparentCorners() throws {
+        for (twist, name) in twistArt {
+            let image = try XCTUnwrap(UIImage(named: name), "\(name) is not in the catalogue")
+            let cg = try XCTUnwrap(image.cgImage)
+            let corners = try alphaAtCorners(of: cg)
+
+            for (place, alpha) in corners {
+                XCTAssertLessThan(alpha, 40,
+                                  "\(twist.displayName)'s badge (\(name)) is \(alpha)/255 "
+                                  + "opaque at its \(place) corner: a square tile among "
+                                  + "rounded ones, which is how the round-314 delivery of "
+                                  + "Drought arrived")
+            }
+        }
+    }
+
+    /// The alpha of the four corner pixels, named so a failure says which corner.
+    private func alphaAtCorners(of image: CGImage) throws -> [(String, Int)] {
+        let width = image.width, height = image.height
+        var pixels = [UInt8](repeating: 0, count: width*height*4)
+        let context = try XCTUnwrap(CGContext(
+            data: &pixels, width: width, height: height, bitsPerComponent: 8,
+            bytesPerRow: width*4, space: CGColorSpaceCreateDeviceRGB(),
+            bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue))
+        context.draw(image, in: CGRect(x: 0, y: 0, width: width, height: height))
+
+        func alpha(_ x: Int, _ y: Int) -> Int { Int(pixels[(y*width + x)*4 + 3]) }
+        return [("top left", alpha(1, 1)),
+                ("top right", alpha(width - 2, 1)),
+                ("bottom left", alpha(1, height - 2)),
+                ("bottom right", alpha(width - 2, height - 2))]
+    }
+
     /// Which live twists have no badge, asked rather than remembered.
     ///
     /// James, round 290: "are there any I am missing from the set?" The answer was Full Deck
