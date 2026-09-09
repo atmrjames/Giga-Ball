@@ -132,6 +132,13 @@ xcodebuild -project Megaball.xcodeproj -scheme Megaball \
   find default device`), which is the same signature round 118 diagnosed. So: **count the
   `passed` lines** - `grep -c "' passed "` - rather than reading the summary's total, because
   the summary is counting one launch and the suite ran across two.
+  **Round 314: sometimes two relaunches rather than one**, so "one per full run" is a typical
+  value and not a rule - two full runs that day each relaunched twice, and each of the four was
+  immediately preceded in the log by the same CoreAudio burst (`AQMEIO.cpp:379 error -66680`),
+  which is round 118's signature and confirms that diagnosis rather than adding to it. Every
+  named class passed alone. What this changes is the expectation only: read the `Failing
+  tests:` list and re-run whatever it names, however many there are, rather than going looking
+  for a second cause the moment the count is not one.
 
 - **Stale derived data has twice hidden a new file from the test target**, producing "cannot
   find X in scope" for code that builds fine in the app. If a brand-new file's symbols are
