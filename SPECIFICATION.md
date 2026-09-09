@@ -170,9 +170,18 @@ Endless 2.0 exists.
 ## 4. Gameplay mechanics
 
 **Playfield.** A 22 × 11 brick grid. The play zone holds a **fixed aspect ratio on every
-device** — deliberately, so the game plays identically across a player's devices. On iPad
+device** - deliberately, so the game plays identically across a player's devices. On iPad
 and wider screens this produces vertical borders either side rather than a stretched
-field.
+field. `GameSceneLayout` solves for the height first and spends whatever width is left on
+the borders, so the field is always as tall as the window allows and is never cropped; the
+scene is presented `aspectFit` for the same reason.
+
+**And the menus are a phone's menus, centred** (round 314). Their content is capped both by
+shape - `menuMaximumAspectRatio` - and by an absolute `menuMaximumWidth`, whichever is
+narrower, so a 13-inch iPad shows a phone-width column on a large background rather than a
+phone-width layout stretched across one. Nothing is ever taken off the *height*: round 180
+capped that too and round 181 removed it, because it left 40% of the screen empty with two
+level packs scrolled out of sight.
 
 **Paddle.** Dragged horizontally by touch. Sensitivity is a user setting (three levels)
 controlling the ratio of finger movement to paddle movement. The paddle cannot pass the
@@ -464,8 +473,14 @@ collapsed unconditionally.
 **Levels are code, not data.** 110 Swift files, ~10,500 lines, compiled into the binary.
 Each is a function that assigns textures across the grid.
 
-**`UIRequiresFullScreen` is still true**, so the app does not participate in iPadOS
-multitasking. Deprecated but currently honoured.
+~~**`UIRequiresFullScreen` is still true**, so the app does not participate in iPadOS
+multitasking. Deprecated but currently honoured.~~ **Neither half of that is true** (checked
+round 314). The key is not in `Info.plist` and not in the build settings either, so it is
+absent rather than true - and iPadOS 26 ignores it in any case, which is how James came to be
+playing in a window he could drag into any shape. Rounds 313f-h and 314a are the layout work
+that followed from it: the scene letterboxes rather than crops, and the menus cap their
+content to a phone's width and centre it. **The app participates in iPadOS multitasking**,
+and has to be laid out as though it does.
 
 **Audio session activation is synchronous on the main thread** during launch, which iOS
 logs a warning about.
