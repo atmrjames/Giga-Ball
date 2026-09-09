@@ -358,8 +358,25 @@ extension UIViewController {
         } else {
             button.backgroundColor = UIColor(white: 0.92, alpha: 1)
             button.tintColor = UIColor(red: 0.16, green: 0, blue: 0.24, alpha: 1)
+            button.layer.cornerRadius = radius
+            button.clipsToBounds = true
             // The old pair, unchanged: a pale disc needs a dark glyph, and inverting only the
             // glass path means an iOS 15 phone is not handed white-on-white
+            //
+            // **And the disc has to be a disc** (round 314, found by looking at the pause
+            // screen on an iPad running iOS 18). This branch painted a background and never
+            // rounded it: `radius` was taken as a parameter, used only inside the glass path
+            // above, and silently dropped here. Every one of the nine callers passes half its
+            // button's size - it is always "make this a circle" - so on any device below iOS
+            // 26 the Home button on the pause screen was a pale **square** sitting beside four
+            // circles, and so was every other button styled through here.
+            //
+            // It went five rounds unseen because the only devices anybody looked at were on
+            // iOS 26 or later, where the glass path runs. The app's minimum is iOS 17.
+            //
+            // `clipsToBounds` here and not in the glass path, which is round 54's note
+            // directly above: clipping shears the material's specular edge, but a flat colour
+            // has no edge to shear and does need clipping to take the corner.
         }
     }
 
