@@ -114,6 +114,20 @@ class Playing: GKState {
         // The flag and the save are separate, so a save that fails to decode leaves the
         // flag set with nothing behind it
         // If resuming a game, reset counters and scores to saved values
+        //
+        // **`totalScore` is corrected further down, and it has to be.** A save writes its
+        // `totalScore` as `totalScore + levelScore`, because a level in progress has not
+        // banked yet and the resuming screen has to be able to show a number. Assigning both
+        // straight back therefore puts the level's running score inside `totalScore` *and* in
+        // `levelScore`, and everything that draws the score adds the two together - so the
+        // scene would read high by a level's worth until the level ended, and then bank it
+        // twice. `scene.totalScore = scene.totalScore - scene.levelScore` in the
+        // `resumeGameToLoad` branch below is what takes it back out.
+        //
+        // Said here because that line is thirty lines away, inside a branch otherwise about
+        // whether the ball animates in, under a comment of four words. Round 319f read this
+        // assignment, worked out what it implied, and went looking for a scoring bug that is
+        // not there. The next person should not have to.
         
         scene.scoreLabel.text = String(scene.totalScore)
         scene.scoreFactorString = String(format:"%.1f", scene.multiplier)
@@ -182,6 +196,9 @@ class Playing: GKState {
                 scene.paddleRetroTexture.isHidden = false
             }
             scene.totalScore = scene.totalScore - scene.levelScore
+            // The correction the restore above depends on: a save's `totalScore` already
+            // includes `levelScore`, and both were just assigned, so this takes the overlap
+            // back out. Moving or removing it double-counts the level in progress, silently
             
             if (scene.savedGame?.ballProperties.isEmpty == false) {
                 scene.pauseBallVelocityX = CGFloat(scene.savedGame?.ballProperties[2] ?? 0)
