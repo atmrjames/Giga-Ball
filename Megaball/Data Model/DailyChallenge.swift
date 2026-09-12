@@ -825,14 +825,58 @@ enum DailyChallengeGenerator {
         let levelRoll = stream.roll(max(1, classicLevelCount))
         let classicLevel: Int? = mode == .classic ? levelRoll + 1 : nil
 
-        // 3. How many twists: none 30, one 50, two 20 (§3)
-        let countRoll = stream.roll(100)
-        let twistCount = countRoll < 30 ? 0 : (countRoll < 80 ? 1 : 2)
+        // 3. How many twists, and whether the day wears a look
+        //
+        // **The mix James asked for, from `twistMixKey` onward** (round 319): "the daily
+        // challenge twists seem to cycle few the same few options quite frequently. There
+        // should be different ones more often, more often days with multiple twists per day, a
+        // theme or B&W pretty much every day or very frequently paired with another twist.
+        // Vanilla should be quite rare, like once every 2 weeks."
+        //
+        // Four changes to one paragraph. A plain day drops from three in ten to one in
+        // fourteen; the look category - which is exactly Monochromatic and Theme - is drawn
+        // *deliberately* on most days rather than waiting to come up in a uniform category
+        // roll; and the twists beside it are one or two far more often than none.
+        //
+        // **Behind a date, like everything else here.** The header's promise is that any past
+        // date replays identically for ever, and this changes the shape of the draw rather than
+        // the contents of a pool - so every day up to `twistMixKey` takes the old branch,
+        // unchanged, roll for roll. `testTheDaysAlreadyPlayedStillReadExactlyTheSame` is what
+        // says so, and it passes untouched.
+        let newMix = key >= DailyChallengeGenerator.twistMixKey
+        var twists: [DailyTwist] = []
+        var categories = DailyTwist.Category.allCases.filter { $0.activationKey <= key }
+
+        let twistCount: Int
+        var plainDay = false
+        if newMix {
+            let plainRoll = stream.roll(100)
+            if plainRoll < DailyChallengeGenerator.plainDayChance {
+                plainDay = true
+                twistCount = 0
+            } else {
+                // The look first, so a day that can only fit one twist spends it on the thing
+                // the player sees the moment the field appears
+                if stream.roll(100) < DailyChallengeGenerator.lookChance,
+                   let look = DailyTwist.Category.look.activationKey <= key
+                    ? DailyChallengeGenerator.draw(from: DailyTwist.allCases.filter {
+                        $0.category == .look && $0.inPool(on: key, for: mode)
+                            && $0.changesSomething(onClassicLevel: classicLevel) },
+                        &stream) : nil {
+                    twists.append(look)
+                    categories.removeAll { $0 == .look }
+                }
+                // Then one or two beside it, and two nearly as often as one
+                twistCount = stream.roll(100) < DailyChallengeGenerator.secondTwistChance ? 2 : 1
+            }
+        } else {
+            // §3 as it stood: none 30, one 50, two 20
+            let countRoll = stream.roll(100)
+            twistCount = countRoll < 30 ? 0 : (countRoll < 80 ? 1 : 2)
+        }
 
         // 4. The twists: a category first, then a twist inside it, both weighted - at most
         // one per category, so the set is legal by construction (§4.2)
-        var twists: [DailyTwist] = []
-        var categories = DailyTwist.Category.allCases.filter { $0.activationKey <= key }
         // Filtered before the roll, not after: the index this draws is taken against the
         // list's length, so a category the day cannot use must not be in the list at all
         for _ in 0..<twistCount {
@@ -855,17 +899,91 @@ enum DailyChallengeGenerator {
             // second twist, which is a day with one - the outcome the count roll already
             // produces half the time
 
-            let total = pool.reduce(0) { $0 + $1.weight }
-            var drawn = stream.roll(total)
-            for twist in pool {
-                drawn -= twist.weight
-                if drawn < 0 { twists.append(twist); break }
+            if let twist = DailyChallengeGenerator.draw(from: pool, &stream) { twists.append(twist) }
+        }
+
+        if newMix, twists.isEmpty, plainDay == false {
+            // **A day the rolls said was not plain must not end up plain.** Measured over a
+            // year, the seven-in-a-hundred roll was producing eleven: the category the loop
+            // drew could refuse everything - its pool empty for this mode, or every candidate
+            // ruled out by the pairing matrix - and a day that drew nothing fell through as
+            // Vanilla. That is the graceful failure the loop has always had, and it is the
+            // right one for a *second* twist and the wrong one for the only one.
+            //
+            // So the day asks again, across every category still open at once rather than
+            // inside the one it happened to pick. Tuning `plainDayChance` down to absorb the
+            // difference would have hit the number and left the cause, and the cause moves
+            // whenever a twist's pool rules do.
+            let everything = DailyTwist.allCases.filter { candidate in
+                categories.contains(candidate.category)
+                    && candidate.inPool(on: key, for: mode)
+                    && candidate.changesSomething(onClassicLevel: classicLevel)
+            }
+            if let twist = DailyChallengeGenerator.draw(from: everything, &stream) {
+                twists.append(twist)
             }
         }
 
         return DailyChallenge(dateKey: key, mode: mode, classicLevel: classicLevel,
                               twists: twists)
     }
+
+    /// One twist out of a pool, by weight. Nil for an empty pool.
+    ///
+    /// Pulled out in round 319 so the look draw and the category loop use the same arithmetic
+    /// rather than two copies of it - a second copy of a decision is wrong the first time the
+    /// decision changes, and this one had just been about to be copied.
+    static func draw(from pool: [DailyTwist], _ stream: inout DailySeededGenerator) -> DailyTwist? {
+        guard pool.isEmpty == false else { return nil }
+        let total = pool.reduce(0) { $0 + $1.weight }
+        var drawn = stream.roll(total)
+        for twist in pool {
+            drawn -= twist.weight
+            if drawn < 0 { return twist }
+        }
+        return pool.last
+    }
+
+    /// The day the twist mix changes shape (round 319). Days before it draw exactly as they
+    /// always did, which is the promise at the top of this file.
+    static let twistMixKey = "2026-10-01"
+
+    /// How often a day has no twists at all, in a hundred.
+    ///
+    /// **James: "Vanilla should be quite rare, like once every 2 weeks."** It was thirty -
+    /// close to one day in three, which is much of what made the daily feel like it was cycling
+    /// the same few ideas: a third of the time it was offering none of them.
+    ///
+    /// **Five rather than the seven that one-day-in-fourteen works out at**, because the roll
+    /// is not the whole of it. A handful of days each year have no legal twist at all - every
+    /// candidate ruled out by the mode, the level or the pairing matrix - and those land plain
+    /// however the roll went. Measured over a year, five produces about one plain day in
+    /// fourteen and seven produced one in eleven. The gap is real rather than noise, so the
+    /// number compensates for it deliberately and says so here.
+    static let plainDayChance = 5
+
+    /// How often a day wears a look - Monochromatic or the day's Theme.
+    ///
+    /// **James: "a theme or B&W pretty much every day or very frequently paired with another
+    /// twist."** These two are the `look` category and the only members of it, so drawing the
+    /// category deliberately is the whole of it. Before this they waited to come up in a
+    /// uniform roll across nine categories, which on a one-twist day is one chance in nine -
+    /// so the thing the player sees the instant the field appears was the rarest thing on
+    /// offer.
+    ///
+    /// Ninety rather than a hundred: "pretty much every day" is not every day, and a day that
+    /// is *never* plain-looking has nothing to make the themed ones feel like anything. What
+    /// reaches the player is lower again - a look still has to survive the pools - so ninety
+    /// lands around three days in four.
+    static let lookChance = 90
+
+    /// How often a day that already has a look takes two more twists rather than one.
+    ///
+    /// **James: "more often days with multiple twists per day."** With the look counted, this
+    /// makes two twists the common case and three a regular one. The category rules still
+    /// decide what is *legal*, so a day whose second category refuses everything simply ends
+    /// up shorter - which is the same graceful failure the draw has always had.
+    static let secondTwistChance = 45
 
     /// What a Classic day is asking for, in the player's terms.
     ///

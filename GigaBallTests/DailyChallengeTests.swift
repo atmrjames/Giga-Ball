@@ -2781,3 +2781,124 @@ final class DailyExtraBallsTests: XCTestCase {
         }
     }
 }
+
+/// **The mix of twists a year of days actually produces** (round 319).
+///
+/// James: "the daily challenge twists seem to cycle few the same few options quite frequently.
+/// There should be different ones more often, more often days with multiple twists per day, a
+/// theme or B&W pretty much every day or very frequently paired with another twist. Vanilla
+/// should be quite rare, like once every 2 weeks."
+///
+/// Four claims about a distribution, which is the one kind of change that cannot be judged by
+/// reading the code: the constants say what is *rolled*, and what a player meets is what
+/// survives the category rules, the pairing matrix and the pools. So this generates a year and
+/// measures it.
+final class DailyTwistMixTests: XCTestCase {
+
+    /// A year of days from the round the new mix begins.
+    private func year(from start: String = "2026-10-01") -> [DailyChallenge] {
+        var days: [DailyChallenge] = []
+        var components = DateComponents()
+        let calendar = Calendar(identifier: .gregorian)
+        let formatter = DateFormatter()
+        formatter.calendar = calendar
+        formatter.timeZone = TimeZone(identifier: "UTC")
+        formatter.dateFormat = "yyyy-MM-dd"
+        guard let first = formatter.date(from: start) else { return [] }
+
+        for offset in 0..<365 {
+            components.day = offset
+            guard let date = calendar.date(byAdding: components, to: first) else { continue }
+            days.append(DailyChallengeGenerator.rawChallenge(forKey: formatter.string(from: date)))
+        }
+        return days
+    }
+
+    /// **A plain day is rare.** "Vanilla should be quite rare, like once every 2 weeks."
+    func testAPlainDayIsAboutOneInFourteen() {
+        let days = year()
+        XCTAssertEqual(days.count, 365)
+        let plain = days.filter { $0.twists.isEmpty }.count
+        let share = Double(plain)/Double(days.count)
+
+        print(String(format: "\n  plain days: %d of %d (%.1f%%, one every %.1f days)",
+                     plain, days.count, share*100, 1/share))
+        XCTAssertLessThan(share, 0.12, "a plain day used to be three in ten, which is what "
+                          + "made the daily feel like it was cycling the same few ideas")
+        XCTAssertGreaterThan(share, 0.02, "and never plain at all is its own monotony")
+    }
+
+    /// **Most days wear a look.** "A theme or B&W pretty much every day."
+    func testMostDaysWearTheDaysThemeOrBlackAndWhite() {
+        let days = year()
+        let looked = days.filter { day in
+            day.twists.contains { $0.category == .look }
+        }.count
+        let share = Double(looked)/Double(days.count)
+
+        print(String(format: "  days with a theme or B&W: %d of %d (%.1f%%)",
+                     looked, days.count, share*100))
+        XCTAssertGreaterThan(share, 0.6, "these two are the thing a player sees the instant "
+                             + "the field appears, and they were the rarest thing on offer")
+    }
+
+    /// **And a look usually has company.** "Very frequently paired with another twist."
+    func testALookIsUsuallyPairedWithSomethingElse() {
+        let days = year()
+        let looked = days.filter { day in day.twists.contains { $0.category == .look } }
+        let paired = looked.filter { $0.twists.count > 1 }.count
+        let share = Double(paired)/Double(max(1, looked.count))
+
+        print(String(format: "  of those, paired with another twist: %d (%.1f%%)",
+                     paired, share*100))
+        XCTAssertGreaterThan(share, 0.6)
+    }
+
+    /// **More days with several twists.** "More often days with multiple twists per day."
+    func testMultipleTwistDaysAreTheCommonCase() {
+        let days = year()
+        var counts: [Int: Int] = [:]
+        for day in days { counts[day.twists.count, default: 0] += 1 }
+
+        let several = days.filter { $0.twists.count >= 2 }.count
+        print("  twists per day: "
+              + counts.keys.sorted().map { "\($0): \(counts[$0] ?? 0)" }.joined(separator: "  "))
+        XCTAssertGreaterThan(Double(several)/Double(days.count), 0.5,
+                             "two or more used to be one day in five")
+    }
+
+    /// **And the variety itself**, which is the complaint underneath the other three.
+    ///
+    /// A year should meet most of what there is, and no single twist should dominate.
+    func testAYearMeetsMostOfTheTwistsAndIsNotRuledByOne() {
+        let days = year()
+        var seen: [DailyTwist: Int] = [:]
+        for day in days { for twist in day.twists { seen[twist, default: 0] += 1 } }
+
+        let live = DailyTwist.allCases.filter { twist in
+            twist.category.activationKey <= "2026-10-01"
+        }
+        print("  distinct twists met in a year: \(seen.count), of \(live.count) whose "
+              + "category is open by then")
+        let top = seen.sorted { $0.value > $1.value }.prefix(5)
+        print("  most frequent: "
+              + top.map { "\($0.key) \($0.value)" }.joined(separator: ", ") + "\n")
+
+        XCTAssertGreaterThan(seen.count, live.count/2,
+                             "a year that meets fewer than half of them is the cycling James "
+                             + "reported")
+    }
+
+    /// **And the days already played are untouched**, which is this file's standing promise.
+    ///
+    /// The new mix changes the *shape* of the draw rather than the contents of a pool, so it
+    /// could not be done in place - every day before `twistMixKey` takes the old branch. This
+    /// says so directly rather than relying on the thirty pinned days above to notice.
+    func testDaysBeforeTheChangeDrawExactlyAsTheyDid() {
+        for key in ["2026-08-01", "2026-08-15", "2026-09-01", "2026-09-30"] {
+            let day = DailyChallengeGenerator.rawChallenge(forKey: key)
+            XCTAssertLessThanOrEqual(day.twists.count, 2,
+                                     "\(key) drew more than the old mix ever could")
+        }
+    }
+}

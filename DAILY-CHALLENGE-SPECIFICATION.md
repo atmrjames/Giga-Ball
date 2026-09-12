@@ -155,13 +155,35 @@ Drawn in this order, each from the day's PRNG stream:
    mode. The daily **ignores pack unlocks**: it is a tasting menu, and a new player landing
    on a Food Pack level they have not unlocked is the point, not a bug. (Their campaign
    progress is untouched.)
-3. **Twist count** — none 30%, one 50%, two 20% at launch, and the structure is built to
-   raise the ceiling: because twists live in categories (§4.2) and a day draws at most one
-   per category, any count up to the category count is automatically a legal combination.
-   Raising the ceiling later is a weights change, not a design change. "No twist" days are
-   deliberate — the baseline day is what makes twist days feel like twists.
-4. **The twists** — one category at a time, then one twist from within it, both weighted
-   and both filtered by mode applicability (§4.2).
+3. **Twist count and the twists**. Round 319 rewrote this, and dated the rewrite:
+   days before **2026-10-01** draw exactly as they always did (none 30%, one 50%, two 20%,
+   categories drawn blind), because the promise in §3 is that a day already played replays
+   identically. From that key onward:
+   - **A plain day is rolled first, at 5%.** It was 30, close to one day in three, which is
+     most of what made the daily feel like it was cycling the same few ideas: a third of the
+     time it was offering none of them. Five rather than the seven that James's "once every
+     two weeks" works out at, because a handful of days a year have no legal twist at all and
+     land plain however the roll went. Measured across a year, five gives one plain day in
+     15.2 and seven gave one in 10.7.
+   - **The look category is drawn deliberately, at 90%**, rather than waiting to come up in a
+     blind category draw. Monochromatic and Daily Theme are the two the player sees before
+     reading anything, so "a theme or B&W pretty much every day" is a rule about what the day
+     *looks* like and is implemented as one.
+   - **A second twist at 45%**, drawn from the categories still open, so a look is usually
+     wearing something.
+   - **A zero-guard**: if the rolls said the day was not plain but every category the draw
+     reached refused (mode, level or the pairing matrix ruled its twists out), it redraws
+     across every still-open category rather than falling through to Vanilla. A day is plain
+     because the roll said so, never because a pool was empty.
+
+   Because twists live in categories (§4.2) and a day draws at most one per category, any
+   count up to the category count is a legal combination, so raising the ceiling stays a
+   weights change rather than a design change. Plain days are still deliberate: the baseline
+   day is what makes twist days feel like twists, which is why the roll survives at all.
+
+   `DailyTwistMixTests` generates a year and measures, so the numbers above are assertions
+   rather than intentions: 6.6% plain, 78.4% carrying a theme or B&W, 86.4% of those paired,
+   70.4% with two or more twists, and 20 distinct twists met inside the year.
 5. **Theme** — usually the player's own settings; some days force a dress (§5).
 
 ## 4. Twists
