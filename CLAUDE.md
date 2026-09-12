@@ -156,6 +156,15 @@ its `PBXGroup`, and — the one that is easy to miss — the **right target's** 
 - **Pure logic gets tested; visual work gets verified on the simulator.** Both, for anything
   that has both. Take a screenshot and look at it — several bugs in this project were only
   ever going to be caught by looking.
+- **A round is not finished when its own tests pass.** Rounds 315 to 318 each ran their own
+  classes, passed, and were committed; the last full suite was round 316's and **nobody read
+  its result**. It was holding 27 assertion failures, two of them faults in round 318 that
+  round 318's own new test had already caught - correct test, written for exactly that fault,
+  never part of a run that reached the end. Targeted runs are the right tool while working and
+  they cannot see across rounds: half of those failures were tests pinning a look James changed
+  two rounds later, which no single round's own classes would ever run. Start the full suite,
+  and **read what it says**.
+
 - **Tests are written from play-test reports.** When a bug is described, the test says what
   was reported, in the comment, in the reporter's terms. That is what stops a fix regressing
   into something that merely passes.
