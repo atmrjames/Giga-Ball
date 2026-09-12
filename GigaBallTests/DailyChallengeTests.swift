@@ -1934,8 +1934,15 @@ final class DailyLookAndNeutralTests: XCTestCase {
         XCTAssertTrue(GameScene.endlessIIHarmfulPowerUps.contains(1))
     }
 
-    /// Each news twist bans one side and leaves the middle standing.
-    func testTheNewsTwistsBanOneSideEach() {
+    /// **Each news twist keeps one side and nothing else** (James, round 315: "the yellow ones
+    /// are considered neither good nor bad. For twist days where it's good or bad power-ups
+    /// only, these shouldn't show up at all for either").
+    ///
+    /// This asserted the opposite until round 315, down to the message "Wipe should fall on
+    /// both" - round 229's rule, which it was written to pin. The reversal is his, and the
+    /// reason it is not a contradiction is that the badges are colour-coded now: a day that
+    /// says "Bad power-ups only" and drops a yellow one reads as the twist failing.
+    func testTheNewsTwistsKeepOneSideEach() {
         let names = LevelPackSetup().powerUpNameArray
         guard let wipe = names.firstIndex(of: "Wipe"),
               let giga = names.firstIndex(of: "Giga-Ball"),
@@ -1950,13 +1957,49 @@ final class DailyLookAndNeutralTests: XCTestCase {
 
         let noBad = table([.noBadNews])
         XCTAssertEqual(noBad[inert], 0, "a bad power-up fell on a No Bad News day")
-        XCTAssertEqual(noBad[giga], 5)
-        XCTAssertEqual(noBad[wipe], 5, "Wipe should fall on both")
+        XCTAssertEqual(noBad[giga], 5, "and a good one still has to")
+        XCTAssertEqual(noBad[wipe], 0, "a neutral one is not a good one")
 
         let noGood = table([.noGoodNews])
         XCTAssertEqual(noGood[giga], 0, "a good power-up fell on a No Good News day")
-        XCTAssertEqual(noGood[inert], 5)
-        XCTAssertEqual(noGood[wipe], 5, "Wipe should fall on both")
+        XCTAssertEqual(noGood[inert], 5, "and a bad one still has to")
+        XCTAssertEqual(noGood[wipe], 0, "a neutral one is not a bad one either")
+    }
+
+    /// Every neutral power-up, not only the two that are easy to name.
+    ///
+    /// The rule is written as "keep one side" rather than "ban the other two", so this asks
+    /// the neutral set itself - a power-up that becomes neutral later is covered without
+    /// anybody remembering to come back here.
+    func testNoNeutralPowerUpSurvivesEitherNewsDay() {
+        let names = LevelPackSetup().powerUpNameArray
+        for twist in [DailyTwist.noGoodNews, .noBadNews] {
+            let scene = scene([twist])
+            scene.powerUpProbArray = Array(repeating: 5, count: names.count)
+            scene.applyDailyEconomyTwists()
+
+            for index in GameScene.endlessIINeutralPowerUps where index < names.count {
+                XCTAssertEqual(scene.powerUpProbArray[index], 0,
+                               "\(names[index]) is neutral and fell on a \(twist.displayName) "
+                               + "day, which only offers one side")
+            }
+        }
+    }
+
+    /// And the side each day *does* keep is untouched, or the twist is just No Power-Ups.
+    func testTheKeptSideIsLeftAlone() {
+        let names = LevelPackSetup().powerUpNameArray
+        for (twist, kept) in [(DailyTwist.noGoodNews, GameScene.endlessIIHarmfulPowerUps),
+                              (.noBadNews, GameScene.endlessIIBeneficialPowerUps)] {
+            let scene = scene([twist])
+            scene.powerUpProbArray = Array(repeating: 5, count: names.count)
+            scene.applyDailyEconomyTwists()
+
+            let surviving = kept.filter { $0 < names.count && scene.powerUpProbArray[$0] == 5 }
+            XCTAssertFalse(surviving.isEmpty,
+                           "\(twist.displayName) banned its own side as well, which would "
+                           + "leave a day with nothing to drop")
+        }
     }
 }
 

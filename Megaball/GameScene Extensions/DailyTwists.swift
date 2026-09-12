@@ -246,22 +246,38 @@ extension GameScene {
         }
         if session.has(.noGoodNews) {
             for index in powerUpProbArray.indices
-            where GameScene.endlessIIBeneficialPowerUps.contains(index) {
+            where GameScene.endlessIIHarmfulPowerUps.contains(index) == false {
                 powerUpProbArray[index] = 0
             }
         }
         if session.has(.noBadNews) {
             for index in powerUpProbArray.indices
-            where GameScene.endlessIIHarmfulPowerUps.contains(index) {
+            where GameScene.endlessIIBeneficialPowerUps.contains(index) == false {
                 powerUpProbArray[index] = 0
             }
         }
-        // **Each bans one side and leaves the middle alone** (round 229). No Good News used to
-        // zero everything that was not *harmful*, which is not the same sentence: it took the
-        // neutral ones down with the good, so a Mystery could not fall on a bad-news day and a
-        // Wipe could fall on neither. The workbook says it plainly - No Bad News disallows the
-        // -0.1 chips, No Good News disallows the +0.1 chips - and a power-up with no chip is
-        // disallowed by neither
+        // **Each day keeps one side and nothing else** (James, round 315: "the yellow ones are
+        // considered neither good nor bad. For twist days where it's good or bad power-ups
+        // only, these shouldn't show up at all for either").
+        //
+        // **This reverses round 229 on his word**, and that round is worth reading before
+        // changing it back: it moved *from* this rule *to* the other one, quoting him on Wipe
+        // - "it can be considered a neutral power-up as it depends what power-ups are enabled.
+        // So it can fall during both no good power-ups and no bad power-ups twists". The
+        // reasoning was that which side a Wipe falls on is a property of the day rather than
+        // of the power-up.
+        //
+        // What has changed since is the artwork. The power-up icons are colour-coded now -
+        // green good, red bad, yellow neither - so neutrality is a thing the player can see
+        // on the badge, and a day that says "Bad power-ups only" showing a yellow one reads as
+        // the twist failing rather than as a subtlety. The screens have been promising this
+        // wording all along: `.noGoodNews` describes itself as "Bad power-ups only" and
+        // `.noBadNews` as "Good power-ups only", which is what this now does and is not what
+        // round 229 did.
+        //
+        // Written as "keep one side" rather than "ban two", so a fourth category invented
+        // later is excluded by default rather than silently allowed - which is the shape of
+        // the fault round 229 was fixing in the first place
         if session.has(.landslide) {
             powerUpProbArray[23] = 0  // Quicksand
             // The workbook's own disallowed list. Quicksand moves the field down and leaves it
