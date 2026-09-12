@@ -1,0 +1,23 @@
+{
+  "images": [
+    {
+      "filename": "BrickPortalConvex0.png",
+      "idiom": "universal",
+      "scale": "1x"
+    },
+    {
+      "filename": "BrickPortalConvex0@2x.png",
+      "idiom": "universal",
+      "scale": "2x"
+    },
+    {
+      "filename": "BrickPortalConvex0@3x.png",
+      "idiom": "universal",
+      "scale": "3x"
+    }
+  ],
+  "info": {
+    "author": "xcode",
+    "version": 1
+  }
+}

@@ -1,8 +1,23 @@
 {
-  "images" : [
-    { "filename" : "PowerUpLaserBeam.png", "idiom" : "universal", "scale" : "1x" },
-    { "filename" : "PowerUpLaserBeam@2x.png", "idiom" : "universal", "scale" : "2x" },
-    { "filename" : "PowerUpLaserBeam@3x.png", "idiom" : "universal", "scale" : "3x" }
+  "images": [
+    {
+      "filename": "PowerUpLaserBeam.png",
+      "idiom": "universal",
+      "scale": "1x"
+    },
+    {
+      "filename": "PowerUpLaserBeam@2x.png",
+      "idiom": "universal",
+      "scale": "2x"
+    },
+    {
+      "filename": "PowerUpLaserBeam@3x.png",
+      "idiom": "universal",
+      "scale": "3x"
+    }
   ],
-  "info" : { "author" : "xcode", "version" : 1 }
+  "info": {
+    "author": "xcode",
+    "version": 1
+  }
 }
