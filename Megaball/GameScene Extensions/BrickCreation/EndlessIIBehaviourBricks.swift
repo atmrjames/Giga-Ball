@@ -1383,39 +1383,50 @@ extension GameScene {
         // child at -0.1 lands at 0.9 - under its own brick and over the field behind it
 
         let cell = endlessIIFieldSize(of: brick)
-        let margin = GameScene.portalGlowMargin
+        let scale = GameScene.portalGlowScale(for: endlessIISizeOf(brick))
         glow.texture = endlessIIShown(texture, on: brick)
-        glow.size = CGSize(width: cell.width + margin.width,
-                           height: cell.height + margin.height)
+        glow.size = CGSize(width: cell.width*scale.width, height: cell.height*scale.height)
         glow.position = endlessIIBrickCentre(of: brick)
-        // **A halo reaches past the brick, so it cannot be sized to the cell.** The first
-        // version was, and the render showed the result: six Portals with no visible glow at
-        // all, because the whole halo had been squashed into the brick's own footprint and was
-        // hidden behind it. See `portalGlowMargin` for where the extra comes from
+        // **A halo reaches past the brick, so it cannot be sized to the cell**, and it reaches
+        // past it *proportionally* rather than by a fixed amount. Sized to the cell the whole
+        // halo hid behind the brick; sized to the cell plus twenty points it was right on one
+        // device and wrong on every other. See `portalGlowScale`
         glow.xScale = (brick.endlessIIFaceMirrored ?? false) ? -1 : 1
         glow.yScale = (brick.endlessIIFaceFlipped ?? false) ? -1 : 1
         // Through `endlessIIShown`, so the glow drains with the brick while the Portal is
         // cooling rather than staying lit under a grey brick (round 274)
     }
 
-    /// How far a Portal's glow reaches past the brick, in points.
+    /// **How much bigger a Portal's glow is than its brick, as a ratio** - not as a margin.
     ///
-    /// **Measured off the two pictures rather than typed.** James drew every glow on a canvas
-    /// twenty points wider and twenty points taller than the brick it belongs to - true of all
-    /// three sizes, the oblong, the square and the Big - so the margin is the difference
-    /// between the plain pair and nothing else has to know the number. Redraw the glows
-    /// larger and the halo grows with them.
+    /// James, round 316: "the portal brick glows are 20 points larger on purpose. At the same
+    /// scale, they will show whilst placed under the portal bricks. Do not scale them down."
     ///
-    /// Zero where either picture is missing, which sizes the glow to the cell: no halo rather
-    /// than a halo of some invented size.
-    static let portalGlowMargin: CGSize = {
-        guard UIImage(named: portalBrickArtName) != nil,
-              UIImage(named: portalBrickArtName + "Glow") != nil else { return .zero }
-        let brick = SKTexture(imageNamed: portalBrickArtName).size()
-        let glow = SKTexture(imageNamed: portalBrickArtName + "Glow").size()
-        return CGSize(width: max(0, glow.width - brick.width),
-                      height: max(0, glow.height - brick.height))
-    }()
+    /// Round 315b read that as a fixed twenty points and added it to the cell, which is right
+    /// on exactly one device: the one whose cell happens to be the size the art was drawn at.
+    /// A brick is scaled to its cell, and "at the same scale" means the glow is scaled by the
+    /// same factor - so on a phone with a smaller cell the halo shrinks *with* the brick
+    /// rather than staying twenty points proud of it, and on a larger one it grows.
+    ///
+    /// **The ratio is not one number, which is why it is asked per size.** The oblong pair is
+    /// 1.357 by 1.714, the square 1.357 both ways and the Big 1.179 by 1.357 - a halo of the
+    /// same absolute thickness around bricks of three different shapes. Asked of the pair that
+    /// matches the brick's own size, and the shape does not come into it: every normal-size
+    /// Portal picture is drawn on the same canvas, so a wedge and a dome share the oblong's
+    /// ratio.
+    ///
+    /// One-to-one where either picture is missing, which sizes the glow to the cell - no halo
+    /// showing rather than a halo of some invented size.
+    static func portalGlowScale(for size: BrickSize) -> CGSize {
+        let base = portalBrickArtName + artSuffix(for: size)
+        guard UIImage(named: base) != nil, UIImage(named: base + "Glow") != nil else {
+            return CGSize(width: 1, height: 1)
+        }
+        let brick = SKTexture(imageNamed: base).size()
+        let glow = SKTexture(imageNamed: base + "Glow").size()
+        guard brick.width > 0, brick.height > 0 else { return CGSize(width: 1, height: 1) }
+        return CGSize(width: glow.width/brick.width, height: glow.height/brick.height)
+    }
 
     /// Greys a Portal out, or brings it back.
     ///

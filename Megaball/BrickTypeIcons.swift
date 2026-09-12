@@ -248,14 +248,18 @@ enum BrickTypeIcons {
 
         case .portal:
             if let drawn = artwork(GameScene.portalBrickArtName) {
-                drawn.draw(in: frame)
+                drawPortalGlow(behind: drawn, in: context)
                 return
             }
-            // James's picture since round 273, which has the rings in it - so the page shows
-            // what the field shows rather than a second drawing of the same idea. The two
-            // lines below are what a Portal was before it and what it still is anywhere the
-            // picture is missing: left untinted, as in the game, because the Indestructible
-            // artwork is dark and any colour put through it comes out muddy
+            // **The glow is the identity now** (James, round 316: "make sure the info screens
+            // are updated with the new graphics"). Round 315's artwork took the rings out of
+            // the picture - "the glow and colour of the bricks should be enough indication" -
+            // so a page that drew the brick alone would show a lime oblong with nothing to say
+            // what it is, which is the one thing this page exists to do.
+            //
+            // The two lines below are what a Portal was before that picture and what it still
+            // is anywhere the picture is missing: left untinted, as in the game, because the
+            // Indestructible artwork is dark and any colour put through it comes out muddy
             artwork("BrickIndestructible2")?.draw(in: frame)
             drawPortalRings(in: frame, context: context)
             return
@@ -339,6 +343,28 @@ enum BrickTypeIcons {
             break
         }
         return path
+    }
+
+    /// Draws a Portal brick with its halo, at the proportion the two are drawn at.
+    ///
+    /// **The glow takes the whole canvas and the brick is inset to suit**, rather than the
+    /// brick keeping the size every other icon's does. A full-size halo around a full-size
+    /// brick is 141 by 89 on a 120 by 80 canvas, so something has to give, and it cannot be
+    /// the halo: clipping the outside off a glow leaves a hard edge where its whole character
+    /// is the soft one. The brick comes out about fifteen per cent smaller than its neighbours
+    /// on the page, which is a price worth paying to show the thing that says "Portal".
+    ///
+    /// The ratio is `GameScene.portalGlowScale` - the same arithmetic the field uses, asked of
+    /// the same pictures - so if the glows are ever redrawn the page follows without an edit.
+    private static func drawPortalGlow(behind brick: UIImage, in context: CGContext) {
+        let scale = GameScene.portalGlowScale(for: .normal)
+        guard scale.width > 0, scale.height > 0 else { return brick.draw(in: centred(feature)) }
+
+        let halo = CGRect(origin: .zero, size: canvas)
+        let inset = CGSize(width: canvas.width/scale.width, height: canvas.height/scale.height)
+
+        artwork(GameScene.portalBrickArtName + "Glow")?.draw(in: halo)
+        brick.draw(in: centred(inset))
     }
 
     private static func drawPortalRings(in frame: CGRect, context: CGContext) {

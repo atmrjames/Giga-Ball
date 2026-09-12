@@ -247,3 +247,57 @@ final class BrickTypeCatalogueTests: XCTestCase {
         XCTAssertNotEqual(BrickTypeCatalogue.styles(fitting: .big), "Any")
     }
 }
+
+/// **The information page's brick pictures, looked at** (round 316).
+///
+/// James: "make sure the info screens are updated with the new graphics." Most of the page
+/// derives its pictures from the catalogue and so followed round 315's delivery on its own -
+/// the power-up badges, the twist badges, the wrecking balls. The Portal did not, and could
+/// not: its identity moved out of the brick and into the glow behind it, so a page drawing the
+/// brick alone shows a lime oblong that says nothing.
+///
+/// Whether the rest of the page still reads is not a thing an assertion can answer, so this
+/// draws every picture on it and prints where to find them.
+final class BrickInfoPageRenderTests: XCTestCase {
+
+    func testEveryInfoPagePictureCanBeLookedAt() throws {
+        var art: [(String, BrickTypeArt)] = []
+        for behaviour in [EndlessIIBehaviour.standard, .multiHit, .indestructibleOnce,
+                          .indestructibleAlways, .invisible] {
+            art.append(("\(behaviour)", .behaviour(behaviour)))
+        }
+        for style in EndlessIIStyle.allCases { art.append((style.rawValue, .style(style))) }
+        for size in BrickSize.allCases { art.append(("\(size)", .size(size))) }
+        art.append(("power-up", .powerUpBrick))
+
+        let columns = 6
+        let cell = BrickTypeIcons.canvas
+        let pad: CGFloat = 8, label: CGFloat = 14
+        let rows = (art.count + columns - 1)/columns
+        let size = CGSize(width: CGFloat(columns)*(cell.width + pad) + pad,
+                          height: CGFloat(rows)*(cell.height + label + pad) + pad)
+
+        let renderer = UIGraphicsImageRenderer(size: size)
+        let image = renderer.image { context in
+            UIColor(red: 0.15, green: 0.04, blue: 0.24, alpha: 1).setFill()
+            context.fill(CGRect(origin: .zero, size: size))
+
+            for (index, entry) in art.enumerated() {
+                let column = index % columns, row = index/columns
+                let x = pad + CGFloat(column)*(cell.width + pad)
+                let y = pad + CGFloat(row)*(cell.height + label + pad)
+                BrickTypeIcons.image(for: entry.1)
+                    .draw(in: CGRect(x: x, y: y, width: cell.width, height: cell.height))
+                (entry.0 as NSString).draw(
+                    at: CGPoint(x: x, y: y + cell.height),
+                    withAttributes: [.foregroundColor: UIColor(white: 0.75, alpha: 1),
+                                     .font: UIFont.systemFont(ofSize: 9)])
+            }
+        }
+
+        let file = URL(fileURLWithPath: NSTemporaryDirectory())
+            .appendingPathComponent("brick-info-page.png")
+        try XCTUnwrap(image.pngData()).write(to: file)
+        print("\n  Every picture on the brick information page: \(file.path)\n")
+    }
+}

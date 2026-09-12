@@ -1222,6 +1222,12 @@ still recognisably a multi-hit - and a drawn-per-combination set has to keep tha
 times by hand. §7.3's rule that a style must not rely on colour alone is also easier to hold
 with a mark than with a hue.
 
+**Closed for now** (James, round 316: "let's leave the per-style bricks as they currently are.
+I won't make any new artwork for these"). The tint-plus-glyph stays, and this section is kept
+as the answer rather than as a queue entry, so the next person to wonder what it would cost
+does not have to work it out again. `PerStyleArtCostTests` keeps the number honest if the
+compatibility rules move under it.
+
 ### Brick styles — the placeholders as they stand
 
 The nine styles and two sizes wear ordinary brick artwork tinted a distinct colour with a
@@ -1274,19 +1280,16 @@ mode's palette. These can ship as they are or be replaced piecemeal - none block
 
 Three things, all small and all recorded so they are asked for rather than rediscovered:
 
-- **`retroPaddleTexturePortal` and `retroLasersPortal`** - the *unshaped* retro paddle's
-  Portal colours. All five shaped variants arrived; the plain pair did not, and a paddle has
-  no shape unless a shape power-up is running, so this is the common case rather than an edge
-  one. `endlessIIRetroArt` asks for the Portal picture and falls back, so the day they arrive
-  is a no-code day; `testAnUnshapedRetroPaddleHasNoPortalArtYet` fails when they do, which is
-  the reminder to strike this entry.
-- **`DroughtTwistIcon`**, still. Round 314g held it back for square corners; the redraw has
-  rounded corners and a contained glyph but keeps a pale grey plate behind the tile -
-  rgb(224,224,224) at 66/255 in all four corners where every other badge is 0.
-- **The Portal Paddle's tint is still blue.** Not an asset, a decision: `portalBlueColour`
-  paints every non-retro paddle while the power-up runs, and the new artwork has moved the
-  Portal identity to the Giga-Ball lime - the bricks, both glows and the retro paddle are all
-  lime now, and the tint is the one blue thing left. One constant, James's call.
+~~- **`retroPaddleTexturePortal` and `retroLasersPortal`** - the *unshaped* retro paddle's
+  Portal colours.~~ **Supplied, round 316**, and the test that was watching for them failed on
+  the way in, which is what it was for. Delivered as `retroPaddlePortal`; imported under the
+  name the code looks for, since it is 273x78 and so belongs to `retroPaddleTexture` rather
+  than to the 225x30 `retroPaddle`.
+~~- **`DroughtTwistIcon`**, still.~~ **Fixed, round 316** - corners fully transparent, the same
+  as every other badge, and round 314g's corner test passes it.
+~~- **The Portal Paddle's tint is still blue.**~~ **Gone, round 316** (James: "I don't think the
+  paddles require a tint any more. The glow effect is enough"). Magnetism keeps its red and is
+  now the only tinted paddle power-up, which is right: it has no glow drawn for it.
 
 ### Twist badges
 

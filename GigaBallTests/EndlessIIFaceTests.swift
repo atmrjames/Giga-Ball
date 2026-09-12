@@ -1309,19 +1309,58 @@ final class PortalGlowTests: XCTestCase {
 
         XCTAssertGreaterThan(glow.size.width, cell.width, "a halo has to show past the brick")
         XCTAssertGreaterThan(glow.size.height, cell.height)
-        XCTAssertEqual(glow.size.width - cell.width, GameScene.portalGlowMargin.width,
-                       accuracy: 0.001, "and by the margin James drew, not an invented one")
+        XCTAssertEqual(glow.size.width/cell.width,
+                       GameScene.portalGlowScale(for: .normal).width, accuracy: 0.001,
+                       "and by the proportion James drew, not an invented one")
     }
 
-    /// And that margin is read off the pictures rather than typed into the code.
-    func testTheMarginComesFromTheArtwork() {
-        XCTAssertGreaterThan(GameScene.portalGlowMargin.width, 0,
-                             "zero would mean one of the two pictures is missing, and a glow "
-                             + "sized to the cell is a glow nobody can see")
-        XCTAssertEqual(GameScene.portalGlowMargin.width,
+    /// **The halo scales with the brick rather than standing a fixed distance off it.**
+    ///
+    /// James, round 316: "the portal brick glows are 20 points larger on purpose. At the same
+    /// scale, they will show whilst placed under the portal bricks. Do not scale them down."
+    /// Round 315b read that as twenty points and added them to the cell, which is right on
+    /// exactly one device - the one whose cell is the size the art was drawn at. This is the
+    /// assertion that would have caught it: the same brick in two different cells keeps the
+    /// same proportion between halo and brick.
+    func testTheHaloKeepsItsProportionAtAnyCellSize() throws {
+        var measured: [CGFloat] = []
+        for width in [36.0, 56.0, 90.0] as [CGFloat] {
+            let scene = self.scene()
+            scene.brickWidth = width
+            scene.brickHeight = width/2
+            let brick = SKSpriteNode(texture: scene.brickIndestructible2Texture,
+                                     size: CGSize(width: width, height: width/2))
+            scene.addChild(brick)
+            scene.makePortal(brick)
+
+            let glow = try XCTUnwrap(brick.childNode(withName: GameScene.portalGlowName)
+                                        as? SKSpriteNode)
+            measured.append(glow.size.width/scene.endlessIIFieldSize(of: brick).width)
+        }
+        for ratio in measured {
+            XCTAssertEqual(ratio, measured[0], accuracy: 0.001,
+                           "a fixed margin would give three different answers here")
+        }
+    }
+
+    /// And that proportion is read off the pictures rather than typed into the code.
+    func testTheScaleComesFromTheArtwork() {
+        XCTAssertGreaterThan(GameScene.portalGlowScale(for: .normal).width, 1,
+                             "one would mean a picture is missing, and a glow sized to the "
+                             + "cell is a glow nobody can see")
+        XCTAssertEqual(GameScene.portalGlowScale(for: .normal).width,
                        SKTexture(imageNamed: "BrickPortalGlow").size().width
-                           - SKTexture(imageNamed: "BrickPortal").size().width,
+                           / SKTexture(imageNamed: "BrickPortal").size().width,
                        accuracy: 0.001)
+    }
+
+    /// Each size asks its own pair, because the three are not drawn to one ratio.
+    func testEachBrickSizeHasItsOwnProportion() {
+        let normal = GameScene.portalGlowScale(for: .normal)
+        let square = GameScene.portalGlowScale(for: .square)
+        XCTAssertNotEqual(normal.height, square.height, accuracy: 0.001,
+                          "an oblong and a square carry the same thickness of halo, which is "
+                          + "two different ratios - one number for both puts one of them wrong")
     }
 
     /// Centred on the brick's *drawing*, which is not the same as its node.

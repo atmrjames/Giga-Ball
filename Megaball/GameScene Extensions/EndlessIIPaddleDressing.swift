@@ -85,31 +85,45 @@ extension GameScene {
     /// both names rather than renamed, so that if a square-themed glow is ever drawn this does
     /// not quietly take its place.
     func endlessIIPaddleGlowTexture() -> SKTexture? {
-        let shape = endlessIIPaddleSurface.flatMap { endlessIIPaddleShapeSuffix($0) }
-        let names = shape.map { ["regularPaddle\($0)Glow"] }
-            ?? ["regularPaddleGlow", "squarePaddleGlow"]
-
-        for name in names where UIImage(named: name) != nil {
-            return SKTexture(imageNamed: name)
-        }
-        return nil
-        // A shape with no glow drawn - Jagged, which has no paddle picture either - answers
-        // nil and wears no halo, rather than borrowing the plain one and sitting wrong
+        endlessIIPaddleGlowArt().map { SKTexture(imageNamed: $0.glow) }
     }
 
-    /// How far the paddle's glow reaches past it, in points.
+    /// The glow picture for the paddle's current shape, and the paddle picture it was drawn
+    /// against.
     ///
-    /// Measured off the pair rather than typed, exactly as `portalGlowMargin` is: James drew
-    /// every glow in this delivery twenty points wider and taller than the thing it belongs
-    /// to, bricks and paddles alike.
-    static let paddleGlowMargin: CGSize = {
-        guard UIImage(named: "squarePaddle") != nil,
-              UIImage(named: "squarePaddleGlow") != nil else { return .zero }
-        let paddle = SKTexture(imageNamed: "squarePaddle").size()
-        let glow = SKTexture(imageNamed: "squarePaddleGlow").size()
-        return CGSize(width: max(0, glow.width - paddle.width),
-                      height: max(0, glow.height - paddle.height))
-    }()
+    /// The pair travels together because the second is what gives the first its scale - see
+    /// `endlessIIPaddleGlowScale`. Nil for a shape with no glow drawn, which is Jagged, the one
+    /// shape with no paddle picture either: no halo rather than the plain one sitting wrong.
+    func endlessIIPaddleGlowArt() -> (paddle: String, glow: String)? {
+        let shape = endlessIIPaddleSurface.flatMap { endlessIIPaddleShapeSuffix($0) }
+        let pairs = shape.map { [("regularPaddle\($0)", "regularPaddle\($0)Glow")] }
+            ?? [("regularPaddle", "regularPaddleGlow"), ("squarePaddle", "squarePaddleGlow")]
+
+        for (paddle, glow) in pairs
+        where UIImage(named: paddle) != nil && UIImage(named: glow) != nil {
+            return (paddle, glow)
+        }
+        return nil
+    }
+
+    /// **How much bigger the paddle's glow is than the paddle, as a ratio.**
+    ///
+    /// James, round 316: "same with the paddle portal glows" - do not scale them down, keep
+    /// them at the same scale as the thing they sit behind. A paddle is stretched to whatever
+    /// width Expand and Shrink leave it and to `paddleHeight` vertically, so the halo has to be
+    /// stretched by the same factors or it fits at one size only.
+    ///
+    /// **Asked per shape**, because the shaped paddle pictures are half as tall again as the
+    /// plain one while their glows grow by the same absolute amount: the plain pair is 1.267 by
+    /// 3.0 and the convex 1.267 by 2.333. One ratio for all of them would put a dome's halo
+    /// half a paddle too high.
+    func endlessIIPaddleGlowScale() -> CGSize {
+        guard let art = endlessIIPaddleGlowArt() else { return CGSize(width: 1, height: 1) }
+        let paddle = SKTexture(imageNamed: art.paddle).size()
+        let glow = SKTexture(imageNamed: art.glow).size()
+        guard paddle.width > 0, paddle.height > 0 else { return CGSize(width: 1, height: 1) }
+        return CGSize(width: glow.width/paddle.width, height: glow.height/paddle.height)
+    }
 
     /// Puts it behind the paddle while the Portal Paddle runs, and takes it away after.
     ///
@@ -133,9 +147,10 @@ extension GameScene {
             return made
         }()
 
+        let scale = endlessIIPaddleGlowScale()
         glow.texture = texture
-        glow.size = CGSize(width: paddle.size.width + GameScene.paddleGlowMargin.width,
-                           height: paddle.size.height + GameScene.paddleGlowMargin.height)
+        glow.size = CGSize(width: paddle.size.width*scale.width,
+                           height: paddle.size.height*scale.height)
         glow.position = .zero
         // Centred on the paddle node, which is where the paddle's own picture is drawn - and
         // a split paddle keeps its full span (round 313s), so one halo across the whole of it
@@ -143,14 +158,19 @@ extension GameScene {
     }
 
     private func dressEndlessIIPaddle() {
-        let tint: UIColor?
-        if endlessIIPortalPaddleClock.isRunning {
-            tint = GameScene.portalBlueColour
-        } else if endlessIIMagnetismClock.isRunning {
-            tint = GameScene.endlessIIMagnetColour
-        } else {
-            tint = nil
-        }
+        let tint: UIColor? = endlessIIMagnetismClock.isRunning
+            ? GameScene.endlessIIMagnetColour : nil
+        // **The Portal Paddle is no longer tinted** (James, round 316: "I don't think the
+        // paddles require a tint any more. The glow effect is enough").
+        //
+        // It wore `portalBlueColour` from the round it was built, and round 315's artwork is
+        // what made that wrong rather than merely unnecessary: the Portal identity moved to
+        // the Giga-Ball lime - the bricks, the brick glows, the paddle glow and the retro
+        // paddle's own variant are all lime now - so the blue was the one thing left saying a
+        // different colour, and a lime halo around a blue paddle read as two power-ups.
+        //
+        // Magnetism keeps its tint, and is now the only thing here that has one. It has no
+        // glow drawn for it, and red is the whole of how a magnet paddle says so.
 
         let halves = paddle.children.filter { $0.name == GameScene.doublePaddleHalfName }
         guard halves.isEmpty else {

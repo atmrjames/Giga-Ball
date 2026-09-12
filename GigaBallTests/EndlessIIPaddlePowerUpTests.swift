@@ -5570,23 +5570,52 @@ final class PaddlePortalLookTests: XCTestCase {
         XCTAssertNil(glow.physicsBody, "a glow the ball can hit is a paddle bigger than it looks")
         XCTAssertLessThan(glow.zPosition, 0, "behind the paddle, not over it")
         XCTAssertEqual(glow.position, .zero, "centred on the paddle")
-        XCTAssertEqual(glow.size.width - scene.paddle.size.width,
-                       GameScene.paddleGlowMargin.width, accuracy: 0.001)
+        XCTAssertEqual(glow.size.width/scene.paddle.size.width,
+                       scene.endlessIIPaddleGlowScale().width, accuracy: 0.001)
 
         scene.paddle.size.width = 150
         scene.tickEndlessIIPaddleDressing()
-        XCTAssertEqual(try XCTUnwrap(self.glow(scene)).size.width - 150,
-                       GameScene.paddleGlowMargin.width, accuracy: 0.001,
-                       "an expanded paddle keeps its halo")
+        XCTAssertEqual(try XCTUnwrap(self.glow(scene)).size.width/150,
+                       scene.endlessIIPaddleGlowScale().width, accuracy: 0.001,
+                       "an expanded paddle keeps its halo in proportion rather than growing "
+                       + "away from it")
     }
 
-    /// The margin is measured off the artwork, like the bricks' is.
-    func testThePaddleGlowMarginComesFromTheArtwork() {
-        XCTAssertGreaterThan(GameScene.paddleGlowMargin.width, 0)
-        XCTAssertEqual(GameScene.paddleGlowMargin.width,
+    /// **The halo scales with the paddle** (James, round 316: "same with the paddle portal
+    /// glows"), which a fixed margin does not: a paddle is stretched to whatever Expand and
+    /// Shrink leave it, so a halo twenty points proud fits at one width only.
+    func testTheHaloKeepsItsProportionAtAnyPaddleWidth() throws {
+        let scene = self.scene()
+        scene.endlessIIPortalPaddleClock.collect(turns: 5)
+
+        var measured: [CGFloat] = []
+        for width in [50.0, 75.0, 140.0] as [CGFloat] {
+            scene.paddle.size.width = width
+            scene.tickEndlessIIPaddleDressing()
+            measured.append(try XCTUnwrap(glow(scene)).size.width/width)
+        }
+        for ratio in measured {
+            XCTAssertEqual(ratio, measured[0], accuracy: 0.001)
+        }
+    }
+
+    /// The proportion is measured off the artwork, like the bricks' is - and asked per shape,
+    /// because a shaped paddle is half as tall again while its halo grows by the same amount.
+    func testThePaddleGlowScaleComesFromTheArtwork() {
+        let scene = self.scene()
+        XCTAssertGreaterThan(scene.endlessIIPaddleGlowScale().width, 1)
+        XCTAssertEqual(scene.endlessIIPaddleGlowScale().width,
                        SKTexture(imageNamed: "squarePaddleGlow").size().width
-                           - SKTexture(imageNamed: "squarePaddle").size().width,
+                           / SKTexture(imageNamed: "squarePaddle").size().width,
                        accuracy: 0.001)
+
+        scene.endlessIIPaddleSurface = .convex
+        XCTAssertNotEqual(scene.endlessIIPaddleGlowScale().height,
+                          SKTexture(imageNamed: "squarePaddleGlow").size().height
+                              / SKTexture(imageNamed: "squarePaddle").size().height,
+                          accuracy: 0.001,
+                          "a dome's halo has its own proportion - one ratio for every shape "
+                          + "puts a dome's halo half a paddle too high")
     }
 
     // MARK: - The retro theme, which swaps its picture instead of being tinted
@@ -5623,29 +5652,44 @@ final class PaddlePortalLookTests: XCTestCase {
         XCTAssertNotEqual(art(scene.paddleRetroLaserTexture.texture), ordinary)
     }
 
-    /// **The plain pair is not drawn yet, and the fallback is the ordinary art.**
+    /// **The unshaped retro paddle takes its Portal art too**, which it could not in round
+    /// 315c.
     ///
-    /// `retroPaddleTexturePortal` and `retroLasersPortal` are missing from round 315's
-    /// delivery while all five shaped ones arrived, so an *unshaped* retro paddle running a
-    /// Portal Paddle keeps its usual colours. That is the common case rather than an edge one,
-    /// because a paddle has no shape unless a shape power-up is running.
-    ///
-    /// Asserted rather than left as a silence, and written so it fails the day the pictures
-    /// arrive - at which point this test is the reminder to strike the §8.5 entry.
-    func testAnUnshapedRetroPaddleHasNoPortalArtYet() {
-        XCTAssertNil(UIImage(named: "retroPaddleTexturePortal"),
-                     "if this now exists, delete this test and strike §8.5's entry")
-        XCTAssertNil(UIImage(named: "retroLasersPortal"))
+    /// The shaped five arrived first and the plain pair did not, so this test was written the
+    /// other way up - asserting the pictures were absent and the fallback held - with the note
+    /// "if this now exists, delete this test and strike §8.5's entry". They arrived in round
+    /// 316 and it failed, which is the reminder working. Turned over rather than deleted,
+    /// because the plain paddle is the common case: a paddle has no shape unless a shape
+    /// power-up is running.
+    func testAnUnshapedRetroPaddleTakesItsPortalArt() {
+        XCTAssertNotNil(UIImage(named: "retroPaddleTexturePortal"))
+        XCTAssertNotNil(UIImage(named: "retroLasersPortal"))
 
         let scene = self.scene(retro: true)
         scene.refreshEndlessIIRetroShapeDressing(nil)
-        let ordinary = art(scene.paddleRetroTexture.texture)
+        let ordinaryPaddle = art(scene.paddleRetroTexture.texture)
+        let ordinaryLasers = art(scene.paddleRetroLaserTexture.texture)
 
         scene.endlessIIPortalPaddleClock.collect(turns: 5)
         scene.refreshEndlessIIRetroShapeDressing(nil)
-        XCTAssertEqual(art(scene.paddleRetroTexture.texture), ordinary,
-                       "with no Portal picture drawn, the ordinary one stays - a missing "
-                       + "asset must not become a blank paddle")
+
+        XCTAssertNotEqual(art(scene.paddleRetroTexture.texture), ordinaryPaddle)
+        XCTAssertNotEqual(art(scene.paddleRetroLaserTexture.texture), ordinaryLasers)
+    }
+
+    /// And a shape with no Portal picture still falls back rather than going blank.
+    ///
+    /// Every shape has one drawn now, so this asks the fallback directly: the rule is that a
+    /// missing picture leaves the ordinary one, and a rule nothing exercises is a rule that
+    /// stops being true.
+    func testAMissingPortalPictureLeavesTheOrdinaryArt() {
+        let scene = self.scene(retro: true)
+        scene.endlessIIPortalPaddleClock.collect(turns: 5)
+
+        XCTAssertEqual(art(scene.endlessIIRetroArt("retroSticky", nil)),
+                       art(SKTexture(imageNamed: "retroSticky")),
+                       "no retroStickyPortal is drawn, and none is wanted - the band is the "
+                       + "sticky power-up's own colour")
     }
 
     /// The swap happens on the frame the clock turns over, not on an unrelated event.

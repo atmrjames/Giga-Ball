@@ -1,17 +1,17 @@
 {
   "images": [
     {
-      "filename": "DroughtTwistIcon.png",
+      "filename": "retroPaddleTexturePortal.png",
       "idiom": "universal",
       "scale": "1x"
     },
     {
-      "filename": "DroughtTwistIcon@2x.png",
+      "filename": "retroPaddleTexturePortal@2x.png",
       "idiom": "universal",
       "scale": "2x"
     },
     {
-      "filename": "DroughtTwistIcon@3x.png",
+      "filename": "retroPaddleTexturePortal@3x.png",
       "idiom": "universal",
       "scale": "3x"
     }
