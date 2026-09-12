@@ -6809,8 +6809,15 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	func powerUpIconReset(sender: String) {
 		// speed[2], paddle size[4], hide[16], sticky[6], gravity[7], giga[20], laser[22], size[26]
 		iconUnlockedBool = [totalStatsArray[0].powerUpUnlockedArray[2], totalStatsArray[0].powerUpUnlockedArray[4], totalStatsArray[0].powerUpUnlockedArray[16], totalStatsArray[0].powerUpUnlockedArray[6], totalStatsArray[0].powerUpUnlockedArray[7], totalStatsArray[0].powerUpUnlockedArray[20], totalStatsArray[0].powerUpUnlockedArray[22], totalStatsArray[0].powerUpUnlockedArray[26]]
-		for i in 1...iconArray.count {
-            let index = i-1
+		for index in iconArray.indices {
+			// **`indices` rather than `1...iconArray.count`** (round 319g). The tray is filled
+			// from the scene file during setup, so before that happens the array is empty and
+			// `1...0` traps - which is not reachable in the app, where the scene is always
+			// loaded first, and is reachable the moment anything drives a `GameScene` built in
+			// code. It cost a test fixture for the resume path, which is the one path round 311's
+			// coverage pass keeps naming and nothing in the suite can reach. Iterating the
+			// collection's own indices cannot trap, does nothing at all for an empty tray, and
+			// takes the `i-1` dance with it
 			if sender == "Pause" {
 				if iconArray[index].texture == iconLockedTexture {
 					if iconUnlockedBool[index] {
