@@ -77,10 +77,28 @@ enum BrickTypeIcons {
     /// Square, because the brick is: one cell across and two down (`BrickSize.square`), and the
     /// power-up icons are square too - so one side serves both and nothing is stretched.
     private static func drawPowerUpBrick() {
-        let side = min(canvas.height, canvas.width)*0.82
+        let side = min(canvas.height, canvas.width)*squareBrickShare
         let frame = centred(CGSize(width: side, height: side))
         artwork(genericPowerUpArtName)?.draw(in: frame)
     }
+
+    /// How much of the canvas a brick that is square *on screen* takes.
+    ///
+    /// James, round 317: "make the power-up brick and square brick larger so its scale matches
+    /// the other bricks."
+    ///
+    /// Both were drawn small for the same reason: every other picture on the page is an
+    /// oblong 104 by 52, and a square one cannot be that. Shown at the oblong's own scale a
+    /// square brick would be 52 by 104 - one cell across and two down - which is taller than
+    /// the 80-point canvas, so it had been shrunk until it fitted with room to spare. It now
+    /// takes as much of the canvas height as anything else takes of the width.
+    ///
+    /// **This is what the dashed reference cell used to be for**, and it is why removing it
+    /// from the Tiny brick in the same round is not a separate change. The row of sizes was a
+    /// comparison chart - a brick inside the cell it occupies, so the four could be read
+    /// against each other - and a comparison chart cannot also have its entries sized to look
+    /// right. James has asked for pictures of bricks, so that is what these are.
+    private static let squareBrickShare: CGFloat = 0.95
 
     // MARK: - Behaviours
 
@@ -238,12 +256,14 @@ enum BrickTypeIcons {
             return
 
         case .breathing:
-            // Caught mid-breath, with the cell it came from drawn round it: a brick smaller
-            // than the space it owns is the whole idea, and a shrunken brick alone in a
-            // frame would just read as a Tiny one
-            outline(frame, in: context)
-            let breath = frame.insetBy(dx: frame.width*0.22, dy: frame.height*0.22)
-            artwork("BrickNormal")?.tinted(tint).draw(in: breath)
+            // **Full size, and the cell outline is gone** (round 317). It was drawn mid-breath
+            // inside the cell it came from, because a brick smaller than the space it owns is
+            // the whole idea and a shrunken brick alone in a frame would just read as a Tiny
+            // one. The picture moves now - James: "can we make those bricks actually move in
+            // the table view and in the brick info pages to demonstrate how they actually
+            // behave" - so the shrinking is shown rather than implied, and an outline that
+            // breathed along with the brick would say the *cell* was changing size.
+            artwork("BrickNormal")?.tinted(tint).draw(in: frame)
             return
 
         case .portal:
@@ -385,23 +405,33 @@ enum BrickTypeIcons {
     // MARK: - Sizes
 
     private static func draw(_ size: BrickSize, in context: CGContext) {
-        // One cell, dashed, so the three pictures can be compared - a brick on its own says
-        // nothing about how much room it takes
-        let reference = centred(cell)
-        context.saveGState()
-        context.setStrokeColor(UIColor(white: 0.55, alpha: 0.9).cgColor)
-        context.setLineWidth(2)
-        context.setLineDash(phase: 0, lengths: [4, 4])
-        context.stroke(reference)
-        // Solid enough to survive being drawn at forty points across, which is all the row
-        // gives it - a one-point hairline at a third opacity disappeared entirely, and with
-        // it the only thing saying what a Tiny brick is small compared to
-        context.restoreGState()
+        if size != .tiny && size != .square {
+            // One cell, dashed, so the pictures can be compared - a brick on its own says
+            // nothing about how much room it takes
+            let reference = centred(cell)
+            context.saveGState()
+            context.setStrokeColor(UIColor(white: 0.55, alpha: 0.9).cgColor)
+            context.setLineWidth(2)
+            context.setLineDash(phase: 0, lengths: [4, 4])
+            context.stroke(reference)
+            // Solid enough to survive being drawn at forty points across, which is all the row
+            // gives it - a one-point hairline at a third opacity disappeared entirely
+            context.restoreGState()
+        }
+        // **Not on the Tiny one** (James, round 317: "remove the dotted line around the tiny
+        // brick"), and not on the Square one either, which is the same decision rather than an
+        // extra one: the Square brick is drawn to its own scale now (see `squareBrickShare`),
+        // so a cell drawn at the old scale beside it would be a measurement that is no longer
+        // true. The cell stays on Normal and Big, where it still is.
 
-        let brick = centred(CGSize(width: cell.width*size.scaleWide,
-                                   height: cell.height*size.scaleTall))
+        let brick = size == .square
+            ? centred(CGSize(width: canvas.height*squareBrickShare,
+                             height: canvas.height*squareBrickShare))
+            : centred(CGSize(width: cell.width*size.scaleWide,
+                             height: cell.height*size.scaleTall))
         // Per axis, since round 247: a Square brick is one cell across and two down, and a
-        // single scale would have drawn it as a Big one
+        // single scale would have drawn it as a Big one. Square takes the canvas now rather
+        // than the cell, for the reason `squareBrickShare` gives
 
         let drawn = size == .square ? "BrickNormal" + GameScene.squareArtSuffix : "BrickNormal"
         let picture = artwork(drawn) ?? artwork("BrickNormal")
@@ -474,6 +504,110 @@ enum BrickTypeIcons {
         case "BrickMultiHit3": return "RetroBrickMultiHit3"
         case "BrickMultiHit4": return "RetroBrickMultiHit4"
         default: return nil
+        }
+    }
+}
+
+// MARK: - Bricks that move
+
+extension BrickTypeIcons {
+
+    /// **Shows a brick doing what it does**, on the list and on its own page.
+    ///
+    /// James, round 317: "for the movement actions, can we make those bricks actually move in
+    /// the table view and in the brick info pages to demonstrate how they actually behave?"
+    ///
+    /// Which is the answer to a problem the static pictures could only ever half solve. A
+    /// spinning brick was drawn at an angle, a flashing one at half opacity and a breathing one
+    /// shrunk inside its cell - each a single frame standing in for a motion, and each needing
+    /// a caption to be read correctly. Five of them are motions, so five of them can simply be
+    /// performed.
+    ///
+    /// **Core Animation rather than `UIView.animate`**, because these run on cells that are
+    /// laid out, reused and scrolled: an animation on the layer's own presentation does not
+    /// fight Auto Layout, does not need undoing before the next layout pass, and goes away with
+    /// `removeAllAnimations` when the cell is handed to a different brick.
+    ///
+    /// **The timings are the game's own**, taken from the constants the field runs on rather
+    /// than chosen to look lively, so what the page shows is what the player will meet.
+    static func animate(_ view: UIView, as art: BrickTypeArt) {
+        view.layer.removeAnimation(forKey: motionKey)
+        guard case .style(let style) = art,
+              let motion = motion(for: style, size: view.bounds.size) else { return }
+        view.layer.add(motion, forKey: motionKey)
+    }
+
+    private static let motionKey = "brickMotion"
+
+    private static func motion(for style: EndlessIIStyle, size: CGSize) -> CAAnimation? {
+        switch style {
+        case .spinning:
+            let turn = CABasicAnimation(keyPath: "transform.rotation.z")
+            turn.fromValue = 0
+            turn.toValue = Double.pi*2
+            turn.duration = 2.6
+            turn.repeatCount = .infinity
+            turn.timingFunction = CAMediaTimingFunction(name: .linear)
+            return turn
+            // Round and round at one speed. A spinner in the field turns steadily, and an
+            // eased turn would read as something being thrown rather than something spinning
+
+        case .flashing:
+            let fade = CABasicAnimation(keyPath: "opacity")
+            fade.fromValue = 1
+            fade.toValue = 0.12
+            fade.duration = 0.7
+            fade.autoreverses = true
+            fade.repeatCount = .infinity
+            fade.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+            return fade
+
+        case .breathing:
+            let breath = CABasicAnimation(keyPath: "transform.scale")
+            breath.fromValue = 1
+            breath.toValue = 0.5
+            breath.duration = 1.1
+            breath.autoreverses = true
+            breath.repeatCount = .infinity
+            breath.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+            return breath
+            // Half a cell and back, which is §4.12's own range - "shrinks and swells where it
+            // stands, between half a cell and the whole of it"
+
+        case .moving:
+            let slide = CABasicAnimation(keyPath: "transform.translation.x")
+            slide.fromValue = -size.width*0.18
+            slide.toValue = size.width*0.18
+            slide.duration = 1.3
+            slide.autoreverses = true
+            slide.repeatCount = .infinity
+            slide.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+            return slide
+            // Side to side, and *not* the full width: a brick that left the frame would be a
+            // picture of an empty box for half of every cycle
+
+        case .gravity:
+            let fall = CAKeyframeAnimation(keyPath: "transform.translation.y")
+            fall.values = [0, 0, size.height*0.42, size.height*0.42]
+            fall.keyTimes = [0, 0.28, 0.62, 1]
+            fall.duration = 1.9
+            fall.repeatCount = .infinity
+            fall.timingFunctions = [CAMediaTimingFunction(name: .linear),
+                                    CAMediaTimingFunction(name: .easeIn),
+                                    CAMediaTimingFunction(name: .linear)]
+            return fall
+            // **Falls rather than bobs.** The other four autoreverse, which is honest for
+            // them - a spin, a flash, a breath and a patrol all return the way they came. A
+            // gravity brick does not rise again, so it waits, drops with the easing of
+            // something accelerating, waits again and starts over. Reversing it would draw a
+            // brick floating upward, which is the one thing gravity does not do
+
+        case .rounded, .directional, .exploding, .spawner, .portal, .fixed,
+             .convex, .concave, .wedge, .diamond:
+            return nil
+            // The shapes and the on-hit actions are not motions. An exploding brick does
+            // something dramatic and does it *once*, when struck - a loop of it on a list would
+            // be a brick permanently detonating, which is a worse lie than a still picture
         }
     }
 }

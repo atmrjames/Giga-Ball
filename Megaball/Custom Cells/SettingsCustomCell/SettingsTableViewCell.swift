@@ -382,6 +382,15 @@ class SettingsTableViewCell: UITableViewCell {
         applyIconCorners(concentric: roundedLikeTheCard)
     }
 
+    /// Sets the row's picture moving, where the thing it shows is a motion.
+    ///
+    /// Round 317. Cleared and reapplied on every configure rather than only when it changes,
+    /// because a table cell is handed to a different row as you scroll and an animation left
+    /// running would be a Gravity brick falling on a Spawner's row.
+    func animateIcon(as art: BrickTypeArt) {
+        BrickTypeIcons.animate(iconImage, as: art)
+    }
+
     /// The row card's own corner radius, which anything cut to match has to know.
     static let cardCornerRadius: CGFloat = 14
 

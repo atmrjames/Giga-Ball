@@ -396,9 +396,13 @@ class ItemsStatsViewController: UIViewController, UITableViewDelegate, UITableVi
         if let entry = brickTypeEntry {
             titleLabel.text = entry.name.uppercased()
             powerUpImage.image = BrickTypeIcons.image(for: entry.art)
+            BrickTypeIcons.animate(powerUpImage, as: entry.art)
             descriptionLabel.text = entry.description
             powerUpImage.layer.masksToBounds = false
             return
+            // **The brick's own page moves too** (James, round 317: "in the table view and in
+            // the brick info pages"). This is the screen with room to watch it on, so a
+            // Gravity brick falling here is the clearest the page gets to say what it does
             // No shadow. The power-up icons are rounded squares that sit on the background,
             // and a shadow lifts them off it; a brick is drawn with room around it, so the
             // same shadow lands under nothing

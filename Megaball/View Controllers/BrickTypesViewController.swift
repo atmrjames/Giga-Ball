@@ -285,6 +285,10 @@ class BrickTypesViewController: UIViewController, UITableViewDelegate, UITableVi
         cell.settingDescription.text = entry.name
 
         cell.setIcon(BrickTypeIcons.image(for: entry.art), recolour: false)
+        cell.animateIcon(as: entry.art)
+        // The movement actions move on the list itself (round 317), which is where a player
+        // meets them first. `animateIcon` clears whatever the cell was doing before it, so a
+        // reused row does not keep a spin that belonged to another brick
         // Brick art carries its own colours - that is the whole point of the page
         cell.iconImage.backgroundColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 0)
         cell.iconImage.layer.cornerRadius = 0
@@ -351,6 +355,7 @@ class BrickTypesViewController: UIViewController, UITableViewDelegate, UITableVi
             let entry = sections[indexPath.section].entries[indexPath.item]
             square.show(name: entry.name, icon: BrickTypeIcons.image(for: entry.art),
                         unlocked: true, completed: false, recolour: false, nameSize: 11)
+            square.animateIcon(as: entry.art)
             // Always unlocked: brick types are not earned, they are met - the page's own
             // opening comment. Never ticked: there is nothing here to choose
             return square

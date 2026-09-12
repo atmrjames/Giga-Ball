@@ -76,11 +76,12 @@ final class BrickTypeCatalogueTests: XCTestCase {
         // neither
         let sections = BrickTypeCatalogue.sections
         XCTAssertEqual(sections.map(\.title),
-                       ["Classic Brick Types", "Endless Mayhem Brick Types",
-                        "Shapes", "Sizes", "Movement Actions", "On-Hit Actions"])
-        // Six since round 270: "Brick actions should be split into 2 categories" (James)
-        // The two "what is this brick" headings together at the top (James, round 238) -
-        // everything under them is a modifier of a brick rather than a kind of one
+                       ["Classic Brick Types", "Shapes", "Sizes",
+                        "Movement Actions", "On-Hit Actions"])
+        // Five since round 317, when James moved the Portal and the power-up brick out of
+        // their own "Endless Mayhem Brick Types" heading and into On-Hit Actions - which
+        // emptied that heading. Both are bricks you cannot tell apart until you strike them,
+        // which is what On-Hit Actions means
 
         XCTAssertEqual(BrickTypeCatalogue.allEntries.count,
                        sections.reduce(0) { $0 + $1.entries.count })
@@ -108,8 +109,11 @@ final class BrickTypeCatalogueTests: XCTestCase {
         XCTAssertEqual(movement.count + onHit.count, actions.count, "an action is in both")
         XCTAssertTrue(shapes.isDisjoint(with: actions))
         XCTAssertFalse(shapes.contains(.portal))
-        XCTAssertFalse(actions.contains(.portal))
-        XCTAssertEqual(shapes.count + actions.count + 1, EndlessIIStyle.allCases.count)
+        XCTAssertTrue(actions.contains(.portal),
+                      "Portal is an on-hit action since round 317, not a heading of its own")
+        XCTAssertEqual(shapes.count + actions.count, EndlessIIStyle.allCases.count,
+                       "every style is under exactly one heading, with none left over - the "
+                       + "spare used to be Portal, which had its own section")
 
         // And the shapes heading is the shapes: the four faces, plus Rounded, which the
         // workbook calls a shape and the game has always treated as one
@@ -207,11 +211,13 @@ final class BrickTypeCatalogueTests: XCTestCase {
         XCTAssertEqual(Set(BrickTypeCatalogue.movementOrder),
                        [.spinning, .flashing, .breathing, .moving, .gravity])
         XCTAssertEqual(Set(BrickTypeCatalogue.onHitOrder),
-                       [.fixed, .exploding, .spawner, .directional])
+                       [.fixed, .exploding, .spawner, .directional, .portal])
+        // Portal since round 317: a brick you cannot tell from an Indestructible until you
+        // strike it and it takes the ball, which is this heading's own sentence
 
-        // The power-up brick is the fifth on-hit one and is listed at the top of the page as a
-        // type in its own right, so it is not in the list - but it is on the page, and it is
-        // the one that already wears the overlay the others are waiting for
+        // The power-up brick is the sixth on-hit one and is not an `EndlessIIStyle`, so it is
+        // not in this list - it reaches the section through `onHitActions`, and it is the one
+        // that already wears the overlay the others are waiting for
         let named = BrickTypeCatalogue.allEntries.map(\.name)
         XCTAssertTrue(named.contains("Power-Up"))
     }

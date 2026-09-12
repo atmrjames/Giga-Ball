@@ -50,7 +50,6 @@ enum BrickTypeCatalogue {
     /// modify it: what shape, what size, what it does.
     static var sections: [Section] {
         [Section(title: "Classic Brick Types", entries: behaviours),
-         Section(title: "Endless Mayhem Brick Types", entries: newBrickTypes),
          Section(title: "Shapes", entries: shapes),
          Section(title: "Sizes", entries: sizes),
          Section(title: "Movement Actions", entries: movementActions),
@@ -138,7 +137,10 @@ enum BrickTypeCatalogue {
     /// The ones that only change how a brick looks or bounces first, then the ones that change
     /// what the field does. A player reading down the page meets the small ideas before the
     /// large ones, which is also the order a run introduces them in.
-    static let styleOrder: [EndlessIIStyle] = shapeOrder + actionOrder + [.portal]
+    static let styleOrder: [EndlessIIStyle] = shapeOrder + actionOrder
+    // Portal used to be added on the end, because it was the one style with a heading of its
+    // own. Round 317 put it in `onHitOrder` and it arrives through `actionOrder` now - naming
+    // it again here listed it twice, which the catalogue's own count test caught immediately
 
     /// What a brick is shaped like. Rounded leads, because it is the smallest departure from
     /// the oblong every brick has been since 2020, and Diamond comes last as the furthest
@@ -170,7 +172,18 @@ enum BrickTypeCatalogue {
     /// as a type in its own right - it is also the one that already wears its overlay, since
     /// the icon it carries is exactly the mark this category describes. It is Square-only, so
     /// its overlay only ever has to be drawn at those proportions.
-    static let onHitOrder: [EndlessIIStyle] = [.fixed, .directional, .exploding, .spawner]
+    static let onHitOrder: [EndlessIIStyle] = [.fixed, .directional, .exploding, .spawner,
+                                               .portal]
+    // **Portal joined them in round 317** (James: "move the power-up and portal bricks to the
+    // on-hit actions section of the table view"), and the power-up brick with it - see
+    // `onHitActions`. Both had a heading of their own, "Endless Mayhem Brick Types", on round
+    // 238's reasoning that a player who has just been hit by one is asking "what *was* that".
+    //
+    // They belong here on the same test this section already applies: these are the bricks
+    // that cannot be told apart until they are struck and run their action. A Portal takes the
+    // ball when hit and a power-up brick hands one over when hit, which is the heading's own
+    // sentence. That leaves the page with one "what is this brick" heading rather than two,
+    // and every Endless Mayhem addition filed under what it *does*
 
     /// **The workbook's own words** (James, round 291: "for the brick and power up info /
     /// details, use the information that's written in the document I shared previously. The
@@ -237,14 +250,14 @@ enum BrickTypeCatalogue {
 
     private static var movementActions: [Entry] { movementOrder.map(entry(for:)) }
 
-    private static var onHitActions: [Entry] { onHitOrder.map(entry(for:)) }
+    private static var onHitActions: [Entry] { onHitOrder.map(entry(for:)) + [powerUpBrick] }
+    // The power-up brick last, because it is the only one here that is not an `EndlessIIStyle`
+    // and the only one whose action is to give something rather than to do something
 
-    /// The two bricks Endless Mayhem adds, which are not a shape, a size or an action - they
-    /// are types in their own right, and they sit under the classic four for that reason.
-    ///
-    /// A player who has just been hit by one of these is asking "what *was* that", which is
-    /// the question the top of the page answers.
-    private static var newBrickTypes: [Entry] { [powerUpBrick, entry(for: .portal)] }
+    // The "Endless Mayhem Brick Types" heading is gone as of round 317, and with it the
+    // `newBrickTypes` list that held the Portal and the power-up brick. Both are under On-Hit
+    // Actions now - see `onHitOrder` for why that is the better home rather than merely a
+    // different one.
 
     private static func entry(for style: EndlessIIStyle) -> Entry {
         Entry(name: name(of: style),

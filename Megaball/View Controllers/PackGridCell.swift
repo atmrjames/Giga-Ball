@@ -241,6 +241,11 @@ final class PackGridCell: UICollectionViewCell {
         iconScaleConstraint = fresh
     }
 
+    /// Sets the square's picture moving, where the thing it shows is a motion (round 317).
+    func animateIcon(as art: BrickTypeArt) {
+        BrickTypeIcons.animate(icon, as: art)
+    }
+
     func show(name packName: String, icon packIcon: UIImage?,
               unlocked: Bool, completed: Bool, recolour: Bool = true,
               nameSize: CGFloat = 13, status statusNote: String = "") {
