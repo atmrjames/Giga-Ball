@@ -38,6 +38,29 @@ class AboutViewController: UIViewController, UICollectionViewDelegate, UICollect
     
     @IBOutlet var backButtonCollectionView: UICollectionView!
 
+    /// The version line, read off the bundle rather than typed into the storyboard.
+    ///
+    /// **It said "Giga-Ball 1.2 (3) - August 2026"** and nothing set it at runtime, so the
+    /// 1.3 release would have shipped an About screen claiming to be 1.2. Found in round 319d's
+    /// App Store readiness pass, which is the item this is exactly the shape of: not a bug
+    /// anything could fail on, just a fact about the app that stopped being true and had no
+    /// way of noticing.
+    ///
+    /// The month is gone rather than updated. Nothing in the bundle can supply it, so a typed
+    /// date is a second copy of a decision that goes stale on its own schedule - which is what
+    /// just happened. The version and the build number are the two things the bundle knows,
+    /// and they are now the two things this says.
+    private func showBuildNumber() {
+        let info = Bundle.main.infoDictionary
+        let version = info?["CFBundleShortVersionString"] as? String
+        let build = info?["CFBundleVersion"] as? String
+        guard let version else { return }
+        // Left alone if the bundle cannot answer, which leaves whatever the storyboard holds
+        // rather than putting an empty line or a "?" on a credits screen
+
+        buildLabel.text = build.map { "Giga-Ball \(version) (\($0))" } ?? "Giga-Ball \(version)"
+    }
+
     override func viewDidLoad() {
         super.viewDidLoad()
         installMenuNavigationSwipes()
@@ -59,6 +82,7 @@ class AboutViewController: UIViewController, UICollectionViewDelegate, UICollect
             addParallax()
         }
         addContactLinks()
+        showBuildNumber()
         backButtonCollectionView.reloadData()
         installReturnToGameButton()
         // The way back into a paused run, from wherever this screen was reached

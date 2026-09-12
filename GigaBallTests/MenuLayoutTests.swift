@@ -161,3 +161,60 @@ final class MenuLayoutTests: XCTestCase {
         }
     }
 }
+
+
+/// **What the About screen says the app is.**
+///
+/// Round 319d, from the App Store readiness pass. The version line was typed into the
+/// storyboard as "Giga-Ball 1.2 (3) - August 2026" and nothing set it at runtime, so the 1.3
+/// release would have shipped a credits screen claiming to be 1.2. Nothing could have failed
+/// on it: a label with the wrong words in it is not a bug, it is a fact about the app that
+/// stopped being true.
+///
+/// So the number is derived from the bundle now, and this reads it the same way to say so. It
+/// is a weak-looking test that earns its place: it fails the day somebody types a version back
+/// into a storyboard.
+final class AboutVersionTests: XCTestCase {
+
+    func testTheAboutScreenReadsTheVersionOffTheBundle() {
+        let board = UIStoryboard(name: "Main", bundle: Bundle(for: AboutViewController.self))
+        guard let about = board.instantiateViewController(withIdentifier: "aboutVC")
+                as? AboutViewController else {
+            return XCTFail("the About screen is reachable from the storyboard")
+        }
+        about.loadViewIfNeeded()
+
+        let info = Bundle.main.infoDictionary
+        let version = info?["CFBundleShortVersionString"] as? String ?? ""
+        XCTAssertFalse(version.isEmpty, "the bundle has a marketing version")
+
+        let shown = about.buildLabel.text ?? ""
+        XCTAssertTrue(shown.contains(version),
+                      "the About screen says \"\(shown)\" and the app is \(version)")
+        if let build = info?["CFBundleVersion"] as? String {
+            XCTAssertTrue(shown.contains(build),
+                          "and the build number: \"\(shown)\" against \(build)")
+        }
+    }
+
+    /// And it must not be carrying a hand-typed date again.
+    ///
+    /// The month went with the fix: nothing in the bundle can supply it, so a typed one is a
+    /// second copy of a decision that goes stale on a schedule of its own - which is exactly
+    /// what had happened. If James wants it back it needs a source, and this is the line that
+    /// will say so.
+    func testTheVersionLineHasNoTypedDateInIt() {
+        let board = UIStoryboard(name: "Main", bundle: Bundle(for: AboutViewController.self))
+        guard let about = board.instantiateViewController(withIdentifier: "aboutVC")
+                as? AboutViewController else { return }
+        about.loadViewIfNeeded()
+
+        let months = ["January", "February", "March", "April", "May", "June", "July",
+                      "August", "September", "October", "November", "December"]
+        let shown = about.buildLabel.text ?? ""
+        for month in months {
+            XCTAssertFalse(shown.contains(month),
+                           "\"\(shown)\" carries a month nothing keeps up to date")
+        }
+    }
+}

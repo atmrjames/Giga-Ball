@@ -133,9 +133,13 @@ final class GameCenterHandler: NSObject {
     ///
     /// Nil when it cannot be known - signed out, offline, the board not existing in App
     /// Store Connect yet, or the player holding no entry on it - and the screen simply says
-    /// nothing then. That last case is why Endless Mayhem needs no special handling on the
-    /// game-over screen: its boards do not exist, so the answer is nil and the line stays
-    /// off, exactly as §12.0 says it should until James creates them.
+    /// nothing then.
+    ///
+    /// This used to add that Endless Mayhem needed no special handling because its boards did
+    /// not exist. **They have existed since 21 August 2026**, when James created them, so that
+    /// sentence had been describing a previous state of the world for a month: a Mayhem run
+    /// now gets the same standing line as any other. The nil case still covers everything
+    /// above, which is the part that was doing the work.
     ///
     /// The field size comes from the *global* entry load rather than the by-player one,
     /// which is the only call that reports it (play-test round 126: "show the number of
