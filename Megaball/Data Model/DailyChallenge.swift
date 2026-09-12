@@ -955,11 +955,13 @@ enum DailyChallengeGenerator {
     /// the same few ideas: a third of the time it was offering none of them.
     ///
     /// **Five rather than the seven that one-day-in-fourteen works out at**, because the roll
-    /// is not the whole of it. A handful of days each year have no legal twist at all - every
-    /// candidate ruled out by the mode, the level or the pairing matrix - and those land plain
-    /// however the roll went. Measured over a year, five produces about one plain day in
-    /// fourteen and seven produced one in eleven. The gap is real rather than noise, so the
-    /// number compensates for it deliberately and says so here.
+    /// is not the whole of it and it undershoots in both directions. A handful of days each
+    /// year have no legal twist at all - every candidate ruled out by the mode, the level or
+    /// the pairing matrix - and those land plain however the roll went; and `stepped` re-rolls
+    /// a day that reads like the one before it, which is another draw at the same five.
+    /// Measured over a year of days **as `challenge(forKey:)` hands them out**, five produces
+    /// one plain day in thirteen. `DailyTwistMixTests` measures that rather than the raw draw,
+    /// which is the distinction its own comment exists to make.
     static let plainDayChance = 5
 
     /// How often a day wears a look - Monochromatic or the day's Theme.
@@ -973,8 +975,15 @@ enum DailyChallengeGenerator {
     ///
     /// Ninety rather than a hundred: "pretty much every day" is not every day, and a day that
     /// is *never* plain-looking has nothing to make the themed ones feel like anything. What
-    /// reaches the player is lower again - a look still has to survive the pools - so ninety
-    /// lands around three days in four.
+    /// reaches the player is lower again - a look still has to survive the pools and the
+    /// no-repeats rule - so ninety lands at about four days in five once the category is open.
+    ///
+    /// **It is open a month after `twistMixKey`, and that is deliberate rather than an
+    /// oversight.** The look category activates on 2026-11-01 and the new mix begins on
+    /// 2026-10-01, when `nerve` and `tempo` do. October therefore runs the new mix with the
+    /// look draw finding nothing, which costs that month its themes and gains it the rest of
+    /// the change a month earlier. Moving one date to meet the other would trade a month of
+    /// better days for a tidier pair of constants.
     static let lookChance = 90
 
     /// How often a day that already has a look takes two more twists rather than one.

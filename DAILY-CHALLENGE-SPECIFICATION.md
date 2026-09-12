@@ -115,7 +115,9 @@ Each day's challenge is drawn from weighted pools — but drawn **deterministica
 date**, so every device computes the same challenge with no server.
 
 - **Seed:** the UTC date as `yyyymmdd`, mixed through a fixed 64-bit hash (SplitMix64). The
-  challenge is `generate(seed:)` — a pure function returning a frozen `ChallengeDefinition`.
+  challenge is a pure function of that seed, returning a frozen `DailyChallenge`; as built the
+  entry point is `DailyChallengeGenerator.challenge(forKey:)` over
+  `rawChallenge(forKey:)`.
 - **A private PRNG, never Swift's.** `SystemRandomNumberGenerator` is not stable across
   devices or OS versions, and `shuffled()`/`randomElement()` without an explicit generator
   use it. The generator is our own seeded implementation with its own tests pinning exact
@@ -163,12 +165,15 @@ Drawn in this order, each from the day's PRNG stream:
      most of what made the daily feel like it was cycling the same few ideas: a third of the
      time it was offering none of them. Five rather than the seven that James's "once every
      two weeks" works out at, because a handful of days a year have no legal twist at all and
-     land plain however the roll went. Measured across a year, five gives one plain day in
-     15.2 and seven gave one in 10.7.
+     land plain however the roll went, and `stepped` re-rolls a day that reads like the one
+     before it, which is another draw at the same five. Measured across a year of days as
+     they are actually handed out, five gives one plain day in 13.
    - **The look category is drawn deliberately, at 90%**, rather than waiting to come up in a
      blind category draw. Monochromatic and Daily Theme are the two the player sees before
      reading anything, so "a theme or B&W pretty much every day" is a rule about what the day
-     *looks* like and is implemented as one.
+     *looks* like and is implemented as one. The category itself does not activate until
+     2026-11-01, so October runs the new mix with the look draw finding nothing: the month
+     loses its themes and gains everything else about the change a month early.
    - **A second twist at 45%**, drawn from the categories still open, so a look is usually
      wearing something.
    - **A zero-guard**: if the rolls said the day was not plain but every category the draw
@@ -182,8 +187,13 @@ Drawn in this order, each from the day's PRNG stream:
    day is what makes twist days feel like twists, which is why the roll survives at all.
 
    `DailyTwistMixTests` generates a year and measures, so the numbers above are assertions
-   rather than intentions: 6.6% plain, 78.4% carrying a theme or B&W, 86.4% of those paired,
-   70.4% with two or more twists, and 20 distinct twists met inside the year.
+   rather than intentions. **It measures `challenge(forKey:)` and not `rawChallenge(forKey:)`**,
+   which is the difference between the draw and the day: the no-repeats rule sits between them
+   and re-rolls a day that reads like the one before it, so the two distributions are not the
+   same and only the second one is ever seen. As delivered, over the year from 2026-10-01:
+   7.7% plain (one every 13 days), 81.9% carrying a theme or B&W once that category is open,
+   83.2% of those paired with another twist, 64.9% with two or more twists, and 20 distinct
+   twists met inside the year.
 5. **Theme** — usually the player's own settings; some days force a dress (§5).
 
 ## 4. Twists
@@ -228,7 +238,7 @@ full vs. flag), because Mayhem's turn-based clocks must not tick down.
 ### 4.2 The compatibility matrix
 
 Same principle as the power-up conflict groups (§5.3 of the Mayhem spec): twists that
-contradict cannot be drawn together. `powerUpEconomy` (No Power-Ups / No Good News / No Bad
+contradict cannot be drawn together. `economy` (No Power-Ups / No Good News / No Bad
 News / Power Shower / Drought / Always On — at most one), `lives` (One Life / Loaded /
 Sudden Death — at most one), `layout` (Upside Down / Mirrored / Brick Swap — at most one),
 `nerve` (No Pausing — on its own, because it contradicts nothing: a day can be No Pausing
@@ -432,12 +442,33 @@ The second hard constraint, inherited from the project's oldest rule:
 ## 10. Persistence
 
 Per-day record, keyed by UTC date string, stored in `TotalStats` (new optional fields, and
-the iCloud KVS arrays grown in **both** places — the trap that crashed sync once already):
+the iCloud KVS arrays grown in **both** places — the trap that crashed sync once already).
 
-`date`, `definitionVersion`, `firstAttemptScore`, `posted`, `bestPracticeScore`,
-`attemptCount`. Plus `dailyStreak`, `longestStreak`, `totalPostedScore` (the overall
-board's source of truth). First-attempt state must survive reinstall well enough to keep
-the honest honest — iCloud KVS carries the current day's attempt flag.
+**As built**, `DailyChallengeRecord` carries `dateKey`, `firstAttemptScore`, `posted`,
+`bestPracticeScore`, `attemptCount`, `postedNormalisedScore` and `pendingPost`. The last two
+arrived after this section was first written and are worth the words: `postedNormalisedScore`
+is what the overall board counts for that day, stored at posting time so the total never
+re-derives an old day under rules that have since changed, and `pendingPost` is a score
+earned inside the window whose submission has not yet been confirmed by Game Center (§12.5),
+optional so older records decode.
+
+Three names this section originally listed were never built, and each is absent for a reason
+rather than by omission:
+
+- **`definitionVersion`** is not stored because nothing reads a stored definition. A day is
+  re-derived from its key every time it is asked for, which is the whole of §2: if the
+  definition had to be saved to be trusted, the generator would not be doing its job.
+- **`dailyStreak` and `longestStreak`** are derived, not stored. `DailyStreak.current` and
+  `DailyStreak.longest` read them off the records, so a synced history from another device
+  produces the right streak without a second number to reconcile.
+- **`totalPostedScore`** is the sum of `postedNormalisedScore` across the records rather than
+  a running total. Same reason: one stored total and a list that disagrees with it is a bug
+  waiting for a sync, and the merge rule already unions the list.
+
+First-attempt state must survive reinstall well enough to keep the honest honest, and iCloud
+KVS carries the current day's attempt flag. The sync's merge rule for the records themselves
+is take-the-most by date (`posted` OR-ed, scores and counts taking the higher), which is safe
+because every one of those only ever grows on a real device.
 
 ## 11. Main menu
 
@@ -542,7 +573,7 @@ briefing screen (§6).
 
 | Phase | What lands | What you can test |
 |---|---|---|
-| **1. The generator** ✅ | Seeded PRNG, `ChallengeDefinition`, pools with activation dates, exact-output tests | That two devices agree, for any date, for ever — entirely in unit tests |
+| **1. The generator** ✅ | Seeded PRNG, `DailyChallenge`, pools with activation dates, exact-output tests | That two devices agree, for any date, for ever — entirely in unit tests |
 | **2. The mode exists** ✅ | Menu row, briefing screen (no twists yet), Classic/Endless/Mayhem dailies playable, day boundary handling | A full daily loop with no twists — the skeleton habit |
 | **3. Attempts and boards** ✅ | First-attempt tracking, recurring daily board, overall board, practice labelling | Post once, practice after, watch the board reset at midnight UTC |
 | **4. Twists, in batches** | Economy twists first (they reuse the weight tables), then lives, then layout, then Always On | Each batch on its own, same as phase 8 was tuned |
@@ -886,7 +917,15 @@ are the ones where two players' scores are most comparable.
 
 **Pushback, gently applied above:** three-plus twists a day was in the brief's spirit
 ("one or more") but two is the proposed ceiling (§3) — twist *combinations* multiply
-confusion faster than fun, and the pool itself provides the variety. "No lives" as a twist
+confusion faster than fun, and the pool itself provides the variety. **The ceiling is three
+as of round 319**, on James's own instruction ("more often days with multiple twists per
+day"), and the shape of the mix is what makes it safe. A three-twist day is the day's look
+plus two rules, because the look is drawn first and the count is drawn beside it: measured
+against the old ceiling of two rules, what the third slot adds is a theme or black and white,
+which changes how the field reads rather than adding something else to hold in your head.
+Sixty days in a measured year carry three. The caution above was
+right about rules and wrong to treat a look as one of them, which is the same distinction
+that moved Monochromatic out of the dress list in the first place. "No lives" as a twist
 (from the brief) is folded into Sudden Death rather than literal zero lives, which the
 scene cannot represent. The 24-hour window plus time zones is handled by pinning everything
 to UTC date identity and showing only countdowns — never wall-clock times.

@@ -1160,15 +1160,22 @@ final class EndlessIISquareBrickArtTests: XCTestCase {
                      "and no rings on top of a face that already has them")
     }
 
-    /// A shape James has not drawn a Portal for keeps the art it has always worn.
+    /// **A shaped Portal wears Portal art and no rings**, now that every shape is drawn.
     ///
-    /// A Portal may take a Wedge, a dome or a notch (`takenByAPortal`) and only plain, Rounded
-    /// and the square Diamond are drawn. Falling back to the Indestructible shaped art is what
-    /// it looked like before this round; falling back to *nothing* would be a hole in the field.
-    func testAPortalShapeWithNoPictureKeepsTheOldOne() {
+    /// This test used to say the opposite, and the way it went stale is worth keeping. It
+    /// guarded itself on `UIImage(named: "BrickPortalWedge")` being nil, which it still is -
+    /// but the shaped art asks for `BrickPortalWedge90` and its three siblings, which round
+    /// 315 delivered. So the guard went on passing while the behaviour underneath it changed
+    /// completely: a wedge Portal stopped falling back to the Indestructible art with rings
+    /// drawn over it and started wearing the real thing. A premise that is true of a name
+    /// nothing looks up protects nothing.
+    ///
+    /// The rings going is deliberate and is James's instruction from the same delivery: "the
+    /// icon in the centre has been removed. The glow and colour of the bricks should be enough
+    /// indication." `makePortal` draws its rings only where there is no picture, so delivering
+    /// the pictures removed them.
+    func testAShapedPortalWearsPortalArtRatherThanRings() {
         let scene = scene()
-        XCTAssertNil(UIImage(named: "BrickPortalWedge"), "if this arrives, so does a test")
-
         let brick = SKSpriteNode(texture: scene.brickIndestructible2Texture,
                                  size: CGSize(width: scene.brickWidth,
                                               height: scene.brickHeight))
@@ -1179,8 +1186,43 @@ final class EndlessIISquareBrickArtTests: XCTestCase {
         let shape = brick.childNode(withName: GameScene.brickFaceName) as? SKShapeNode
         let art = shape?.childNode(withName: GameScene.faceArtName) as? SKSpriteNode
         XCTAssertNotNil(art?.texture, "or a Portal wedge is a hole in the field")
-        XCTAssertNotNil(brick.childNode(withName: GameScene.glyphName),
-                        "and it keeps its rings, because nothing else says it is a Portal")
+        XCTAssertNil(brick.childNode(withName: GameScene.glyphName),
+                     "the picture says Portal now, so rings on top of it are the old placeholder")
+    }
+
+    /// **And every shape a Portal can take has a picture**, which is what makes the above true.
+    ///
+    /// The fallback in `endlessIIFaceArtName` is still there and still right - it returns the
+    /// brick's own texture name when an art has no picture, so a missing one is the old look
+    /// rather than a hole. What this says is that nothing reaches it any more, and it fails the
+    /// day a Portal picture is removed or a new shape joins `takenByAPortal` undrawn, which is
+    /// the moment somebody needs to know rather than the moment a player sees it.
+    func testEveryFaceAPortalCanWearAsksForPortalArt() {
+        let scene = scene()
+        for face in EndlessIIFace.allCases {
+            let brick = SKSpriteNode(texture: scene.brickIndestructible2Texture,
+                                     size: CGSize(width: scene.brickWidth,
+                                                  height: scene.brickHeight))
+            scene.addChild(brick)
+            scene.makeFace(face, on: brick)
+            scene.makePortal(brick)
+
+            // The question `endlessIIWearsPortalArt` asks, asked directly: the name the face
+            // art resolves to. `portalBrickArtName` means a real Portal picture was found;
+            // anything else is the fallback to the brick's own texture, which is the old look
+            let art = brick.endlessIIFace.flatMap(GameScene.shapedArt(for:))
+            let resolved = scene.endlessIIFaceArtName(
+                for: brick, art,
+                mirrored: brick.endlessIIFaceMirrored ?? false,
+                flipped: brick.endlessIIFaceFlipped ?? false,
+                suffix: GameScene.artSuffix(for: scene.endlessIISizeOf(brick)))
+            XCTAssertEqual(resolved, GameScene.portalBrickArtName,
+                           "a \(face) Portal has no picture of its own and is wearing the "
+                           + "Indestructible art - which is the old look, not a hole, but it "
+                           + "means the rings it no longer draws are the only thing that "
+                           + "said Portal")
+            brick.removeFromParent()
+        }
     }
 
     /// Both ends are one colour.

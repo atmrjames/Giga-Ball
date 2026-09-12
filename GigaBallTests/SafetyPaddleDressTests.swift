@@ -241,29 +241,60 @@ final class SplitPaddleTintTests: XCTestCase {
         XCTAssertNil(scene.paddle.texture)
     }
 
-    /// And the pieces wear the tint instead, so the power-up is still readable.
-    func testThePiecesWearThePortalsColourInstead() {
+    /// **And the pieces are not tinted, because the glow says it instead** (round 316).
+    ///
+    /// These two tests asked for `portalBlueColour` at three-quarter blend, which is what a
+    /// Portal Paddle wore from the round it was built. James took it off in round 316 - "I
+    /// don't think the paddles require a tint any more. The glow effect is enough" - and
+    /// round 315's artwork is what made the blue wrong rather than merely unnecessary: the
+    /// Portal identity is the Giga-Ball lime now, across the bricks, their glows, the paddle
+    /// glow and the retro paddle's own variant, so a blue paddle inside a lime halo read as
+    /// two power-ups at once.
+    ///
+    /// The readability the old test was protecting is still protected, by the glow rather than
+    /// by the tint, so that is what these ask for now.
+    func testThePiecesAreNotTintedAndTheGlowSaysItInstead() {
         let scene = self.scene()
         scene.endlessIICollectDoublePaddle()
         scene.endlessIICollectPortalPaddle()
         scene.tickEndlessIIPaddlePowerUps(0)
 
         for half in halves(scene) {
-            XCTAssertEqual(half.colorBlendFactor, 0.75, accuracy: 0.0001,
-                           "a split Portal Paddle still looks like a Portal Paddle")
-            isSame(half.color, GameScene.portalBlueColour)
+            XCTAssertEqual(half.colorBlendFactor, 0, accuracy: 0.0001,
+                           "a split Portal Paddle is lit, not painted")
         }
+        XCTAssertNotNil(scene.paddle.childNode(withName: GameScene.paddleGlowName),
+                        "and with no tint, the halo is the only thing saying Portal")
     }
 
-    /// A whole paddle is unchanged, which is every run that has no Double Paddle in it.
-    func testAWholePaddleIsStillTintedItself() {
+    /// A whole paddle, which is every run that has no Double Paddle in it.
+    func testAWholePaddleIsLitRatherThanTinted() {
         let scene = self.scene()
         scene.endlessIICollectPortalPaddle()
         scene.tickEndlessIIPaddlePowerUps(0)
 
         XCTAssertTrue(halves(scene).isEmpty)
-        XCTAssertEqual(scene.paddle.colorBlendFactor, 0.75, accuracy: 0.0001)
-        isSame(scene.paddle.color, GameScene.portalBlueColour)
+        XCTAssertEqual(scene.paddle.colorBlendFactor, 0, accuracy: 0.0001,
+                       "nothing is painted on it - `paint` with no tint takes the blend to "
+                       + "zero and leaves the colour alone, since a colour at zero blend is "
+                       + "not drawn")
+        XCTAssertNotNil(scene.paddle.childNode(withName: GameScene.paddleGlowName))
+    }
+
+    /// **Magnetism is the one paddle power-up that still paints**, which is worth its own test
+    /// now that it is alone in doing it: it has no glow drawn for it, and red is the whole of
+    /// how a magnet paddle says so. A round that removed the last tint by accident would
+    /// otherwise take Magnetism's only signal with it.
+    func testMagnetismStillPaintsBecauseItHasNoGlow() {
+        let scene = self.scene()
+        scene.endlessIICollectMagnetism()
+        scene.tickEndlessIIPaddlePowerUps(0)
+
+        XCTAssertGreaterThan(scene.paddle.colorBlendFactor, 0,
+                             "Magnetism has nothing but its colour")
+        isSame(scene.paddle.color, GameScene.endlessIIMagnetColour)
+        XCTAssertNil(scene.paddle.childNode(withName: GameScene.paddleGlowName),
+                     "and no halo, which is why it needs the colour")
     }
 
     /// The tint comes off the pieces when the power-up ends, like everything else here.

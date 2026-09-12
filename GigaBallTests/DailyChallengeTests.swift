@@ -88,23 +88,51 @@ final class DailyChallengeTests: XCTestCase {
         XCTAssertGreaterThan(counts[.endlessII] ?? 0, 175)
     }
 
-    func testTwistCountsFollowTheDistribution() {
+    /// The counts a window of days comes out at, bucketed none / one / two-or-more.
+    private func twistCounts(from start: DateComponents, days: Int) -> [Int] {
         var counts = [0, 0, 0]
-        var day = DailyDay.utcCalendar.date(from: DateComponents(year: 2026, month: 1, day: 1))!
-        for _ in 0..<1000 {
+        var day = DailyDay.utcCalendar.date(from: start)!
+        for _ in 0..<days {
             let challenge = DailyChallengeGenerator.challenge(forKey: DailyDay.key(for: day))
             counts[min(challenge.twists.count, 2)] += 1
             day = DailyDay.utcCalendar.date(byAdding: .day, value: 1, to: day)!
         }
-        print("twist counts over 1000 days: \(counts)")
-        XCTAssertGreaterThan(counts[0], 200, "no-twist days are deliberate")
-        XCTAssertGreaterThan(counts[1], 350)
-        XCTAssertGreaterThan(counts[2], 100)
-        // **Thresholds with room in them** (round 258). This one was written at 380 against a
-        // sample that came out at 381, and adding a category moved it to 379 - which is a
-        // third of a per cent and is the re-roll rather than the distribution. A tripwire set
-        // one day away from where it fires is a tripwire that fails whenever anything is
-        // added, which is the opposite of what it is for
+        return counts
+    }
+
+    /// **Two distributions now, measured in their own windows** (round 319).
+    ///
+    /// This ran one thousand days from 2026-01-01 and asserted one set of thresholds over the
+    /// lot, which had stopped being a measurement of anything. That window holds three
+    /// regimes: 212 days before **any** category activates, where every day is plain because
+    /// there is nothing to draw; two months of the original none-30 / one-50 / two-20 split;
+    /// and then everything from `twistMixKey` under round 319's mix. Averaging those together
+    /// produces a number that belongs to none of them, and the test passed or failed on how
+    /// many of each the window happened to contain rather than on either distribution being
+    /// right.
+    ///
+    /// So it asks each regime where that regime lives. The old one still has to hold, because
+    /// those are days people have played.
+    func testTwistCountsFollowTheDistribution() {
+        // The old split, over the two months where it is the only one in force
+        let old = twistCounts(from: DateComponents(year: 2026, month: 8, day: 1), days: 61)
+        print("twist counts, old branch, 61 days: \(old)")
+        XCTAssertGreaterThan(old[0], 8, "no-twist days were deliberate at three in ten")
+        XCTAssertGreaterThan(old[1], 20)
+        XCTAssertGreaterThan(old[2], 4)
+
+        // And the new one, over a year of it
+        let new = twistCounts(from: DateComponents(year: 2026, month: 10, day: 1), days: 365)
+        print("twist counts, new mix, 365 days: \(new)")
+        XCTAssertLessThan(new[0], 60, "a plain day is now about one in fourteen")
+        XCTAssertGreaterThan(new[2], 150, "and two or more is the common case")
+        XCTAssertGreaterThan(new[0], 10, "never plain at all is its own monotony")
+
+        // **Thresholds with room in them** (round 258). One of these was written at 380
+        // against a sample that came out at 381, and adding a category moved it to 379 -
+        // which is a third of a per cent and is the re-roll rather than the distribution. A
+        // tripwire set one day away from where it fires is a tripwire that fails whenever
+        // anything is added, which is the opposite of what it is for
     }
 
     func testNoDayDrawsTwoTwistsFromOneCategory() {
@@ -358,11 +386,19 @@ final class DailyChallengeTests: XCTestCase {
         XCTAssertEqual(eleventh.twists, [.oneLife])
 
         // A date well past every activation key in the table, so the no-repeats rule and the
-        // full pool are both exercised rather than just the opening weeks
+        // full pool are both exercised rather than just the opening weeks.
+        //
+        // **This one moved in round 319 and was meant to**, which is the distinction this test
+        // exists to force somebody to make. The three August dates above are days that have
+        // been lived through and must never change; this one is in the future, and round 319
+        // deliberately changed how every day from `twistMixKey` onward is drawn. It drew
+        // nothing before and draws the day's theme now, which is the new mix doing exactly
+        // what it was built to do. The three pins above not moving is the evidence that the
+        // change was dated correctly.
         let newYear = DailyChallengeGenerator.challenge(forKey: "2027-01-01")
         XCTAssertEqual(newYear.mode, .endlessII)
         XCTAssertNil(newYear.classicLevel)
-        XCTAssertEqual(newYear.twists, [])
+        XCTAssertEqual(newYear.twists, [.dailyTheme])
     }
 
     /// And the seed itself, which is the other half of the contract: the same date has to
@@ -2795,7 +2831,15 @@ final class DailyExtraBallsTests: XCTestCase {
 /// measures it.
 final class DailyTwistMixTests: XCTestCase {
 
-    /// A year of days from the round the new mix begins.
+    /// A year of days from the round the new mix begins, **as a player receives them**.
+    ///
+    /// Through `challenge(forKey:)` and not `rawChallenge(forKey:)`, which is the correction
+    /// that matters most in this file. The first version of these tests measured the raw draw
+    /// and reported a mix nobody would ever be handed: the no-repeats rule (`stepped`) sits
+    /// between the draw and the player and re-rolls a day that reads like the one before it,
+    /// so the distribution the draw produces and the distribution the calendar shows are two
+    /// different things. Measuring the first and quoting it as the second is how a tuned
+    /// constant ends up tuned against nothing.
     private func year(from start: String = "2026-10-01") -> [DailyChallenge] {
         var days: [DailyChallenge] = []
         var components = DateComponents()
@@ -2809,7 +2853,7 @@ final class DailyTwistMixTests: XCTestCase {
         for offset in 0..<365 {
             components.day = offset
             guard let date = calendar.date(byAdding: components, to: first) else { continue }
-            days.append(DailyChallengeGenerator.rawChallenge(forKey: formatter.string(from: date)))
+            days.append(DailyChallengeGenerator.challenge(forKey: formatter.string(from: date)))
         }
         return days
     }
@@ -2829,16 +2873,27 @@ final class DailyTwistMixTests: XCTestCase {
     }
 
     /// **Most days wear a look.** "A theme or B&W pretty much every day."
+    ///
+    /// Measured from the day the look category opens rather than from `twistMixKey`, and the
+    /// month between them is the reason. The new mix begins on 2026-10-01, when `nerve` and
+    /// `tempo` activate; Monochromatic and Theme are not in any pool until 2026-11-01. So
+    /// October runs the new mix with the look draw finding nothing, by design, and counting
+    /// those 31 days against a rule about looks would measure the activation table instead of
+    /// the mix. The share over the whole year including October is printed too, since that is
+    /// what a player living through it sees.
     func testMostDaysWearTheDaysThemeOrBlackAndWhite() {
-        let days = year()
-        let looked = days.filter { day in
+        let whole = year()
+        let open = year(from: "2026-11-01")
+        let looked = open.filter { day in day.twists.contains { $0.category == .look } }.count
+        let share = Double(looked)/Double(open.count)
+        let overall = whole.filter { day in
             day.twists.contains { $0.category == .look }
         }.count
-        let share = Double(looked)/Double(days.count)
 
-        print(String(format: "  days with a theme or B&W: %d of %d (%.1f%%)",
-                     looked, days.count, share*100))
-        XCTAssertGreaterThan(share, 0.6, "these two are the thing a player sees the instant "
+        print(String(format: "  days with a theme or B&W: %d of %d (%.1f%%) once the category "
+                     + "is open; %d of %d across the year from the new mix's own start",
+                     looked, open.count, share*100, overall, whole.count))
+        XCTAssertGreaterThan(share, 0.7, "these two are the thing a player sees the instant "
                              + "the field appears, and they were the rarest thing on offer")
     }
 
@@ -2875,11 +2930,15 @@ final class DailyTwistMixTests: XCTestCase {
         var seen: [DailyTwist: Int] = [:]
         for day in days { for twist in day.twists { seen[twist, default: 0] += 1 } }
 
+        // Against what is live by the *end* of the window, not its start: the year crosses
+        // three activation dates, so counting the openers would flatter the result by
+        // comparing twenty twists met against the sixteen that existed on day one.
+        let last = days.last?.dateKey ?? "2026-10-01"
         let live = DailyTwist.allCases.filter { twist in
-            twist.category.activationKey <= "2026-10-01"
+            twist.category.activationKey <= last
         }
-        print("  distinct twists met in a year: \(seen.count), of \(live.count) whose "
-              + "category is open by then")
+        print("  distinct twists met in a year: \(seen.count), of \(live.count) live by "
+              + "\(last)")
         let top = seen.sorted { $0.value > $1.value }.prefix(5)
         print("  most frequent: "
               + top.map { "\($0.key) \($0.value)" }.joined(separator: ", ") + "\n")
@@ -2902,3 +2961,4 @@ final class DailyTwistMixTests: XCTestCase {
         }
     }
 }
+

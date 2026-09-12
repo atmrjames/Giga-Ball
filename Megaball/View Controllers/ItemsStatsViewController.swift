@@ -88,6 +88,9 @@ class ItemsStatsViewController: UIViewController, UITableViewDelegate, UITableVi
         // In to the narrow position when the big play is here (round 176) - see the helper
         alignDescription()
         SettingsTableViewCell.fitGlassPanel(under: statsTableView)
+        // The picture is set before the layout gives it a size, and two of the brick motions
+        // are measured in points (round 317a)
+        BrickTypeIcons.reanimateIfNeeded(powerUpImage, as: brickTypeEntry?.art)
     }
 
     /// Whether a description belongs centred under the icon and the name.

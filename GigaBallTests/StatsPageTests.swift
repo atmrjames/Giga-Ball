@@ -531,11 +531,24 @@ final class PerModeTimeTests: XCTestCase {
                        "one screen's sections, read off the other's, so they cannot drift")
     }
 
-    func testEveryAchievementIsFiledUnderAtLeastOneMode() {
+    /// **Every achievement is filed under a tab**, and for ten of them that tab is the Daily.
+    ///
+    /// This asked for at least one *play* mode and was right until round 318, which moved the
+    /// daily's ten out of "every play mode" and into a set that names no play mode at all -
+    /// they are facts about a history rather than about a rally. So the question is no longer
+    /// "does it belong to a mode" but "is it reachable from a tab", which is what a player
+    /// actually needs and what the page actually does: `earnableInDaily` is how the Daily tab
+    /// finds them.
+    ///
+    /// The invariant this protects is unchanged and is the one that matters: an achievement
+    /// listed under nothing is invisible on that page however correct its data is.
+    func testEveryAchievementIsFiledUnderAtLeastOneTab() {
         let count = LevelPackSetup().achievementsNameArray.count
         for index in 0..<count {
-            XCTAssertFalse(AchievementCatalogue.modes(for: index).isEmpty,
-                           "achievement \(index) belongs nowhere")
+            let listed = AchievementCatalogue.modes(for: index).isEmpty == false
+                || AchievementCatalogue.dailyOnly.contains(index)
+            XCTAssertTrue(listed, "achievement \(index) "
+                          + "\"\(LevelPackSetup().achievementsNameArray[index])\" is on no tab")
         }
     }
 

@@ -152,6 +152,7 @@ enum AchievementCatalogue {
     static func modes(for index: Int) -> Set<GameMode> {
         if dailyOnly.contains(index) { return [] }
         if mayhemOnly.contains(index) { return [.endlessII] }
+        if bothEndlessModes.contains(index) { return [.endless, .endlessII] }
         if endlessOnly.contains(index) { return [.endless] }
         if classicOnly.contains(index) { return [.classic] }
         return [.classic, .endless, .endlessII]
@@ -183,7 +184,14 @@ enum AchievementCatalogue {
     /// posted, how long the streak is, where a day finished on the board, whether every twist
     /// has been met. None of them can be earned by playing Classic, Endless or Mayhem outside
     /// the daily, so none of them is listed under those tabs.
-    static let dailyOnly: Set<Int> = Set(87...96)
+    static let dailyOnly: Set<Int> = Set(85...94)
+    // **85 to 94, and round 318 wrote 87 to 96** - two out at both ends, which put Butter
+    // Fingers and Blur in the set meaning "a fact about a history, listed under no play mode"
+    // and left First Daily Challenge and Serial Daily Challenger in the bucket meaning
+    // "earnable everywhere". Corrected in round 319a by `testTheModeSetsNameWhatTheyThinkTheyName`,
+    // which is the test round 318 wrote for exactly this and whose first full run had not
+    // happened when the round was committed. The range is First Daily Challenge (85) through
+    // Twist Completionist (94); 95, 96 and 97 are Butter Fingers, Blur and Pokey
 
     /// Whether an achievement is offered under a tab.
     ///
@@ -285,12 +293,23 @@ enum AchievementCatalogue {
         4, 5,         // 5,000m and 10,000m total height
         17, 18, 19, 20, 21,  // the duration milestones
         22,           // Tidying Up - `endlessMode && bricksLeft == 0`
-        97,           // Butter Fingers - the sheet gives it both endless modes and not Classic
-        // **It was 95, which is Top Of The Charts** (round 318). Two off, and the comment beside
-        // it named the achievement it was meant to be - so a daily leaderboard placing was
-        // filed as an endless one and Butter Fingers was filed as earnable everywhere. Found by
-        // listing each set beside the names it indexes, which is the only way an index typed
-        // into a set can be checked at all
+        // **Butter Fingers is not here, and round 318 put it here twice over.** That round read
+        // 95 as Top Of The Charts, moved it to 97, and was wrong on both counts: 95 *is* Butter
+        // Fingers, 93 is Top Of The Charts and 97 is Pokey, which is earnable anywhere. The
+        // original number was right and the correction broke it. It is in `bothEndlessModes`
+        // below instead, which is a distinction round 318 did not have and needed
+    ]
+
+    /// Earned in **either** endless mode, with no Mayhem twin to separate them.
+    ///
+    /// The milestones above are Endless-only on the tab because round 309 gave Mayhem its own
+    /// eleven, so listing Endless's under Mayhem said the same thing twice. Butter Fingers has
+    /// no twin: `ballLost` asks `endlessMode`, which is true in both, and there is one
+    /// achievement for the pair. So it belongs on both tabs, and a set that can only say "one
+    /// mode" cannot express that - which is why this exists rather than a number moved into a
+    /// set that means something else.
+    static let bothEndlessModes: Set<Int> = [
+        95,           // Butter Fingers - `endlessMode && bricksDestroyedThisRun == 0`
     ]
 
     /// Earned only in a campaign run: everything about levels and packs, and the four checks

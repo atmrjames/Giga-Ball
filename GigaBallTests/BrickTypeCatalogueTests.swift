@@ -266,6 +266,84 @@ final class BrickTypeCatalogueTests: XCTestCase {
 /// draws every picture on it and prints where to find them.
 final class BrickInfoPageRenderTests: XCTestCase {
 
+    /// **A brick asked to move before it has a size has to move once it has one.**
+    ///
+    /// Round 317a, and the fault is round 317's own. The five motions are attached when a cell
+    /// is configured, which is before its icon has been laid out, and two of the five are
+    /// measured in **points**: Moving patrols a fraction of the cell's width and Gravity falls
+    /// a fraction of its height. Built against a zero size, both travel nowhere.
+    ///
+    /// What makes it worth a test rather than a fix is how it would have shown up. A reused
+    /// cell already has a size, so the brick would have sat still on its first appearance and
+    /// started moving the moment the row was scrolled away and come back. Intermittent
+    /// stillness, on the two bricks whose entire point is that they move, and nothing in a
+    /// render test would have caught it because a render test lays its views out first.
+    func testABrickAskedToMoveBeforeItHasASizeStillMovesOnceItHasOne() {
+        for style in [EndlessIIStyle.moving, EndlessIIStyle.gravity] {
+            let view = UIImageView(frame: .zero)
+            BrickTypeIcons.animate(view, as: .style(style))
+            XCTAssertEqual(travel(in: view), 0, accuracy: 0.001,
+                           "\(style) has nothing to measure itself against yet")
+
+            view.frame = CGRect(x: 0, y: 0, width: 104, height: 52)
+            BrickTypeIcons.reanimateIfNeeded(view, as: .style(style))
+            XCTAssertGreaterThan(travel(in: view), 5,
+                                 "\(style) is still not going anywhere once it has a size")
+        }
+    }
+
+    /// **And a layout that changes nothing leaves the motion alone.**
+    ///
+    /// `layoutSubviews` runs constantly while a table scrolls. Rebuilding the animation on each
+    /// pass would send every moving brick back to the start of its patrol several times a
+    /// second, which reads as a stutter rather than a motion.
+    func testALayoutThatChangesNothingDoesNotRestartTheMotion() {
+        let view = UIImageView(frame: CGRect(x: 0, y: 0, width: 104, height: 52))
+        BrickTypeIcons.animate(view, as: .style(.moving))
+        let first = onlyAnimation(in: view)
+
+        BrickTypeIcons.reanimateIfNeeded(view, as: .style(.moving))
+        XCTAssertTrue(first === onlyAnimation(in: view), "the same layout rebuilt the animation")
+
+        view.frame = CGRect(x: 0, y: 0, width: 208, height: 52)
+        BrickTypeIcons.reanimateIfNeeded(view, as: .style(.moving))
+        XCTAssertFalse(first === onlyAnimation(in: view),
+                       "a cell that changed width kept a patrol measured for the old one")
+    }
+
+    /// The one animation on a view, read back without naming the private key it is filed under.
+    private func onlyAnimation(in view: UIView) -> CAAnimation? {
+        guard let key = view.layer.animationKeys()?.first else { return nil }
+        return view.layer.animation(forKey: key)
+    }
+
+    /// How far a motion actually travels, whichever kind of animation carries it.
+    ///
+    /// Read through `NSNumber` rather than cast straight to `CGFloat`: these values went into
+    /// the animation as boxed numbers, and a cast that quietly failed would return zero, which
+    /// is the exact value this test is looking for. A helper that can fail silently into the
+    /// answer being asserted is no test at all.
+    private func travel(in view: UIView) -> Double {
+        switch onlyAnimation(in: view) {
+        case let basic as CABasicAnimation:
+            guard let from = basic.fromValue as? NSNumber,
+                  let to = basic.toValue as? NSNumber else {
+                XCTFail("the animation's ends are not numbers")
+                return 0
+            }
+            return abs(to.doubleValue - from.doubleValue)
+        case let frames as CAKeyframeAnimation:
+            guard let values = frames.values as? [NSNumber], values.isEmpty == false else {
+                XCTFail("the keyframes are not numbers")
+                return 0
+            }
+            let doubles = values.map(\.doubleValue)
+            return (doubles.max() ?? 0) - (doubles.min() ?? 0)
+        default:
+            return 0
+        }
+    }
+
     func testEveryInfoPagePictureCanBeLookedAt() throws {
         var art: [(String, BrickTypeArt)] = []
         for behaviour in [EndlessIIBehaviour.standard, .multiHit, .indestructibleOnce,

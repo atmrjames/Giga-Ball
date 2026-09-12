@@ -388,7 +388,19 @@ class SettingsTableViewCell: UITableViewCell {
     /// because a table cell is handed to a different row as you scroll and an animation left
     /// running would be a Gravity brick falling on a Spawner's row.
     func animateIcon(as art: BrickTypeArt) {
+        motionArt = art
         BrickTypeIcons.animate(iconImage, as: art)
+    }
+
+    /// What this row is currently showing in motion, so the layout pass can put it back at the
+    /// size the icon ends up with. Nil on every other screen that uses this cell.
+    private var motionArt: BrickTypeArt?
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        // A row is configured before it is laid out, so a motion measured in points had no
+        // size to measure itself against when it was asked for (round 317a)
+        BrickTypeIcons.reanimateIfNeeded(iconImage, as: motionArt)
     }
 
     /// The row card's own corner radius, which anything cut to match has to know.

@@ -2309,24 +2309,47 @@ final class EndlessIIWreckingBallLookTests: XCTestCase {
         XCTAssertEqual(scene.ball.texture, scene.ballTexture, "still its own ball")
     }
 
-    func testTheThemeOrderIsPinnedByTheThreeTexturesThatAreADifferentSize() {
-        // The map from a theme index to a file name is written out by hand, and a map that
-        // is one out gives an Ice ball Outline spikes - which looks like art nobody likes
-        // rather than like a bug. Three themes have a size of their own: the square theme's
-        // spikes are drawn *inside* a 50pt square, the candy cane's reach 72, and the glass
-        // theme has no art at all. Any shuffle of the order moves at least one of them
-        let scene = mayhem()
-        let expected: [(theme: Int, width: CGFloat?)] = [(4, 50), (8, 72), (99, nil)]
+    /// **The theme map is pinned by name**, because that is what a wrong entry gets wrong.
+    ///
+    /// A map one place out gives an Ice ball Outline spikes, which looks like art nobody likes
+    /// rather than like a bug. This used to catch that through the art: three themes had a size
+    /// of their own, so any shuffle moved one of them. **Round 315's redraw took that away** -
+    /// eleven of the twelve are 64pt now where the candy cane used to reach 72 - so a delivery
+    /// of new pictures failed a test about the order of a lookup table. `wreckingThemeNames` is
+    /// exposed for this, and the names are pinned directly: identity rather than a drawing
+    /// decision.
+    func testTheThemeOrderIsPinnedByName() {
+        XCTAssertEqual(GameScene.wreckingThemeNames.count,
+                       LevelPackSetup().ballImageArray.count,
+                       "one suffix per ball theme, which is the claim the comment makes")
 
-        for (theme, width) in expected {
-            scene.ballSetting = theme
-            let texture = scene.endlessIIWreckingTexture(for: .normal)
-            guard let width else {
-                XCTAssertNil(texture, "a theme that does not exist has no art")
-                continue
-            }
-            XCTAssertEqual(texture?.size().width, width, "theme \(theme) is not where it was")
-        }
+        XCTAssertEqual(GameScene.wreckingThemeNames.first, "",
+                       "the default theme's files carry no suffix")
+        XCTAssertEqual(GameScene.wreckingThemeNames[4], "Square")
+        XCTAssertEqual(GameScene.wreckingThemeNames[9], "Glow",
+                       "index 9 is the giga look in code and Glow in James's file names")
+        XCTAssertEqual(GameScene.wreckingThemeNames.last, "Retro")
+        XCTAssertEqual(Set(GameScene.wreckingThemeNames).count,
+                       GameScene.wreckingThemeNames.count,
+                       "two themes sharing a suffix would share a picture")
+    }
+
+    /// And the one theme whose spikes stay inside the ball.
+    ///
+    /// The Square theme's art is 50pt, the plain ball's own size, so it is the only theme with
+    /// no overhang. Worth an assertion because it reads as missing art: a wrecking ball that
+    /// does not visibly grow is the one case where "the power-up did nothing" is the correct
+    /// description of what the picture shows.
+    func testTheSquareThemesSpikesStayInsideTheBall() {
+        let scene = mayhem()
+        scene.ballSetting = 4
+        XCTAssertEqual(scene.endlessIIWreckingTexture(for: .normal)?.size().width,
+                       GameScene.plainBallTexturePoints,
+                       "the Square theme draws its spikes inside the ball's own footprint")
+
+        scene.ballSetting = 99
+        XCTAssertNil(scene.endlessIIWreckingTexture(for: .normal),
+                     "a theme that does not exist has no art")
     }
 
     func testEveryOtherThemeHasArtForAllThreeBalls() {

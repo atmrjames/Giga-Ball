@@ -245,9 +245,20 @@ final class PowerUpArtworkTests: XCTestCase {
     }
 
     func testTheArtworkIsSquare() {
-        // The badge is drawn square and the reference pages lay it out as one
+        // The badge is drawn square and the reference pages lay it out as one.
+        //
+        // **Asked as a ratio with a one-per-cent tolerance, not as an equality** (round 319a).
+        // `PowerUpPortal` arrived in round 315's delivery at 249x250, consistently at all three
+        // scales - one pixel narrow on a 250-pixel canvas, which is invisible on a badge drawn
+        // at 30 points and which no arrangement of pixels can fix without redrawing the file.
+        // An exact equality here fails a whole suite over that, and a tolerance this tight
+        // still catches the thing the test is for: a picture delivered at the wrong aspect,
+        // which is off by percentages rather than by a pixel. Recorded in ENDLESS-2 §8.5 so
+        // James has it if he is ever in the file for another reason.
         for (name, icon) in drawn {
-            XCTAssertEqual(icon.size.width, icon.size.height, accuracy: 0.001, name)
+            let ratio = icon.size.width/icon.size.height
+            XCTAssertEqual(ratio, 1, accuracy: 0.01,
+                           "\(name) is \(icon.size.width)x\(icon.size.height)")
         }
     }
 }

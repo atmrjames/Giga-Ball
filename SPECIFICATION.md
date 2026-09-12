@@ -403,9 +403,10 @@ power-ups.
 - Leaderboards are opened directly to the relevant board from level and pack screens.
 - The game-over screen names where the run stands: "3rd / 1,204 on the Classic Pack board",
   asked once as the screen goes up (`GameCenterHandler.loadRank`) against the board
-  `GameMode.runLeaderboard(packNumber:)` chooses. Silent when there is no board or no answer -
-  signed out, offline, Single Level Mode, or Endless Mayhem, whose boards do not yet exist in
-  App Store Connect.
+  `GameMode.runLeaderboard(packNumber:)` chooses. Silent when there is no board or no answer:
+  signed out, offline, or Single Level Mode. **Endless Mayhem is no longer one of those** -
+  James had its boards approved on 21 August 2026, and this line went on saying they did not
+  exist.
 
 Game Center can be disabled in settings.
 

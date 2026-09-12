@@ -52,10 +52,32 @@ extension GameScene {
     static let wreckingSpikesName = "endlessIIWreckingSpikes"
 
     /// The size every plain ball texture is drawn at, which is what makes the spiked ones
-    /// measurable: a 64pt wrecking texture beside a 50pt ball is 28% of overhang, and the
-    /// candy cane's 72 is 44%. Read off the art rather than written down as a factor, so a
-    /// redrawn texture with longer spikes is longer-spiked in the game the day it lands.
+    /// measurable: a 64pt wrecking texture beside a 50pt ball is 28% of overhang. Read off the
+    /// art rather than written down as a factor, so a redrawn texture with longer spikes is
+    /// longer-spiked in the game the day it lands.
+    ///
+    /// **Round 315's redraw made the set uniform**, which is worth recording because the
+    /// previous version of this comment quoted the candy cane's 72pt as the outlier and it is
+    /// 64 now. Eleven of the twelve are 64 give or take a point of anti-aliasing; the Square
+    /// theme alone is 50, the plain ball's own size, so its spikes sit inside the ball's
+    /// footprint and it is the only theme with no overhang at all.
     static let plainBallTexturePoints: CGFloat = 50
+
+    /// The theme suffix each ball setting's wrecking art carries.
+    ///
+    /// **Same order as `ballTextureArray`, and the same length**, which is the whole of what
+    /// can go wrong here: a map one place out gives an Ice ball Outline spikes, and that looks
+    /// like art nobody likes rather than like a bug. Index 9 is the theme the code calls the
+    /// giga *look* and James calls Glow; the file names use his word.
+    ///
+    /// Lifted out of `endlessIIWreckingTexture` in round 319a so a test can hold it to that
+    /// claim. It used to be checked through the art instead - three themes had sizes of their
+    /// own, so any shuffle moved one of them - and round 315's redraw made eleven of the twelve
+    /// the same size, which took the distinctiveness away and failed the test on a delivery of
+    /// new pictures. A name is identity and a size is a drawing decision; the pin belongs on
+    /// the first.
+    static let wreckingThemeNames = ["", "3D", "Ice", "Outline", "Square", "Glass",
+                                     "Pixel", "Split", "Candy", "Glow", "Rainbow", "Retro"]
 
     /// The spiked texture for the current theme and dress.
     ///
@@ -64,11 +86,7 @@ extension GameScene {
     /// would otherwise reach past the end of this list, and a ball that keeps its own look
     /// is a far better answer to missing art than one wearing somebody else's theme.
     func endlessIIWreckingTexture(for dress: BallDress) -> SKTexture? {
-        let themes = ["", "3D", "Ice", "Outline", "Square", "Glass",
-                      "Pixel", "Split", "Candy", "Glow", "Rainbow", "Retro"]
-        // Same order as `ballTextureArray`, and the same length. Index 9 is the theme the
-        // code calls the giga *look* and James calls Glow; the file names use his word
-
+        let themes = GameScene.wreckingThemeNames
         guard themes.indices.contains(ballSetting) else { return nil }
         let theme = themes[ballSetting]
 

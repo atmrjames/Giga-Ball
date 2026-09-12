@@ -243,7 +243,17 @@ final class PackGridCell: UICollectionViewCell {
 
     /// Sets the square's picture moving, where the thing it shows is a motion (round 317).
     func animateIcon(as art: BrickTypeArt) {
+        motionArt = art
         BrickTypeIcons.animate(icon, as: art)
+    }
+
+    /// As in the table's row: kept so the layout pass can rebuild a points-based motion.
+    private var motionArt: BrickTypeArt?
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        // The square is configured before it has a width (round 317a)
+        BrickTypeIcons.reanimateIfNeeded(icon, as: motionArt)
     }
 
     func show(name packName: String, icon packIcon: UIImage?,

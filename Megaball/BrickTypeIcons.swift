@@ -530,14 +530,48 @@ extension BrickTypeIcons {
     ///
     /// **The timings are the game's own**, taken from the constants the field runs on rather
     /// than chosen to look lively, so what the page shows is what the player will meet.
+    /// **Two of the five have to know how big the picture is**, which is the whole reason this
+    /// is not one function.
+    ///
+    /// A spin, a flash and a breath are expressed as turns, opacity and scale, and all three
+    /// mean the same thing at any size. A patrol and a fall are expressed in **points**, and
+    /// the points can only come from the view. A cell is configured before it is laid out, so
+    /// at the moment this is called the icon's bounds are usually `.zero` - and a motion built
+    /// from a zero size is a brick that travels nowhere. It renders correctly in a test that
+    /// sizes its views first and would have been wrong on the screen: Moving and Gravity, two
+    /// of the five James asked to see moving, would have sat still on a row's first appearance
+    /// and started moving only once it had been scrolled away and reused. That is worse than
+    /// not moving at all, because it is intermittent.
+    ///
+    /// So `reanimateIfNeeded` puts the motion back once the view has a real size, and the size
+    /// it was built at is remembered on the layer. A layout pass that changes nothing leaves a
+    /// running animation alone: a brick that jumped back to the start of its patrol on every
+    /// layout would stutter in exactly the places layout happens most, which is scrolling.
     static func animate(_ view: UIView, as art: BrickTypeArt) {
+        view.layer.setValue(NSValue(cgSize: view.bounds.size), forKey: sizeKey)
         view.layer.removeAnimation(forKey: motionKey)
         guard case .style(let style) = art,
               let motion = motion(for: style, size: view.bounds.size) else { return }
         view.layer.add(motion, forKey: motionKey)
     }
 
+    /// Puts the motion back at the size the view has actually been given.
+    ///
+    /// Called from `layoutSubviews`, and from `viewDidLayoutSubviews` on the info page, which
+    /// is the first moment a constraint-driven icon knows how wide it is. The art comes from
+    /// the caller rather than being stashed here, because the caller already holds it and a
+    /// second copy of that decision is one more thing to keep in step.
+    static func reanimateIfNeeded(_ view: UIView, as art: BrickTypeArt?) {
+        guard let art else { return }
+        let size = view.bounds.size
+        guard size != .zero else { return }
+        let applied = (view.layer.value(forKey: sizeKey) as? NSValue)?.cgSizeValue ?? .zero
+        guard size != applied else { return }
+        animate(view, as: art)
+    }
+
     private static let motionKey = "brickMotion"
+    private static let sizeKey = "brickMotionSize"
 
     private static func motion(for style: EndlessIIStyle, size: CGSize) -> CAAnimation? {
         switch style {
