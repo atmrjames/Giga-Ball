@@ -100,6 +100,18 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
 
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
+        limitMenuContentSize()
+        // **The iPad cap reaches this screen too, as of round 319b.** James, round 314: "for
+        // the iPad, can we limit how tall and wide the UI elements become. It should really
+        // just look like the phone app with everything centred on the larger background."
+        // Fourteen menu screens took that; this one did not, and it is the screen he opens
+        // most. A 13-inch iPad drew the day's card as a band 1032 points wide with its
+        // contents huddled in the middle of it, which is the phone app stretched across a
+        // bigger background rather than centred on one.
+        //
+        // Before the guard below, not after: the cap changes the width, the width changes a
+        // page, and the repaging this method already does is what reacts to that. Called
+        // ahead of it so the two agree on the same pass rather than a pass apart.
         guard days.bounds.width > 0 else { return }
 
         if landedOnOpening == false {
@@ -350,10 +362,22 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
         // `DailyChallengeSession.testDayOffset`, backed by a user default - the tests set it
         // directly, and a future day can still be reached without a control on the menu.
 
+        let content = view.safeAreaLayoutGuide
+        // **Everything horizontal hangs off the safe area rather than the view's own edges.**
+        // That is the half that makes `limitMenuContentSize` mean anything here: it works by
+        // adding to `additionalSafeAreaInsets`, so a screen pinned to `view.leadingAnchor`
+        // ignores it completely - which is why this one stayed full width while the other
+        // fourteen narrowed. Nothing moves on a phone, where the portrait safe area has no
+        // left or right inset to give.
+        //
+        // The pager included. It is still edge to edge *within* the column, so a page is
+        // still a whole viewport and paging still lands on whole days; the column is simply
+        // narrower than the window on an iPad.
+
         NSLayoutConstraint.activate([
             modeIcon.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor,
                                           constant: 16),
-            modeIcon.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            modeIcon.centerXAnchor.constraint(equalTo: content.centerXAnchor),
             modeIcon.widthAnchor.constraint(
                 equalToConstant: UIViewController.menuModeLogoSize),
             modeIcon.heightAnchor.constraint(
@@ -364,26 +388,26 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
 
             title.topAnchor.constraint(equalTo: modeIcon.bottomAnchor,
                                        constant: UIViewController.menuHeaderIconGap),
-            title.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 34),
-            title.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -34),
+            title.leadingAnchor.constraint(equalTo: content.leadingAnchor, constant: 34),
+            title.trailingAnchor.constraint(equalTo: content.trailingAnchor, constant: -34),
 
             signedOutLabel.topAnchor.constraint(equalTo: title.bottomAnchor, constant: 6),
-            signedOutLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor,
+            signedOutLabel.leadingAnchor.constraint(equalTo: content.leadingAnchor,
                                                     constant: 34),
-            signedOutLabel.trailingAnchor.constraint(equalTo: view.trailingAnchor,
+            signedOutLabel.trailingAnchor.constraint(equalTo: content.trailingAnchor,
                                                      constant: -34),
 
             days.topAnchor.constraint(equalTo: signedOutLabel.bottomAnchor, constant: 16),
             // Hung off the note rather than the title: hidden, the note has no height, so
             // the pager sits 22pt under the title exactly as it did before
-            days.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            days.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            days.leadingAnchor.constraint(equalTo: content.leadingAnchor),
+            days.trailingAnchor.constraint(equalTo: content.trailingAnchor),
             days.bottomAnchor.constraint(equalTo: dateLabel.topAnchor, constant: -14),
             // Straight down to the date block now the rig has gone, so the card has the
             // room the rig used to take. Edge to edge, so a page is a whole screen and
             // paging lands on whole days; the card's own margins live on the cell
 
-            dateLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            dateLabel.centerXAnchor.constraint(equalTo: content.centerXAnchor),
             dateLabel.widthAnchor.constraint(lessThanOrEqualToConstant: 230),
             dateLabel.heightAnchor.constraint(equalToConstant: 26),
             // The date row hangs from the bottom now, not from the card (play-test round
@@ -396,9 +420,9 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
             dateBlockGuide.bottomAnchor.constraint(equalTo: countdownLabel.bottomAnchor),
             backArrow.centerYAnchor.constraint(equalTo: dateBlockGuide.centerYAnchor),
             forwardArrow.centerYAnchor.constraint(equalTo: dateBlockGuide.centerYAnchor),
-            backArrow.leadingAnchor.constraint(greaterThanOrEqualTo: view.leadingAnchor,
+            backArrow.leadingAnchor.constraint(greaterThanOrEqualTo: content.leadingAnchor,
                                                constant: 10),
-            forwardArrow.trailingAnchor.constraint(lessThanOrEqualTo: view.trailingAnchor,
+            forwardArrow.trailingAnchor.constraint(lessThanOrEqualTo: content.trailingAnchor,
                                                    constant: -10),
             // Centred on the date-and-countdown pair as one block (play-test round 12),
             // via a layout guide spanning both.
@@ -413,15 +437,15 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
             countdownLabel.topAnchor.constraint(equalTo: dateLabel.bottomAnchor,
                                                 constant: 4),
             countdownLabel.bottomAnchor.constraint(equalTo: play.topAnchor, constant: -20),
-            countdownLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor,
+            countdownLabel.leadingAnchor.constraint(equalTo: content.leadingAnchor,
                                                     constant: 34),
-            countdownLabel.trailingAnchor.constraint(equalTo: view.trailingAnchor,
+            countdownLabel.trailingAnchor.constraint(equalTo: content.trailingAnchor,
                                                      constant: -34),
             // Under the date, where the play test put it: the day, then how long is left
             // of it - and the pair stands on the play row, which is what fixes them in
             // space
 
-            close.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 55),
+            close.leadingAnchor.constraint(equalTo: content.leadingAnchor, constant: 55),
             close.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor,
                                           constant: -25),
             close.widthAnchor.constraint(equalToConstant: MainMenuCollectionViewCell.smallButtonSize),
@@ -429,12 +453,12 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
             // 55pt in from the edge, where the collection-view rows on the other mode
             // menus put their outer buttons (play-test round 11: these sat wider)
 
-            play.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            play.centerXAnchor.constraint(equalTo: content.centerXAnchor),
             play.centerYAnchor.constraint(equalTo: close.centerYAnchor),
             play.widthAnchor.constraint(equalToConstant: 75),
             play.heightAnchor.constraint(equalToConstant: 75),
 
-            leaderboardButton.trailingAnchor.constraint(equalTo: view.trailingAnchor,
+            leaderboardButton.trailingAnchor.constraint(equalTo: content.trailingAnchor,
                                                         constant: -55),
             leaderboardButton.centerYAnchor.constraint(equalTo: close.centerYAnchor),
             leaderboardButton.widthAnchor.constraint(equalToConstant: MainMenuCollectionViewCell.smallButtonSize),
@@ -444,8 +468,8 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
         ])
 
         for (arrow, offset) in [(backArrow, CGFloat(-150)), (forwardArrow, CGFloat(150))] {
-            let preferred = arrow.centerXAnchor.constraint(equalTo: view.centerXAnchor,
-                                                          constant: offset)
+            let preferred = arrow.centerXAnchor.constraint(
+                equalTo: view.safeAreaLayoutGuide.centerXAnchor, constant: offset)
             preferred.priority = .defaultHigh
             preferred.isActive = true
         }

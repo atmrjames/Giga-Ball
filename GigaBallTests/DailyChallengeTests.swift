@@ -546,8 +546,9 @@ final class DailyChallengeTests: XCTestCase {
 
     func testTheScoringAttemptPostsAndPracticeOnlyRaisesThePracticeBest() {
         let session = DailyChallengeSession.shared
-        let before = session.testDayOffset
-        defer { session.testDayOffset = before; session.active = nil }
+        let durable = session.clockStore
+        session.clockStore = InMemoryKeyValueStore()
+        defer { session.clockStore = durable; session.active = nil }
         session.testDayOffset = 0
 
         let challenge = DailyChallenge(dateKey: session.todayKey, mode: .endlessII,
@@ -648,8 +649,9 @@ final class DailyChallengeTests: XCTestCase {
         // Play test: "the date for today, yesterday should just say today and yesterday.
         // Prior days should have the date as it is."
         let session = DailyChallengeSession.shared
-        let before = session.testDayOffset
-        defer { session.testDayOffset = before }
+        let durable = session.clockStore
+        session.clockStore = InMemoryKeyValueStore()
+        defer { session.clockStore = durable }
         session.testDayOffset = 0
 
         XCTAssertEqual(session.displayName(forKey: session.todayKey), "TODAY")
@@ -680,10 +682,43 @@ final class DailyChallengeTests: XCTestCase {
 
     // MARK: - The session and the test clock
 
+    /// **Nothing has left the day clock wound.**
+    ///
+    /// Round 319c. The offset is a durable default that only a test ever writes, so its
+    /// resting value is zero and anything else is residue from a test process that was killed
+    /// before it could tidy up. That matters more than it sounds: every date-dependent test in
+    /// the suite reads `today` through it, so a stray 1 shifts the whole suite a day forward
+    /// without failing anything, and the app installed from the same build on the same
+    /// simulator reads it too.
+    ///
+    /// The tests that wind the clock now do it in memory, so this should never fail again. If
+    /// it does, something new is writing the real store - or an old residue is still sitting
+    /// in it, in which case the value it reports is the number of days everything has silently
+    /// been out by.
+    func testNothingHasLeftTheDayClockWound() {
+        XCTAssertEqual(UserDefaults.standard.integer(forKey: DailyChallengeSession.testOffsetKey),
+                       0,
+                       "the stored test-day offset is not zero, so every date in this suite is "
+                       + "that many days off - clear it from the simulator's app preferences "
+                       + "and find what wrote it")
+    }
+
     func testTheTestClockMovesTheDay() {
         let session = DailyChallengeSession.shared
-        let before = session.testDayOffset
-        defer { session.testDayOffset = before }
+        let durable = session.clockStore
+        session.clockStore = InMemoryKeyValueStore()
+        defer { session.clockStore = durable }
+        // **Wound in memory, never in the real store** (round 319c). This test used to save
+        // the stored offset and put it back in a `defer`, which reads as careful and is not
+        // enough: a killed process runs no `defer`, the relaunch trap in CLAUDE.md kills one
+        // often enough that the file calls it normal, and what it leaves behind is a
+        // *durable* value. The leak then fed itself, because the next run read 1 as "the old
+        // value" and dutifully restored it. This machine was carrying a 1, so every
+        // date-dependent test had been running a day ahead of the calendar for an unknown
+        // number of rounds - and the app installed for a visual check read the same default,
+        // which is how it was finally noticed: the daily on the phone and the daily in a
+        // render disagreed, and a daily that disagrees with itself is the one fault §2.1
+        // exists to prevent. Half an hour went into proving it was not that.
 
         session.testDayOffset = 0
         let today = session.todayKey

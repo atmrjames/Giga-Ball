@@ -29,6 +29,7 @@ import Foundation
 protocol KeyValueStore: AnyObject {
     func object(forKey defaultName: String) -> Any?
     func data(forKey defaultName: String) -> Data?
+    func integer(forKey defaultName: String) -> Int
     func set(_ value: Any?, forKey defaultName: String)
     func removeObject(forKey defaultName: String)
 }
@@ -44,6 +45,22 @@ final class InMemoryKeyValueStore: KeyValueStore {
 
     func object(forKey defaultName: String) -> Any? { values[defaultName] }
     func data(forKey defaultName: String) -> Data? { values[defaultName] as? Data }
+
+    /// Coercing, like `UserDefaults.integer(forKey:)` and for the same reason.
+    ///
+    /// `UserDefaults` reads a number out of a *string* here, which is what makes a launch
+    /// argument work (round 199: `-dailyChallengeTestDayOffset 45` arrives as a String, and
+    /// `object(forKey:) as? Int` rejects it while `integer(forKey:)` coerces it). A stand-in
+    /// that answered only real integers would behave differently from the thing it stands in
+    /// for, in exactly the case that has already caught this project out once.
+    func integer(forKey defaultName: String) -> Int {
+        switch values[defaultName] {
+        case let value as Int: return value
+        case let value as String: return Int(value) ?? 0
+        case let value as NSNumber: return value.intValue
+        default: return 0
+        }
+    }
     func set(_ value: Any?, forKey defaultName: String) {
         if let value { values[defaultName] = value } else { values.removeValue(forKey: defaultName) }
     }

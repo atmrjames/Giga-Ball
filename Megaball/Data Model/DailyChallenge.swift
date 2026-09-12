@@ -1386,17 +1386,34 @@ final class DailyChallengeSession {
     ///
     /// The setter is kept under the same flag rather than removed, because the tests that wind
     /// the clock are the reason the daily can be tested at all.
+    /// Where the test clock's offset is kept.
+    ///
+    /// `UserDefaults.standard` in the app, which is what makes round 199's launch argument
+    /// work: `-dailyChallengeTestDayOffset 45` lands in the argument domain and is read from
+    /// there like any other default.
+    ///
+    /// **Injectable because a test that winds this clock must not be able to leave it wound**
+    /// (round 319c). The test that does it saved the old value and restored it in a `defer`,
+    /// which is correct code and is not enough: the CoreAudio relaunch trap CLAUDE.md
+    /// describes kills the test process often enough to be treated as normal, a killed
+    /// process runs no `defer`, and the value it was killed holding is a *durable* one. Worse,
+    /// the leak feeds itself: the next run reads 1 as "the old value" and restores 1. This
+    /// machine was carrying exactly that, and every date-dependent test had been running a day
+    /// ahead of the calendar for an unknown number of rounds, silently. Pointing the test at
+    /// an in-memory store means there is nothing durable to leave behind, whatever kills it.
+    var clockStore: KeyValueStore = UserDefaults.standard
+
     var testDayOffset: Int {
         get {
             #if DEBUG
-            return UserDefaults.standard.integer(forKey: DailyChallengeSession.testOffsetKey)
+            return clockStore.integer(forKey: DailyChallengeSession.testOffsetKey)
             #else
             return 0
             #endif
         }
         set {
             #if DEBUG
-            UserDefaults.standard.set(newValue, forKey: DailyChallengeSession.testOffsetKey)
+            clockStore.set(newValue, forKey: DailyChallengeSession.testOffsetKey)
             #endif
             // The flag is inside each accessor rather than around them: Swift will not let
             // `#if` choose between two whole accessors of one property
