@@ -1192,7 +1192,37 @@ fails there rather than being remembered. Cluster's art arrived in round 182. Th
 Challenge badge and the twist icons are drawn, and are a different visual family (purple, not
 green/red).
 
-### Brick styles — glyph-on-tint placeholders
+### Brick styles — glyph-on-tint placeholders, and what replacing them would cost
+
+**James, round 315: "I have decided not to do any per-style brick artwork to replace the
+glyph-on-tint placeholders yet. If I were to do this, what would I need to create?"**
+
+Two answers, because there are two designs and they differ by a factor of thirty.
+
+**A drawn brick per style, per type, per size, per theme: 274 imagesets, 822 files.** Derived
+in `PerStyleArtCostTests` from the compatibility rules rather than estimated, so it moves when
+they do. Nine styles still say what they are by tinting the brick underneath - Spinning,
+Flashing, Breathing, Gravity, Moving, Directional, Exploding, Spawner and Fixed - and a tint
+sits on whatever brick it lands on, so replacing it with a picture means drawing that picture
+for every brick that style is allowed to sit on. Gravity alone is 5 types x 4 sizes x 2
+themes. The shapes are not in the count: Rounded, Convex, Concave, Wedge and Diamond change
+the silhouette and have their own faces already, and Portal got its full set in round 315.
+
+**An overlay per style: nine pictures, or a few more if the two-row sizes want their own.**
+The brick keeps its own artwork and the style is drawn on top, which is what four of these
+nine already do - Directional, Exploding, Spawner and Fixed have had on-hit marks since round
+271, and §8.5's own rule is that "the picture goes on an overlay, never on the brick". That
+rule exists because a Square brick's texture is an oblong stretched to twice its height: an
+overlay is drawn once and placed, where a baked-in picture has to be drawn again for every
+proportion.
+
+**The second is almost certainly the one to do**, and not only for the arithmetic. A tint is
+readable *because* it leaves the brick's own type visible underneath - a gravity multi-hit is
+still recognisably a multi-hit - and a drawn-per-combination set has to keep that legible 274
+times by hand. §7.3's rule that a style must not rely on colour alone is also easier to hold
+with a mark than with a hue.
+
+### Brick styles — the placeholders as they stand
 
 The nine styles and two sizes wear ordinary brick artwork tinted a distinct colour with a
 drawn glyph over it (`BrickTypeIcons` and the style application in the brick creation

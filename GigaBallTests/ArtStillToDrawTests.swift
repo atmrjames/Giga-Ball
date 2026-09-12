@@ -336,3 +336,54 @@ final class ArtStillToDrawTests: XCTestCase {
         print("")
     }
 }
+
+/// **What per-style brick artwork would actually cost**, asked of the rules rather than
+/// estimated (round 315).
+///
+/// James: "I have decided not to do any per-style brick artwork to replace the glyph-on-tint
+/// placeholders yet. If I were to do this, what would I need to create?"
+///
+/// A number nobody has measured drifts (§8.6), and this is a number worth being right about
+/// before anyone commits to drawing it. So it is derived: every style that currently says what
+/// it is by *tinting* the brick underneath, against every brick behaviour that style is allowed
+/// to sit on, against the two themes.
+///
+/// Prints rather than asserts, because the answer is a shopping list rather than a rule.
+final class PerStyleArtCostTests: XCTestCase {
+
+    /// The styles that currently wear a tint over another brick's picture.
+    ///
+    /// Not the shapes - Rounded, Convex, Concave, Wedge and Diamond change the silhouette and
+    /// have their own drawn faces already - and not Portal, which got its own full set in round
+    /// 315. What is left is the field-changing behaviours, which are all tint plus, for four of
+    /// them, an on-hit mark.
+    private let tinted: [EndlessIIStyle] = [.spinning, .flashing, .breathing, .gravity,
+                                            .moving, .directional, .exploding, .spawner, .fixed]
+
+    func testWhatPerStyleBrickArtworkWouldCost() {
+        let behaviours: [(String, EndlessIIBehaviour)] = [
+            ("Normal", .standard), ("Multi-hit", .multiHit),
+            ("Indestructible once", .indestructibleOnce),
+            ("Indestructible always", .indestructibleAlways), ("Invisible", .invisible)]
+
+        print("\n  Per-style brick artwork, if the tints were replaced by drawn pictures")
+        print("  (styles that are a shape of their own are excluded - they are drawn already)")
+
+        var total = 0
+        for style in tinted {
+            let takes = behaviours.filter { style.suits($0.1) }
+            let sizes = BrickSize.allCases.filter { style.suits($0) }
+            let each = takes.count*sizes.count
+            total += each
+            print(String(format: "    %-12@ %d brick types x %d sizes = %3d per theme",
+                         style.rawValue as NSString, takes.count, sizes.count, each))
+        }
+
+        print("    " + String(repeating: "-", count: 58))
+        print("    per theme: \(total)")
+        print("    two themes (classic and retro): \(total*2)")
+        print("    ...and each is three files, at 1x, 2x and 3x: \(total*2*3)\n")
+
+        XCTAssertGreaterThan(total, 0, "if this is zero the rules stopped answering")
+    }
+}
