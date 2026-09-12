@@ -165,6 +165,15 @@ its `PBXGroup`, and — the one that is easy to miss — the **right target's** 
   two rounds later, which no single round's own classes would ever run. Start the full suite,
   and **read what it says**.
 
+- **A test may not write anything that outlives its process.** The daily's test-day offset is
+  a `UserDefaults` integer only a test sets; the test that set it restored the old value in a
+  `defer`, which a killed process never runs. The relaunch trap above kills one per full run as
+  a matter of course, so the value stuck - and the leak fed itself, because the next run read
+  the leaked 1 as "the old value" and put it back. Every date-dependent test had been running a
+  day ahead of the calendar for an unknown number of rounds, silently, and the app installed
+  from the same build read the same default. Where a test has to write, give the code an
+  injectable store (`KeyValueStore`, `InMemoryKeyValueStore`) and point the test at memory.
+
 - **Tests are written from play-test reports.** When a bug is described, the test says what
   was reported, in the comment, in the reporter's terms. That is what stops a fix regressing
   into something that merely passes.
