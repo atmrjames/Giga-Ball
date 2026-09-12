@@ -474,6 +474,133 @@ final class SavedGameTests: XCTestCase {
         XCTAssertEqual(SavedGame.load(from: defaults)?.numberOfLives, 3)
     }
 
+    // MARK: - What the scene puts in the save
+
+    /// **Every counter in the save comes from the right place in the scene.**
+    ///
+    /// Round 319e. The format above is covered thoroughly and the *mapping* is not: round 311's
+    /// coverage pass put `saveCurrentGame` second on its risk list at complexity 164 and **3%
+    /// covered**, and round 313c found the iPad's resume bug living in it. It builds a
+    /// `SavedGame` through a forty-argument initialiser where every argument is a local named
+    /// after the scene property it copies, which is the exact shape of thing a copy-paste gets
+    /// wrong in a way nothing notices: swap `deathsPerLevel` and `deathsPerPack` and the save
+    /// is still valid, still consistent, still loads, and quietly hands a resumed run the wrong
+    /// numbers.
+    ///
+    /// So every value here is **distinct**, which is what makes the test able to see a swap at
+    /// all - the same technique `testMigrationMapsEveryIndexToTheRightField` uses on the legacy
+    /// format. Two of them are deliberately not straight copies and are asserted as what they
+    /// are: the total is the running total *plus* this level's score, because a level in
+    /// progress has not banked yet, and the multiplier survives only while the ball is alive.
+    func testTheSaveCarriesEveryCounterFromWhereItBelongs() {
+        let scene = GameScene()
+        scene.totalStatsArray = [TotalStats()]
+        scene.gameMode = .classic
+        scene.gameState.enter(Playing.self)
+
+        scene.levelNumber = 7
+        scene.endLevelNumber = 19
+        scene.packNumber = 3
+        scene.levelScore = 1_234
+        scene.totalScore = 56_789
+        scene.numberOfLives = 4
+        scene.numberOfLevels = 11
+        scene.levelTimerValue = 41
+        scene.packTimerValue = 313
+        scene.deathsPerLevel = 2
+        scene.deathsPerPack = 9
+        scene.powerUpsGeneratedPerLevel = 14
+        scene.powerUpsCollectedPerLevel = 6
+        scene.powerUpsGeneratedPerPack = 77
+        scene.powerUpsCollectedPerPack = 31
+        scene.paddleHitsPerLevel = 58
+        scene.multiplier = 1.6
+        scene.ballLostBool = false
+        scene.ballIsOnPaddle = true
+
+        scene.saveCurrentGame()
+
+        guard let saved = SavedGame.load() else {
+            return XCTFail("a run in play is a run that saves")
+        }
+        XCTAssertEqual(saved.levelNumber, 7)
+        XCTAssertEqual(saved.endLevelNumber, 19)
+        XCTAssertEqual(saved.packNumber, 3)
+        XCTAssertEqual(saved.levelScore, 1_234)
+        XCTAssertEqual(saved.totalScore, 58_023,
+                       "the running total plus the level in progress, which has not banked")
+        XCTAssertEqual(saved.numberOfLives, 4)
+        XCTAssertEqual(saved.numberOfLevels, 11)
+        XCTAssertEqual(saved.levelTimerValue, 41)
+        XCTAssertEqual(saved.packTimerValue, 313)
+        XCTAssertEqual(saved.deathsPerLevel, 2)
+        XCTAssertEqual(saved.deathsPerPack, 9)
+        XCTAssertEqual(saved.powerUpsGeneratedPerLevel, 14)
+        XCTAssertEqual(saved.powerUpsCollectedPerLevel, 6)
+        XCTAssertEqual(saved.powerUpsGeneratedPerPack, 77)
+        XCTAssertEqual(saved.powerUpsCollectedPerPack, 31)
+        XCTAssertEqual(saved.paddleHitsPerLevel, 58)
+        XCTAssertEqual(saved.multiplier, 1.6, accuracy: 0.0001)
+        XCTAssertEqual(saved.gameMode, GameMode.classic.rawValue)
+    }
+
+    /// **A lost ball banks nothing and takes the multiplier with it.**
+    ///
+    /// The two conditional values from the test above, asserted as conditions rather than as
+    /// copies. `ballLostBool` means the ball is gone and the run is between serves, and the
+    /// multiplier is a streak: a resume that handed back 1.6 would be handing back a streak the
+    /// player had already lost.
+    func testALostBallSavesTheMultiplierBackToOne() {
+        let scene = GameScene()
+        scene.totalStatsArray = [TotalStats()]
+        scene.gameMode = .classic
+        scene.gameState.enter(Playing.self)
+        scene.numberOfLives = 3
+        scene.levelNumber = 2
+        scene.endLevelNumber = 10
+        scene.numberOfLevels = 10
+        scene.multiplier = 1.6
+        scene.ballLostBool = true
+        scene.ballIsOnPaddle = true
+
+        scene.saveCurrentGame()
+
+        XCTAssertEqual(SavedGame.load()?.multiplier, 1.0,
+                       "a streak the player has already lost must not come back with the run")
+    }
+
+    /// **The layout the save's points mean something in travels with it** (round 313).
+    ///
+    /// Everything else in the save is a cell or a counter and moves between layouts on its own.
+    /// The ball, the paddle and Mayhem's brick records are *points*, and on an iPad the next
+    /// launch is not always the same size or even the same way up - which is the bug round 313c
+    /// found. The two fields that carry the frame are written from the scene, so they are worth
+    /// the same distinctness treatment as the counters.
+    func testTheSaveRecordsTheLayoutItsPointsWereMeasuredIn() {
+        let scene = GameScene()
+        scene.totalStatsArray = [TotalStats()]
+        scene.gameMode = .classic
+        scene.gameState.enter(Playing.self)
+        scene.numberOfLives = 3
+        scene.levelNumber = 2
+        scene.endLevelNumber = 10
+        scene.numberOfLevels = 10
+        scene.gameWidth = 393
+        scene.yBrickOffset = 612
+        // Where row zero sits, which is what `resumedBrickTopRow` answers for a classic run -
+        // set through the property it derives from rather than faked, so the test is asking the
+        // same question the save asks
+        scene.ballIsOnPaddle = true
+
+        scene.saveCurrentGame()
+
+        let saved = SavedGame.load()
+        XCTAssertEqual(saved?.savedGameWidth ?? 0, 393, accuracy: 0.001,
+                       "the width the points were measured across")
+        XCTAssertEqual(saved?.savedFieldTop ?? 0, 612, accuracy: 0.001,
+                       "and where the top of the field was")
+    }
+
     // MARK: - A finished game must never be saved
 
     func testAGameOverIsNeverSaved() {
