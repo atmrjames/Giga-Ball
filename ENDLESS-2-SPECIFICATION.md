@@ -1240,6 +1240,24 @@ The halo, aura glow, laser beam flash, portal jump trail, aim arrow, pull lines,
 strips, wall tints and the landing triangle are `SKShapeNode`/tint work, styled to the
 mode's palette. These can ship as they are or be replaced piecemeal - none blocks release.
 
+### Still owed from round 315's delivery
+
+Three things, all small and all recorded so they are asked for rather than rediscovered:
+
+- **`retroPaddleTexturePortal` and `retroLasersPortal`** - the *unshaped* retro paddle's
+  Portal colours. All five shaped variants arrived; the plain pair did not, and a paddle has
+  no shape unless a shape power-up is running, so this is the common case rather than an edge
+  one. `endlessIIRetroArt` asks for the Portal picture and falls back, so the day they arrive
+  is a no-code day; `testAnUnshapedRetroPaddleHasNoPortalArtYet` fails when they do, which is
+  the reminder to strike this entry.
+- **`DroughtTwistIcon`**, still. Round 314g held it back for square corners; the redraw has
+  rounded corners and a contained glyph but keeps a pale grey plate behind the tile -
+  rgb(224,224,224) at 66/255 in all four corners where every other badge is 0.
+- **The Portal Paddle's tint is still blue.** Not an asset, a decision: `portalBlueColour`
+  paints every non-retro paddle while the power-up runs, and the new artwork has moved the
+  Portal identity to the Giga-Ball lime - the bricks, both glows and the retro paddle are all
+  lime now, and the tint is the one blue thing left. One constant, James's call.
+
 ### Twist badges
 
 **All twenty-two redrawn** (James, round 314), bolder glyphs filling more of each tile.

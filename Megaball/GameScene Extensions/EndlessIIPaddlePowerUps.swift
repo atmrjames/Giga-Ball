@@ -358,14 +358,38 @@ extension GameScene {
     func refreshEndlessIIRetroShapeDressing(_ suffix: String?) {
         guard paddleTexture == retroPaddle else { return }
 
-        paddleRetroTexture.texture = SKTexture(imageNamed:
-            suffix.map { "retroPaddleTexture\($0)" } ?? "retroPaddleTexture")
-        paddleRetroLaserTexture.texture = SKTexture(imageNamed:
-            suffix.map { "retroLasers\($0)" } ?? "retroLasers")
+        paddleRetroTexture.texture = endlessIIRetroArt("retroPaddleTexture", suffix)
+        paddleRetroLaserTexture.texture = endlessIIRetroArt("retroLasers", suffix)
         if endlessIIWearsGrip == false {
             paddleRetroStickyTexture.texture = SKTexture(imageNamed:
                 suffix.map { "retroSticky\($0)" } ?? "retroSticky")
+            // No Portal variant for the sticky band, and none wanted: the band is the
+            // *power-up's* own colour, and a Sticky Paddle running alongside a Portal Paddle
+            // is still a sticky paddle
         }
+    }
+
+    /// A retro paddle layer's picture, in the Portal colours where the power-up is running and
+    /// the picture exists.
+    ///
+    /// **James, round 315**: "the retro paddle has a Giga-Ball yellow/green variant in regular
+    /// and laser setups for when the portal power-up is active." Every other theme says Portal
+    /// by being tinted - `dressEndlessIIPaddle` paints the sprite - and the retro paddle cannot
+    /// be, because the tint is modulated by the picture and the retro art is its own strong
+    /// colour already. So it says it by swapping the picture, which is what he has drawn.
+    ///
+    /// **The plain pair is missing from the delivery** and the shaped five are all there:
+    /// `retroPaddleTexturePortal` and `retroLasersPortal` do not exist, so an *unshaped* retro
+    /// paddle running a Portal Paddle keeps its ordinary art. That is the common case rather
+    /// than an edge one - a paddle has no shape unless a shape power-up is running - so it is
+    /// on §8.5's list. Asked for and fallen back from rather than assumed either way, which is
+    /// what makes the day those two arrive a no-code day.
+    func endlessIIRetroArt(_ stem: String, _ suffix: String?) -> SKTexture {
+        let base = stem + (suffix ?? "")
+        if endlessIIPortalPaddleClock.isRunning, UIImage(named: base + "Portal") != nil {
+            return SKTexture(imageNamed: base + "Portal")
+        }
+        return SKTexture(imageNamed: base)
     }
 
     /// Puts the shaped art on the paddle and rebuilds its body to match, or takes both away.

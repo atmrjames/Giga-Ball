@@ -280,6 +280,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	/// Which shaped picture the paddle is wearing, and how far it was raised to keep its
 	/// underside on the line. Nil and zero whenever the paddle is its ordinary self.
 	var endlessIIPaddleShapeArtName: String?
+
+	/// Whether the retro paddle is currently wearing its Portal colours, so the swap happens
+	/// on the frame the clock starts or stops and on no other - see
+	/// `refreshEndlessIIRetroPortalArt`.
+	var endlessIIRetroWearsPortalArt = false
 	var endlessIIPaddleShapeLift: CGFloat = 0
 
 	/// The width the shaped body was last traced at, so Expand and Shrink can be noticed.

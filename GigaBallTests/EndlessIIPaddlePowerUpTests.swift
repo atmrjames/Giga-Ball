@@ -3571,6 +3571,79 @@ final class PaddleSurfaceTests: XCTestCase {
         print("\n  Balls caught by the game's own sticky path: \(file.path)\n")
     }
 
+    /// **The paddle glow and the retro Portal paddle, looked at** (round 315).
+    ///
+    /// James: "the glow graphic should sit centred behind the paddle during the portal
+    /// power-up. There is a glow for each paddle shape", and "the retro paddle has a Giga-Ball
+    /// yellow/green variant in regular and laser setups".
+    ///
+    /// Top block: each paddle shape with the Portal Paddle running, so the halo can be seen
+    /// against the shape it surrounds. Bottom block: the retro paddle and its lasers, before
+    /// and after the power-up, which is the one theme that says Portal by swapping its picture
+    /// rather than by being tinted.
+    func testThePaddleGlowAndRetroPortalArtCanBeLookedAt() throws {
+        let shapes: [(String, PaddleBounce.Surface?)] = [("plain", nil), ("convex", .convex),
+                                                         ("concave", .concave), ("wave", .wavy),
+                                                         ("wedgeL", .wedgeLeft),
+                                                         ("wedgeR", .wedgeRight)]
+        let column: CGFloat = 150, row: CGFloat = 80
+        let display = SKScene(size: CGSize(width: column*CGFloat(shapes.count) + 20,
+                                           height: row*3 + 20))
+        display.backgroundColor = UIColor(red: 0.10, green: 0.03, blue: 0.18, alpha: 1)
+
+        for (index, entry) in shapes.enumerated() {
+            let scene = self.scene(shaped: false)
+            scene.ball.size = CGSize(width: 12, height: 12)
+            if let surface = entry.1 {
+                scene.endlessIIPaddleSurface = surface
+                scene.endlessIIPaddleSurfaceClock.collect(10)
+                scene.refreshEndlessIIPaddleShapeArt()
+            }
+            scene.endlessIIPortalPaddleClock.collect(turns: 5)
+            scene.tickEndlessIIPaddleDressing()
+
+            let paddle = scene.paddle
+            paddle.removeFromParent()
+            paddle.position = CGPoint(x: 10 + column*(CGFloat(index) + 0.5),
+                                      y: display.size.height - row*0.5)
+            display.addChild(paddle)
+        }
+
+        for (line, portal) in [(1, false), (2, true)] {
+            for (index, entry) in shapes.enumerated() where entry.1 == nil || index < 3 {
+                let scene = self.scene(shaped: false)
+                scene.paddleTexture = scene.retroPaddle
+                scene.ball.size = CGSize(width: 12, height: 12)
+                var suffix: String?
+                if let surface = entry.1 {
+                    scene.endlessIIPaddleSurface = surface
+                    suffix = scene.endlessIIPaddleShapeSuffix(surface)
+                }
+                if portal { scene.endlessIIPortalPaddleClock.collect(turns: 5) }
+                scene.refreshEndlessIIRetroShapeDressing(suffix)
+
+                for (offset, layer) in [scene.paddleRetroTexture,
+                                        scene.paddleRetroLaserTexture].enumerated() {
+                    let copy = SKSpriteNode(texture: layer.texture,
+                                            size: CGSize(width: 110, height: 32))
+                    copy.position = CGPoint(x: 10 + column*(CGFloat(index) + 0.5),
+                                            y: display.size.height - row*(CGFloat(line) + 0.5)
+                                                + (offset == 0 ? 16 : -16))
+                    display.addChild(copy)
+                }
+            }
+        }
+
+        let view = SKView(frame: CGRect(origin: .zero, size: display.size))
+        let rendered = try XCTUnwrap(view.texture(from: display))
+        let file = URL(fileURLWithPath: NSTemporaryDirectory())
+            .appendingPathComponent("paddle-glow.png")
+        try XCTUnwrap(UIImage(cgImage: rendered.cgImage()).pngData()).write(to: file)
+        print("\n  Paddle glows and retro Portal art: \(file.path)")
+        print("  row 1: every shape with the Portal Paddle running")
+        print("  rows 2 and 3: retro paddle and lasers, ordinary then Portal\n")
+    }
+
     /// Past either end, the end's own height - not a curve carried on into thin air.
     ///
     /// A ball is only ever placed within the paddle's width, so this is a guard rather than a
@@ -5418,5 +5491,179 @@ final class EndlessIISplitSegmentBounceTests: XCTestCase {
         scene.gameMode = .endlessII
         scene.paddle.size = CGSize(width: 200, height: 20)
         XCTAssertNil(scene.endlessIISplitCollision(ballX: 10))
+    }
+}
+
+/// **The paddle's Portal glow, and the retro theme's own Portal art** (round 315).
+final class PaddlePortalLookTests: XCTestCase {
+
+    private func scene(retro: Bool = false) -> GameScene {
+        let scene = GameScene(size: CGSize(width: 402, height: 874))
+        scene.gameMode = .endlessII
+        scene.paddleHeight = 12
+        scene.paddleWidth = 75
+        scene.ballSize = 12
+        scene.paddleTexture = retro ? scene.retroPaddle : SKTexture(imageNamed: "regularPaddle")
+        scene.paddle.texture = scene.paddleTexture
+        scene.paddle.size = CGSize(width: 75, height: 12)
+        scene.ball.size = CGSize(width: 12, height: 12)
+        scene.addChild(scene.paddle)
+        return scene
+    }
+
+    private func glow(_ scene: GameScene) -> SKSpriteNode? {
+        scene.paddle.childNode(withName: GameScene.paddleGlowName) as? SKSpriteNode
+    }
+
+    /// **The asset name, not the object.** `SKTexture(imageNamed:)` hands back a fresh
+    /// instance every call and `SKTexture` compares by identity, so `!=` between two of them
+    /// is true whether or not the picture changed - which made the first version of the two
+    /// swap tests below pass without asserting anything at all. The name is what is actually
+    /// being claimed.
+    private func art(_ texture: SKTexture?) -> String? {
+        texture.map { "\($0)" }
+    }
+
+    /// It appears with the power-up and goes with it.
+    func testTheGlowOnlyShowsWhileThePortalPaddleRuns() {
+        let scene = self.scene()
+        scene.tickEndlessIIPaddleDressing()
+        XCTAssertNil(glow(scene), "no power-up, no halo")
+
+        scene.endlessIIPortalPaddleClock.collect(turns: 5)
+        scene.tickEndlessIIPaddleDressing()
+        XCTAssertNotNil(glow(scene))
+
+        scene.endlessIIPortalPaddleClock.reset()
+        scene.tickEndlessIIPaddleDressing()
+        XCTAssertNil(glow(scene), "a halo left behind outlives its power-up")
+    }
+
+    /// Every shape has one drawn for it, which is what James said he delivered.
+    func testEveryPaddleShapeHasAGlow() {
+        for surface in [nil, PaddleBounce.Surface.convex, .concave, .wavy,
+                        .wedgeLeft, .wedgeRight] as [PaddleBounce.Surface?] {
+            let scene = self.scene()
+            if let surface {
+                scene.endlessIIPaddleSurface = surface
+                scene.endlessIIPaddleSurfaceClock.collect(10)
+                scene.refreshEndlessIIPaddleShapeArt()
+            }
+            scene.endlessIIPortalPaddleClock.collect(turns: 5)
+            scene.tickEndlessIIPaddleDressing()
+
+            XCTAssertNotNil(glow(scene),
+                            "\(surface.map(String.init(describing:)) ?? "plain") has no glow")
+        }
+    }
+
+    /// It reaches past the paddle, follows its width, and carries no physics body.
+    ///
+    /// The width matters more here than it does for a brick: a paddle grows with Expand and
+    /// shrinks with Shrink, so a halo sized once would fit at one width only.
+    func testTheGlowFollowsThePaddleAndCannotBeHit() throws {
+        let scene = self.scene()
+        scene.endlessIIPortalPaddleClock.collect(turns: 5)
+        scene.tickEndlessIIPaddleDressing()
+
+        let glow = try XCTUnwrap(self.glow(scene))
+        XCTAssertNil(glow.physicsBody, "a glow the ball can hit is a paddle bigger than it looks")
+        XCTAssertLessThan(glow.zPosition, 0, "behind the paddle, not over it")
+        XCTAssertEqual(glow.position, .zero, "centred on the paddle")
+        XCTAssertEqual(glow.size.width - scene.paddle.size.width,
+                       GameScene.paddleGlowMargin.width, accuracy: 0.001)
+
+        scene.paddle.size.width = 150
+        scene.tickEndlessIIPaddleDressing()
+        XCTAssertEqual(try XCTUnwrap(self.glow(scene)).size.width - 150,
+                       GameScene.paddleGlowMargin.width, accuracy: 0.001,
+                       "an expanded paddle keeps its halo")
+    }
+
+    /// The margin is measured off the artwork, like the bricks' is.
+    func testThePaddleGlowMarginComesFromTheArtwork() {
+        XCTAssertGreaterThan(GameScene.paddleGlowMargin.width, 0)
+        XCTAssertEqual(GameScene.paddleGlowMargin.width,
+                       SKTexture(imageNamed: "squarePaddleGlow").size().width
+                           - SKTexture(imageNamed: "squarePaddle").size().width,
+                       accuracy: 0.001)
+    }
+
+    // MARK: - The retro theme, which swaps its picture instead of being tinted
+
+    /// A shaped retro paddle wears its Portal colours while the power-up runs.
+    func testAShapedRetroPaddleTakesItsPortalArt() {
+        for surface in [PaddleBounce.Surface.convex, .concave, .wavy,
+                        .wedgeLeft, .wedgeRight] {
+            let scene = self.scene(retro: true)
+            scene.endlessIIPaddleSurface = surface
+            let suffix = scene.endlessIIPaddleShapeSuffix(surface)
+
+            scene.refreshEndlessIIRetroShapeDressing(suffix)
+            let ordinary = art(scene.paddleRetroTexture.texture)
+
+            scene.endlessIIPortalPaddleClock.collect(turns: 5)
+            scene.refreshEndlessIIRetroShapeDressing(suffix)
+
+            XCTAssertNotEqual(art(scene.paddleRetroTexture.texture), ordinary,
+                              "\(surface) kept its ordinary art under a Portal Paddle")
+        }
+    }
+
+    /// And so do its lasers.
+    func testTheRetroLasersTakeTheirPortalArtToo() {
+        let scene = self.scene(retro: true)
+        scene.endlessIIPaddleSurface = .convex
+        let suffix = scene.endlessIIPaddleShapeSuffix(.convex)
+        scene.refreshEndlessIIRetroShapeDressing(suffix)
+        let ordinary = art(scene.paddleRetroLaserTexture.texture)
+
+        scene.endlessIIPortalPaddleClock.collect(turns: 5)
+        scene.refreshEndlessIIRetroShapeDressing(suffix)
+        XCTAssertNotEqual(art(scene.paddleRetroLaserTexture.texture), ordinary)
+    }
+
+    /// **The plain pair is not drawn yet, and the fallback is the ordinary art.**
+    ///
+    /// `retroPaddleTexturePortal` and `retroLasersPortal` are missing from round 315's
+    /// delivery while all five shaped ones arrived, so an *unshaped* retro paddle running a
+    /// Portal Paddle keeps its usual colours. That is the common case rather than an edge one,
+    /// because a paddle has no shape unless a shape power-up is running.
+    ///
+    /// Asserted rather than left as a silence, and written so it fails the day the pictures
+    /// arrive - at which point this test is the reminder to strike the §8.5 entry.
+    func testAnUnshapedRetroPaddleHasNoPortalArtYet() {
+        XCTAssertNil(UIImage(named: "retroPaddleTexturePortal"),
+                     "if this now exists, delete this test and strike §8.5's entry")
+        XCTAssertNil(UIImage(named: "retroLasersPortal"))
+
+        let scene = self.scene(retro: true)
+        scene.refreshEndlessIIRetroShapeDressing(nil)
+        let ordinary = art(scene.paddleRetroTexture.texture)
+
+        scene.endlessIIPortalPaddleClock.collect(turns: 5)
+        scene.refreshEndlessIIRetroShapeDressing(nil)
+        XCTAssertEqual(art(scene.paddleRetroTexture.texture), ordinary,
+                       "with no Portal picture drawn, the ordinary one stays - a missing "
+                       + "asset must not become a blank paddle")
+    }
+
+    /// The swap happens on the frame the clock turns over, not on an unrelated event.
+    ///
+    /// Collecting a Portal Paddle changes no *shape*, and the retro dressing is otherwise
+    /// refreshed only when a shape changes - so without the per-frame check the swap would
+    /// wait for something else to happen, or never happen at all.
+    func testTheRetroSwapFollowsTheClockRatherThanAShapeChange() {
+        let scene = self.scene(retro: true)
+        scene.endlessIIPaddleSurface = .convex
+        scene.endlessIIPaddleSurfaceClock.collect(10)
+        scene.refreshEndlessIIRetroShapeDressing(scene.endlessIIPaddleShapeSuffix(.convex))
+        let ordinary = art(scene.paddleRetroTexture.texture)
+
+        scene.endlessIIPortalPaddleClock.collect(turns: 5)
+        scene.tickEndlessIIPaddleDressing()
+
+        XCTAssertNotEqual(art(scene.paddleRetroTexture.texture), ordinary,
+                          "the tick is what notices, since no shape changed")
     }
 }
