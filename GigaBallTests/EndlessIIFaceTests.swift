@@ -1249,3 +1249,149 @@ final class EndlessIISquareBrickArtTests: XCTestCase {
         XCTAssertTrue(first === second, "the second ask is the first one's answer")
     }
 }
+
+/// **The glow behind a Portal brick** (round 315).
+///
+/// James: "some glow graphics for all shapes of the portal bricks - these should sit centred
+/// behind portal bricks to the same scale - they should not have a physics body - these can be
+/// rotated and flipped as needed for the different brick orientations."
+final class PortalGlowTests: XCTestCase {
+
+    private func scene() -> GameScene {
+        let scene = GameScene(size: CGSize(width: 402, height: 874))
+        scene.gameMode = .endlessII
+        scene.brickWidth = 56
+        scene.brickHeight = 28
+        scene.gameWidth = 402
+        return scene
+    }
+
+    private func portal(_ scene: GameScene, face: EndlessIIFace? = nil,
+                        rounded: Bool = false) -> SKSpriteNode {
+        let brick = SKSpriteNode(texture: scene.brickIndestructible2Texture,
+                                 size: CGSize(width: 56, height: 28))
+        scene.addChild(brick)
+        if let face { scene.makeFace(face, on: brick) }
+        if rounded { scene.makeRounded(brick) }
+        scene.makePortal(brick)
+        return brick
+    }
+
+    private func glow(_ brick: SKSpriteNode) -> SKSpriteNode? {
+        brick.childNode(withName: GameScene.portalGlowName) as? SKSpriteNode
+    }
+
+    /// Every shape has one, including the two that are not `EndlessIIFace` values.
+    ///
+    /// Rounded is a *style* rather than a face and leaves `endlessIIFace` nil, which the first
+    /// version of the lookup missed - a rounded Portal wore the plain oblong's halo behind a
+    /// capsule, and the render is where that showed.
+    func testEveryPortalShapeHasItsOwnGlow() {
+        let scene = self.scene()
+        for (name, face, rounded) in [("plain", nil, false), ("rounded", nil, true),
+                                      ("wedge", EndlessIIFace.wedge, false),
+                                      ("convex", .convex, false), ("concave", .concave, false),
+                                      ("diamond", .diamond, false)]
+            as [(String, EndlessIIFace?, Bool)] {
+            let brick = portal(scene, face: face, rounded: rounded)
+            XCTAssertNotNil(glow(brick), "\(name) Portal has no glow behind it")
+        }
+    }
+
+    /// **It reaches past the brick**, or the halo is hidden behind the thing it surrounds.
+    ///
+    /// This is the fault the render caught: sized to the cell, every glow was invisible.
+    func testTheGlowIsLargerThanTheBrickItSitsBehind() throws {
+        let scene = self.scene()
+        let brick = portal(scene)
+        let glow = try XCTUnwrap(self.glow(brick))
+        let cell = scene.endlessIIFieldSize(of: brick)
+
+        XCTAssertGreaterThan(glow.size.width, cell.width, "a halo has to show past the brick")
+        XCTAssertGreaterThan(glow.size.height, cell.height)
+        XCTAssertEqual(glow.size.width - cell.width, GameScene.portalGlowMargin.width,
+                       accuracy: 0.001, "and by the margin James drew, not an invented one")
+    }
+
+    /// And that margin is read off the pictures rather than typed into the code.
+    func testTheMarginComesFromTheArtwork() {
+        XCTAssertGreaterThan(GameScene.portalGlowMargin.width, 0,
+                             "zero would mean one of the two pictures is missing, and a glow "
+                             + "sized to the cell is a glow nobody can see")
+        XCTAssertEqual(GameScene.portalGlowMargin.width,
+                       SKTexture(imageNamed: "BrickPortalGlow").size().width
+                           - SKTexture(imageNamed: "BrickPortal").size().width,
+                       accuracy: 0.001)
+    }
+
+    /// Centred on the brick's *drawing*, which is not the same as its node.
+    ///
+    /// A brick wearing a face has had its sprite shrunk to hide behind that face (§8.6), so
+    /// `brick.size` is the hiding rectangle. `endlessIIBrickCentre` is the one that knows.
+    func testTheGlowIsCentredOnTheDrawingRatherThanTheNode() throws {
+        let scene = self.scene()
+        let brick = portal(scene, face: .wedge)
+        let glow = try XCTUnwrap(self.glow(brick))
+
+        XCTAssertEqual(glow.position.x, scene.endlessIIBrickCentre(of: brick).x, accuracy: 0.001)
+        XCTAssertEqual(glow.position.y, scene.endlessIIBrickCentre(of: brick).y, accuracy: 0.001)
+    }
+
+    /// **No physics body**, as asked. A glow the ball could bounce off would be a Portal
+    /// bigger than it looks - and it is bigger than it looks, which is the point of it.
+    func testTheGlowHasNoPhysicsBody() throws {
+        let scene = self.scene()
+        for face in [nil, EndlessIIFace.wedge, .convex, .concave, .diamond] as [EndlessIIFace?] {
+            let brick = portal(scene, face: face)
+            XCTAssertNil(try XCTUnwrap(glow(brick)).physicsBody)
+        }
+    }
+
+    /// It sits behind its own brick rather than over it.
+    func testTheGlowIsBehindTheBrick() throws {
+        let scene = self.scene()
+        let glow = try XCTUnwrap(self.glow(portal(scene)))
+        XCTAssertLessThan(glow.zPosition, 0, "a glow drawn on top is not a glow")
+    }
+
+    /// Turned the way the brick is turned, which is what "rotated and flipped as needed" buys.
+    ///
+    /// One picture per shape and the node does the reflecting - unlike the bricks, which are
+    /// drawn four ways because a wedge lit from above is lit from below once flipped. A halo
+    /// has no lighting to get wrong.
+    func testTheGlowIsReflectedTheWayTheFaceIs() throws {
+        let scene = self.scene()
+        let brick = portal(scene, face: .wedge)
+        brick.endlessIIFaceMirrored = true
+        brick.endlessIIFaceFlipped = true
+        scene.refreshEndlessIIPortalGlow(on: brick)
+
+        let glow = try XCTUnwrap(self.glow(brick))
+        XCTAssertEqual(glow.xScale, -1, "mirrored")
+        XCTAssertEqual(glow.yScale, -1, "flipped")
+    }
+
+    /// A brick that stops being a Portal loses its halo.
+    func testTheGlowGoesWhenTheRoleDoes() {
+        let scene = self.scene()
+        let brick = portal(scene)
+        XCTAssertNotNil(glow(brick))
+
+        brick.endlessIIRole = nil
+        scene.refreshEndlessIIPortalGlow(on: brick)
+        XCTAssertNil(glow(brick), "a glow left behind is a Portal that is not there any more")
+    }
+
+    /// And it drains with the brick while the Portal is cooling (round 274).
+    func testTheGlowGoesMonochromeWithTheBrick() throws {
+        let scene = self.scene()
+        let brick = portal(scene)
+        let ready = try XCTUnwrap(glow(brick)).texture
+
+        scene.endlessIIPortalCooldown = 3
+        scene.endlessIIShowPortal(brick, cooling: true)
+
+        XCTAssertNotEqual(try XCTUnwrap(glow(brick)).texture, ready,
+                          "the glow stayed lit under a grey brick")
+    }
+}

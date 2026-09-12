@@ -559,6 +559,70 @@ final class EndlessIIFrameCostTests: XCTestCase {
         print("  columns: \(labels.joined(separator: ", "))\n")
     }
 
+    /// **Every Portal shape with its new glow behind it** (round 315).
+    ///
+    /// James: "some glow graphics for all shapes of the portal bricks - these should sit
+    /// centred behind portal bricks to the same scale... these can be rotated and flipped as
+    /// needed for the different brick orientations", and "the icon in the centre has been
+    /// removed. The glow and colour of the bricks should be enough indication".
+    ///
+    /// Both halves of that are things only looking can settle: whether the halo is centred and
+    /// the right size behind each shape, and whether a Portal still reads as a Portal now that
+    /// nothing is drawn on it. The second row is the same bricks cooling, which should drain
+    /// the glow with the brick rather than leave it lit under a grey one.
+    func testThePortalBricksAndTheirGlowsCanBeLookedAt() throws {
+        let cell = CGSize(width: 56, height: 28)
+        let column: CGFloat = 100, row: CGFloat = 80
+        let faces: [(String, EndlessIIFace?)] = [("plain", nil), ("rounded", nil),
+                                                 ("wedge", .wedge), ("convex", .convex),
+                                                 ("concave", .concave), ("diamond", .diamond)]
+
+        let display = SKScene(size: CGSize(width: column*CGFloat(faces.count) + 20,
+                                           height: row*2 + 30))
+        display.backgroundColor = UIColor(red: 0.15, green: 0.04, blue: 0.24, alpha: 1)
+
+        for (line, cooling) in [(0, false), (1, true)] {
+            for (index, entry) in faces.enumerated() {
+                let game = GameScene(size: CGSize(width: 402, height: 874))
+                game.gameMode = .endlessII
+                game.brickWidth = cell.width
+                game.brickHeight = cell.height
+                game.gameWidth = 402
+
+                let brick = SKSpriteNode(texture: game.brickIndestructible2Texture, size: cell)
+                game.addChild(brick)
+                if let face = entry.1 { game.makeFace(face, on: brick) }
+                if entry.0 == "rounded" { game.makeRounded(brick) }
+                game.makePortal(brick)
+                if cooling {
+                    game.endlessIIPortalCooldown = 3
+                    game.endlessIIShowPortal(brick, cooling: true)
+                }
+
+                if line == 0 {
+                    let glow = brick.childNode(withName: GameScene.portalGlowName) as? SKSpriteNode
+                    print("    \(entry.0.padding(toLength: 9, withPad: " ", startingAt: 0)) "
+                          + "glow: \(glow == nil ? "NONE" : "yes") "
+                          + "size \(glow.map { "\(Int($0.size.width))x\(Int($0.size.height))" } ?? "-")")
+                }
+
+                brick.removeFromParent()
+                brick.position = CGPoint(x: 10 + column*(CGFloat(index) + 0.5),
+                                         y: display.size.height - 20 - row*(CGFloat(line) + 0.5))
+                display.addChild(brick)
+            }
+        }
+
+        let view = SKView(frame: CGRect(origin: .zero, size: display.size))
+        let texture = try XCTUnwrap(view.texture(from: display))
+        let file = URL(fileURLWithPath: NSTemporaryDirectory())
+            .appendingPathComponent("portal-glows.png")
+        try XCTUnwrap(UIImage(cgImage: texture.cgImage()).pngData()).write(to: file)
+        print("\n  Portal bricks and their glows: \(file.path)")
+        print("  top row ready, bottom row cooling")
+        print("  columns: \(faces.map(\.0).joined(separator: ", "))\n")
+    }
+
     /// Draws the on-hit marks - the four directional overlays at both proportions, the Fixed
     /// brick before and after it locks, and the power-up brick wearing its badge.
     ///

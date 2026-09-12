@@ -1095,7 +1095,10 @@ extension GameScene {
         brick.texture = brickIndestructible2Texture
         refreshEndlessIIBrickArt(brick)
         endlessIIRefreshFace(on: brick)
+        refreshEndlessIIPortalGlow(on: brick)
         if endlessIIWearsPortalArt(brick) { return }
+        // The glow goes on before the early return, because it belongs to every Portal and the
+        // return is about the *glyph*: a shape with no picture still wants its halo
         // **The picture James drew has the rings in it**, so a brick wearing it needs no glyph
         // drawn on top - two sets of rings is one more than a Portal has. Everything below is
         // what a Portal wore for two hundred rounds and still wears wherever there is no
@@ -1307,6 +1310,113 @@ extension GameScene {
         return false
     }
 
+    /// The glow that sits behind a Portal brick, and the name it answers to.
+    static let portalGlowName = "endlessIIPortalGlow"
+
+    /// **One picture per shape, turned by the node rather than drawn four ways.**
+    ///
+    /// James, round 315: "some glow graphics for all shapes of the portal bricks - these
+    /// should sit centred behind portal bricks to the same scale - they should not have a
+    /// physics body - these can be rotated and flipped as needed for the different brick
+    /// orientations."
+    ///
+    /// So the name carries the shape and the size and **never the orientation**, which is
+    /// where this parts company with `endlessIIShapedArt`. That builder asks for `Wedge90`
+    /// before `Wedge` because round 262 drew the *bricks* four ways: a wedge lit from above is
+    /// lit from below the moment it is flipped, and only a separate picture fixes that. A glow
+    /// has no lighting to get wrong - it is a soft halo of one colour - so one picture reflects
+    /// correctly, and asking for `BrickPortalWedge90Glow` would find nothing and fall back to
+    /// no glow at all.
+    func endlessIIPortalGlowTexture(for brick: SKSpriteNode) -> SKTexture? {
+        let suffix = GameScene.artSuffix(for: endlessIISizeOf(brick))
+        var shape = brick.endlessIIFace.flatMap(GameScene.shapedArt(for:))
+        if shape == nil, brick.childNode(withName: GameScene.roundedBrickOutlineName) != nil {
+            shape = .rounded
+        }
+        // **Rounded is not a face**, and the first version of this missed it. A dome, a notch,
+        // a wedge and a diamond are `EndlessIIFace` values applied by `makeFace`; Rounded is a
+        // *style*, applied by `makeRounded`, and leaves `endlessIIFace` nil. So a rounded
+        // Portal asked for `BrickPortalGlow` and got the plain oblong halo behind a capsule -
+        // which is exactly how it looked in the render. `endlessIIWearsPortalArt` two functions
+        // down has always had to ask both questions for the same reason.
+        let stem = GameScene.portalBrickArtName + (shape?.rawValue ?? "")
+
+        for name in [stem + suffix + "Glow", stem + "Glow"] where UIImage(named: name) != nil {
+            return SKTexture(imageNamed: name)
+        }
+        return nil
+        // The sized picture first and the plain one after, the way every other lookup here
+        // works: `BrickPortalRoundedSquareGlow` exists and `BrickPortalRoundedBigGlow` does
+        // not, so a Big Rounded Portal wears the ordinary Rounded glow rather than none
+    }
+
+    /// Puts that glow behind the brick, or takes it away where there is no picture for it.
+    ///
+    /// **Sized to the cell and centred on the drawing, not on the node.** A brick wearing a
+    /// face has had its sprite shrunk to hide behind that face (§8.6), so `brick.size` is the
+    /// hiding rectangle rather than the cell - the same trap the resumed body and the
+    /// multi-hit bar both fell into. `endlessIIFieldSize` and `endlessIIBrickCentre` are the
+    /// two that know better, and the glyph above already uses them.
+    ///
+    /// **Reflected exactly as the face is**, `xScale = -1` mirrored and `yScale = -1` flipped,
+    /// which is what `makeFace` does to the shape node one file along. A halo is symmetrical
+    /// enough that this rarely shows, and doing it anyway means a wedge's glow leans the way
+    /// its wedge leans.
+    ///
+    /// **No physics body**, as asked - and it gets one for free by being an `SKSpriteNode`
+    /// added as a child, which has none unless somebody gives it one. Worth saying out loud
+    /// because a glow the ball could bounce off would be a Portal that is bigger than it
+    /// looks.
+    func refreshEndlessIIPortalGlow(on brick: SKSpriteNode) {
+        let existing = brick.childNode(withName: GameScene.portalGlowName) as? SKSpriteNode
+        guard brick.endlessIIRole == .portal, let texture = endlessIIPortalGlowTexture(for: brick)
+        else { existing?.removeFromParent(); return }
+
+        let glow = existing ?? {
+            let made = SKSpriteNode()
+            made.name = GameScene.portalGlowName
+            made.zPosition = -0.1
+            brick.addChild(made)
+            return made
+        }()
+        // Behind the brick's own drawing, and only just: the brick sits at zPosition 1, so a
+        // child at -0.1 lands at 0.9 - under its own brick and over the field behind it
+
+        let cell = endlessIIFieldSize(of: brick)
+        let margin = GameScene.portalGlowMargin
+        glow.texture = endlessIIShown(texture, on: brick)
+        glow.size = CGSize(width: cell.width + margin.width,
+                           height: cell.height + margin.height)
+        glow.position = endlessIIBrickCentre(of: brick)
+        // **A halo reaches past the brick, so it cannot be sized to the cell.** The first
+        // version was, and the render showed the result: six Portals with no visible glow at
+        // all, because the whole halo had been squashed into the brick's own footprint and was
+        // hidden behind it. See `portalGlowMargin` for where the extra comes from
+        glow.xScale = (brick.endlessIIFaceMirrored ?? false) ? -1 : 1
+        glow.yScale = (brick.endlessIIFaceFlipped ?? false) ? -1 : 1
+        // Through `endlessIIShown`, so the glow drains with the brick while the Portal is
+        // cooling rather than staying lit under a grey brick (round 274)
+    }
+
+    /// How far a Portal's glow reaches past the brick, in points.
+    ///
+    /// **Measured off the two pictures rather than typed.** James drew every glow on a canvas
+    /// twenty points wider and twenty points taller than the brick it belongs to - true of all
+    /// three sizes, the oblong, the square and the Big - so the margin is the difference
+    /// between the plain pair and nothing else has to know the number. Redraw the glows
+    /// larger and the halo grows with them.
+    ///
+    /// Zero where either picture is missing, which sizes the glow to the cell: no halo rather
+    /// than a halo of some invented size.
+    static let portalGlowMargin: CGSize = {
+        guard UIImage(named: portalBrickArtName) != nil,
+              UIImage(named: portalBrickArtName + "Glow") != nil else { return .zero }
+        let brick = SKTexture(imageNamed: portalBrickArtName).size()
+        let glow = SKTexture(imageNamed: portalBrickArtName + "Glow").size()
+        return CGSize(width: max(0, glow.width - brick.width),
+                      height: max(0, glow.height - brick.height))
+    }()
+
     /// Greys a Portal out, or brings it back.
     ///
     /// James, round 274: "For the portal brick cooling, can we make the brick monochrome during
@@ -1326,6 +1436,7 @@ extension GameScene {
         }
         refreshEndlessIIBrickArt(brick)
         endlessIIRefreshFace(on: brick)
+        refreshEndlessIIPortalGlow(on: brick)
         // **Nothing is written on the brick.** `endlessIIShown` reads the cooldown and hands
         // back the desaturated picture for as long as it is running, so the state is a
         // consequence of the clock rather than a flag somebody has to remember to clear - and
