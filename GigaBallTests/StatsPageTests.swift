@@ -544,12 +544,86 @@ final class PerModeTimeTests: XCTestCase {
             .isDisjoint(with: AchievementCatalogue.classicOnly))
     }
 
-    func testAnEndlessMilestoneCountsInBothEndlessModes() {
-        // `endlessMode` is true in Endless and in Mayhem, and none of these checks asks
-        // which - so a height milestone is earnable in either, and the page must say so
+    /// **An Endless milestone is listed under Endless alone** (James, round 318: "remove the
+    /// endless mode achievements from showing up in the endless mayhem section").
+    ///
+    /// This asserted the opposite, and its reasoning was right when it was written: `endlessMode`
+    /// is true in both endless modes and none of these checks asks which, so a height milestone
+    /// really is *earnable* in either. What changed is round 309, which gave Mayhem its own
+    /// eleven milestones - so the Mayhem tab listed Endless's eleven above Mayhem's eleven,
+    /// every pair saying the same thing twice.
+    ///
+    /// Earning is deliberately unchanged: taking these off a Mayhem run would take achievements
+    /// off players who hold them. This is about which tab lists them.
+    func testAnEndlessMilestoneIsListedUnderEndlessAlone() {
         XCTAssertTrue(AchievementCatalogue.belongs(0, to: .endless))
-        XCTAssertTrue(AchievementCatalogue.belongs(0, to: .endlessII))
+        XCTAssertFalse(AchievementCatalogue.belongs(0, to: .endlessII),
+                       "Mayhem has its own 10m milestone at 66 - listing Endless's as well "
+                       + "is the same achievement twice under one heading")
         XCTAssertFalse(AchievementCatalogue.belongs(0, to: .classic))
+        XCTAssertTrue(AchievementCatalogue.belongs(66, to: .endlessII), "and Mayhem's own stays")
+    }
+
+    /// The daily's own history is under the Daily tab and nowhere else.
+    ///
+    /// Ten of them fell through to the default bucket, which is "every play mode", so Week Long
+    /// Streak and First Daily Challenge were listed under Classic, Endless and Mayhem. They are
+    /// facts about a history rather than about a rally, and no amount of Classic play earns one.
+    func testTheDailysOwnAchievementsAreOnlyUnderDaily() {
+        for index in AchievementCatalogue.dailyOnly {
+            XCTAssertTrue(AchievementCatalogue.belongs(index, to: .daily), "\(index)")
+            for mode in [GameMode.classic, .endless, .endlessII] {
+                XCTAssertFalse(AchievementCatalogue.belongs(index, to: mode),
+                               "achievement \(index) is a daily fact and was listed under "
+                               + "\(mode)")
+            }
+        }
+    }
+
+    /// **Every index in a mode set names the achievement its comment says it does.**
+    ///
+    /// This is the test that would have caught round 318's other fault, and it is the only kind
+    /// that can: a number typed into a `Set<Int>` is unverifiable by reading. `endlessOnly` held
+    /// 95 with the comment "Butter Fingers", and 95 is *Top Of The Charts* - so a daily
+    /// leaderboard placing was filed as an endless achievement, two places off, and Butter
+    /// Fingers was left in the bucket that means "earnable everywhere".
+    ///
+    /// Asked by name rather than by number: the sets are checked against what the strings
+    /// actually say, so the next index typed into one is checked the moment it is added.
+    func testTheModeSetsNameWhatTheyThinkTheyName() {
+        let names = LevelPackSetup().achievementsNameArray
+
+        for index in AchievementCatalogue.endlessOnly {
+            let name = names[index]
+            XCTAssertFalse(name.contains("Mayhem"),
+                           "\(index) \"\(name)\" is a Mayhem achievement in endlessOnly")
+            XCTAssertFalse(name.contains("Daily") || name.contains("Streak")
+                           || name.contains("Charts") || name.contains("Top 10"),
+                           "\(index) \"\(name)\" is a daily achievement in endlessOnly")
+            XCTAssertFalse(name.contains("Pack"),
+                           "\(index) \"\(name)\" is a Classic achievement in endlessOnly")
+        }
+
+        for index in AchievementCatalogue.mayhemOnly where names[index].contains("Milestone")
+            || names[index].contains("Total Height") {
+            XCTAssertTrue(names[index].contains("Mayhem"),
+                          "\(index) \"\(names[index])\" is under Mayhem and does not say so")
+        }
+
+        for index in AchievementCatalogue.endlessOnly where names[index].contains("Milestone")
+            || names[index].contains("Total Height") {
+            XCTAssertTrue(names[index].contains("Endless Mode"),
+                          "\(index) \"\(names[index])\" is under Endless and does not say so")
+        }
+
+        for index in AchievementCatalogue.dailyOnly {
+            let name = names[index]
+            XCTAssertTrue(name.contains("Daily") || name.contains("Streak")
+                          || name.contains("Charts") || name.contains("Top 10")
+                          || name.contains("Twist"),
+                          "\(index) \"\(name)\" is filed as the daily's own history and "
+                          + "does not read like one")
+        }
     }
 
     func testAPackAchievementIsClassicOnly() {

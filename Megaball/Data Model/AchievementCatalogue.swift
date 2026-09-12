@@ -150,11 +150,40 @@ enum AchievementCatalogue {
     /// A set rather than a single mode, because most of them are honestly more than one:
     /// "Beach Ball" is a power-up on a paddle and does not care which mode the paddle is in.
     static func modes(for index: Int) -> Set<GameMode> {
+        if dailyOnly.contains(index) { return [] }
         if mayhemOnly.contains(index) { return [.endlessII] }
-        if endlessOnly.contains(index) { return [.endless, .endlessII] }
+        if endlessOnly.contains(index) { return [.endless] }
         if classicOnly.contains(index) { return [.classic] }
         return [.classic, .endless, .endlessII]
     }
+    // **Two faults James found by reading the page** (round 318: "remove the endless mode
+    // achievements from showing up in the endless mayhem section - check the other sections to
+    // make sure they only show achievements available in those game modes").
+    //
+    // `endlessOnly` answered both endless modes, which was true when it was written and stopped
+    // being true in round 309: that round gave Mayhem its own height, total-height and duration
+    // milestones, 66 to 76, precisely because it had been sharing Endless's. Sharing them on the
+    // *tab* outlasted sharing them in the game, so the Mayhem tab listed eleven Endless
+    // milestones above its own eleven, one pair at a time, saying the same thing twice.
+    //
+    // Whether a Mayhem run still *earns* the Endless ones is a separate question and the answer
+    // is deliberately unchanged - the checks do not ask which endless mode it is, and rewriting
+    // that would take achievements off players who have them. What this decides is which tab
+    // lists them, which is round 310's own note about `mayhemOnly` read the other way round.
+    //
+    // And the daily's own ten fell through to the default, which is "every play mode" - so
+    // Week Long Streak and First Daily Challenge were listed under Classic, Endless and Mayhem.
+    // They are facts about a history rather than about a rally and belong to no play mode at
+    // all, which is what the empty set says. The Daily tab reaches them through
+    // `earnableInDaily` and is unaffected.
+
+    /// The daily's own ten: facts about a history rather than about a rally.
+    ///
+    /// Awarded from the menu rather than from a scene (see `award` below) - how many days have
+    /// posted, how long the streak is, where a day finished on the board, whether every twist
+    /// has been met. None of them can be earned by playing Classic, Endless or Mayhem outside
+    /// the daily, so none of them is listed under those tabs.
+    static let dailyOnly: Set<Int> = Set(87...96)
 
     /// Whether an achievement is offered under a tab.
     ///
@@ -256,7 +285,12 @@ enum AchievementCatalogue {
         4, 5,         // 5,000m and 10,000m total height
         17, 18, 19, 20, 21,  // the duration milestones
         22,           // Tidying Up - `endlessMode && bricksLeft == 0`
-        95,           // Butter Fingers - the sheet gives it both endless modes and not Classic
+        97,           // Butter Fingers - the sheet gives it both endless modes and not Classic
+        // **It was 95, which is Top Of The Charts** (round 318). Two off, and the comment beside
+        // it named the achievement it was meant to be - so a daily leaderboard placing was
+        // filed as an endless one and Butter Fingers was filed as earnable everywhere. Found by
+        // listing each set beside the names it indexes, which is the only way an index typed
+        // into a set can be checked at all
     ]
 
     /// Earned only in a campaign run: everything about levels and packs, and the four checks
