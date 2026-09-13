@@ -158,7 +158,7 @@ final class CloudKitHandler: NSObject {
     var totalStatsArray: [TotalStats] = []
     // NSCoder data store & encoder setup
     
-    let defaults = UserDefaults.standard
+    var defaults: UserDefaults = .standard
     // User settings
 
     /// The key-value store every sync in this file reads and writes.

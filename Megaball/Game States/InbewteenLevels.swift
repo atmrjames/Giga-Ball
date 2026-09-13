@@ -27,9 +27,26 @@ class InbetweenLevels: GKState {
         // Sets up an observer to watch for notifications to check if the user has pressed restart on the end level, gameover popup
         
         if previousState is Playing {
-            scene.saveCurrentGame()
-            inbetweenLevels()
+            if scene.resumingBetweenLevels {
+                scene.resumingBetweenLevels = false
+                if scene.musicSetting {
+                    MusicHandler.sharedHelper.menuVolume()
+                }
+                resetGameScene()
+                scene.saveCurrentGame()
+                showEndOfLevelView()
+            } else {
+                inbetweenLevels()
+                scene.saveCurrentGame()
+            }
         }
+        // **A level ending banks the level and then saves; a resume onto this screen only shows
+        // it** (round 322b). The save used to come first, before the level's score, its time
+        // bonus and its extra ball were banked - so a player who quit here and came back had
+        // those put back by running the whole ending again, which also counted the level a
+        // second time. Saving after the ending gives the save the run as the screen shows it,
+        // and a resume has nothing left to do but show the screen and keep it the resume point:
+        // a second quit here comes back here, with nothing on this screen to gain from it
     }
 //    // This function runs when this state is entered.
     

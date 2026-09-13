@@ -541,8 +541,12 @@ enum BrickTypeIcons {
     }
 
     /// What the Retro theme calls a brick, if it has its own.
-    static func retroName(for named: String) -> String? {
-        guard UserDefaults.standard.integer(forKey: "brickSetting") == 1 else { return nil }
+    static func retroName(for named: String,
+                          settings: KeyValueStore = UserDefaults.standard) -> String? {
+        guard settings.integer(forKey: "brickSetting") == 1 else { return nil }
+        // The store is a parameter so its test can ask both themes without writing the player's
+        // own setting (round 322b) - it wrote `brickSetting` into the app and put it back in a
+        // `defer`, which a killed run never reaches
         switch named {
         case "BrickNormal": return "retroBrickNormal"
         case "BrickInvisible": return "retroBrickInvisible"

@@ -106,19 +106,22 @@ final class StatsSyncTests: XCTestCase {
     /// The rules above are only worth anything if saveDataReset actually
     /// applies them, and the easy mistake is to put the bump behind the
     /// iCloudSetting guard that everything else in that function sits behind.
-    func testResettingBumpsTheStoredGenerationEvenWithSyncingOff() {
-        let defaults = UserDefaults.standard
+    func testResettingBumpsTheStoredGenerationEvenWithSyncingOff() throws {
+        let suite = "GigaBallTests.StatsSync"
+        UserDefaults().removePersistentDomain(forName: suite)
+        defer { UserDefaults().removePersistentDomain(forName: suite) }
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
         let key = StatsSync.generationKey
-        let original = defaults.object(forKey: key)
-        defer {
-            if let original { defaults.set(original, forKey: key) }
-            else { defaults.removeObject(forKey: key) }
-        }
+        // A suite of its own, cleared at both ends (round 322b). This set `iCloudSetting` to
+        // false in the app's own defaults and never put it back, and restored the generation
+        // only in a `defer` a killed run never reaches
 
         defaults.set(false, forKey: "iCloudSetting")
         defaults.set(7, forKey: key)
 
-        CloudKitHandler().saveDataReset()
+        let handler = CloudKitHandler()
+        handler.defaults = defaults
+        handler.saveDataReset()
 
         XCTAssertGreaterThan(defaults.integer(forKey: key), 7,
                              "the reset has to be recorded whether or not it can be pushed")

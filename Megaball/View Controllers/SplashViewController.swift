@@ -228,7 +228,7 @@ class SplashViewController: UIViewController {
         ])
     }
 
-    let defaults = UserDefaults.standard
+    var defaults: UserDefaults = .standard
     var hapticsSetting: Bool = true
     var savedGame: SavedGame?
     let interfaceHaptic = UIImpactFeedbackGenerator(style: .light)
@@ -271,7 +271,7 @@ class SplashViewController: UIViewController {
         }
         // userSettings loads savedGame, so it has to run before the save is bound below
 
-        if gameToResume == true, SavedGame.canResume() == false {
+        if gameToResume == true, SavedGame.canResume(from: defaults) == false {
             gameToResume = false
             defaults.set(false, forKey: SavedGame.resumeFlagKey)
         }
@@ -705,7 +705,7 @@ class SplashViewController: UIViewController {
     
     func userSettings() {
         hapticsSetting = defaults.bool(forKey: "hapticsSetting")
-        savedGame = SavedGame.load()
+        savedGame = SavedGame.load(from: defaults)
         // Load user settings
     }
 }

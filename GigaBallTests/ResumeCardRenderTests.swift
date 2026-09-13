@@ -18,12 +18,26 @@ import XCTest
 import UIKit
 @testable import Giga_Ball
 
+/// The store these screens are laid out against: a suite of the tests' own, cleared before and
+/// after every test (round 322b). These wrote a real save and the resume flag into the app's
+/// standard defaults and put back only the flag - and a killed run did not even do that - so
+/// the simulator's installed app was left offering to resume a fixture.
+private let resumeCardSuite = "GigaBallTests.ResumeCard"
+private func resumeCardStore() -> UserDefaults {
+    UserDefaults(suiteName: resumeCardSuite) ?? .standard
+}
+
 final class ResumeCardRenderTests: XCTestCase {
 
     private let screen = CGRect(x: 0, y: 0, width: 393, height: 852)
 
+    override func setUp() {
+        super.setUp()
+        UserDefaults().removePersistentDomain(forName: resumeCardSuite)
+    }
+
     override func tearDown() {
-        UserDefaults.standard.set(false, forKey: SavedGame.resumeFlagKey)
+        UserDefaults().removePersistentDomain(forName: resumeCardSuite)
         DailyChallengeSession.shared.active = nil
         super.tearDown()
     }
@@ -58,11 +72,12 @@ final class ResumeCardRenderTests: XCTestCase {
     /// The screen, laid out, exactly as a relaunch into a saved run builds it.
     private func laidOut(_ game: SavedGame,
                          in size: CGSize? = nil) -> SplashViewController {
-        game.save(to: UserDefaults.standard)
-        UserDefaults.standard.set(true, forKey: SavedGame.resumeFlagKey)
+        game.save(to: resumeCardStore())
+        resumeCardStore().set(true, forKey: SavedGame.resumeFlagKey)
         let board = UIStoryboard(name: "Main", bundle: Bundle(for: SplashViewController.self))
         let splash = board.instantiateViewController(withIdentifier: "splashView")
             as! SplashViewController
+        splash.defaults = resumeCardStore()
         splash.gameToResume = true
         splash.view.frame = CGRect(origin: .zero, size: size ?? screen.size)
         splash.view.layoutIfNeeded()
@@ -323,8 +338,13 @@ final class ResumeCardOnATallScreenTests: XCTestCase {
     private let iPadPortrait = CGSize(width: 1024, height: 1366)
     private let iPadLandscape = CGSize(width: 1366, height: 1024)
 
+    override func setUp() {
+        super.setUp()
+        UserDefaults().removePersistentDomain(forName: resumeCardSuite)
+    }
+
     override func tearDown() {
-        UserDefaults.standard.set(false, forKey: SavedGame.resumeFlagKey)
+        UserDefaults().removePersistentDomain(forName: resumeCardSuite)
         DailyChallengeSession.shared.active = nil
         super.tearDown()
     }
@@ -346,11 +366,12 @@ final class ResumeCardOnATallScreenTests: XCTestCase {
     }
 
     private func laidOut(in size: CGSize) -> SplashViewController {
-        game().save(to: UserDefaults.standard)
-        UserDefaults.standard.set(true, forKey: SavedGame.resumeFlagKey)
+        game().save(to: resumeCardStore())
+        resumeCardStore().set(true, forKey: SavedGame.resumeFlagKey)
         let board = UIStoryboard(name: "Main", bundle: Bundle(for: SplashViewController.self))
         let splash = board.instantiateViewController(withIdentifier: "splashView")
             as! SplashViewController
+        splash.defaults = resumeCardStore()
         splash.gameToResume = true
         splash.view.frame = CGRect(origin: .zero, size: size)
         splash.view.layoutIfNeeded()

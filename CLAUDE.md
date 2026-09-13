@@ -173,6 +173,16 @@ its `PBXGroup`, and — the one that is easy to miss — the **right target's** 
   day ahead of the calendar for an unknown number of rounds, silently, and the app installed
   from the same build read the same default. Where a test has to write, give the code an
   injectable store (`KeyValueStore`, `InMemoryKeyValueStore`) and point the test at memory.
+  **Round 322b found it had happened again, bigger:** the simulator's installed app was holding
+  a test's saved game, the resume flag and `gameInProgress`, so its next launch offered to
+  resume a fixture. A scene writes all three in ordinary use - entering `Playing`, saving on
+  every pause - and the resume-card tests wrote a real save for the splash screen to find. So
+  under tests a `GameScene`'s `defaults` is now a suite of its own
+  (`GameScene.settingsStore`), its `totalStatsStore` is nil, and the iCloud push stands down,
+  all on `GameCenterHandler.isRunningTests`; the splash screen takes a `defaults` too. A suite
+  still *reads* through to the app's domain, so a test that cares what a setting says sets it.
+  After a change near any of this, look at the simulator app's preferences plist once the
+  suite has run.
 
 - **Tests are written from play-test reports.** When a bug is described, the test says what
   was reported, in the comment, in the reporter's terms. That is what stops a fix regressing

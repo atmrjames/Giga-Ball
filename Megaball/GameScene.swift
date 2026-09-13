@@ -616,6 +616,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var pauseSwipeMinimumTravel: CGFloat { ballSize*6 }
 	var gameInProgress: Bool = false
 	var resumeGameToLoad: Bool = false
+	/// Set by `Playing.loadNextLevel` for the one hop into `InbetweenLevels` that is a resume
+	/// rather than a level ending - see `InbetweenLevels.didEnter` (round 322b)
+	var resumingBetweenLevels = false
 	var firstPause: Bool = true
 	// User settings
 	var savedGame: SavedGame?
@@ -1380,10 +1383,30 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	
 //MARK: - User Defaults & NSCoder Setup
 	
-	var defaults = UserDefaults.standard
+	var defaults: UserDefaults = GameScene.settingsStore
 	// User settings  setup
-	
-	let totalStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("totalStatsStore.plist")
+
+	var totalStatsStore: URL? = GameCenterHandler.isRunningTests ? nil
+		: FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("totalStatsStore.plist")
+
+	/// Where a scene keeps its settings and its save: `.standard` in the game, and under tests a
+	/// suite of the tests' own.
+	///
+	/// **Round 322b found the simulator's installed app holding a test's game** - a save, the
+	/// resume flag and `gameInProgress`, none of them put there by playing. A scene writes all
+	/// three as a matter of course (entering `Playing`, saving on a pause), and a test scene
+	/// wrote them into the app's own domain, where the next launch reads them and offers to
+	/// resume a fixture. CLAUDE.md's "a test may not write anything that outlives its process",
+	/// met for every test scene at once rather than fixture by fixture, and asked the way round
+	/// 306 asks it: "am I being tested", not "is this a debug build". The stats file goes the
+	/// same way, to nowhere unless a test names one. A suite still *reads* through to the app's
+	/// domain for anything it lacks, so a test that cares what a setting says sets it.
+	static var settingsStore: UserDefaults {
+		guard GameCenterHandler.isRunningTests,
+			  let suite = UserDefaults(suiteName: testSettingsSuite) else { return .standard }
+		return suite
+	}
+	static let testSettingsSuite = "GigaBallTests.GameScene"
 	let encoder = PropertyListEncoder()
 	let decoder = PropertyListDecoder()
 	// NSCoder data store & encoder setup
@@ -1412,7 +1435,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		// Set by whichever menu launched the run, and remembered so a resumed one knows
 		// what it is
 		if defaults.bool(forKey: "resumeGameToLoad"),
-		   let saved = SavedGame.load()?.gameMode,
+		   let saved = SavedGame.load(from: defaults)?.gameMode,
 		   let savedMode = GameMode(rawValue: saved) {
 			gameMode = savedMode
 			savedMode.makeCurrent(in: defaults)
@@ -7684,7 +7707,7 @@ laserTimer?.invalidate()
 		firstPause = defaults.bool(forKey: "firstPause")
 		// User settings
 		
-		savedGame = SavedGame.load()
+		savedGame = SavedGame.load(from: defaults)
         // Game save settings
 		
 		paddle.physicsBody?.velocity = CGVector(dx: 0, dy: 0)
@@ -8363,13 +8386,22 @@ laserTimer?.invalidate()
 	
 	func saveGameStats() {
 		totalStatsArray[0].dateSaved = Date()
+		guard let totalStatsStore else { return }
 		do {
             let data = try encoder.encode(self.totalStatsArray)
-            try data.write(to: totalStatsStore!)
+            try data.write(to: totalStatsStore)
         } catch {
             Log.data.error("Error encoding total stats, \(String(describing: error), privacy: .public)")
         }
+		guard GameCenterHandler.isRunningTests == false else { return }
 		CloudKitHandler().saveToiCloud()
+		// **Where the stats go is the scene's to be told, and a test never syncs** (round 322,
+		// building the resume fixture). Every pause saves the game and the stats with it, so a
+		// test that drove a run into `Paused` was writing the real `totalStatsStore.plist` and
+		// pushing to iCloud - CLAUDE.md's "a test may not write anything that outlives its
+		// process". The store is a `var` a test points at a temporary file, and the push stands
+		// down under tests for round 306's reason: the question is "am I being tested", not
+		// "is this a debug build". In the app the store is always there and nothing changes
         // Save total stats
 	}
 	
@@ -8993,13 +9025,15 @@ laserTimer?.invalidate()
 		savedGame?.dailyTimeTrialRemaining = timeTrialClock
 		savedGame?.endlessIIDriftDirection =
 			endlessIIDriftDirection != 0 ? endlessIIDriftDirection : nil
+		savedGame?.levelTimerBonus = savedBetweenLevels ? levelTimerBonus : nil
+		// The screen a between-levels save returns to shows the bonus (round 322b)
 		// Set after the initialiser rather than passed into it: that call already takes forty
 		// arguments and one more optional tipped the type-checker over its own limit - twice
 		// now (the Mayhem bricks, then round 197's clock). The clock rides with the run, or a
 		// pause-and-resume would hand back a fresh ninety seconds - the one thing a Time
 		// Trial cannot give away
 
-		savedGame?.save()
+		savedGame?.save(to: defaults)
 		
 		resumeGameToLoad = true
 		defaults.set(resumeGameToLoad, forKey: "resumeGameToLoad")
@@ -9010,7 +9044,7 @@ laserTimer?.invalidate()
 		resumeGameToLoad = false
 		defaults.set(resumeGameToLoad, forKey: "resumeGameToLoad")
 		savedGame = nil
-		SavedGame.clear()
+		SavedGame.clear(from: defaults)
 	}
 	
 	/// Puts back the lasers that were still travelling up the screen when the game was

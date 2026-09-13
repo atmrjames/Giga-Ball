@@ -355,6 +355,14 @@ struct SavedGame: Codable, Equatable {
     /// Whether the run should come back on the between-levels screen rather than in play.
     var resumesBetweenLevels: Bool { pausedBetweenLevels ?? false }
 
+    /// The finished level's time bonus, carried by a between-levels save only (round 322b).
+    ///
+    /// The between-levels screen shows it, and a resume onto that screen had no way to know
+    /// it - the scene's own starts at nothing. Optional, so older saves still decode; they
+    /// read as no bonus to show, which is a display and not a score, because the save's total
+    /// already has the bonus banked in it.
+    var levelTimerBonus: Int?
+
     // MARK: - Consistency
 
     /// The five values `ballProperties` carries when a ball is in play:

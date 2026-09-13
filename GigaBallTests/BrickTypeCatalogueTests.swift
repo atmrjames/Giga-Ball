@@ -52,20 +52,23 @@ final class BrickTypeCatalogueTests: XCTestCase {
     func testTheRetroThemeIsRespected() {
         // The Retro theme swaps the brick textures in the scene, so a page still showing the
         // standard ones is a page of bricks the player does not have
-        let defaults = UserDefaults.standard
-        let saved = defaults.integer(forKey: "brickSetting")
-        defer { defaults.set(saved, forKey: "brickSetting") }
+        let defaults = InMemoryKeyValueStore()
+        // In memory, so the player's own theme is never written (CLAUDE.md: a test may not write
+        // anything that outlives its process)
 
         defaults.set(0, forKey: "brickSetting")
-        XCTAssertNil(BrickTypeIcons.retroName(for: "BrickNormal"))
+        XCTAssertNil(BrickTypeIcons.retroName(for: "BrickNormal", settings: defaults))
 
         defaults.set(1, forKey: "brickSetting")
-        XCTAssertEqual(BrickTypeIcons.retroName(for: "BrickNormal"), "retroBrickNormal")
-        XCTAssertEqual(BrickTypeIcons.retroName(for: "BrickMultiHit3"), "RetroBrickMultiHit3")
-        XCTAssertEqual(BrickTypeIcons.retroName(for: "BrickInvisible"), "retroBrickInvisible")
+        XCTAssertEqual(BrickTypeIcons.retroName(for: "BrickNormal", settings: defaults),
+                       "retroBrickNormal")
+        XCTAssertEqual(BrickTypeIcons.retroName(for: "BrickMultiHit3", settings: defaults),
+                       "RetroBrickMultiHit3")
+        XCTAssertEqual(BrickTypeIcons.retroName(for: "BrickInvisible", settings: defaults),
+                       "retroBrickInvisible")
         // There is no Retro Indestructible artwork, and the scene does not swap it either -
         // inventing a substitute here would be the page disagreeing with the game
-        XCTAssertNil(BrickTypeIcons.retroName(for: "BrickIndestructible1"))
+        XCTAssertNil(BrickTypeIcons.retroName(for: "BrickIndestructible1", settings: defaults))
     }
 
     func testTheSectionsAccountForEveryEntryExactlyOnce() {

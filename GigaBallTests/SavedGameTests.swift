@@ -26,6 +26,10 @@ final class SavedGameTests: XCTestCase {
     override func setUp() {
         super.setUp()
         defaults = InMemoryKeyValueStore()
+        UserDefaults().removePersistentDomain(forName: GameScene.testSettingsSuite)
+        // The scene tests below save through a scene, and a scene under tests keeps its save in
+        // this suite (round 322b). Cleared first, so one test's save never answers another's
+        // load - and so a killed run's leftovers are gone before anything reads them
     }
 
     override func tearDown() {
@@ -520,7 +524,7 @@ final class SavedGameTests: XCTestCase {
 
         scene.saveCurrentGame()
 
-        guard let saved = SavedGame.load() else {
+        guard let saved = SavedGame.load(from: scene.defaults) else {
             return XCTFail("a run in play is a run that saves")
         }
         XCTAssertEqual(saved.levelNumber, 7)
@@ -565,7 +569,7 @@ final class SavedGameTests: XCTestCase {
 
         scene.saveCurrentGame()
 
-        XCTAssertEqual(SavedGame.load()?.multiplier, 1.0,
+        XCTAssertEqual(SavedGame.load(from: scene.defaults)?.multiplier, 1.0,
                        "a streak the player has already lost must not come back with the run")
     }
 
@@ -594,7 +598,7 @@ final class SavedGameTests: XCTestCase {
 
         scene.saveCurrentGame()
 
-        let saved = SavedGame.load()
+        let saved = SavedGame.load(from: scene.defaults)
         XCTAssertEqual(saved?.savedGameWidth ?? 0, 393, accuracy: 0.001,
                        "the width the points were measured across")
         XCTAssertEqual(saved?.savedFieldTop ?? 0, 612, accuracy: 0.001,
@@ -612,9 +616,9 @@ final class SavedGameTests: XCTestCase {
         scene.gameoverStatus = true
         XCTAssertTrue(scene.runIsOver)
 
-        UserDefaults.standard.set(true, forKey: "resumeGameToLoad")
+        scene.defaults.set(true, forKey: "resumeGameToLoad")
         scene.saveCurrentGame()
-        XCTAssertFalse(UserDefaults.standard.bool(forKey: "resumeGameToLoad"),
+        XCTAssertFalse(scene.defaults.bool(forKey: "resumeGameToLoad"),
                        "a finished game must never be offered for resume")
     }
 
@@ -1220,5 +1224,457 @@ final class ResumeGeometryTests: XCTestCase {
         XCTAssertEqual(moved.y, nowTop - brickHeightNow*14, accuracy: 0.01,
                        "still fourteen rows down - not below the line the run is lost at")
         XCTAssertLessThan(abs(moved.x), nowWidth/2, "and inside the walls")
+    }
+}
+
+/// **A resume, driven the way the game drives one** (§12.0's open item since round 319f: "nothing
+/// in the suite can drive a level being built, which is why the resume path is 2% covered").
+///
+/// The path, as the game takes it: `PreGame` resets the run, `Playing.loadNextLevel` puts the
+/// save's scores back and - because the save carries its field - rebuilds the bricks from it
+/// rather than loading a level from the catalogue, and `resumeGame` restores the ball and paddle
+/// and ends in `Paused`, where the player picks the run back up. Round 319g's fixture read
+/// "savedGame is nil and resumeGameToLoad is false by the end" as the scores never arriving;
+/// the flag being spent is the resume *working*, because a resumed run must never be resumable
+/// a second time from the same moment. The one step skipped is `PreGame`'s one-second wait,
+/// which is an action and never runs in a scene nothing presents - so the test takes the
+/// transition that wait would have taken.
+///
+/// **Nothing here may outlive the process.** The scene's defaults are a suite of its own with
+/// every key this path reads written into it (a suite still falls back to the app's domain for
+/// anything it lacks, which is how an earlier version of these tests read a real game), and the
+/// stats file it saves on pausing is a temporary one. Both are removed afterwards; a suite left
+/// behind by a killed run is one the app never reads.
+final class ResumeTransitionTests: XCTestCase {
+
+    private final class Host: GameViewControllerDelegate {
+        var selectedLevel: Int? = 1
+        var numberOfLevels: Int? = 1
+        var levelSender: String? = "Level Selector"
+        var levelPack: Int? = 1
+        var pauseMenus: [String] = []
+        func moveToMainMenu() {}
+        func showPauseMenu(levelNumber: Int, numberOfLevels: Int, score: Int, packNumber: Int,
+                           height: Int, sender: String, gameoverBool: Bool, newItemsBool: Bool,
+                           previousHighscore: Int, livesRemaining: Int, levelScore: Int,
+                           levelTimerBonus: Int) {
+            pauseMenus.append(sender)
+        }
+        func showConfirm(_ confirm: GigaBallConfirm) {}
+        func showInbetweenView(levelNumber: Int, score: Int, packNumber: Int,
+                               levelTimerBonus: Int, firstLevel: Bool, numberOfLevels: Int,
+                               levelScore: Int) {}
+    }
+
+    private let suiteName = "GigaBallTests.ResumeTransitionTests"
+    // **One name, cleared at both ends**, rather than a fresh one per test. Removing a domain
+    // empties it and leaves its file, so unique names left a plist behind for every test ever
+    // run; a fixed one is at most one file, and clearing it in `setUp` as well tidies after a
+    // killed run instead of reading what it left
+    private var statsFile: URL!
+    private var host: Host!
+
+    /// The bottom row's height in these fixtures.
+    ///
+    /// **A saved Mayhem field always has a brick on it.** Play steps the field down the moment
+    /// the bottom row empties, and `countBricks` - which the resume runs - does the same, so a
+    /// field saved with nothing low comes back a row lower and a metre higher. That is the game
+    /// closing a gap, not the resume adding height, and a save written in play never has one.
+    static let bottomRow: CGFloat = 100
+
+    override func setUp() {
+        super.setUp()
+        UserDefaults().removePersistentDomain(forName: suiteName)
+        statsFile = FileManager.default.temporaryDirectory
+            .appendingPathComponent(suiteName + ".totalStats.plist")
+        try? FileManager.default.removeItem(at: statsFile)
+        DailyChallengeSession.shared.active = nil
+    }
+
+    override func tearDown() {
+        UserDefaults().removePersistentDomain(forName: suiteName)
+        try? FileManager.default.removeItem(at: statsFile)
+        host = nil
+        super.tearDown()
+    }
+
+    /// A Classic run left mid-level: three bricks, the ball in flight, a level part-scored.
+    private func leftMidLevel() -> SavedGame {
+        SavedGame(
+            levelNumber: 1, endLevelNumber: 1, packNumber: 2,
+            levelScore: 120, totalScore: 3_400, numberOfLives: 2,
+            endlessHeight: 0, numberOfLevels: 1,
+            levelTimerValue: 45, packTimerValue: 45,
+            deathsPerLevel: 1, deathsPerPack: 1,
+            powerUpsGeneratedPerLevel: 0, powerUpsCollectedPerLevel: 0,
+            powerUpsGeneratedPerPack: 0, powerUpsCollectedPerPack: 0,
+            paddleHitsPerLevel: 12,
+            multiplier: 1.4,
+            brickTextures: [0, 4, 8], brickColours: [0, 1, 2],
+            brickXPositions: [0, 1, 2], brickYPositions: [0, 0, 1],
+            ballProperties: [12.5, 300.0, -120.0, 240.0, 30.0],
+            fallingPowerUpXPositions: [2], fallingPowerUpYPositions: [5],
+            fallingPowerUps: [4],
+            activePowerUps: [], activePowerUpDurations: [], activePowerUpTimers: [],
+            activePowerUpMagnitudes: [])
+        // One Expand Paddle on its way down, which the resume has to put back in the air. In
+        // cells, like the legacy bricks: the save rounds a drop to the column and row it is
+        // nearest, and the resume puts it back on that cell
+    }
+
+    /// An Endless Mayhem run left at 37m, its field saved brick by brick (round 150's format):
+    /// a plain brick, a Spinning one, an anchored Fixed one and a hidden Multi-Hit.
+    private func mayhemLeftAtHeight() -> SavedGame {
+        var game = SavedGame(
+            levelNumber: 0, endLevelNumber: 0, packNumber: 1,
+            levelScore: 0, totalScore: 0, numberOfLives: 0,
+            endlessHeight: 37, numberOfLevels: 1,
+            levelTimerValue: 90, packTimerValue: 90,
+            deathsPerLevel: 0, deathsPerPack: 0,
+            powerUpsGeneratedPerLevel: 0, powerUpsCollectedPerLevel: 0,
+            powerUpsGeneratedPerPack: 0, powerUpsCollectedPerPack: 0,
+            paddleHitsPerLevel: 20,
+            multiplier: 1,
+            brickTextures: [0, 0, 0, 4], brickColours: [3, 3, 3, 0],
+            brickXPositions: [0, 1, 2, 4], brickYPositions: [0, 0, 1, 1],
+            ballProperties: [-40.0, 120.0, 180.0, 260.0, -20.0],
+            fallingPowerUpXPositions: [], fallingPowerUpYPositions: [], fallingPowerUps: [],
+            activePowerUps: [], activePowerUpDurations: [], activePowerUpTimers: [],
+            activePowerUpMagnitudes: [])
+        // The legacy arrays ride along as the game writes them, and they are also what sends
+        // `loadNextLevel` down the resume branch at all - an empty field loads a level
+        func brick(x: Double, y: Double, texture: Int = 0, hidden: Bool = false,
+                   role: String? = nil, styles: [String] = [], anchored: Bool = false,
+                   plain: Bool = false) -> SavedGame.SavedBrick {
+            SavedGame.SavedBrick(texture: texture, colour: 3, x: x, y: y, width: 40, height: 20,
+                                 anchorX: 0.5, anchorY: 0.5, hidden: hidden, role: role,
+                                 face: nil, faceMirrored: nil, faceFlipped: nil, styles: styles,
+                                 portalBlue: false, anchored: anchored, powerUpIndex: nil,
+                                 staysPlain: plain)
+        }
+        game.endlessIIBricks = [
+            brick(x: -160, y: Double(ResumeTransitionTests.bottomRow), plain: true),
+            // On the bottom row, as the lowest brick of any field saved in play is
+            brick(x: -120, y: 200, styles: [EndlessIIStyle.spinning.rawValue]),
+            brick(x: -80, y: 180, role: EndlessIIRole.fixed.rawValue, anchored: true),
+            brick(x: 0, y: 180, texture: 4, hidden: true),
+        ]
+        return game
+    }
+
+    private func resumedScene(from save: SavedGame? = nil, mode: GameMode = .classic,
+                              level: Int = 1, levels: Int = 1,
+                              resuming: Bool = true) throws -> GameScene {
+        let saved = save ?? leftMidLevel()
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+        for key in ["musicSetting", "soundsSetting", "hapticsSetting", "firstPause",
+                    "swipeUpPause", "gameInProgress", "iCloudSetting", "gameCenterSetting"] {
+            defaults.set(false, forKey: key)
+        }
+        if resuming {
+            saved.save(to: defaults)
+            defaults.set(true, forKey: SavedGame.resumeFlagKey)
+        }
+        // Not resuming is a run started fresh, which is how a test gets a level to finish
+
+        let scene = GameScene(size: CGSize(width: 400, height: 800))
+        scene.defaults = defaults
+        scene.totalStatsStore = statsFile
+        scene.totalStatsArray = [TotalStats()]
+        scene.gameMode = mode
+        // What `didMove` takes from the save's own mode on a resume
+        scene.powerUpTextureArray = scene.powerUpTexturesInOrder
+        // What `didMove` fills, and what a falling power-up is put back by index into
+        scene.gameWidth = 360
+        scene.brickWidth = 40
+        scene.brickHeight = 20
+        scene.ballSize = 12
+        scene.paddleWidth = 90
+        scene.ballSpeedSlowest = 200
+        scene.ballSpeedSlow = 280
+        scene.ballSpeedNominal = 360
+        scene.ballSpeedFast = 460
+        scene.ballSpeedFastest = 560
+        scene.ballSpeedLimit = scene.ballSpeedNominal
+        // Five different speeds, because `didMove` sets them and a bare scene holds all five at
+        // zero - where "the limit is the fast one" is true of every limit there is
+        scene.finalBrickRowHeight = ResumeTransitionTests.bottomRow
+        scene.packLevelHighScoresArray = Array(repeating: Array(repeating: 0, count: 10),
+                                               count: LevelPackSetup().numberOfLevels.count - 2)
+        // One row of level bests per campaign pack, as `didMove` builds it from the stats -
+        // a finished level compares itself against its own, indexed from pack 2
+        // Where the field's lowest row sits, which `didMove` works out from the screen
+        scene.ball.physicsBody = SKPhysicsBody(circleOfRadius: 6)
+        scene.paddle.size = CGSize(width: 90, height: 12)
+        scene.paddle.physicsBody = SKPhysicsBody(rectangleOf: scene.paddle.size)
+        scene.addChild(scene.paddle)
+
+        host = Host()
+        host.selectedLevel = level
+        host.numberOfLevels = levels
+        host.levelPack = level == 0 ? 1 : 2
+        // Pack 1 is Endless Mode and pack 2 the Classic Pack, levels 1 to 10 -
+        // `LevelPackSetup` numbers the tutorial as pack 0
+        // What `MenuViewController.loadSavedGame` hands the game for a resume: the save's own
+        // level, and the levels from there to the end of the run
+        scene.gameViewControllerDelegate = host
+
+        scene.resumeGameToLoad = resuming && defaults.bool(forKey: SavedGame.resumeFlagKey)
+        scene.savedGame = resuming ? SavedGame.load(from: defaults) : nil
+        // What `didMove` reads, read from the same place
+        if resuming {
+            XCTAssertNotNil(scene.savedGame,
+                            "the fixture's save should load, or nothing below means anything")
+        }
+
+        scene.gameState.enter(PreGame.self)
+        scene.gameState.enter(Playing.self)
+        return scene
+    }
+
+    func testAResumedRunLandsPausedWithItsOwnScoresAndLives() throws {
+        let scene = try resumedScene()
+
+        XCTAssertTrue(scene.gameState.currentState is Paused,
+                      "a resume hands the run back paused, for the player to pick up")
+        XCTAssertEqual(host.pauseMenus, ["Pause"], "and shows the pause menu to do it from")
+
+        XCTAssertEqual(scene.levelScore, 120)
+        XCTAssertEqual(scene.totalScore, 3_400 - 120,
+                       "the banked total, without the level in progress counted twice (round 319f)")
+        XCTAssertEqual(scene.numberOfLives, 2,
+                       "the save's two, not the three a fresh Classic rack starts with")
+        XCTAssertEqual(scene.multiplier, 1.4, accuracy: 0.0001)
+    }
+
+    /// "Started by resuming an existing game, but the game had misplaced bricks below the low
+    /// level line and no ball in sight" (James, round 313c).
+    func testTheFieldAndTheBallComeBackWhereTheyWereLeft() throws {
+        let scene = try resumedScene()
+
+        var bricks: [SKNode] = []
+        scene.enumerateChildNodes(withName: BrickCategoryName) { node, _ in bricks.append(node) }
+        XCTAssertEqual(bricks.count, 3, "every saved brick, and no level loaded over them")
+        let rows = Set(bricks.map { ($0.position.y*100).rounded() })
+        XCTAssertEqual(rows.count, 2, "on the two rows they were saved on")
+
+        XCTAssertFalse(scene.ball.isHidden, "the ball is in sight")
+        XCTAssertEqual(scene.ball.position.x, 12.5, accuracy: 0.01)
+        XCTAssertEqual(scene.ball.position.y, 300, accuracy: 0.01)
+        XCTAssertFalse(scene.ballIsOnPaddle, "and in flight, as it was")
+        XCTAssertEqual(scene.paddle.position.x, 30, accuracy: 0.01)
+
+        var drops: [SKSpriteNode] = []
+        scene.enumerateChildNodes(withName: PowerUpCategoryName) { node, _ in
+            if let sprite = node as? SKSpriteNode { drops.append(sprite) }
+        }
+        XCTAssertEqual(drops.count, 1, "the power-up that was falling is falling again")
+        XCTAssertEqual(drops.first?.position.x ?? 0,
+                       scene.gameWidth/2 - scene.brickWidth/2 - scene.brickWidth*2, accuracy: 0.01,
+                       "in the third column, where it was saved")
+        XCTAssertEqual(drops.first?.position.y ?? 0,
+                       scene.yBrickOffset - scene.brickHeight*5, accuracy: 0.01,
+                       "and the sixth row")
+        XCTAssertTrue(drops.first?.texture === scene.powerUpTexturesInOrder[4],
+                      "and it is the same power-up, Expand Paddle")
+    }
+
+    /// Resumed once, and never again from the same moment - but pausing the resumed run saves it
+    /// afresh, and that save has to say what the run is now rather than doubling the level.
+    func testTheResumeIsSpentAndThePauseSavesTheRunAsItStands() throws {
+        let scene = try resumedScene()
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+
+        XCTAssertTrue(scene.resumeGameToLoad,
+                      "`resumeGame` spends the flag and the pause it ends in sets it again - every "
+                      + "pause saves, and this one is the run's new resume point")
+        XCTAssertTrue(defaults.bool(forKey: SavedGame.resumeFlagKey),
+                      "and the store agrees with the scene, which is round 181's whole lesson")
+
+        let resaved = try XCTUnwrap(SavedGame.load(from: defaults))
+        XCTAssertEqual(resaved.totalScore, 3_400,
+                       "a save writes total plus level, so it must match the save it came from")
+        XCTAssertEqual(resaved.levelScore, 120)
+        XCTAssertEqual(resaved.numberOfLives, 2)
+        XCTAssertEqual(resaved.brickXPositions.count, 3)
+        XCTAssertEqual(resaved.fallingPowerUps, [4])
+    }
+
+    /// **A Mayhem field comes back brick for brick** (play-test round 150: "on quitting the app
+    /// and resuming, the bricks are different - some overlapping, some different types, some in
+    /// different positions").
+    func testAMayhemRunComesBackAtItsHeightWithEveryBrickAsItself() throws {
+        let scene = try resumedScene(from: mayhemLeftAtHeight(), mode: .endlessII, level: 0)
+
+        XCTAssertTrue(scene.gameState.currentState is Paused)
+        XCTAssertTrue(scene.endlessMode)
+        XCTAssertEqual(scene.endlessHeight, 37, "back at the height it was left at")
+
+        var bricks: [SKSpriteNode] = []
+        scene.enumerateChildNodes(withName: BrickCategoryName) { node, _ in
+            if let sprite = node as? SKSpriteNode { bricks.append(sprite) }
+        }
+        XCTAssertEqual(bricks.count, 4,
+                       "four records, four bricks - none rebuilt twice from the legacy arrays")
+        XCTAssertEqual(Set(bricks.map { "\($0.position.x),\($0.position.y)" }).count, 4,
+                       "and none on top of another")
+
+        func brick(atX x: CGFloat) -> SKSpriteNode? {
+            bricks.first { abs($0.position.x - x) < 0.01 }
+        }
+        let plain = try XCTUnwrap(brick(atX: -160), "the plain brick is where it was")
+        XCTAssertEqual(plain.position.y, ResumeTransitionTests.bottomRow, accuracy: 0.01)
+        XCTAssertTrue(scene.endlessIIStyles(on: plain).isEmpty, "and is still plain")
+
+        let spinner = try XCTUnwrap(brick(atX: -120))
+        XCTAssertTrue(scene.endlessIIStyles(on: spinner).contains(.spinning),
+                      "the Spinning brick still spins")
+
+        let fixed = try XCTUnwrap(brick(atX: -80))
+        XCTAssertEqual(fixed.position.y, 180, accuracy: 0.01)
+        XCTAssertTrue(scene.endlessIIStyles(on: fixed).contains(.fixed))
+        XCTAssertTrue(fixed.endlessIIIsAnchored, "a Fixed brick that had been struck stays struck")
+
+        let hidden = try XCTUnwrap(brick(atX: 0))
+        XCTAssertTrue(hidden.isHidden, "a brick nobody had found is still hidden")
+        XCTAssertTrue(hidden.texture === scene.brickMultiHit1Texture, "and still a Multi-Hit")
+
+        XCTAssertEqual(scene.ball.position.x, -40, accuracy: 0.01)
+        XCTAssertEqual(scene.ball.position.y, 120, accuracy: 0.01)
+        XCTAssertFalse(scene.ballIsOnPaddle)
+    }
+}
+
+extension ResumeTransitionTests {
+
+    /// **Quit on the between-levels screen, come back to it, and carry on to the level it leads
+    /// to** (play-test round 40, recorded where it was built in `Playing.loadNextLevel`: "The
+    /// player quit looking at the between-levels screen, so that is where the run comes back.
+    /// The level number in the save has already been advanced to the level this screen leads
+    /// to, so the screen and the level that follows it are both the ones they left").
+    ///
+    /// Played for real rather than written by hand: the first scene finishes a level and lands
+    /// on the screen, which writes the save the game writes, and the second resumes from it.
+    /// Round 322b's first version of this test found that the resume skipped the next level
+    /// and counted the finished one twice.
+    func testAResumeBetweenLevelsCarriesOnToTheLevelTheScreenLeadsTo() throws {
+        let setup = LevelPackSetup()
+        let pack = 2
+        let first = setup.startLevelNumber[pack]
+        let levels = setup.numberOfLevels[pack]
+
+        let playing = try resumedScene(level: first, levels: levels, resuming: false)
+        XCTAssertTrue(playing.gameState.currentState is Playing)
+        playing.levelScore = 300
+        playing.levelTimerBonus = 200
+        playing.gameState.enter(InbetweenLevels.self)
+        // The first level, finished, and the screen after it
+        XCTAssertEqual(playing.totalStatsArray[0].levelsCompleted, 1, "counted once, as it ends")
+
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+        let save = try XCTUnwrap(SavedGame.load(from: defaults), "the screen is a resume point")
+        XCTAssertTrue(save.resumesBetweenLevels)
+        XCTAssertEqual(save.levelNumber, first + 1, "saved as the level the screen leads to")
+
+        let resumed = try resumedScene(from: save, level: save.levelNumber,
+                                       levels: save.endLevelNumber - save.levelNumber + 1)
+        XCTAssertTrue(resumed.gameState.currentState is InbetweenLevels,
+                      "back on the screen they quit on")
+        XCTAssertEqual(resumed.levelNumber, first, "the screen for the level they finished")
+        XCTAssertEqual(resumed.totalScore, playing.totalScore,
+                       "with the total the screen showed, bonus and all")
+        XCTAssertEqual(resumed.numberOfLives, playing.numberOfLives,
+                       "and the extra ball a finished level gives")
+        XCTAssertEqual(resumed.levelTimerBonus, 200, "and the time bonus it showed")
+        XCTAssertEqual(resumed.totalStatsArray[0].levelsCompleted, 0,
+                       "the level was counted when it was finished - coming back to its screen "
+                       + "is not finishing it again")
+        XCTAssertEqual(resumed.totalStatsArray[0].levelsPlayed, 0)
+
+        let again = try XCTUnwrap(SavedGame.load(from: defaults),
+                                  "and it is still the resume point, if they quit here again")
+        XCTAssertEqual(again.levelNumber, first + 1)
+        XCTAssertEqual(again.totalScore, save.totalScore)
+
+        resumed.gameState.enter(Playing.self)
+        // Continue, which is all `InbetweenLevels.notificationToContinueReceived` does
+        XCTAssertEqual(resumed.levelNumber, first + 1,
+                       "the level this screen leads to, not the one after it")
+    }
+}
+
+extension ResumeTransitionTests {
+
+    /// A run left with power-ups still running comes back with them running: the effect, its
+    /// icon, its bar and its timer.
+    ///
+    /// Expand Paddle is the one worth pinning, because round 322 changed how a paddle's size is
+    /// tracked - `paddleSizeTarget`, set by `runPaddleSizeScale` - and the resume goes through
+    /// that same function. A resumed Expand that did not record its target would leave the next
+    /// Expand or Shrink stepping from the wrong size, which is James's round 320 report again.
+    func testPowerUpsInEffectComeBackRunning() throws {
+        var save = leftMidLevel()
+        save.activePowerUps = ["paddleSizeTimer", "ballSpeedTimer"]
+        save.activePowerUpDurations = [4.0, 6.0]
+        save.activePowerUpTimers = [10.0, 10.0]
+        save.activePowerUpMagnitudes = [2, 2]
+        // An Expand to 1.5 and a Speed Up to fast, each part-way through
+
+        let scene = try resumedScene(from: save)
+        XCTAssertTrue(scene.gameState.currentState is Paused)
+
+        XCTAssertEqual(scene.paddleSizeTarget, 1.5, accuracy: 0.0001,
+                       "the paddle is heading for its expanded size, as the next Expand or Shrink "
+                       + "will read it")
+        XCTAssertTrue(scene.paddleSizeIcon.texture === scene.iconIncreasePaddleSizeTexture,
+                      "the tray says Expand")
+        XCTAssertFalse(scene.paddleSizeIconBar.isHidden, "with its bar showing")
+        XCTAssertNotNil(scene.action(forKey: "powerUpIncreasePaddleSize"),
+                        "and its timer is running again, so it ends")
+
+        XCTAssertEqual(scene.ballSpeedLimit, scene.ballSpeedFast, accuracy: 0.0001,
+                       "the ball is held at the fast speed it was left at")
+        XCTAssertNotEqual(scene.ballSpeedLimit, scene.ballSpeedNominal,
+                          "which is not where a fresh run starts")
+        XCTAssertFalse(scene.ballSpeedIconBar.isHidden)
+    }
+}
+
+/// **A scene under tests keeps its writes to itself** (round 322b: the simulator's installed app
+/// was found holding a test's saved game, the resume flag and `gameInProgress`).
+final class TestScenesKeepToThemselvesTests: XCTestCase {
+
+    override func setUp() {
+        super.setUp()
+        UserDefaults().removePersistentDomain(forName: GameScene.testSettingsSuite)
+    }
+
+    override func tearDown() {
+        UserDefaults().removePersistentDomain(forName: GameScene.testSettingsSuite)
+        super.tearDown()
+    }
+
+    func testASceneUnderTestHasNeitherTheAppsSettingsNorItsStatsFile() {
+        let scene = GameScene()
+        XCTAssertFalse(scene.defaults === UserDefaults.standard,
+                       "a test scene writing `.standard` writes the installed app's own settings")
+        XCTAssertNil(scene.totalStatsStore,
+                     "and one with the real stats file would overwrite the player's stats")
+    }
+
+    /// The write that was actually found: entering play sets `gameInProgress`, and a test never
+    /// leaves play to set it back.
+    func testEnteringPlayWritesTheScenesStoreAndNotTheApps() {
+        let before = UserDefaults.standard.object(forKey: "gameInProgress") as? Bool
+
+        let scene = GameScene()
+        scene.totalStatsArray = [TotalStats()]
+        scene.ball.physicsBody = SKPhysicsBody(circleOfRadius: 5)
+        scene.addChild(scene.ball)
+        scene.gameState.enter(Playing.self)
+
+        XCTAssertTrue(scene.defaults.bool(forKey: "gameInProgress"), "the scene's own store has it")
+        XCTAssertEqual(UserDefaults.standard.object(forKey: "gameInProgress") as? Bool, before,
+                       "and the app's settings are exactly as they were")
     }
 }

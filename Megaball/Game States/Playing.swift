@@ -215,10 +215,24 @@ class Playing: GKState {
         // Reset total score to reflect pre-save value
             
         if scene.savedGame?.resumesBetweenLevels == true {
+            if let bonus = scene.savedGame?.levelTimerBonus {
+                scene.levelTimerBonus = bonus
+            }
             scene.savedGame = nil
             scene.clearSavedGame()
+            scene.levelNumber -= 1
+            scene.resumingBetweenLevels = true
             scene.gameState.enter(InbetweenLevels.self)
             return
+            // **Back to the level whose screen this is, and marked as a resume** (round 322b,
+            // found by `ResumeTransitionTests`). The save's level is the one the screen leads
+            // to, and the scene was launched at it - so the screen said the wrong level, and
+            // Continue, which moves the level on by one, skipped the level the player was
+            // about to play. And `InbetweenLevels` ran its whole ending again from a resume:
+            // the finished level was counted a second time, played and completed, with its
+            // unlock and its best score written against the level after it. The flag is how
+            // that state tells a level ending from a player coming back to one that already
+            // ended
             // The player quit looking at the between-levels screen, so that is where the run
             // comes back (play-test round 40). The level number in the save has already been
             // advanced to the level this screen leads to, so the screen and the level that

@@ -382,13 +382,19 @@ key-value store. `CloudKitHandler` reads `ubiquityIdentityToken` first and treat
 token as "iCloud unavailable", because touching `CKContainer` without the entitlement
 raises an uncatchable exception.
 
-**The saved-game format is the fragile part.** It is a set of parallel arrays read with a
-force-cast (`as! [Int]?`) at launch while restoring. Any corruption or schema change is an
-unrecoverable crash during resume.
+**The saved-game format is the fragile part, and it is guarded now.** It was a set of
+parallel arrays read with a force-cast at launch, where any corruption was a crash loop.
+`SavedGame` is a versioned `Codable` value that checks its own arrays agree
+(`isConsistent`) and reads as no save rather than trapping; the old format is migrated once.
+New fields are optional so older saves still decode.
 
-A game is saved automatically when a level ends, when the app backgrounds, and when the
-scene disconnects. Resuming restores the level, score, lives, brick layout and active
-power-ups.
+**When a game is saved** (corrected in round 322b - this said "when the app backgrounds, and
+when the scene disconnects", and nothing listens for either): on every pause, including the
+one leaving the app triggers from play (`sceneWillResignActive` posts the pause); on reaching
+the between-levels screen, after the level is banked; every ten metres of an endless run; and
+as a ball is lost. Resuming restores the level, score, lives, brick layout, falling and active
+power-ups, and returns the run paused - or, for a run left on the between-levels screen, to
+that screen, whose Continue starts the next level. `ResumeTransitionTests` drives both.
 
 ---
 
