@@ -1161,6 +1161,85 @@ enum PowerUpIcon {
 
     private static var ringTextures: [String: SKTexture] = [:]
 
+    /// Every fixed ring HUD picture, by the key the ring asks for.
+    ///
+    /// **One table, so the warm-up and the ring cannot disagree** (round 321). Each ring builder
+    /// used to name its key and build its picture in the same breath, which was fine until
+    /// something else needed the list: a warm-up that kept its own copy of twenty-four pairs
+    /// would be wrong the first time a picture was redelivered under a new name.
+    ///
+    /// The paddle-shape entry is not here because its picture changes with the shape during a
+    /// run; `GameScene.endlessIIPaddleShapeRingArt` gives the warm-up those.
+    static let ringArt: [String: () -> UIImage] = [
+        "TrajectoryIcon": { hud("TrajectoryIcon", trajectoryLine) },
+        "LandingMarkerIcon": { hud("LandingMarkerIcon", landingMarker) },
+        "AimedStickyIcon": { hud("AimedStickyIcon", aimedSticky) },
+        "MagnetismIcon": { hud("MagnetismIcon", magnetism) },
+        "PortalIcon": { hud("PortalIcon", portalPaddle) },
+        "PaddleHaloIcon": { hud("PaddleHaloIcon", paddleHalo) },
+        "BallSteeringIcon": { hud("BallSteeringIcon", ballSteering) },
+        "InertPaddleIcon": { hud("InertPaddleIcon", inertPaddle) },
+        "FlippedAngleIcon": { hud("FlippedAngleIcon", flippedAngle) },
+        "ReversedControlsIcon": { hud("ReversedControlsIcon", reversedControls) },
+        "AutoAimIcon": { hud("AutoAimIcon", autoAim) },
+        "DoublePaddleIcon": { hud("DoublePaddleIcon", doublePaddle) },
+        "MirrorPaddleIcon": { hud("MirrorPaddleIcon", mirrorPaddle) },
+        "BallSpinIcon": { hud("BallSpinIcon", ballSpin) },
+        "WreckingBallIcon": { hud("WreckingBallIcon", wreckingBall) },
+        "AuraIcon": { hud("AuraIcon", aura) },
+        "DescentIcon": { hud("DescentIcon", descent) },
+        "WrapIcon": { hud("WrapIcon", wrapAround) },
+        "RandomBounceIcon": { hud("RandomBounceIcon", randomisedBounce) },
+        "GhostBallIcon": { hud("GhostBallIcon", ghostBall) },
+        "ClearAndRetreatIcon": { hud("ClearAndRetreatIcon", clearAndRetreat) },
+        "QuicksandIcon": { hud("QuicksandIcon", UIImage(named: "PowerUpBricksDown") ?? clearAndRetreat) },
+        "SafetyPaddleIcon": { hud("SafetyPaddleIcon", safetyPaddle) },
+        "DriftIcon": { hud("DriftIcon", drift) },
+        "DriftLeftIcon": { hud("DriftLeftIcon", mirrored(hud("DriftIcon", drift))) },
+    ]
+
+    /// A fixed ring picture, by name.
+    ///
+    /// A name missing from `ringArt` is a typo at a call site, and it fails loudly in a debug
+    /// build rather than drawing an empty ring entry nobody notices.
+    static func ringTexture(named key: String) -> SKTexture {
+        guard let art = ringArt[key] else {
+            assertionFailure("no ring art named \(key)")
+            return ringTexture(key, UIImage())
+        }
+        return ringTexture(key, art())
+    }
+
+    /// Builds every ring texture before anyone catches a power-up.
+    ///
+    /// **The first-collection stutter** (James, round 321: "the game is still stuttering/dropping
+    /// frames when the first power up of a game is generated/collected"). Round 291 cached these
+    /// and so took the per-frame cost away, and left the first build of each exactly where it
+    /// was: a picture decode and an `SKTexture(image:)` GPU upload, measured at 9.8ms in round
+    /// 291, on the main thread in the frame the power-up is caught. Twenty-five of them, so it
+    /// happened once for every kind a run had not caught yet - which is precisely "the first
+    /// power-up".
+    ///
+    /// Off the main thread, because doing all of them at scene load would move the stutter to
+    /// the start of the run rather than remove it. The finished textures are handed to the cache
+    /// back on the main thread, where the ring reads it, and never replace one the ring built
+    /// itself in the meantime.
+    static func warmRingTextures(extra: [(key: String, art: () -> UIImage)] = []) {
+        let entries = ringArt.map { (key: $0.key, art: $0.value) } + extra
+        DispatchQueue.global(qos: .utility).async {
+            let built = entries.map { (key: $0.key, texture: SKTexture(image: $0.art())) }
+            DispatchQueue.main.async {
+                for entry in built where ringTextures[entry.key] == nil {
+                    ringTextures[entry.key] = entry.texture
+                }
+                SKTexture.preload(built.map(\.texture)) { }
+            }
+        }
+    }
+
+    /// Whether the ring already holds a texture for a key, for the test that warming works.
+    static func ringTextureIsWarm(_ key: String) -> Bool { ringTextures[key] != nil }
+
     private static func badge(_ colour: UIColor = beneficial,
                               _ glyph: (CGContext, CGRect) -> Void) -> UIImage {
         UIGraphicsImageRenderer(size: canvas).image { context in

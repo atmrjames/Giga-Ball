@@ -386,4 +386,40 @@ final class PerStyleArtCostTests: XCTestCase {
 
         XCTAssertGreaterThan(total, 0, "if this is zero the rules stopped answering")
     }
+
+    /// **Which overlay pictures are still to draw, asked of the rules rather than listed.**
+    ///
+    /// James, round 321: "I have supplied the graphics just for the normal bricks. Let me know if
+    /// I need to create different variants of these graphics for the different shapes and sizes
+    /// of bricks." The answer is every silhouette one of the eight styles can actually be carried
+    /// by, which the game already knows: `suits(_ size:)`, `stacksWith`, and what each shape
+    /// takes. A Tiny brick shares the Normal picture, being the same shape, so it is not asked for.
+    ///
+    /// Printed as the list to send, and counted, so a rule change moves the list with it.
+    func testWhatBrickOverlaysAreStillToDraw() {
+        var wanted: [String] = []
+        let shapes: [(name: String, style: EndlessIIStyle?)] =
+            [("", nil), (GameScene.ShapedBrickArt.rounded.rawValue, .rounded)]
+            + EndlessIIFace.allCases.compactMap { face in
+                GameScene.shapedArt(for: face).map { ($0.rawValue, face.style) }
+            }
+        for style in GameScene.endlessIIOverlaidStyles {
+            for size in BrickSize.allCases where size != .tiny && style.suits(size) {
+                for shape in shapes {
+                    if let carrier = shape.style {
+                        guard style.stacksWith(carrier), carrier.suits(size),
+                              carrier.suitsAnyBrickOf(size) else { continue }
+                    }
+                    let name = GameScene.endlessIIStyleOverlayArtName(style, shape: shape.name,
+                                                                       size: size)
+                    if GameScene.endlessIIOverlayArtExists(name) == false { wanted.append(name) }
+                }
+            }
+        }
+        print("\n  Brick overlays still to draw (\(wanted.count)):")
+        for name in wanted.sorted() { print("    \(name)") }
+        print("")
+        XCTAssertFalse(wanted.contains { $0.hasPrefix("BrickNormal") == false })
+    }
 }
+

@@ -77,7 +77,7 @@ enum BrickTypeIcons {
     /// Square, because the brick is: one cell across and two down (`BrickSize.square`), and the
     /// power-up icons are square too - so one side serves both and nothing is stretched.
     private static func drawPowerUpBrick() {
-        let side = min(canvas.height, canvas.width)*squareBrickShare
+        let side = min(canvas.height, canvas.width)*powerUpBrickShare
         let frame = centred(CGSize(width: side, height: side))
         artwork(genericPowerUpArtName)?.draw(in: frame)
     }
@@ -99,6 +99,15 @@ enum BrickTypeIcons {
     /// against each other - and a comparison chart cannot also have its entries sized to look
     /// right. James has asked for pictures of bricks, so that is what these are.
     private static let squareBrickShare: CGFloat = 0.95
+
+    /// The power-up brick's share, a touch more than the Square brick's.
+    ///
+    /// James, round 321: "square brick looks right at the size it is in the info screens. Just
+    /// grow the power-up brick slightly." Measured in round 320 the two were identical, 76
+    /// points a side, which is why this is its own number rather than a change to the one
+    /// above: the Square brick is right and stays where it is. The whole canvas height is the
+    /// most a square can take, so "slightly" is the last four points there are.
+    private static let powerUpBrickShare: CGFloat = 1.0
 
     // MARK: - Behaviours
 
@@ -175,16 +184,17 @@ enum BrickTypeIcons {
     private static func colour(of style: EndlessIIStyle) -> UIColor {
         switch style {
         case .directional: return GameScene.directionalBrickColour
-        case .exploding: return GameScene.explodingBrickColour
-        case .spawner: return GameScene.spawnerBrickColour
         case .portal: return GameScene.portalBrickColour
-        case .fixed: return GameScene.fixedBrickColour
-        case .flashing: return #colorLiteral(red: 0.8235294118, green: 1, blue: 0, alpha: 1)
-        case .breathing: return GameScene.breathingBrickColour
-        case .gravity, .moving, .rounded, .spinning, .convex, .concave, .wedge, .diamond:
+        case .gravity, .moving, .rounded, .spinning, .convex, .concave, .wedge, .diamond,
+             .exploding, .spawner, .fixed, .flashing, .breathing:
             return standardColour
         }
     }
+    // **And the other six from round 321**: Spinning, Flashing, Breathing, Fixed, Exploding and
+    // Spawner wear James's semi-transparent overlays now, drawn over an ordinary brick by
+    // `drawOverlay` - "remove any existing tints or icons from these bricks." What is left
+    // tinted on this page is Directional's grey and Portal, which are not in the delivery.
+    //
     // **Gravity and Moving are untinted as of round 320**, on James's word: "remove the icon
     // and any tints from the gravity and moving bricks, including on the info pages, it's
     // pretty obvious what they are doing, they don't need any graphical indicators." Round 317
@@ -250,13 +260,17 @@ enum BrickTypeIcons {
                                  width: BrickTypeIcons.spinning.width,
                                  height: BrickTypeIcons.spinning.height)
             artwork("BrickNormal")?.tinted(tint).draw(in: turning)
+            drawOverlay(for: style, in: turning, context: context)
             context.restoreGState()
             return
 
         case .flashing:
-            // Half-way through fading out, which is the state that says what it does
-            artwork("BrickNormal")?.tinted(tint).draw(in: frame, blendMode: .normal, alpha: 0.55)
-            outline(frame, in: context)
+            // **Whole, with its overlay** (round 321). It was drawn half-faded inside an outline,
+            // which was the one frame that could stand for fading while the picture stood still.
+            // It fades for real since round 317, so the still is simply the brick as it looks
+            // when it is there
+            artwork("BrickNormal")?.tinted(tint).draw(in: frame)
+            drawOverlay(for: style, in: frame, context: context)
             return
 
         case .breathing:
@@ -268,6 +282,7 @@ enum BrickTypeIcons {
             // behave" - so the shrinking is shown rather than implied, and an outline that
             // breathed along with the brick would say the *cell* was changing size.
             artwork("BrickNormal")?.tinted(tint).draw(in: frame)
+            drawOverlay(for: style, in: frame, context: context)
             return
 
         case .portal:
@@ -311,13 +326,32 @@ enum BrickTypeIcons {
             // visibly patrolling were each saying a second time what the motion says first.
             // The same removal the field takes, which is what keeps the page honest.
             artwork("BrickNormal")?.tinted(standardColour).draw(in: frame)
+            drawOverlay(for: style, in: frame, context: context)
             return
 
         case .exploding, .spawner, .fixed:
             artwork("BrickNormal")?.tinted(tint).draw(in: frame)
-            stroke(glyph(for: style, in: frame), in: context, width: max(1.5, frame.height*0.08))
+            drawOverlay(for: style, in: frame, context: context)
             return
         }
+    }
+
+    /// James's overlay for a style, over a brick already drawn in `frame`.
+    ///
+    /// The same picture the field wears and asked for by the same rule
+    /// (`GameScene.endlessIIStyleOverlayArtName`), so the page cannot show one thing and the game
+    /// another. **The glyph is the fallback for the three on-hit styles only**, and only if the
+    /// picture is missing: Fixed, Exploding and Spawner look like any other brick until they are
+    /// struck, so a page that lost the picture must still say which is which, while the five
+    /// motions move on this page and say it themselves.
+    private static func drawOverlay(for style: EndlessIIStyle, in frame: CGRect,
+                                    context: CGContext) {
+        if let overlay = UIImage(named: GameScene.endlessIIStyleOverlayArtName(style)) {
+            overlay.draw(in: frame)
+            return
+        }
+        guard [.exploding, .spawner, .fixed].contains(style) else { return }
+        stroke(glyph(for: style, in: frame), in: context, width: max(1.5, frame.height*0.08))
     }
 
     /// The shapes drawn over the tinted bricks, at the proportions `EndlessIIBehaviourBricks`

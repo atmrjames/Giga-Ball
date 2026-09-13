@@ -1085,40 +1085,32 @@ extension GameScene {
 
     var endlessIIFieldClocks: [(id: String, clock: EndlessIIClock, icon: SKTexture)] {
         [("endlessIIWreckingBall", endlessIIWreckingBallClock,
-          PowerUpIcon.ringTexture("WreckingBallIcon", PowerUpIcon.hud("WreckingBallIcon", PowerUpIcon.wreckingBall))),
+          PowerUpIcon.ringTexture(named: "WreckingBallIcon")),
          ("endlessIIAura", endlessIIAuraClock,
-          PowerUpIcon.ringTexture("AuraIcon", PowerUpIcon.hud("AuraIcon", PowerUpIcon.aura))),
+          PowerUpIcon.ringTexture(named: "AuraIcon")),
          ("endlessIIDescent", endlessIIDescentClock,
-          PowerUpIcon.ringTexture("DescentIcon", PowerUpIcon.hud("DescentIcon", PowerUpIcon.descent))),
+          PowerUpIcon.ringTexture(named: "DescentIcon")),
          ("endlessIIWrapAround", endlessIIWrapAroundClock,
-          PowerUpIcon.ringTexture("WrapIcon", PowerUpIcon.hud("WrapIcon", PowerUpIcon.wrapAround))),
+          PowerUpIcon.ringTexture(named: "WrapIcon")),
          ("endlessIIRandomisedBounce", endlessIIRandomisedBounceClock,
-          PowerUpIcon.ringTexture("RandomBounceIcon", PowerUpIcon.hud("RandomBounceIcon", PowerUpIcon.randomisedBounce))),
+          PowerUpIcon.ringTexture(named: "RandomBounceIcon")),
          ("endlessIIGhostBall", endlessIIGhostBallClock,
-          PowerUpIcon.ringTexture("GhostBallIcon", PowerUpIcon.hud("GhostBallIcon", PowerUpIcon.ghostBall))),
+          PowerUpIcon.ringTexture(named: "GhostBallIcon")),
          ("endlessIIClearAndRetreat", endlessIIClearAndRetreatClock,
-          PowerUpIcon.ringTexture("ClearAndRetreatIcon", PowerUpIcon.hud("ClearAndRetreatIcon", PowerUpIcon.clearAndRetreat))),
+          PowerUpIcon.ringTexture(named: "ClearAndRetreatIcon")),
          ("endlessIIQuicksand", endlessIIQuicksandClock,
-          PowerUpIcon.ringTexture("QuicksandIcon",
-                                  PowerUpIcon.hud("QuicksandIcon",
-                                                  UIImage(named: "PowerUpBricksDown")
-                                                    ?? PowerUpIcon.clearAndRetreat))),
+          PowerUpIcon.ringTexture(named: "QuicksandIcon")),
          // **Its own round icon now** (round 241's delivery). It wore Classic's Quicksand
          // badge, because it is Classic's Quicksand - the same power-up doing a temporary
          // version of the same thing (round 218) - and a square badge in a round ring is a
          // square in a circle. The badge is still the fallback, so the two are the same
          // picture anywhere the drawn one is missing
          ("endlessIISafetyPaddle", endlessIISafetyPaddleClock,
-          PowerUpIcon.ringTexture("SafetyPaddleIcon", PowerUpIcon.hud("SafetyPaddleIcon", PowerUpIcon.safetyPaddle))),
+          PowerUpIcon.ringTexture(named: "SafetyPaddleIcon")),
          ("endlessIIDrift", endlessIIDriftClock,
           endlessIIDriftDirection < 0
-              ? PowerUpIcon.ringTexture(
-                    "DriftLeftIcon",
-                    PowerUpIcon.hud("DriftLeftIcon",
-                                    PowerUpIcon.mirrored(PowerUpIcon.hud("DriftIcon",
-                                                                         PowerUpIcon.drift))))
-              : PowerUpIcon.ringTexture("DriftIcon",
-                                        PowerUpIcon.hud("DriftIcon", PowerUpIcon.drift)))]
+              ? PowerUpIcon.ringTexture(named: "DriftLeftIcon")
+              : PowerUpIcon.ringTexture(named: "DriftIcon"))]
         // The ring shows which way the field is sliding. **Drawn art for the leftward one
         // now** (James, round 210's delivery): it was the rightward icon flipped, which is
         // the right answer while there is only one picture and the wrong one as soon as

@@ -1525,17 +1525,29 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		// purpose: nothing waits for it, and a drop landing before it finishes simply
 		// decodes the way it always did.
 
-		SKTexture.preload(powerUpTextureArray + [SKTexture(imageNamed: "PowerUpPreSet")]) { }
-		// **The spawn hitch** (play-test round 84: "I notice it when a power-up starts
-		// falling"). `SKTexture(imageNamed:)` does not read anything: it holds a name, and
-		// the file is loaded and decoded the first time the texture is *drawn* - which is
-		// the frame the power-up appears, on the main thread, in the middle of a bounce.
-		// Fifty-one of them, so it happens again for every type the run has not shown yet,
-		// which is exactly why it feels occasional rather than constant.
-		//
-		// Preloading moves that work off the render path. The completion is empty on
-		// purpose: nothing waits for it, and a drop landing before it finishes simply
-		// decodes the way it always did.
+		SKTexture.preload([iconIncreasePaddleSizeTexture, iconDecreasePaddleSizeTexture,
+						   iconDecreaseBallSpeedTexture, iconIncreaseBallSpeedTexture,
+						   iconStickyPaddleTexture, iconGravityTexture, iconLasersTexture,
+						   iconUndestructiballTexture, iconGigaBallTexture, iconHiddenBlocksTexture,
+						   iconBallSizeBigTexture, iconBallSizeSmallTexture, iconLockedTexture,
+						   iconPaddleSizeDisabledTexture, iconBallSpeedDisabledTexture,
+						   iconStickyPaddleDisabledTexture, iconGravityDisabledTexture,
+						   iconLasersDisabledTexture, iconGigaBallDisabledTexture,
+						   iconHiddenBlocksDisabledTexture, iconBallSizeDisabledTexture]
+						  + GameScene.endlessIIOverlaidStyles.map {
+							  SKTexture(imageNamed: GameScene.endlessIIStyleOverlayArtName($0)) }) { }
+		PowerUpIcon.warmRingTextures(extra: GameScene.endlessIIPaddleShapeRingArt)
+		// **The same hitch, one step later: the catch rather than the drop** (James, round 321:
+		// "the game is still stuttering/dropping frames when the first power up of a game is
+		// generated/collected"). Round 84 preloaded what *falls*, and nothing preloaded what a
+		// catch puts on screen. The tray's icons are `SKTexture(imageNamed:)` too, so the first
+		// Expand caught decoded its icon mid-bounce exactly as the first drop used to; Mayhem's
+		// ring built its picture on the catch, 9.8ms per kind by round 291's measurement; and the
+		// eight brick overlays join them so the first styled row does not decode eight pictures
+		// in the frame it arrives. The ring half goes to a background queue, because doing
+		// twenty-five uploads here would move the stutter to the start of the run.
+
+		// (The preload above used to appear twice in a row here - an accidental copy, removed in round 321.)
 		
 		powerUpTray = self.childNode(withName: "powerUpTray") as! SKSpriteNode
 		scoreBacker = self.childNode(withName: "scoreBacker") as! SKSpriteNode
@@ -5260,6 +5272,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		// Limit number of power-ups available at once
 		        
         let powerUp = SKSpriteNode(imageNamed: "PowerUpPreSet")
+        if hapticsSetting { rigidHaptic.prepare() }
+        // Readied as the drop appears, which is Apple's own advice for a haptic that is coming:
+        // an unprepared generator wakes the Taptic Engine on the catch itself, and the catch is
+        // the frame already doing the most (round 321)
         
 		powerUp.size.width = brickWidth*0.85
         powerUp.size.height = powerUp.size.width

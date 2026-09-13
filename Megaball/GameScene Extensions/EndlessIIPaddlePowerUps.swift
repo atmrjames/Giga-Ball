@@ -244,7 +244,13 @@ extension GameScene {
     /// `hud(_:_:)` keeps the drawn one as the fallback, so a shape whose art is missing looks
     /// exactly as it did rather than showing nothing.
     var endlessIIPaddleShapeIconName: String {
-        switch endlessIIPaddleSurface {
+        GameScene.endlessIIPaddleShapeIconName(for: endlessIIPaddleSurface)
+    }
+
+    /// The ring picture for a paddle shape, as a pure function of the shape (round 321), so the
+    /// warm-up can build every shape's texture without a scene wearing each one in turn.
+    static func endlessIIPaddleShapeIconName(for surface: PaddleBounce.Surface?) -> String {
+        switch surface {
         case .convex: return "ConvexPaddleIcon"
         case .concave: return "ConcavePaddleIcon"
         case .wavy: return "WavePaddleIcon"
@@ -254,6 +260,18 @@ extension GameScene {
             // Jagged is retired and has no art; nil is the moment between a shape ending and
             // the ring noticing. Neither is ever drawn, and both need an answer
         }
+    }
+
+    /// Every paddle shape's ring picture, keyed the way the ring asks for it, for the warm-up.
+    static var endlessIIPaddleShapeRingArt: [(key: String, art: () -> UIImage)] {
+        PaddleBounce.Surface.allCases.filter { $0 != .jagged }.map { surface in
+            (key: "shape-\(surface)",
+             art: { PowerUpIcon.hud(endlessIIPaddleShapeIconName(for: surface),
+                                    PowerUpIcon.paddleSurface(surface)) })
+        }
+        // Jagged is retired and never drawn, so it is not worth a texture. The key matches the
+        // ring's own `"shape-\(endlessIIPaddleSurface ?? .convex)"` exactly, which is what makes
+        // a warmed shape a cache hit rather than a second build
     }
 
     /// The laser and sticky overlays a shape wears, drawn to fit it.
@@ -1508,19 +1526,19 @@ extension GameScene {
 
     func endlessIIPaddleRingEntries() -> [PowerUpRingHUD.Entry] {
         let clocks: [(String, EndlessIIClock, SKTexture)] = [
-            ("endlessIIAimedSticky", endlessIIAimedStickyClock, PowerUpIcon.ringTexture("AimedStickyIcon", PowerUpIcon.hud("AimedStickyIcon", PowerUpIcon.aimedSticky))),
+            ("endlessIIAimedSticky", endlessIIAimedStickyClock, PowerUpIcon.ringTexture(named: "AimedStickyIcon")),
             ("endlessIIMagnetism", endlessIIMagnetismClock,
-             PowerUpIcon.ringTexture("MagnetismIcon", PowerUpIcon.hud("MagnetismIcon", PowerUpIcon.magnetism))),
+             PowerUpIcon.ringTexture(named: "MagnetismIcon")),
             ("endlessIIPortalPaddle", endlessIIPortalPaddleClock,
-             PowerUpIcon.ringTexture("PortalIcon", PowerUpIcon.hud("PortalIcon", PowerUpIcon.portalPaddle))),
-            ("endlessIIPaddleHalo", endlessIIPaddleHaloClock, PowerUpIcon.ringTexture("PaddleHaloIcon", PowerUpIcon.hud("PaddleHaloIcon", PowerUpIcon.paddleHalo))),
+             PowerUpIcon.ringTexture(named: "PortalIcon")),
+            ("endlessIIPaddleHalo", endlessIIPaddleHaloClock, PowerUpIcon.ringTexture(named: "PaddleHaloIcon")),
             ("endlessIIBallSteering", endlessIIBallSteeringClock,
-             PowerUpIcon.ringTexture("BallSteeringIcon", PowerUpIcon.hud("BallSteeringIcon", PowerUpIcon.ballSteering))),
-            ("endlessIIInertPaddle", endlessIIInertPaddleClock, PowerUpIcon.ringTexture("InertPaddleIcon", PowerUpIcon.hud("InertPaddleIcon", PowerUpIcon.inertPaddle))),
-            ("endlessIIFlippedAngle", endlessIIFlippedAngleClock, PowerUpIcon.ringTexture("FlippedAngleIcon", PowerUpIcon.hud("FlippedAngleIcon", PowerUpIcon.flippedAngle))),
-            ("endlessIIReversedControls", endlessIIReversedControlsClock, PowerUpIcon.ringTexture("ReversedControlsIcon", PowerUpIcon.hud("ReversedControlsIcon", PowerUpIcon.reversedControls))),
+             PowerUpIcon.ringTexture(named: "BallSteeringIcon")),
+            ("endlessIIInertPaddle", endlessIIInertPaddleClock, PowerUpIcon.ringTexture(named: "InertPaddleIcon")),
+            ("endlessIIFlippedAngle", endlessIIFlippedAngleClock, PowerUpIcon.ringTexture(named: "FlippedAngleIcon")),
+            ("endlessIIReversedControls", endlessIIReversedControlsClock, PowerUpIcon.ringTexture(named: "ReversedControlsIcon")),
             ("endlessIIAutoAim", endlessIIAutoAimClock,
-             PowerUpIcon.ringTexture("AutoAimIcon", PowerUpIcon.hud("AutoAimIcon", PowerUpIcon.autoAim))),
+             PowerUpIcon.ringTexture(named: "AutoAimIcon")),
             ("endlessIIPaddleSurface", endlessIIPaddleSurfaceClock,
              PowerUpIcon.ringTexture(
                 "shape-\(endlessIIPaddleSurface ?? .convex)",
@@ -1529,15 +1547,15 @@ extension GameScene {
              // The one entry whose picture genuinely changes during a run, so its key carries
              // the surface - five textures rather than one, built as each shape is first met
             ("endlessIIDoublePaddle", endlessIIDoublePaddleClock,
-             PowerUpIcon.ringTexture("DoublePaddleIcon", PowerUpIcon.hud("DoublePaddleIcon", PowerUpIcon.doublePaddle))),
+             PowerUpIcon.ringTexture(named: "DoublePaddleIcon")),
             ("endlessIIMirrorPaddle", endlessIIMirrorPaddleClock,
-             PowerUpIcon.ringTexture("MirrorPaddleIcon", PowerUpIcon.hud("MirrorPaddleIcon", PowerUpIcon.mirrorPaddle))),
+             PowerUpIcon.ringTexture(named: "MirrorPaddleIcon")),
             // Round art for the ring, drawn rather than derived (round 210's delivery). The
             // badge stays as the fallback everywhere, so a build without a picture looks
             // exactly as it did - which is what `hud` is for, and why Magnetism, Ball Steering
             // and Auto-Aim could be given theirs in round 241 by naming a file
             ("endlessIIBallSpin", endlessIIBallSpinClock,
-             PowerUpIcon.ringTexture("BallSpinIcon", PowerUpIcon.hud("BallSpinIcon", PowerUpIcon.ballSpin))),
+             PowerUpIcon.ringTexture(named: "BallSpinIcon")),
         ]
         return clocks.compactMap { id, clock, texture in
             guard clock.isRunning else { return nil }

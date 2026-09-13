@@ -295,6 +295,58 @@ final class EndlessIIFrameCostTests: XCTestCase {
     /// shared bottom line by hand and they all looked right - which proved only that the *art*
     /// shares a bottom line, and missed the bug entirely, because the bug was in where the
     /// scene puts them.
+    /// **What the first collection of a ring power-up costs, against every one after it.**
+    ///
+    /// Round 321, from James: "the game is still stuttering/dropping frames when the first power up
+    /// of a game is generated/collected." Round 291 made `PowerUpIcon.ringTexture` a cache, which
+    /// took the per-frame rebuild from 30.8ms to nothing - and left the *first* build of each key
+    /// exactly where it was: a `UIImage(named:)` decode and an `SKTexture(image:)` GPU upload, on
+    /// the main thread, in the frame the power-up is caught. Twenty-four keys, so it recurs once
+    /// for each kind a run has not caught yet, which is the "first power-up" feel precisely.
+    ///
+    /// A fresh key every run, so the process-wide cache cannot hide the first cost behind a test
+    /// that happened to build it earlier. The first build is printed rather than asserted,
+    /// because it depends on the machine; what is asserted is that a warmed lookup is free, which
+    /// is the property the warm-up at scene load exists to buy.
+    func testAFirstRingTextureIsExpensiveAndAWarmedOneIsNot() {
+        let key = "TimingProbe-" + UUID().uuidString
+        let first = Date()
+        _ = PowerUpIcon.ringTexture(key, PowerUpIcon.hud("MagnetismIcon", PowerUpIcon.magnetism))
+        let firstCost = Date().timeIntervalSince(first)
+
+        let again = Date()
+        _ = PowerUpIcon.ringTexture(key, PowerUpIcon.hud("MagnetismIcon", PowerUpIcon.magnetism))
+        let cachedCost = Date().timeIntervalSince(again)
+
+        print(String(format: "\n  Ring texture, first build %.2fms (a frame is 16.7ms), cached %.4fms\n",
+                     firstCost*1000, cachedCost*1000))
+        XCTAssertLessThan(cachedCost, 0.001, "a warmed ring texture is a dictionary lookup")
+    }
+
+    /// **After the warm-up, every ring picture is already built** (round 321).
+    ///
+    /// The claim the first-collection fix rests on: nothing a catch puts in the ring has to be
+    /// decoded or uploaded in the frame of the catch. Asked of the table and of every paddle
+    /// shape, which is the whole set the ring can ask for.
+    func testTheWarmUpBuildsEveryRingPictureBeforeACatch() {
+        let keys = Array(PowerUpIcon.ringArt.keys) + GameScene.endlessIIPaddleShapeRingArt.map(\.key)
+        PowerUpIcon.warmRingTextures(extra: GameScene.endlessIIPaddleShapeRingArt)
+
+        let warmed = expectation(description: "every ring texture is in the cache")
+        func check(_ tries: Int) {
+            if keys.allSatisfy(PowerUpIcon.ringTextureIsWarm) { warmed.fulfill(); return }
+            guard tries > 0 else { return }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { check(tries - 1) }
+        }
+        check(100)
+        wait(for: [warmed], timeout: 10)
+
+        let start = Date()
+        for key in PowerUpIcon.ringArt.keys { _ = PowerUpIcon.ringTexture(named: key) }
+        let each = Date().timeIntervalSince(start)/Double(PowerUpIcon.ringArt.count)
+        XCTAssertLessThan(each, 0.001, "a catch after the warm-up is a lookup, not a build")
+    }
+
     func testTheShapedPaddleOverlaysCanBeLookedAt() throws {
         let shapes: [PaddleBounce.Surface?] = [nil, .convex, .concave, .wavy,
                                                .wedgeLeft, .wedgeRight]

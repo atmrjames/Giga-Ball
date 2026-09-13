@@ -493,6 +493,36 @@ extension GameScene {
     /// Nothing for Tiny, deliberately: a Tiny brick is a quarter cell wearing the ordinary
     /// picture *scaled* into it, which is right - the stretch these suffixes exist to end is a
     /// change of proportion, and a Tiny brick has none.
+    /// The eight styles that wear a drawn overlay instead of a tint or a glyph.
+    ///
+    /// James, round 321: "semi transparent overlays for the different brick types: spinning,
+    /// flashing, breathing, moving, gravity, fixed, exploding, spawner - add these over the top
+    /// of these bricks as an overlay. Remove any existing tints or icons from these bricks."
+    ///
+    /// An overlay rather than a picture per brick, which is round 315d's costing arriving at its
+    /// own conclusion: a tint lands on whatever brick is underneath and so needed 274 drawn
+    /// combinations to replace, while a semi-transparent layer lets the brick's own artwork -
+    /// multi-hit, indestructible, retro - show through and needs one picture per silhouette.
+    static let endlessIIOverlaidStyles: [EndlessIIStyle] = [
+        .spinning, .flashing, .breathing, .moving, .gravity, .fixed, .exploding, .spawner,
+    ]
+
+    /// What the overlay for a style on a given silhouette is called.
+    ///
+    /// **The portal glow's order**: the base name, then the shape, then the size, then what the
+    /// picture is - `BrickPortalDiamondSquareGlow` is that rule, and so is the delivery, whose
+    /// plain Normal overlays come out as `BrickNormalSpinningOverlay` with the shape and size
+    /// empty. A Square Gravity brick asks for `BrickNormalSquareGravityOverlay` and a Wedge
+    /// Fixed one for `BrickNormalWedgeFixedOverlay`, so the names James draws for the other
+    /// silhouettes are already the names the game looks for.
+    ///
+    /// A Tiny brick shares the Normal picture, because it is the same shape at a quarter of the
+    /// area - the same bargain the Directional panel makes, and for the same reason.
+    static func endlessIIStyleOverlayArtName(_ style: EndlessIIStyle, shape: String = "",
+                                              size: BrickSize = .normal) -> String {
+        "BrickNormal" + shape + artSuffix(for: size) + style.rawValue.capitalized + "Overlay"
+    }
+
     static func artSuffix(for size: BrickSize) -> String {
         switch size {
         case .normal, .tiny: return ""

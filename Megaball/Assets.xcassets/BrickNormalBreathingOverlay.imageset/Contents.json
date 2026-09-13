@@ -1,0 +1,23 @@
+{
+  "images": [
+    {
+      "filename": "BrickNormalBreathingOverlay.png",
+      "idiom": "universal",
+      "scale": "1x"
+    },
+    {
+      "filename": "BrickNormalBreathingOverlay@2x.png",
+      "idiom": "universal",
+      "scale": "2x"
+    },
+    {
+      "filename": "BrickNormalBreathingOverlay@3x.png",
+      "idiom": "universal",
+      "scale": "3x"
+    }
+  ],
+  "info": {
+    "author": "xcode",
+    "version": 1
+  }
+}

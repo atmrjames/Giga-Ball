@@ -265,6 +265,22 @@ extension UIViewController {
         // Whatever held the two together in the old order goes, so the new pair below is the
         // only thing saying which is above which
 
+        for constraint in container.constraints
+        where (constraint.firstItem === icon && constraint.firstAttribute == .top)
+            || (constraint.secondItem === icon && constraint.secondAttribute == .top) {
+            constraint.isActive = false
+        }
+        // **And whatever placed the icon's top edge in the old order goes too** (round 321, from
+        // James's iPhone 16 Pro Max log). The Level Stats screen's storyboard hangs the picture
+        // under the pack line - `levelImageView.top = packNameAndLevelNumberLabel.bottom + 40` -
+        // and neither loop above touched it, because it involves neither the title nor anything
+        // hanging from the icon's *bottom*. So after the swap four constraints made a circle:
+        // icon above title (+10), title above pack line (+0), pack line above icon (+40). Auto
+        // Layout cannot satisfy a loop, so it printed three "Unable to simultaneously satisfy
+        // constraints" blocks every time the screen opened and broke a different constraint
+        // each time to get out - which is why it looked right, and why "looked right" was luck.
+        // The icon's top is set exactly once, just below, so nothing else may set it
+
         NSLayoutConstraint.activate([
             icon.topAnchor.constraint(equalTo: container.topAnchor, constant: titleInset),
             title.topAnchor.constraint(equalTo: icon.bottomAnchor,

@@ -82,6 +82,122 @@ extension GameScene {
         return brick.childNode(withName: GameScene.roundedBrickOutlineName) == nil
     }
 
+    // MARK: - Style overlays
+
+    static let styleOverlayName = "endlessIIStyleOverlay"
+    /// A second copy of Fixed's overlay, laid over the first once it has anchored.
+    static let styleOverlayLockName = "endlessIIStyleOverlayLocked"
+    /// Over the brick's own picture and a shaped face's art, under nothing that matters.
+    static let styleOverlayZ: CGFloat = 1.5
+
+    private static var overlayArtKnown: [String: Bool] = [:]
+
+    /// Whether the catalogue holds an overlay picture, asked once per name.
+    ///
+    /// Remembered rather than asked of `UIImage(named:)` every time, because this runs for every
+    /// styled brick a row generates and most of the answers are the same eight names.
+    static func endlessIIOverlayArtExists(_ name: String) -> Bool {
+        if let known = overlayArtKnown[name] { return known }
+        let exists = UIImage(named: name) != nil
+        overlayArtKnown[name] = exists
+        return exists
+    }
+
+    /// The silhouette an overlay has to match: the drawn face's name, Rounded, or nothing.
+    func endlessIIOverlayShape(of brick: SKSpriteNode) -> String {
+        if let face = brick.endlessIIFace, let art = GameScene.shapedArt(for: face) {
+            return art.rawValue
+        }
+        if brick.childNode(withName: GameScene.roundedBrickOutlineName) != nil {
+            return GameScene.ShapedBrickArt.rounded.rawValue
+        }
+        return ""
+    }
+
+    /// Puts James's overlays on a brick for every style it carries, and nothing else.
+    ///
+    /// James, round 321: "semi transparent overlays for the different brick types: spinning,
+    /// flashing, breathing, moving, gravity, fixed, exploding, spawner - add these over the top
+    /// of these bricks as an overlay. Remove any existing tints or icons from these bricks. I
+    /// have supplied the graphics just for the normal bricks."
+    ///
+    /// **Rebuilt from the brick's styles every time, rather than added by each style**, because
+    /// styles stack and arrive in either order: an Exploding brick that is later given a Wedge
+    /// was a rectangle wearing a rectangular overlay, and now it is a wedge, whose overlay has
+    /// to be a wedge's or nothing. Asking what the brick *is* at the end of each change is the
+    /// only order-independent answer.
+    ///
+    /// **Where the silhouette has no picture yet**, which today is every shape and the Square and
+    /// Big sizes, there is no overlay - never the Normal one stretched over a shape it was not
+    /// drawn for, which is round 274's lesson about the Directional panel. The three on-hit
+    /// styles keep their old glyph there, because Fixed, Exploding and Spawner look like any
+    /// other brick until struck and the player has to be told; the five motions keep nothing,
+    /// since the movement says it. A Tiny brick shares the Normal picture, being the same shape.
+    ///
+    /// **An anchored Fixed brick wears its overlay twice.** Round 271 made the T heavier when it
+    /// locked - "the same mark, thicker" - and a semi-transparent layer laid over itself is
+    /// exactly that, with no second picture to draw.
+    func endlessIIDressStyleMarks(on brick: SKSpriteNode) {
+        guard gameMode == .endlessII else { return }
+        for child in brick.children
+        where child.name == GameScene.styleOverlayName || child.name == GameScene.styleOverlayLockName {
+            child.removeFromParent()
+        }
+
+        let styles = endlessIIStyles(on: brick)
+        if GameScene.endlessIIOverlaidStyles.contains(where: styles.contains) {
+            brick.colorBlendFactor = 0
+        }
+        // **No tint on anything these eight are carried by.** The styles stopped tinting in round
+        // 321, and this also clears the green or pink an older save recorded for a Flashing or
+        // Breathing brick - the resume restores a saved colour before it re-applies the styles,
+        // so without it a relaunch would bring back the tint the build no longer draws
+        let shape = endlessIIOverlayShape(of: brick)
+        let size = endlessIISizeOf(brick)
+        let cell = endlessIIFieldSize(of: brick)
+        let centre = endlessIIBrickCentre(of: brick)
+        let mirrored = (brick.endlessIIFaceMirrored ?? false) ? CGFloat(-1) : 1
+        let flipped = (brick.endlessIIFaceFlipped ?? false) ? CGFloat(-1) : 1
+        var overlaid: Set<EndlessIIStyle> = []
+
+        for style in GameScene.endlessIIOverlaidStyles where styles.contains(style) {
+            let name = GameScene.endlessIIStyleOverlayArtName(style, shape: shape,
+                                                               size: size == .tiny ? .normal : size)
+            guard GameScene.endlessIIOverlayArtExists(name) else { continue }
+            let copies = style == .fixed && brick.endlessIIIsAnchored ? 2 : 1
+            for copy in 0..<copies {
+                let overlay = SKSpriteNode(texture: SKTexture(imageNamed: name), size: cell)
+                overlay.name = copy == 0 ? GameScene.styleOverlayName : GameScene.styleOverlayLockName
+                overlay.zPosition = GameScene.styleOverlayZ
+                overlay.position = centre
+                overlay.xScale = mirrored
+                overlay.yScale = flipped
+                // Turned with a shaped face, like the portal glow: one picture per shape, and the
+                // node does the turning. A plain brick has neither flag and stays as drawn
+                brick.addChild(overlay)
+            }
+            overlaid.insert(style)
+        }
+
+        let onHit: EndlessIIStyle?
+        switch brick.endlessIIRole {
+        case .exploding: onHit = .exploding
+        case .spawner: onHit = .spawner
+        case .fixed: onHit = .fixed
+        default: onHit = nil
+        }
+        guard let onHit else { return }
+        brick.childNode(withName: GameScene.glyphName)?.removeFromParent()
+        guard overlaid.contains(onHit) == false else { return }
+        switch onHit {
+        case .exploding: endlessIIDrawExplodingBurst(on: brick)
+        case .spawner: endlessIIDrawSpawnerPlus(on: brick)
+        default: endlessIIDrawFixedPin(on: brick)
+        }
+        // Only the role's own glyph is touched: a Portal's rings share the glyph name, and a
+        // brick has one role, so asking the role is what keeps this off a Portal's rings
+    }
+
     private func tint(_ brick: SKSpriteNode, _ colour: UIColor) {
         brick.color = colour
         brick.colorBlendFactor = 1.0
@@ -489,6 +605,15 @@ extension GameScene {
         // Breathing brick shrinks about its middle on both, and scaling each axis separately
         // would let a mark go oval on anything that ever changes only one
 
+        for child in brick.children
+        where child.name == GameScene.styleOverlayName || child.name == GameScene.styleOverlayLockName {
+            guard let overlay = child as? SKSpriteNode else { continue }
+            if overlay.size != cell { overlay.size = cell }
+            if overlay.position != centre { overlay.position = centre }
+        }
+        // The overlays follow the cell the same way the Directional panel below does, which is
+        // what keeps a Breathing brick's picture on the brick as it shrinks and swells
+
         if let panel = brick.childNode(withName: GameScene.directionalEdgeName)
             as? SKSpriteNode {
             if panel.size != cell { panel.size = cell }
@@ -604,8 +729,13 @@ extension GameScene {
     /// Takes its eight neighbours with it, whatever they are.
     func makeExploding(_ brick: SKSpriteNode) {
         brick.endlessIIRole = .exploding
-        tint(brick, GameScene.explodingBrickColour)
+        // No tint and no burst of its own (round 321): `endlessIIDressStyleMarks` puts James's
+        // overlay on it, and draws the burst below only where no overlay exists for the brick's
+        // silhouette. Called from `applyEndlessIIStyle`, after every style, for that reason
+    }
 
+    /// The burst an Exploding brick wears where there is no overlay for its silhouette.
+    func endlessIIDrawExplodingBurst(on brick: SKSpriteNode) {
         let unit = endlessIIFieldSize(of: brick).height*0.3
         let burst = CGMutablePath()
         for step in 0..<4 {
@@ -723,8 +853,11 @@ extension GameScene {
     /// Refills its empty neighbours when destroyed.
     func makeSpawner(_ brick: SKSpriteNode) {
         brick.endlessIIRole = .spawner
-        tint(brick, GameScene.spawnerBrickColour)
+        // No tint and no plus of its own (round 321) - see `makeExploding`
+    }
 
+    /// The plus a Spawner brick wears where there is no overlay for its silhouette.
+    func endlessIIDrawSpawnerPlus(on brick: SKSpriteNode) {
         let unit = endlessIIFieldSize(of: brick).height*0.28
         let plus = CGMutablePath()
         plus.move(to: CGPoint(x: -unit, y: 0))
@@ -863,8 +996,8 @@ extension GameScene {
     /// everything that arrives above it.
     func makeFixed(_ brick: SKSpriteNode) {
         brick.endlessIIRole = .fixed
-        tint(brick, GameScene.fixedBrickColour)
-        endlessIIDrawFixedPin(on: brick)
+        // No tint and no T of its own (round 321) - see `makeExploding`. The T below is kept as
+        // the fallback for a silhouette with no overlay drawn for it
     }
 
     /// The upside-down T that says a brick stops where it is, drawn heavier once it has.
@@ -916,7 +1049,7 @@ extension GameScene {
         brick.endlessIIIsAnchored = true
         brick.removeAllActions()
         brick.position.y = endlessIISnappedRowY(for: brick)
-        defer { endlessIIDrawFixedPin(on: brick) }
+        defer { endlessIIDressStyleMarks(on: brick) }
         // Redrawn heavier at the end of anchoring rather than here, because the texture below
         // changes on the way through and the glyph's weight is measured off the brick
         // Any descent already under way has to stop, or it finishes moving after anchoring -
@@ -937,7 +1070,9 @@ extension GameScene {
         // multi-hit ladder to dig out. A brick that was already multi-hit keeps its own
         // ladder, and anything else keeps its own rules - only the plain ones harden
 
-        tint(brick, GameScene.fixedAnchoredColour)
+        // **No anchored tint either** (round 321, "remove any existing tints"). What says it has
+        // locked now is the overlay doubled - see `endlessIIDressStyleMarks` - which is the
+        // same idea round 271's heavier T was: the same mark, heavier, rather than a new one
         brick.run(.sequence([.scale(to: 1.15, duration: 0.06),
                              .scale(to: 1, duration: 0.1)]))
         if hapticsSetting { heavyHaptic.impactOccurred() }
@@ -1057,7 +1192,7 @@ extension GameScene {
     }
 
     static let fixedBrickColour = UIColor(red: 0.60, green: 0.80, blue: 0.35, alpha: 1)
-    static let fixedAnchoredColour = UIColor(red: 0.95, green: 0.95, blue: 0.98, alpha: 1)
+    // The anchored Fixed colour went with round 321: an anchored brick wears its overlay twice
 
     // MARK: - Portal
 

@@ -218,3 +218,59 @@ final class AboutVersionTests: XCTestCase {
         }
     }
 }
+
+
+/// **Moving an icon above its title leaves nothing still pinning the icon where it was.**
+///
+/// Round 321, from James's play-test log on an iPhone 16 Pro Max: three "Unable to simultaneously
+/// satisfy constraints" blocks each time the Level Stats screen opened, naming a label 52 tall, a
+/// square image view, and gaps of 0, 40 and 10. That screen's storyboard stacks title, pack line,
+/// picture, stats - and `swapMenuHeader` moves the picture to the top, but left its storyboard
+/// `top = packLine.bottom + 40` active. Picture above title, title above pack line, pack line above
+/// picture: a circle. UIKit broke a constraint at random to escape it, so the screen usually looked
+/// right, which is exactly the kind of right a test has to stop relying on.
+///
+/// Built here with plain views in the storyboard's own arrangement, so it asks the helper rather
+/// than one screen.
+final class MenuHeaderSwapTests: XCTestCase {
+
+    func testTheSwapLeavesTheIconWithOneTopAndNoCircle() {
+        let controller = UIViewController()
+        let container = controller.view!
+        container.frame = CGRect(x: 0, y: 0, width: 440, height: 956)
+
+        let title = UILabel(), packLine = UILabel(), icon = UIImageView(), stats = UILabel()
+        for view in [title, packLine, icon, stats] {
+            view.translatesAutoresizingMaskIntoConstraints = false
+            container.addSubview(view)
+            view.centerXAnchor.constraint(equalTo: container.centerXAnchor).isActive = true
+        }
+        NSLayoutConstraint.activate([
+            title.topAnchor.constraint(equalTo: container.topAnchor, constant: 20),
+            title.heightAnchor.constraint(equalToConstant: 52),
+            packLine.topAnchor.constraint(equalTo: title.bottomAnchor),
+            icon.topAnchor.constraint(equalTo: packLine.bottomAnchor, constant: 40),
+            icon.widthAnchor.constraint(equalTo: icon.heightAnchor),
+            icon.heightAnchor.constraint(equalToConstant: 120),
+            stats.topAnchor.constraint(equalTo: icon.bottomAnchor, constant: 40),
+        ])
+        // The Level Stats storyboard, in the order it is laid out before the swap
+
+        _ = controller.swapMenuHeader(icon: icon, title: title, in: container)
+
+        let iconTops = container.constraints.filter { constraint in
+            constraint.isActive
+                && ((constraint.firstItem === icon && constraint.firstAttribute == .top)
+                    || (constraint.secondItem === icon && constraint.secondAttribute == .top))
+        }
+        XCTAssertEqual(iconTops.count, 1,
+                       "the icon's top is set once; a second is the circle James's log printed")
+
+        container.layoutIfNeeded()
+        XCTAssertLessThanOrEqual(icon.frame.maxY, title.frame.minY + 0.5, "icon above the title")
+        XCTAssertLessThanOrEqual(title.frame.maxY, packLine.frame.minY + 0.5,
+                                 "the title still sits on the pack line")
+        XCTAssertLessThanOrEqual(packLine.frame.maxY, stats.frame.minY + 0.5,
+                                 "and what hung under the icon hangs under the header now")
+    }
+}

@@ -953,6 +953,9 @@ extension GameScene {
         case .convex, .concave, .wedge, .diamond:
             if let face = style.face { makeFace(face, on: brick) }
         }
+        endlessIIDressStyleMarks(on: brick)
+        // After every style rather than inside each: styles stack in either order, and the
+        // overlay a brick wears depends on everything it now is (round 321)
     }
 
     /// Sets a brick turning, at the shape and size it already is.
@@ -982,8 +985,8 @@ extension GameScene {
     /// reads as a brick that comes and goes rather than one that flickers ambiguously.
     /// Tinted with the Giga-Ball glow so it is recognisable while it is still solid.
     func makeFlashing(_ brick: SKSpriteNode) {
-        brick.color = brickGreenGigaball
-        brick.colorBlendFactor = 1.0
+        // **No green tint** (round 321): its overlay says Flashing now, and it was the Giga-Ball
+        // green so it could be recognised while solid, which is the job the overlay has taken
 
         let inStep = endlessIIPhase.flashesInStep
         endlessIIFlashers.append(EndlessIIFlasher(brick: brick,
@@ -1009,8 +1012,7 @@ extension GameScene {
     /// goes through now, and a ball that would have missed is caught on the way back out -
     /// so it is a brick you time rather than one you aim at.
     func makeBreathing(_ brick: SKSpriteNode) {
-        brick.color = GameScene.breathingBrickColour
-        brick.colorBlendFactor = 1.0
+        // No pink tint (round 321) - its overlay says Breathing now
         endlessIIBreathers.append(
             EndlessIIBreather(brick: brick, full: endlessIIFieldSize(of: brick),
                               period: .random(in: 2.2...3.2),

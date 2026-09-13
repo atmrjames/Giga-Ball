@@ -516,14 +516,14 @@ extension GameScene {
         if endlessIITrajectoryRemaining > 0, endlessIITrajectoryTotal > 0 {
             entries.append(PowerUpRingHUD.Entry(
                 id: "endlessIITrajectory",
-                texture: PowerUpIcon.ringTexture("TrajectoryIcon", PowerUpIcon.hud("TrajectoryIcon", PowerUpIcon.trajectoryLine)),
+                texture: PowerUpIcon.ringTexture(named: "TrajectoryIcon"),
                 remaining: CGFloat(endlessIITrajectoryRemaining/endlessIITrajectoryTotal),
                 segments: Int(endlessIITrajectoryTotal)))
         }
         if endlessIILandingRemaining > 0, endlessIILandingTotal > 0 {
             entries.append(PowerUpRingHUD.Entry(
                 id: "endlessIILanding",
-                texture: PowerUpIcon.ringTexture("LandingMarkerIcon", PowerUpIcon.hud("LandingMarkerIcon", PowerUpIcon.landingMarker)),
+                texture: PowerUpIcon.ringTexture(named: "LandingMarkerIcon"),
                 remaining: CGFloat(endlessIILandingRemaining/endlessIILandingTotal),
                 segments: Int(endlessIILandingTotal)))
             // **Segmented, because it counts paddle hits** (James, round 215: "the progress
