@@ -195,7 +195,7 @@ enum StatsPage {
         let total = heights.reduce(0, +)
         var rows = [
             Row(label: "Runs played", value: grouped(heights.count), icon: "play.circle.fill"),
-            Row(label: "Best height", value: grouped(heights.max() ?? 0) + " m", icon: "arrow.up"),
+            Row(label: "Hi-Score height", value: grouped(heights.max() ?? 0) + " m", icon: "arrow.up"),
             Row(label: "Total height", value: grouped(total) + " m", icon: "sum"),
             Row(label: "Average height", value: grouped(total/heights.count) + " m", icon: "chart.bar.fill"),
         ]
@@ -268,7 +268,7 @@ enum StatsPage {
         // The counting attempt is the first one, so the best day is the best first attempt -
         // a practice score is higher more often than not and would flatter the number
         if let best = records.map({ $0.firstAttemptScore }).max(), best > 0 {
-            rows.append(Row(label: "Best day score", value: grouped(best), icon: "star.fill"))
+            rows.append(Row(label: "Hi-Score day", value: grouped(best), icon: "star.fill"))
         }
         rows.append(Row(label: "Total posted score", value: grouped(stats.dailyTotalPostedScore), icon: "sum"))
 

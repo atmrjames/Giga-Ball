@@ -141,7 +141,7 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
             
             switch indexPath.row {
             case 0:
-                cell.statDescription.text = "Pack Highscore"
+                cell.statDescription.text = "Pack Hi-Score"
                 let highScore = totalStatsArray[0].packHighScores[packNumber!-2]
                 if highScore > 0 {
                     cell.statValue.text = String(highScore)
@@ -167,7 +167,7 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
             let cell = tableView.dequeueReusableCell(withIdentifier: "levelSelectorCell", for: indexPath) as! LevelSelectorTableViewCell
             cell.levelLabel.text = "Level "+String(indexPath.row+1)
             cell.levelNameLabel.text = LevelPackSetup().levelNameArray[startLevel!+indexPath.row]
-            cell.highScoreTitleLabel.text = "Level Highscore"
+            cell.highScoreTitleLabel.text = "Level Hi-Score"
             cell.blurView.isHidden = true
             cell.lockedImageView.isHidden = true
             cell.cellView3.tag = indexPath.row+1

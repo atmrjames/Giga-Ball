@@ -810,6 +810,18 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var stickyPaddleCatchesTotal: Int = 0
 	var backstopCatches: Int = 0
 	var backstopCatchesTotal: Int = 0
+	/// Whether a Backstop has already been handed out in this run.
+	///
+	/// **Once per game** (James, round 320: "backstop power up is very powerful. It should only
+	/// be available once per game"). The eligibility rule already refused a second one *while
+	/// the first was out*, which stops two overlapping and does nothing about a player who
+	/// catches one, spends it, and is offered another a few rows later - and a free save from
+	/// the bottom of the field is the single most valuable thing the mode can give away.
+	///
+	/// It rides in the save, so a pause or a force quit cannot reset it. That matters more than
+	/// the tidiness: a limit that a relaunch clears is a limit a player learns to work around,
+	/// which is the shape of thing the anti-cheat sweep in round 319d went looking for.
+	var backstopSpentThisRun: Bool = false
     var laserPowerUpIsOn: Bool = false
     /// How many times the laser power-up has been collected while it was already running.
     ///
@@ -6250,6 +6262,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 					self.backstop.run(SKAction.scaleX(by: 4, y: 1, duration: 0.1), completion: {
 						self.backstopCatches = 1
 						self.backstopCatchesTotal = self.backstopCatches
+						self.backstopSpentThisRun = true
+						// Spent on collection rather than on use: the rule is one Backstop per
+						// run, and a player who catches one and never needs it has still had it
 						self.powerUpMultiplierScore = 0.1
 						self.totalStatsArray[0].powerupsCollected[25]+=1
 						self.backstop.physicsBody!.categoryBitMask = CollisionTypes.backstopCategory.rawValue
@@ -8918,6 +8933,10 @@ laserTimer?.invalidate()
 			laserXPositions: laserXPositionArray,
 			laserYPositions: laserYPositionArray,
 			stickyPaddleCatchesTotal: stickyPaddleCatches != 0 ? stickyPaddleCatchesTotal : previous?.stickyPaddleCatchesTotal,
+			backstopSpent: backstopSpentThisRun ? true : previous?.backstopSpent,
+			// Once true it stays true for the run: written straight when this run has spent
+			// its Backstop, and carried from the previous save otherwise, like every other
+			// field here that a save taken in the wrong state would otherwise drop
 			dailyDateKey: DailyChallengeSession.shared.active?.dateKey,
 			dailyWasScoringAttempt: isDailyChallenge
 				? DailyChallengeSession.shared.isScoringAttempt : nil,
@@ -9374,6 +9393,9 @@ laserTimer?.invalidate()
 		// implied by the guards rather than stated, and this path runs at launch
 		if resumeGameToLoad {
 			adoptEndlessIISchedule(from: savedGame)
+			backstopSpentThisRun = savedGame.backstopSpent ?? false
+			// The one-per-run limit survives the relaunch, which is the whole point of it
+			// being in the save rather than only in the scene (round 320)
 			if let remaining = savedGame.dailyTimeTrialRemaining {
 				dailyTimeTrialRemaining = remaining
 			}

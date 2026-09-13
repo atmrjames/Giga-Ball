@@ -437,7 +437,7 @@ class LevelStatsViewController: UIViewController, UICollectionViewDelegate, UICo
             runHistory = LevelStatsViewController.pair(runs, with: dates).reversed()
             setupRunHistory()
         } else {
-            highscoreTitleLabel.text = "Highscore"
+            highscoreTitleLabel.text = "Hi-Score"
             if packLevelHighScoresArray![packNumber!-2][levelNumber!-startLevel!] > 0 {
                 let highScore = packLevelHighScoresArray![packNumber!-2][levelNumber!-startLevel!]
                 highscoreLabel.text = String(highScore)

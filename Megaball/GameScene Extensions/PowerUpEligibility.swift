@@ -120,8 +120,9 @@ extension GameScene {
             return mysteryPowerUp == false
 
         case 25:
-            // Backstop, only when one is not already out
-            return backstopCatches <= 0
+            // Backstop, once per run and never while one is out (round 320). The second half
+            // was the whole rule and only stopped two overlapping; James asked for the first
+            return backstopCatches <= 0 && backstopSpentThisRun == false
 
         case 28:
             // Multi-Ball, only below the cap and only in the mode that has it

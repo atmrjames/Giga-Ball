@@ -455,7 +455,7 @@ final class EndlessIIBestHeightLabelTests: XCTestCase {
 
         scene.showEndlessIIBest()
         XCTAssertFalse(scene.multiplierLabel.isHidden)
-        XCTAssertEqual(scene.multiplierLabel.text, "BEST 120m")
+        XCTAssertEqual(scene.multiplierLabel.text, "HI-SCORE 120m")
     }
 
     func testTheLabelIsHiddenWhenThereIsNoBestYet() {
@@ -485,7 +485,7 @@ final class EndlessIIBestHeightLabelTests: XCTestCase {
         scene.scoreFactorString = "1.0"
         scene.showMultiplier()
 
-        XCTAssertEqual(scene.multiplierLabel.text, "BEST 77m")
+        XCTAssertEqual(scene.multiplierLabel.text, "HI-SCORE 77m")
     }
 
     func testTheBestHeightKeepsItsOwnColour() {

@@ -135,10 +135,17 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
     /// Scaled from whatever the storyboard set rather than given a number of its own: the three
     /// labels are laid out together, and a hard-coded size here would be a second opinion about
     /// the first two the moment either was touched.
+    ///
+    /// **A third larger rather than a third again** (round 320). James, on the daily's own
+    /// complete screen: "make the total score title and label larger than the level score and
+    /// time bonus." The mechanism was already here and already running on that screen - it is
+    /// the same view - so what he is reporting is that 1.35 does not read as a hierarchy at the
+    /// sizes these labels actually are. A title at 13 points goes to 18 at 1.35 and to 20 at
+    /// 1.5, and the second is the one that looks deliberate rather than like a rounding.
     private func raiseTheTotal() {
         for label in [totalScoreTitle, totalScoreLabel] {
             guard let label, let font = label.font else { continue }
-            label.font = font.withSize((font.pointSize*1.35).rounded())
+            label.font = font.withSize((font.pointSize*1.5).rounded())
         }
     }
 

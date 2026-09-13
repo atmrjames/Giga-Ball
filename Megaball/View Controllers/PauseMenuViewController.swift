@@ -1277,7 +1277,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
             if sender != "Pause" { startTally(to: height, suffix: "m") }
             // Only at the end of a run. Pausing mid-run to watch your own height counted back
             // to you would be telling you something you already know
-            highscoreLabelTitle.text = "Best"
+            highscoreLabelTitle.text = "Hi-Score"
 
             if isDailyChallenge {
                 highscoreLabelTitle.text = ""
@@ -1289,24 +1289,24 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
             } else if sender == "Pause" {
                 let heightBest = runs.max() ?? 0
                 if height > heightBest {
-                    scoreLabelTitle.text = "New Hi-Score Height"
-                    highscoreLabelTitle.text = "Previous Best"
+                    scoreLabelTitle.text = "New Hi-Score"
+                    highscoreLabelTitle.text = "Previous"
                 }
                 highscoreLabel.text = String(heightBest) + "m"
             } else {
                 let heightBest = runs.max() ?? 0
                 highscoreLabel.text = String(heightBest) + "m"
                 if runs.count <= 1 {
-                    scoreLabelTitle.text = "New Hi-Score Height"
-                    highscoreLabelTitle.text = "Previous Best"
+                    scoreLabelTitle.text = "New Hi-Score"
+                    highscoreLabelTitle.text = "Previous"
                     highscoreLabel.text = "0m"
                 } else {
                     var heightsArray = runs
                     heightsArray.sort(by: >)
                     let previousBestHeight = heightsArray[1]
                     if height > previousBestHeight {
-                        scoreLabelTitle.text = "New Hi-Score Height"
-                        highscoreLabelTitle.text = "Previous Best"
+                        scoreLabelTitle.text = "New Hi-Score"
+                        highscoreLabelTitle.text = "Previous"
                         highscoreLabel.text = String(previousBestHeight) + "m"
                     }
                 }
@@ -1403,13 +1403,13 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
                 // The level's campaign high score belongs to the campaign - a daily on
                 // that level is a different game with today's board to answer to
             } else {
-                highscoreLabelTitle.text = "Highscore"
+                highscoreLabelTitle.text = "Hi-Score"
                 // Get current highscore from level or pack
 
                 highscoreLabel.text = String(previousHighscore)
                 if score > previousHighscore {
-                    scoreLabelTitle.text = "New Highscore"
-                    highscoreLabelTitle.text = "Previous Highscore"
+                    scoreLabelTitle.text = "New Hi-Score"
+                    highscoreLabelTitle.text = "Previous"
                 }
             }
         }

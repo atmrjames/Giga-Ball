@@ -169,6 +169,17 @@ The play zone has never depended on the window - `GameSceneLayout` holds 1.8236 
 and asserts it - so the work is the *menus*, and the `UIRequiresFullScreen` flag that
 currently says the app does not do this at all.
 
+**Landscape is allowed on iPad** (James, round 320: "iPad landscape is allowed"), which
+reverses the decision below rather than contradicting the code: the app has always rotated,
+and what has changed is that it now holds up when it does. The menus cap to a phone's width
+and centre on the background, the play zone keeps its 1.8236 ratio and letterboxes, and
+`WindowSizeTests` walks an 11-inch landscape window, a 13-inch one and a 900x420 one without
+anything falling outside. **The height cap is the open half of this** and is on the §12.0
+queue: James, same round, "the iPad UI width limit looks good, but it also needs a height
+limit, to match similar to the largest iPhone, or maybe slightly larger."
+
+*The decision as it stood, and why it was right when it was made:*
+
 **Portrait only, and that is the decision rather than the default** (James, round 301: "no
 landscape"). Slide Over and Split View on current iPadOS need only that the app resize, which
 it now does; the four-orientation requirement belongs to older iPadOS, and meeting it would

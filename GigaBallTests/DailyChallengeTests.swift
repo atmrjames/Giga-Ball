@@ -1602,10 +1602,10 @@ final class DailyNoRepeatsTests: XCTestCase {
         // wears an "m"; a classic pack board's score is points and wears nothing
         let endless = LeaderboardStanding(rank: 12, players: 843, best: 1204)
         XCTAssertEqual(endless.bestText(suffix: GameMode.endlessII.leaderboardUnit),
-                       "Best 1,204m")
+                       "Hi-Score 1,204m")
         XCTAssertEqual(LeaderboardStanding(rank: 3, players: 40, best: 128_400)
                         .bestText(suffix: GameMode.classic.leaderboardUnit),
-                       "Best " + StatsPage.grouped(128_400))
+                       "Hi-Score " + StatsPage.grouped(128_400))
         // Grouped the same way the field size beside it is, which is the whole reason it
         // goes through StatsPage rather than String(describing:)
     }
@@ -1617,7 +1617,7 @@ final class DailyNoRepeatsTests: XCTestCase {
         XCTAssertNil(LeaderboardStanding(rank: 4, players: 4).bestText())
         XCTAssertNil(LeaderboardStanding(rank: 4, players: 4, best: nil).bestText(suffix: "m"))
         XCTAssertEqual(LeaderboardStanding(rank: 4, players: 4, best: 0).bestText(),
-                       "Best 0")
+                       "Hi-Score 0")
         // Zero is a real score somebody holds, and it prints. Only "no leader at all" is
         // silent
     }

@@ -174,8 +174,6 @@ enum BrickTypeIcons {
 
     private static func colour(of style: EndlessIIStyle) -> UIColor {
         switch style {
-        case .gravity: return GameScene.gravityBrickColour
-        case .moving: return GameScene.movingBrickColour
         case .directional: return GameScene.directionalBrickColour
         case .exploding: return GameScene.explodingBrickColour
         case .spawner: return GameScene.spawnerBrickColour
@@ -183,9 +181,15 @@ enum BrickTypeIcons {
         case .fixed: return GameScene.fixedBrickColour
         case .flashing: return #colorLiteral(red: 0.8235294118, green: 1, blue: 0, alpha: 1)
         case .breathing: return GameScene.breathingBrickColour
-        case .rounded, .spinning, .convex, .concave, .wedge, .diamond: return standardColour
+        case .gravity, .moving, .rounded, .spinning, .convex, .concave, .wedge, .diamond:
+            return standardColour
         }
     }
+    // **Gravity and Moving are untinted as of round 320**, on James's word: "remove the icon
+    // and any tints from the gravity and moving bricks, including on the info pages, it's
+    // pretty obvious what they are doing, they don't need any graphical indicators." Round 317
+    // is what made that true - both of them move on this page now, so the mark and the colour
+    // were saying a second time what the motion says first.
     // The six field-changing roles keep the scene's own constants. Rounded and Spinning are
     // not tinted in the game at all - they change a brick's shape and its motion, not its
     // colour - so they are shown in the colour an ordinary brick wears
@@ -300,7 +304,16 @@ enum BrickTypeIcons {
             // travelling up and down, so above and below are the sides a player can plan for
             return
 
-        case .gravity, .moving, .exploding, .spawner, .fixed:
+        case .gravity, .moving:
+            // **An ordinary brick, and nothing on it** (round 320). Both of these are
+            // movement actions and both of them move on this page since round 317, so a
+            // chevron on a brick that is visibly falling and a colour on a brick that is
+            // visibly patrolling were each saying a second time what the motion says first.
+            // The same removal the field takes, which is what keeps the page honest.
+            artwork("BrickNormal")?.tinted(standardColour).draw(in: frame)
+            return
+
+        case .exploding, .spawner, .fixed:
             artwork("BrickNormal")?.tinted(tint).draw(in: frame)
             stroke(glyph(for: style, in: frame), in: context, width: max(1.5, frame.height*0.08))
             return

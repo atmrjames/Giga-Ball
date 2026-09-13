@@ -47,7 +47,7 @@ final class StatsPageTests: XCTestCase {
         stats.playTimeSecs = 600
 
         XCTAssertEqual(labels(.endless, stats),
-                       ["Runs played", "Best height", "Total height", "Average height"])
+                       ["Runs played", "Hi-Score height", "Total height", "Average height"])
         XCTAssertEqual(StatsPage.rows(for: .mayhem, stats: stats), [StatsPage.nothingYet])
         XCTAssertEqual(StatsPage.rows(for: .classic, stats: stats), [StatsPage.nothingYet])
 
@@ -95,7 +95,7 @@ final class StatsPageTests: XCTestCase {
         XCTAssertEqual(rows.first { $0.label == "Days posted" }?.value, "1")
         XCTAssertEqual(rows.first { $0.label == "Attempts" }?.value, "4")
         // The counting attempt is the first one, so the best day is the best first attempt
-        XCTAssertEqual(rows.first { $0.label == "Best day score" }?.value,
+        XCTAssertEqual(rows.first { $0.label == "Hi-Score day" }?.value,
                        StatsPage.grouped(7_500))
         XCTAssertEqual(rows.first { $0.label == "Total posted score" }?.value, "610")
     }
@@ -517,7 +517,7 @@ final class PerModeTimeTests: XCTestCase {
         stats.endlessModeHeight = [10]
         let rows = StatsPage.rows(for: .endless, stats: stats)
         XCTAssertFalse(rows.contains { $0.label == "Longest run" })
-        XCTAssertTrue(rows.contains { $0.label == "Best height" }, "the heights still show")
+        XCTAssertTrue(rows.contains { $0.label == "Hi-Score height" }, "the heights still show")
     }
 
     // MARK: - The achievements page's tabs

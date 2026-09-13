@@ -214,7 +214,7 @@ extension GameScene {
 
         multiplierLabel.isHidden = false
         clearPlacedDigits(from: multiplierLabel)
-        multiplierLabel.text = "BEST \(best)m"
+        multiplierLabel.text = "HI-SCORE \(best)m"
         multiplierLabel.fontSize = fontSize*0.7
         multiplierLabel.horizontalAlignmentMode = .right
         multiplierLabel.fontColor = UIColor(white: 1, alpha: 0.45)

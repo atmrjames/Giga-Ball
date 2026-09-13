@@ -83,7 +83,7 @@ extension GameScene {
         }
         let text: String
         if isBest {
-            text = "BEST \(best)m"
+            text = "HI-SCORE \(best)m"
         } else if let rival {
             text = EndlessIIRivals.label(for: rival)
         } else {

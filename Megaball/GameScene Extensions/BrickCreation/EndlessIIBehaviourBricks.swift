@@ -30,8 +30,9 @@ extension GameScene {
     /// And the chance of meeting one before then, because nothing is ever locked out.
     static let endlessIISideFacingEarlyChance = 8
 
-    static let gravityBrickColour = UIColor(red: 0.42, green: 0.66, blue: 1.0, alpha: 1)
-    static let movingBrickColour = UIColor(red: 1.0, green: 0.60, blue: 0.15, alpha: 1)
+    // Gravity's blue and Moving's orange are gone with round 320: both bricks are untinted
+    // now, and a colour nothing reads is a colour that comes back by accident. The styles that
+    // still wear one keep theirs below.
     static let directionalBrickColour = UIColor(red: 0.42, green: 0.42, blue: 0.48, alpha: 1)
     static let explodingBrickColour = UIColor(red: 1.0, green: 0.22, blue: 0.62, alpha: 1)
     static let spawnerBrickColour = UIColor(red: 0.20, green: 0.85, blue: 0.72, alpha: 1)
@@ -117,14 +118,17 @@ extension GameScene {
     /// Falls into empty cells below it, and falls again whenever its support goes.
     func makeGravity(_ brick: SKSpriteNode) {
         brick.endlessIIRole = .gravity
-        tint(brick, GameScene.gravityBrickColour)
-
-        let unit = endlessIIFieldSize(of: brick).height*0.28
-        let chevron = CGMutablePath()
-        chevron.move(to: CGPoint(x: -unit, y: unit/2))
-        chevron.addLine(to: CGPoint(x: 0, y: -unit/2))
-        chevron.addLine(to: CGPoint(x: unit, y: unit/2))
-        addGlyph(chevron, to: brick, filled: false)
+        // **No tint and no chevron** (James, round 320: "remove the icon and any tints from the
+        // gravity and moving bricks, including on the info pages, it's pretty obvious what they
+        // are doing, they don't need any graphical indicators").
+        //
+        // This is round 271's own rule reaching the last two bricks that were still breaking
+        // it, and it is the same argument that took the arrow off Moving: a brick that visibly
+        // falls when its support goes has already said what it is, and a downward chevron on it
+        // says it a second time. What makes it safe here rather than merely tidy is that the
+        // fall is the *whole* of the behaviour - there is no moment where a Gravity brick sits
+        // still and needs to announce itself, because a Gravity brick with nothing below it is
+        // already moving.
     }
 
     /// Drops every Gravity brick as far as it will go.
@@ -257,7 +261,9 @@ extension GameScene {
     /// is where there is room to move.
     func makeMoving(_ brick: SKSpriteNode) {
         brick.endlessIIRole = .moving
-        tint(brick, GameScene.movingBrickColour)
+        // **And no tint either, as of round 320** - the glyph went first and the colour has
+        // followed it, for the same reason and on the same instruction.
+        //
         // **No glyph.** James, play-test: "remove the arrow icon from moving bricks", which is
         // round 271's own rule applied to the one brick that was still breaking it - Moving is
         // a movement action, and "the movement is enough of an indication of the brick type".

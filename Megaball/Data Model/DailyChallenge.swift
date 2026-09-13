@@ -1247,7 +1247,7 @@ struct LeaderboardStanding: Equatable {
     ///   for the ones whose scores are points. The caller knows which board it asked about;
     ///   this only knows how to group digits.
     func bestText(suffix: String = "") -> String? {
-        best.map { "Best \(StatsPage.grouped($0))\(suffix)" }
+        best.map { "Hi-Score \(StatsPage.grouped($0))\(suffix)" }
     }
 
     /// "1st / 200", the position in the reader's own language.

@@ -241,6 +241,18 @@ struct SavedGame: Codable, Equatable {
     /// remaining count, which shows a full bar rather than a wrong one.
     var stickyPaddleCatchesTotal: Int?
 
+    /// Whether this run has already been given its one Backstop.
+    ///
+    /// James, round 320: "backstop power up is very powerful. It should only be available once
+    /// per game." A limit that only lives in the scene is a limit a pause and a resume clears,
+    /// and a free save from the bottom of the field is worth relaunching for - which is the
+    /// shape of thing round 319d's anti-cheat sweep was looking for. So it travels with the
+    /// run.
+    ///
+    /// Optional, so saves written before it existed still decode; those read as "not yet
+    /// spent", which gives a resumed older run one Backstop rather than none.
+    var backstopSpent: Bool?
+
     // MARK: - The Daily Challenge
 
     /// The UTC date key of the daily this save belongs to, or nil for a campaign run.

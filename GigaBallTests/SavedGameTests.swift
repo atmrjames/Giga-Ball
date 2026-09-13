@@ -618,6 +618,39 @@ final class SavedGameTests: XCTestCase {
                        "a finished game must never be offered for resume")
     }
 
+    // MARK: - One Backstop per run
+
+    /// **The limit survives a relaunch** (James, round 320: "backstop power up is very powerful.
+    /// It should only be available once per game").
+    ///
+    /// The eligibility rule already refused a second Backstop while the first was out, which
+    /// stops two overlapping and does nothing about catching one, spending it, and being
+    /// offered another. A free save from the bottom of the field is the most valuable thing the
+    /// mode gives away, so the limit has to hold across a pause and a force quit too: one that
+    /// a relaunch clears is one a player learns to work around.
+    func testASpentBackstopStaysSpentAcrossASave() {
+        var game = sampleGame()
+        game.backstopSpent = true
+        game.save(to: defaults)
+
+        XCTAssertEqual(SavedGame.load(from: defaults)?.backstopSpent, true)
+    }
+
+    /// A save written before the field existed reads as "not yet spent".
+    ///
+    /// Which gives a resumed older run one Backstop rather than none - the generous way round,
+    /// because taking something away from a run already in progress is the worse surprise.
+    func testASaveWrittenBeforeTheBackstopLimitStillLoads() {
+        var game = sampleGame()
+        game.backstopSpent = nil
+        game.save(to: defaults)
+
+        let loaded = SavedGame.load(from: defaults)
+        XCTAssertNotNil(loaded, "an older save still decodes")
+        XCTAssertNil(loaded?.backstopSpent)
+        XCTAssertFalse(loaded?.backstopSpent ?? false, "and reads as not yet spent")
+    }
+
     // MARK: - The daily's own slot
 
     func testADailySaveRestoresItsChallengeFromTheDateKey() {
