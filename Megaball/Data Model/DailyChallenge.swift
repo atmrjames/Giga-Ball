@@ -209,6 +209,31 @@ enum DailyTwist: String, CaseIterable, Codable {
     /// Four keep the wording written here, and deliberately: **Loaded** and **Sudden Death**
     /// are retired and have no row in the sheet, and **Full Deck** and **Level Pegging** have a
     /// row with the description column empty.
+    /// The theme a Theme day draws, by name - the one `dailyForcedTheme` puts the run in.
+    ///
+    /// Asked of the same draw and the same list the scene uses, so the briefing cannot name one
+    /// theme and the run play another.
+    static func themeName(forKey key: String) -> String {
+        let names = LevelPackSetup().themeNameArray
+        let index = dailyThemeIndex(forKey: key, themeCount: names.count)
+        return names.indices.contains(index) ? names[index] : ""
+    }
+
+    /// The twist's name for a particular day: "Theme - Ice" on a Theme day, the plain name
+    /// otherwise (round 321).
+    func displayName(forKey key: String) -> String {
+        guard self == .dailyTheme else { return displayName }
+        let theme = DailyTwist.themeName(forKey: key)
+        return theme.isEmpty ? displayName : displayName + " - " + theme
+    }
+
+    /// And its blurb for that day, which names the theme rather than promising "one".
+    func blurb(forKey key: String) -> String {
+        guard self == .dailyTheme else { return blurb }
+        let theme = DailyTwist.themeName(forKey: key)
+        return theme.isEmpty ? blurb : "The whole run is played in the \(theme) theme"
+    }
+
     var blurb: String {
         switch self {
         case .oneLife: return "Only one ball is provided"

@@ -192,6 +192,18 @@ extension GameScene {
                 ghost.addChild(strip)
             }
             if strip.texture !== art { strip.texture = art }
+            strip.anchorPoint = source.anchorPoint
+            strip.xScale = source.xScale
+            strip.yScale = source.yScale
+            strip.zRotation = source.zRotation
+            // **Everything that says which way up the strip is, not just how big** (James,
+            // round 321, with a screenshot: "sticky texture flipping upside down when paddle is
+            // in wrap around"). The ghost's strip is built in code, and §8.6 says what that
+            // costs: a node standing in for one from the scene file inherits nothing from it.
+            // `paddleSticky` and `paddleLaser` are anchored at their bottom edge in the scene
+            // file and the shaped and themed faces turn them with a negative scale, so a copy
+            // that took the size and left the rest at its defaults was a strip centred where
+            // the real one stands, the right way up only when nothing had turned it
             strip.size = source.size
             strip.centerRect = source.centerRect
             strip.alpha = source.alpha

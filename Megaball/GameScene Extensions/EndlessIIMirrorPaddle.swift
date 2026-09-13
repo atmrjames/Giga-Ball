@@ -119,6 +119,49 @@ extension GameScene {
         playMayhemSound("mirrorPaddle")
     }
 
+    static let endlessIIMirrorLaserStripName = "endlessIIMirrorLaserStrip"
+
+    /// The laser turrets, on the mirror, while the paddle wears them.
+    ///
+    /// James, round 321: "mirror paddle is firing lasers but doesn't have any turrets." Round
+    /// 225 gave the twin its shots - `endlessIIFireMirrorLaser` - and nothing gave it the strip
+    /// they come out of, so the lime paddle fired from a bare bar.
+    ///
+    /// **A sibling of the mirror, not a child of it**, and a copy of the paddle's own strip in
+    /// every respect but its x. The mirror copies the paddle's `xScale`, and so does the strip,
+    /// so a strip parented to the mirror would be scaled twice; §8.6's trap about
+    /// `SKSpriteNode.size` carrying the scale is the same arithmetic. Standing beside it and
+    /// copying anchor, scale, size and height straight off `paddleLaser` makes it the same strip
+    /// in a second place, which is what the wrap ghost's strips are for the same reason.
+    func dressEndlessIIMirrorTurrets(_ mirror: SKSpriteNode) {
+        let existing = childNode(withName: GameScene.endlessIIMirrorLaserStripName) as? SKSpriteNode
+        let showing = paddleLaser.isHidden == false && paddleLaser.parent != nil
+        guard showing, let art = paddleLaser.texture else {
+            existing?.removeFromParent()
+            return
+        }
+        let strip = existing ?? {
+            let made = SKSpriteNode()
+            made.name = GameScene.endlessIIMirrorLaserStripName
+            addChild(made)
+            return made
+        }()
+        if strip.texture !== art { strip.texture = art }
+        strip.anchorPoint = paddleLaser.anchorPoint
+        strip.xScale = paddleLaser.xScale
+        strip.yScale = paddleLaser.yScale
+        strip.size = paddleLaser.size
+        strip.centerRect = paddleLaser.centerRect
+        strip.zPosition = mirror.zPosition + 0.05
+        strip.color = GameScene.endlessIIMirrorPaddleColour
+        strip.colorBlendFactor = mirror.colorBlendFactor
+        strip.alpha = mirror.alpha
+        strip.position = CGPoint(x: mirror.position.x,
+                                 y: paddleLaser.position.y - paddle.position.y + mirror.position.y)
+        // Lime like the mirror it sits on, and faded with it, so the pair still reads as the
+        // twin rather than as the paddle's turrets left behind on the far side
+    }
+
     static let endlessIIPaddleShadowName = "mirrorPaddleShadow"
 
     /// Hangs a soft shadow under the real paddle while the mirror runs.
@@ -302,6 +345,7 @@ extension GameScene {
             // second removal on the same node
             mirror.physicsBody = nil
             mirror.run(.sequence([.fadeOut(withDuration: 0.2), .removeFromParent()]))
+            childNode(withName: GameScene.endlessIIMirrorLaserStripName)?.removeFromParent()
             removeEndlessIIPaddleShadow()
             // The shadow is the mirror's costume on the real paddle, and it leaves with it
             return
@@ -334,6 +378,7 @@ extension GameScene {
             // node's scale, which is the same thing the paddle's own body has relied on for
             // six years
         }
+        dressEndlessIIMirrorTurrets(mirror)
         showEndlessIIPaddleShadow()
         // Rebuilt only when the paddle's width has actually moved - the shadow is a rasterised
         // blur, so a cached bitmap cannot be stretched by Expand or Shrink the way the mirror's

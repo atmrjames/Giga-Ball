@@ -113,6 +113,32 @@ final class DailyChallengeTests: XCTestCase {
     ///
     /// So it asks each regime where that regime lives. The old one still has to hold, because
     /// those are days people have played.
+    /// **A Theme day says which theme** (James, round 320: "when there's a theme twist in Daily
+    /// Challenge, the selected theme should be stated, so it would read: Theme icon, Theme -
+    /// Theme Description").
+    ///
+    /// Asked of a real Theme day found in the calendar, and checked against the draw the scene
+    /// itself dresses the run from, so the words and the run cannot name different themes.
+    func testAThemeDayNamesItsTheme() {
+        var day = DailyDay.utcCalendar.date(from: DateComponents(year: 2026, month: 11, day: 1))!
+        var key: String?
+        for _ in 0..<120 {
+            let candidate = DailyDay.key(for: day)
+            if DailyChallengeGenerator.challenge(forKey: candidate).twists.contains(.dailyTheme) {
+                key = candidate; break
+            }
+            day = DailyDay.utcCalendar.date(byAdding: .day, value: 1, to: day)!
+        }
+        guard let key else { return XCTFail("no Theme day in four months of the new mix") }
+
+        let names = LevelPackSetup().themeNameArray
+        let expected = names[DailyTwist.dailyThemeIndex(forKey: key, themeCount: names.count)]
+        XCTAssertEqual(DailyTwist.dailyTheme.displayName(forKey: key), "Theme - " + expected)
+        XCTAssertTrue(DailyTwist.dailyTheme.blurb(forKey: key).contains(expected))
+        XCTAssertEqual(DailyTwist.oneLife.displayName(forKey: key), DailyTwist.oneLife.displayName,
+                       "a twist with nothing to name reads as it always has")
+    }
+
     func testTwistCountsFollowTheDistribution() {
         // The old split, over the two months where it is the only one in force
         let old = twistCounts(from: DateComponents(year: 2026, month: 8, day: 1), days: 61)

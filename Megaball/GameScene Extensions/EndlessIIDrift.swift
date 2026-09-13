@@ -115,9 +115,13 @@ extension GameScene {
             endlessIIDriftPhase -= GameScene.endlessIIDriftColumnSeconds
             endlessIIDriftMoved = 0
             if hapticsSetting { lightHaptic.impactOccurred() }
-            playMayhemSound("drift")
+            if soundsSetting { run(endlessRowDownSound) }
             // The descent's own tap, on the step rather than on the frames between: a row
-            // arriving and a column moving are the same event to a thumb
+            // arriving and a column moving are the same event to a thumb. **And its own sound**
+            // (James, round 322: "use the endlessRowDown sound for the drift power-up when
+            // bricks are moving to the side"). This asked for a `drift.mp3` that §8.5 listed
+            // and nobody had made, so every step was silent
+
             // Subtracted rather than zeroed, so a long frame does not throw away the overshoot
             // and let the cadence wander - the lesson Descent learned in round 172
         }

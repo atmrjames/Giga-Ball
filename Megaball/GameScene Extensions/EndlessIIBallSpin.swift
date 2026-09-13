@@ -54,16 +54,24 @@ enum EndlessIIBallSpin {
     /// ceiling is still above what an ordinary swipe reaches so a hard flick still means more.
     static let fullGripSpeed: CGFloat = 700
 
-    /// How far the heading turns per second at full grip, in radians. A quarter-turn over a
-    /// second of flight - clearly a curve, never a boomerang.
-    static let strongestTurn: CGFloat = .pi/2
+    /// How far the heading turns per second at full grip, in radians.
+    ///
+    /// **Doubled in round 322** (James, round 320: "ball spin stronger"). It was a quarter-turn
+    /// a second, which `testWhatBallSpinAndRandomBounceActuallyDo` put at 19 degrees in the
+    /// first quarter second and 65 over the whole flight. Doubled together with a faster
+    /// `decayPerSecond`, so the extra bend lands where it is seen, just off the paddle: about
+    /// 36 degrees in that first quarter second, and 95 in all - still a curve and not a
+    /// boomerang, because most of that is spent before the ball reaches the bricks.
+    static let strongestTurn: CGFloat = .pi
 
     /// How much of the spin is left after a second of flight.
     ///
     /// The grip is spent as the ball travels, so the curve is sharpest just off the paddle and
     /// has straightened out by the time the ball reaches the field. A curve that lasted the
-    /// whole flight would make the ball unaimable rather than interesting.
-    static let decayPerSecond: CGFloat = 0.25
+    /// whole flight would make the ball unaimable rather than interesting. 0.25 until round
+    /// 322, spent faster now to keep the stronger turn close to the paddle - see
+    /// `strongestTurn`.
+    static let decayPerSecond: CGFloat = 0.15
 
     /// How much of a paddle flick the *grip* still remembers a second later.
     ///
@@ -101,10 +109,13 @@ enum EndlessIIBallSpin {
     /// in place: at a 45-degree arrival the two nearly cancelled half way out, 15.3 degrees of
     /// curve dead centre falling to 4.5 at the mid-point of the paddle, which is a power-up
     /// that gets weaker the harder you cut the ball.
-    static let slideTurn: CGFloat = .pi/6
+    ///
+    /// Doubled with `strongestTurn` in round 322, so it stays the same share of the flick.
+    static let slideTurn: CGFloat = .pi/3
 
     /// The most the three together may ask for, so a fast flick into the corner stays playable.
-    static let steepestTurn: CGFloat = .pi*2/3
+    /// Doubled with the two it caps, in round 322.
+    static let steepestTurn: CGFloat = .pi*4/3
 
     /// The turn rate a paddle grips the ball with.
     ///
@@ -295,5 +306,133 @@ extension GameScene {
         endlessIIPaddleSpeed = 0
         endlessIIPaddleGripSpeed = 0
         endlessIIPaddleLastX = paddle.position.x
+        endlessIIRemoveSpinTrails()
+    }
+
+    // MARK: - The trail
+
+    /// How many fading copies follow a spinning ball.
+    static let endlessIISpinTrailCount = 6
+    /// How far apart the copies sit, in seconds of flight rather than frames, so the streak is
+    /// the same length at 60fps and 120fps.
+    static let endlessIISpinTrailSpacing: TimeInterval = 0.025
+    /// The nearest copy's opacity at full strength; each one behind it is fainter.
+    static let endlessIISpinTrailAlpha: CGFloat = 0.45
+    /// How much smaller the last copy is than the ball, as a share of its size.
+    static let endlessIISpinTrailTaper: CGFloat = 0.4
+    /// A move further than this in one frame is a wrap or a portal, not flight, and the streak
+    /// starts again rather than drawing copies across the field.
+    static let endlessIISpinTrailBreak: CGFloat = 60
+    static let endlessIISpinTrailName = "endlessIISpinTrail"
+
+    /// Lays each spinning ball's streak along where it has just been, from `didSimulatePhysics`.
+    ///
+    /// **James, round 320: "ball spin stronger plus a motion trail."** The trail is what lets a
+    /// player *see* the curve rather than infer it from where the ball ends up, so it shows
+    /// exactly while a ball carries a spin rate and fades with the rate as the grip is spent -
+    /// the streak says how much bend is left.
+    ///
+    /// Pooled sprites placed by hand each frame rather than copies spawned with a fade action:
+    /// a spawn per frame is a node allocated a frame at 120fps for as long as the ball spins,
+    /// and the pool is six nodes a ball for the life of the spin. Placed from sampled positions
+    /// timed by the frame delta, so a pause holds the streak still instead of letting it drain.
+    func tickEndlessIISpinTrails(_ delta: TimeInterval) {
+        guard endlessIISpinTrails.isEmpty == false || endlessIIBallSpinRates.isEmpty == false
+        else { return }
+        guard gameState.currentState is Playing, isPaused == false else { return }
+
+        endlessIISpinTrailClock += max(0, delta)
+        let now = endlessIISpinTrailClock
+        let count = GameScene.endlessIISpinTrailCount
+        let oldest = GameScene.endlessIISpinTrailSpacing*Double(count + 1)
+        var live = Set<ObjectIdentifier>()
+
+        for subject in endlessIIBallsInPlay {
+            let key = ObjectIdentifier(subject)
+            guard let rate = endlessIIBallSpinRates[key], let parent = subject.parent
+            else { continue }
+            live.insert(key)
+
+            var history = endlessIISpinTrailHistory[key] ?? []
+            if let last = history.first,
+               hypot(subject.position.x - last.point.x, subject.position.y - last.point.y)
+                > GameScene.endlessIISpinTrailBreak {
+                history.removeAll()
+            }
+            history.insert((now, subject.position), at: 0)
+            while history.count > 1, let tail = history.last, now - tail.time > oldest {
+                history.removeLast()
+            }
+            endlessIISpinTrailHistory[key] = history
+
+            let strength = EndlessIIBallSpin.trailStrength(rate: rate)
+            for (index, ghost) in endlessIISpinTrailGhosts(for: subject, in: parent).enumerated() {
+                let age = GameScene.endlessIISpinTrailSpacing*Double(index + 1)
+                guard let sample = history.first(where: { now - $0.time >= age }) else {
+                    ghost.isHidden = true
+                    continue
+                }
+                // Too young a streak has no sample that old yet, so it grows out from the
+                // ball over its first few frames rather than appearing whole
+
+                if ghost.texture !== subject.texture { ghost.texture = subject.texture }
+                let along = CGFloat(index + 1)/CGFloat(count)
+                let shrink = 1 - GameScene.endlessIISpinTrailTaper*along
+                ghost.size = CGSize(width: subject.size.width*shrink,
+                                    height: subject.size.height*shrink)
+                // `size` carries the ball's scale already (§8.6), so the copy is sized
+                // outright and never scaled itself
+                ghost.color = subject.color
+                ghost.colorBlendFactor = subject.colorBlendFactor
+                ghost.zPosition = subject.zPosition - 0.1
+                ghost.position = sample.point
+                let fade = 1 - along + 1/CGFloat(count)
+                ghost.alpha = subject.alpha*GameScene.endlessIISpinTrailAlpha*fade*strength
+                ghost.isHidden = false
+            }
+        }
+
+        for (key, ghosts) in endlessIISpinTrails where live.contains(key) == false {
+            ghosts.forEach { $0.removeFromParent() }
+            endlessIISpinTrails[key] = nil
+            endlessIISpinTrailHistory[key] = nil
+        }
+        // A ball whose spin is spent, caught or gone takes its streak with it
+    }
+
+    /// The pool for one ball, made on its first spinning frame and kept beside it.
+    private func endlessIISpinTrailGhosts(for subject: SKSpriteNode,
+                                          in parent: SKNode) -> [SKSpriteNode] {
+        let key = ObjectIdentifier(subject)
+        if let ghosts = endlessIISpinTrails[key], ghosts.first?.parent === parent {
+            return ghosts
+        }
+        endlessIISpinTrails[key]?.forEach { $0.removeFromParent() }
+        let ghosts = (0..<GameScene.endlessIISpinTrailCount).map { _ -> SKSpriteNode in
+            let ghost = SKSpriteNode()
+            ghost.name = GameScene.endlessIISpinTrailName
+            ghost.isHidden = true
+            parent.addChild(ghost)
+            return ghost
+        }
+        endlessIISpinTrails[key] = ghosts
+        return ghosts
+    }
+
+    func endlessIIRemoveSpinTrails() {
+        endlessIISpinTrails.values.joined().forEach { $0.removeFromParent() }
+        endlessIISpinTrails.removeAll()
+        endlessIISpinTrailHistory.removeAll()
+    }
+}
+
+extension EndlessIIBallSpin {
+
+    /// How strongly a spinning ball's trail shows, 0 to 1.
+    ///
+    /// Full from half the strongest flick's turn up, and fading below that as the grip is
+    /// spent, so a ball that has nearly straightened out trails nearly nothing.
+    static func trailStrength(rate: CGFloat) -> CGFloat {
+        min(1, abs(rate)/(strongestTurn/2))
     }
 }

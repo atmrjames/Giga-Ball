@@ -452,7 +452,9 @@ final class MenuButtonRowTests: XCTestCase {
 /// maximum or the ratio, so everything above that floor is this method's problem.
 ///
 /// **What is capped is the shape** (James, round 182): the menus may be slightly squarer than
-/// a phone and no more, and no window ever has height taken off it.
+/// a phone and no more. **And, since round 322, the size** (James, round 320: "it also needs a
+/// height limit"): no wider than `menuMaximumWidth` and no taller than `menuMaximumHeight`,
+/// a Pro Max's box with a little air, while nothing phone-sized loses a point.
 final class MenuResizeTests: XCTestCase {
 
     private let ratio: Double = Double(UIViewController.menuMaximumAspectRatio)
@@ -490,7 +492,7 @@ final class MenuResizeTests: XCTestCase {
     /// The half that has not changed is the half round 181 cared about: not one point of
     /// height is given away, so the pack grid still cannot be made to scroll with room to
     /// spare.
-    func testAFullScreenIPadIsNarrowedToAPhonesWidthAndKeepsItsHeight() {
+    func testAFullScreenIPadIsNarrowedAndShortenedToAPhonesSize() {
         let size = CGSize(width: 1032, height: 1376)   // 13-inch iPad Pro, portrait
         let insets = UIViewController.menuContentInsets(available: size)
         let content = size.width - insets.left - insets.right
@@ -498,9 +500,19 @@ final class MenuResizeTests: XCTestCase {
         XCTAssertEqual(content, UIViewController.menuMaximumWidth, accuracy: 0.001,
                        "the width ceiling binds here, being lower than the shape's 853")
         XCTAssertLessThan(shape(size), ratio, "and so the result is narrower than the shape cap")
-        XCTAssertEqual(insets.top, 0, "and not one point of height given away")
-        XCTAssertEqual(insets.bottom, 0)
+        XCTAssertEqual(size.height - insets.top - insets.bottom,
+                       UIViewController.menuMaximumHeight, accuracy: 0.001,
+                       "James, round 320: \"it also needs a height limit\"")
+        XCTAssertEqual(insets.top, insets.bottom, accuracy: 0.001, "centred top to bottom")
         XCTAssertEqual(insets.left, insets.right, accuracy: 0.001, "centred, not pushed aside")
+    }
+
+    /// "To match similar to the largest iPhone, or maybe slightly larger" (James, round 320).
+    func testTheHeightCeilingIsJustAboveTheLargestPhone() {
+        XCTAssertGreaterThan(UIViewController.menuMaximumHeight, 956,
+                             "or a Pro Max would lose height to a cap meant for iPads")
+        XCTAssertLessThan(UIViewController.menuMaximumHeight, 1100,
+                          "slightly larger, not an iPad's height with a margin")
     }
 
     /// No phone is touched by the width ceiling, which is what makes it safe to add.
@@ -519,8 +531,11 @@ final class MenuResizeTests: XCTestCase {
                             by: 20) {
             let size = CGSize(width: width, height: width*3)
             // Tall enough that the shape cap cannot be what binds
-            XCTAssertEqual(UIViewController.menuContentInsets(available: size), .zero,
-                           "\(width) wide")
+            let insets = UIViewController.menuContentInsets(available: size)
+            XCTAssertEqual(insets.left, 0, "\(width) wide")
+            XCTAssertEqual(insets.right, 0, "\(width) wide")
+            // Width only: three times the width is taller than `menuMaximumHeight` for most of
+            // these, and the height ceiling has its own tests (round 322)
         }
     }
 
@@ -544,12 +559,14 @@ final class MenuResizeTests: XCTestCase {
         XCTAssertLessThan(insets.left, 12, "and barely any width either")
     }
 
-    func testATallThinWindowIsNotTouched() {
+    func testATallThinWindowKeepsItsWidth() {
         // Slide over: narrower than a phone in shape, which is the shape the menus were built
-        // for. Round 180's size cap took 278pt off the height of a window like this
+        // for. Its height is over the ceiling like any iPad's, but it never reaches the helper
+        // in the app - a slide-over is a compact width, and `limitMenuContentSize` stops there
         let insets = UIViewController.menuContentInsets(available: CGSize(width: 420,
                                                                          height: 1376))
-        XCTAssertEqual(insets, .zero)
+        XCTAssertEqual(insets.left, 0)
+        XCTAssertEqual(insets.right, 0)
     }
 
     func testAShortWideWindowLosesWidthNotHeight() {
@@ -560,7 +577,7 @@ final class MenuResizeTests: XCTestCase {
         XCTAssertEqual(shape(size), ratio, accuracy: 0.001)
     }
 
-    func testNoWindowEverEarnsANegativeInsetOrLosesItsHeight() {
+    func testNoWindowEverEarnsANegativeInsetOrLosesHeightBelowTheCeiling() {
         // A negative additional safe area grows the content past the screen, which is how a
         // close button ends up off the bottom of a small window
         for width in stride(from: CGFloat(320), through: 1600, by: 40) {
@@ -569,8 +586,11 @@ final class MenuResizeTests: XCTestCase {
                     available: CGSize(width: width, height: height))
                 XCTAssertGreaterThanOrEqual(insets.left, 0, "\(width)x\(height)")
                 XCTAssertGreaterThanOrEqual(insets.right, 0, "\(width)x\(height)")
-                XCTAssertEqual(insets.top, 0, "\(width)x\(height)")
-                XCTAssertEqual(insets.bottom, 0, "\(width)x\(height)")
+                XCTAssertGreaterThanOrEqual(insets.top, 0, "\(width)x\(height)")
+                XCTAssertEqual(height - insets.top - insets.bottom,
+                               min(height, UIViewController.menuMaximumHeight),
+                               accuracy: 0.001,
+                               "\(width)x\(height): the ceiling, and not a point more taken")
             }
         }
     }
@@ -767,7 +787,7 @@ final class DailyEndScreenLayoutTests: XCTestCase {
     }
 
     /// A finished daily on a single level: the one ending that shows the breakdown.
-    private func dailyCompleteScreen() -> PauseMenuViewController? {
+    private func dailyCompleteScreen(sender: String = "Complete") -> PauseMenuViewController? {
         DailyChallengeSession.shared.active = DailyChallenge(
             dateKey: "t", mode: .classic, classicLevel: 0, twists: [])
 
@@ -775,7 +795,7 @@ final class DailyEndScreenLayoutTests: XCTestCase {
         guard let pause = board.instantiateViewController(withIdentifier: "pauseMenuVC")
                 as? PauseMenuViewController
         else { return nil }
-        pause.sender = "Complete"
+        pause.sender = sender
         pause.levelNumber = 1
         // Not zero. `viewWillAppear` reads a level number of zero as an endless run, and an
         // endless ending has a height where this one has a score - so the whole classic score
@@ -856,6 +876,49 @@ final class DailyEndScreenLayoutTests: XCTestCase {
                        "the tally should have written a figure by now")
     }
 
+    /// **The end screen reads in the level intro's order** (James, round 320: "on the daily
+    /// challenge level intro splash screen, the order of information is good: Game mode icon,
+    /// Daily challenge & date info, game mode info, twist info, challenge or free play info...
+    /// Use the same layout for the game over, game complete view. For some reason in this view
+    /// the challenge or free play info moves to near the bottom of the screen").
+    func testTheCompleteScreenSaysTheDayThenTheTwistsThenTheKindOfRun() throws {
+        DailyChallengeSession.shared.lastRunPosted = false
+        let pause = try XCTUnwrap(dailyCompleteScreen())
+
+        XCTAssertTrue(pause.packNameLabel.text?.hasPrefix("Daily Challenge, ") ?? false,
+                      "the day is named, as the intro names it: \(pause.packNameLabel.text ?? "")")
+        let lines = (pause.dailySummaryLabel.attributedText?.string ?? "")
+            .components(separatedBy: "\n")
+        XCTAssertEqual(lines.last, "FREE PLAY", "the kind of run comes after the twists")
+        XCTAssertTrue(pause.resultLabel.isHidden,
+                      "and is no longer said again down among the numbers")
+
+        let pack = pause.packNameLabel.convert(pause.packNameLabel.bounds, to: pause.view)
+        let mode = pause.levelNumberLabel.convert(pause.levelNumberLabel.bounds, to: pause.view)
+        let rules = pause.dailySummaryLabel.convert(pause.dailySummaryLabel.bounds, to: pause.view)
+        XCTAssertLessThanOrEqual(pack.maxY, mode.minY + 1, "the day above the level")
+        XCTAssertLessThanOrEqual(mode.maxY, rules.minY + 1, "and the level above the rules")
+    }
+
+    /// The pause menu the same way, where the line had been above the twists.
+    func testThePauseMenuPutsTheKindOfRunUnderTheTwists() throws {
+        let wasScoring = DailyChallengeSession.shared.isScoringAttempt
+        defer { DailyChallengeSession.shared.isScoringAttempt = wasScoring }
+        DailyChallengeSession.shared.isScoringAttempt = true
+        let pause = try XCTUnwrap(dailyCompleteScreen(sender: "Pause"))
+        // Built as a pause screen from the start, the way the game builds a fresh one for every
+        // pause. Re-presenting a "Complete" screen as a pause is not something the game does,
+        // and it left the first pass's words in place
+
+        let lines = (pause.dailySummaryLabel.attributedText?.string ?? "")
+            .components(separatedBy: "\n")
+        XCTAssertEqual(lines.last, "COMPETITION RUN")
+        XCTAssertTrue(lines.first?.hasSuffix("Vanilla") ?? false,
+                      "a no-twist day's badge first, as the intro has it: \(lines)")
+        // A suffix, because the line leads with the badge's image attachment
+        XCTAssertTrue(pause.packNameLabel.text?.hasPrefix("Daily Challenge, ") ?? false)
+    }
+
     /// A daily says its numbers under the button rather than on the screen.
     ///
     /// "Perhaps the stats summary isn't important in daily challenges. All stats can go under
@@ -890,6 +953,38 @@ final class DailyEndScreenLayoutTests: XCTestCase {
                                      "\(name) runs \(frame.maxY - bounds.maxY)pt off the "
                                      + "bottom of a \(Int(bounds.height))pt screen")
             XCTAssertGreaterThanOrEqual(frame.minY, 0, "\(name) runs off the top")
+        }
+    }
+}
+
+/// The Quick Start Guide shows every page that has been drawn for it.
+///
+/// The guide is pictures, named `IntroView1` upwards, and listed by hand in
+/// `IntroPageViewController.populateItems`. Round 322 imported three of James's 1.3 pages, and a
+/// picture imported and never listed is a page nobody sees - with nothing anywhere to say so.
+final class QuickStartGuideTests: XCTestCase {
+
+    func testEveryDrawnPageIsInTheGuideOnce() {
+        var drawn: [String] = []
+        var number = 1
+        while UIImage(named: "IntroView\(number)") != nil {
+            drawn.append("IntroView\(number)")
+            number += 1
+        }
+        // Read off the asset catalogue rather than written down: the names run unbroken from
+        // 1, so the first one missing is the end of the set
+        XCTAssertGreaterThanOrEqual(drawn.count, 8, "James's three 1.3 pages are imported")
+
+        let guide = IntroPageViewController()
+        guide.populateItems()
+        let shown = guide.items.compactMap { ($0.view as? IntroContainerView)?.introImage.image }
+        XCTAssertEqual(shown.count, guide.items.count, "every page has its picture")
+        XCTAssertEqual(guide.items.count, drawn.count,
+                       "one page for every picture drawn, no more and no fewer")
+        for name in drawn {
+            let image = UIImage(named: name)
+            XCTAssertEqual(shown.filter { $0.pngData() == image?.pngData() }.count, 1,
+                           "\(name) should appear exactly once")
         }
     }
 }

@@ -312,6 +312,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var endlessIIPaddleLastX: CGFloat = 0
 	/// The turn rate each gripped ball is still carrying, keyed by ball
 	var endlessIIBallSpinRates: [ObjectIdentifier: CGFloat] = [:]
+	var endlessIISpinTrails: [ObjectIdentifier: [SKSpriteNode]] = [:]
+	var endlessIISpinTrailHistory: [ObjectIdentifier: [(time: TimeInterval, point: CGPoint)]] = [:]
+	var endlessIISpinTrailClock: TimeInterval = 0
+	// The spinning ball's streak - see `tickEndlessIISpinTrails`
 
 	/// Drift: while this runs the whole field slides sideways (§5.4).
 	var endlessIIDriftClock = EndlessIIClock()
@@ -808,6 +812,36 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     
     var stickyPaddleCatches: Int = 0
 	var stickyPaddleCatchesTotal: Int = 0
+	/// The width Expand and Shrink last sent the paddle to, as a scale.
+	///
+	/// **Asked instead of `paddle.xScale`** (James, round 321: "I picked up an expand paddle at the
+	/// same time a previous expand paddle power up was ending and the paddle shrink animation was
+	/// happening. The paddle didn't expand back, it just stayed its normal size, but the power up
+	/// hud showed correctly"). Both power-ups chose their next step by testing the animated
+	/// scale against exact values - 1.0, 1.5, 2.0 - and a paddle caught mid-shrink is at 1.23,
+	/// which is none of them. Every branch was skipped, the timer and the HUD started anyway, and
+	/// the shrink already running carried on to 1.0, because it had been started without a key
+	/// and removing the power-up's scene-level actions never touched it.
+	///
+	/// The target is where the paddle is *going*, which is the only question those branches were
+	/// ever really asking. Set in `runPaddleSizeScale`, the one place a size animation starts.
+	var paddleSizeTarget: CGFloat = 1.0
+
+	/// Starts a paddle-size animation on one of the paddle's six pictures.
+	///
+	/// Under one key, so a new size replaces a size animation still running rather than racing
+	/// it - which is the second half of the round 321 fault. On the paddle itself it records the
+	/// target as well, so the next Expand or Shrink steps from where this one is heading.
+	func runPaddleSizeScale(_ node: SKNode, to scale: CGFloat, duration: TimeInterval,
+							completion: (() -> Void)? = nil) {
+		if node === paddle { paddleSizeTarget = scale }
+		var steps: [SKAction] = [SKAction.scaleX(to: scale, duration: duration)]
+		if let completion { steps.append(SKAction.run(completion)) }
+		node.run(SKAction.sequence(steps), withKey: GameScene.paddleSizeScaleKey)
+	}
+
+	static let paddleSizeScaleKey = "paddleSizeScale"
+
 	var backstopCatches: Int = 0
 	var backstopCatchesTotal: Int = 0
 	/// Whether a Backstop has already been handed out in this run.
@@ -3105,6 +3139,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         sweepDyingBricks()
         phantomBrickWatch()
         crookedBallWatch()
+        tickEndlessIISpinTrails(endlessIIPaddleFrameDelta)
+        // Last, once every writer above has had its say about where each ball is
     }
     // The one place a physics body can be moved from. Anything written to one during contact
     // resolution is undone by the rest of the step
@@ -3372,33 +3408,29 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			tickEndlessIIHeldBalls()
 			tickEndlessIIAim()
 
-			if endlessIIAimHold {
-				endlessIILastTick = currentTime
-				endlessIIPaddleLastTick = currentTime
-				tickEndlessIIBreathing(currentTime)
-				// **Except the breathers** (James, round 311: "during aimed sticky with the
-				// ball on the paddle, the breathing brick animation is still pausing"). A
-				// breathing brick is one the player *times* - the gap it opens is the shot -
-				// so freezing it while they line that shot up removes the whole point of it,
-				// and a pulse that stops dead reads as a hang. Its own clock, which is why it
-				// can keep running while everything around it is pinned
-				// The aim hold freezes the *world*, and most of the world is driven from
-				// right here rather than from node actions - the descent, the spinners
-				// and movers, the timed clocks. The play test caught the gap: lasers
-				// kept firing and the field kept stepping while the ball sat on the
-				// paddle, and released into bricks that had descended past it. So while
-				// the hold is on, only the held balls and the aim itself tick - and the
-				// last-tick clocks are pinned to now, so on release every delta is one
-				// frame and everything resumes where it stopped rather than leaping the
-				// frozen seconds in a bound
-			} else {
-				tickEndlessIIBricks(currentTime)
-				tickEndlessIIExtraBalls()
-				tickEndlessIIVision(currentTime)
-				tickEndlessIIPaddlePowerUps(currentTime)
-				tickEndlessIIFieldPowerUps()
-				tickEndlessIIWrapAround()
-			}
+			tickEndlessIIBricks(currentTime)
+			tickEndlessIIExtraBalls()
+			tickEndlessIIVision(currentTime)
+			tickEndlessIIPaddlePowerUps(currentTime)
+			tickEndlessIIFieldPowerUps()
+			tickEndlessIIWrapAround()
+			// **Nothing is pinned during an aim any more** (James, round 321: "Drift power up
+			// effect and rotating bricks are pausing when aimed sticky is on and ball is on the
+			// paddle. Aimed sticky shouldn't cause anything to pause anymore. Please check nothing
+			// is pausing whilst the ball is on the paddle during aimed sticky").
+			//
+			// The hold used to freeze the world: it pinned the Mayhem last-tick clocks to now and
+			// ran only the held balls and the aim, so drift, spinners, movers, flashers, falling
+			// bricks and every timed clock stood still while a ball sat on the paddle. Round 215
+			// took the freeze out of Aimed Sticky's *design* - "it acts more like the existing
+			// sticky power up" - round 293 took the descent out of it, and round 311 excepted the
+			// breathers; this is the rest. An ordinary Sticky Paddle never stopped anything, and
+			// this is now exactly that.
+			//
+			// What still holds is the *ball*: `tickEndlessIIHeldBalls` and `tickEndlessIIAim` run
+			// above and keep every held ball on the paddle with no velocity, and
+			// `didSimulatePhysics` still stands the ball writers down during the hold, which is
+			// round 210's reason and is about the ball rather than the field
 		}
 
 		tickDailyAlwaysOn()
@@ -5646,45 +5678,45 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			// Show power-up icon timer
 			paddleCenterRectPlus()
 			// Ensure good scaling of paddles
-			if paddle.xScale < 1.0 {
+			if paddleSizeTarget < 1.0 {
 				paddleSizeIcon.texture = self.iconPaddleSizeDisabledTexture
 				paddleSizeIconBar.isHidden = true
-				paddle.run(SKAction.scaleX(to: 1.0, duration: 0.2), completion: {
+				runPaddleSizeScale(paddle, to: 1.0, duration: 0.2, completion: {
 					self.paddle.physicsBody!.collisionBitMask = CollisionTypes.paddleCategory.rawValue | CollisionTypes.boarderCategory.rawValue
 				})
-				paddleLaser.run(SKAction.scaleX(to: 1.0, duration: 0.2))
-				paddleSticky.run(SKAction.scaleX(to: 1.0, duration: 0.2))
-				paddleRetroTexture.run(SKAction.scaleX(to: 1.0, duration: 0.2))
-				paddleRetroLaserTexture.run(SKAction.scaleX(to: 1.0, duration: 0.2))
-				paddleRetroStickyTexture.run(SKAction.scaleX(to: 1.0, duration: 0.2))
+				runPaddleSizeScale(paddleLaser, to: 1.0, duration: 0.2)
+				runPaddleSizeScale(paddleSticky, to: 1.0, duration: 0.2)
+				runPaddleSizeScale(paddleRetroTexture, to: 1.0, duration: 0.2)
+				runPaddleSizeScale(paddleRetroLaserTexture, to: 1.0, duration: 0.2)
+				runPaddleSizeScale(paddleRetroStickyTexture, to: 1.0, duration: 0.2)
 				paddleCenterRectZero()
-			} else if paddle.xScale == 1.0 {
-				paddle.run(SKAction.scaleX(to: 1.5, duration: 0.2), completion: {
+			} else if paddleSizeTarget == 1.0 {
+				runPaddleSizeScale(paddle, to: 1.5, duration: 0.2, completion: {
 					self.paddle.physicsBody!.collisionBitMask = CollisionTypes.paddleCategory.rawValue | CollisionTypes.boarderCategory.rawValue
 				})
-				paddleLaser.run(SKAction.scaleX(to: 1.5, duration: 0.2))
-				paddleSticky.run(SKAction.scaleX(to: 1.5, duration: 0.2))
-				paddleRetroTexture.run(SKAction.scaleX(to: 1.42, duration: 0.2))
-				paddleRetroLaserTexture.run(SKAction.scaleX(to: 1.42, duration: 0.2))
-				paddleRetroStickyTexture.run(SKAction.scaleX(to: 1.42, duration: 0.2))
-			} else if paddle.xScale == 1.5 {
-				paddle.run(SKAction.scaleX(to: 2.0, duration: 0.2), completion: {
+				runPaddleSizeScale(paddleLaser, to: 1.5, duration: 0.2)
+				runPaddleSizeScale(paddleSticky, to: 1.5, duration: 0.2)
+				runPaddleSizeScale(paddleRetroTexture, to: 1.42, duration: 0.2)
+				runPaddleSizeScale(paddleRetroLaserTexture, to: 1.42, duration: 0.2)
+				runPaddleSizeScale(paddleRetroStickyTexture, to: 1.42, duration: 0.2)
+			} else if paddleSizeTarget == 1.5 {
+				runPaddleSizeScale(paddle, to: 2.0, duration: 0.2, completion: {
 					self.paddle.physicsBody!.collisionBitMask = CollisionTypes.paddleCategory.rawValue | CollisionTypes.boarderCategory.rawValue
 				})
-				paddleLaser.run(SKAction.scaleX(to: 2.0, duration: 0.2))
-				paddleSticky.run(SKAction.scaleX(to: 2.0, duration: 0.2))
-				paddleRetroTexture.run(SKAction.scaleX(to: 1.82, duration: 0.2))
-				paddleRetroLaserTexture.run(SKAction.scaleX(to: 1.82, duration: 0.2))
-				paddleRetroStickyTexture.run(SKAction.scaleX(to: 1.82, duration: 0.2))
-			} else if paddle.xScale == 2.0 || paddle.xScale == 2.5 {
-				paddle.run(SKAction.scaleX(to: 2.5, duration: 0.2), completion: {
+				runPaddleSizeScale(paddleLaser, to: 2.0, duration: 0.2)
+				runPaddleSizeScale(paddleSticky, to: 2.0, duration: 0.2)
+				runPaddleSizeScale(paddleRetroTexture, to: 1.82, duration: 0.2)
+				runPaddleSizeScale(paddleRetroLaserTexture, to: 1.82, duration: 0.2)
+				runPaddleSizeScale(paddleRetroStickyTexture, to: 1.82, duration: 0.2)
+			} else if paddleSizeTarget == 2.0 || paddleSizeTarget == 2.5 {
+				runPaddleSizeScale(paddle, to: 2.5, duration: 0.2, completion: {
 					self.paddle.physicsBody!.collisionBitMask = CollisionTypes.paddleCategory.rawValue | CollisionTypes.boarderCategory.rawValue
 				})
-				paddleLaser.run(SKAction.scaleX(to: 2.5, duration: 0.2))
-				paddleSticky.run(SKAction.scaleX(to: 2.5, duration: 0.2))
-				paddleRetroTexture.run(SKAction.scaleX(to: 2.24, duration: 0.2))
-				paddleRetroLaserTexture.run(SKAction.scaleX(to: 2.24, duration: 0.2))
-				paddleRetroStickyTexture.run(SKAction.scaleX(to: 2.24, duration: 0.2))
+				runPaddleSizeScale(paddleLaser, to: 2.5, duration: 0.2)
+				runPaddleSizeScale(paddleSticky, to: 2.5, duration: 0.2)
+				runPaddleSizeScale(paddleRetroTexture, to: 2.24, duration: 0.2)
+				runPaddleSizeScale(paddleRetroLaserTexture, to: 2.24, duration: 0.2)
+				runPaddleSizeScale(paddleRetroStickyTexture, to: 2.24, duration: 0.2)
 				if totalStatsArray[0].achievementsUnlockedArray[32] == false {
 					totalStatsArray[0].achievementsUnlockedArray[32] = true
 					totalStatsArray[0].achievementDates[32] = Date()
@@ -5712,15 +5744,15 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				if self.hapticsSetting {
 					self.rigidHaptic.impactOccurred()
 				}
-				self.paddle.run(SKAction.scaleX(to: 1, duration: 0.2), completion: {
+				self.runPaddleSizeScale(self.paddle, to: 1, duration: 0.2, completion: {
 					self.recentreBall()
 					self.paddle.physicsBody!.collisionBitMask = CollisionTypes.paddleCategory.rawValue | CollisionTypes.boarderCategory.rawValue
 				})
-				self.paddleLaser.run(SKAction.scaleX(to: 1, duration: 0.2))
-				self.paddleSticky.run(SKAction.scaleX(to: 1, duration: 0.2))
-				self.paddleRetroTexture.run(SKAction.scaleX(to: 1, duration: 0.2))
-				self.paddleRetroLaserTexture.run(SKAction.scaleX(to: 1, duration: 0.2))
-				self.paddleRetroStickyTexture.run(SKAction.scaleX(to: 1, duration: 0.2))
+				self.runPaddleSizeScale(self.paddleLaser, to: 1, duration: 0.2)
+				self.runPaddleSizeScale(self.paddleSticky, to: 1, duration: 0.2)
+				self.runPaddleSizeScale(self.paddleRetroTexture, to: 1, duration: 0.2)
+				self.runPaddleSizeScale(self.paddleRetroLaserTexture, to: 1, duration: 0.2)
+				self.runPaddleSizeScale(self.paddleRetroStickyTexture, to: 1, duration: 0.2)
 				self.paddleCenterRectZero()
 				self.paddleSizeIcon.texture = self.iconPaddleSizeDisabledTexture
 				self.paddleSizeIconBar.isHidden = true
@@ -5746,17 +5778,17 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			// Show power-up icon timer
 			paddleCenterRectPlus()
 			// Ensure good scaling of paddles
-			if paddle.xScale < 1.0 {
-				paddle.run(SKAction.scaleX(to: 0.5, duration: 0.2), completion: {
+			if paddleSizeTarget < 1.0 {
+				runPaddleSizeScale(paddle, to: 0.5, duration: 0.2, completion: {
 					self.recentreBall()
 					self.paddle.physicsBody!.collisionBitMask = CollisionTypes.paddleCategory.rawValue | CollisionTypes.boarderCategory.rawValue
 
 				})
-				paddleLaser.run(SKAction.scaleX(to: 0.5, duration: 0.2))
-				paddleSticky.run(SKAction.scaleX(to: 0.5, duration: 0.2))
-				paddleRetroTexture.run(SKAction.scaleX(to: 0.59, duration: 0.2))
-				paddleRetroLaserTexture.run(SKAction.scaleX(to: 0.59, duration: 0.2))
-				paddleRetroStickyTexture.run(SKAction.scaleX(to: 0.59, duration: 0.2))
+				runPaddleSizeScale(paddleLaser, to: 0.5, duration: 0.2)
+				runPaddleSizeScale(paddleSticky, to: 0.5, duration: 0.2)
+				runPaddleSizeScale(paddleRetroTexture, to: 0.59, duration: 0.2)
+				runPaddleSizeScale(paddleRetroLaserTexture, to: 0.59, duration: 0.2)
+				runPaddleSizeScale(paddleRetroStickyTexture, to: 0.59, duration: 0.2)
 				
 				if totalStatsArray[0].achievementsUnlockedArray[33] == false {
 					totalStatsArray[0].achievementsUnlockedArray[33] = true
@@ -5770,30 +5802,30 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 					}
 				}
 				// Minimum paddle size achievement
-			} else if paddle.xScale == 1.0 {
-				paddle.run(SKAction.scaleX(to: 0.75, duration: 0.2), completion: {
+			} else if paddleSizeTarget == 1.0 {
+				runPaddleSizeScale(paddle, to: 0.75, duration: 0.2, completion: {
 					self.recentreBall()
 					self.paddle.physicsBody!.collisionBitMask = CollisionTypes.paddleCategory.rawValue | CollisionTypes.boarderCategory.rawValue
 
 				})
-				paddleLaser.run(SKAction.scaleX(to: 0.75, duration: 0.2))
-				paddleSticky.run(SKAction.scaleX(to: 0.75, duration: 0.2))
-				paddleRetroTexture.run(SKAction.scaleX(to: 0.79, duration: 0.2))
-				paddleRetroLaserTexture.run(SKAction.scaleX(to: 0.79, duration: 0.2))
-				paddleRetroStickyTexture.run(SKAction.scaleX(to: 0.79, duration: 0.2))
-			} else if paddle.xScale > 1.0 {
+				runPaddleSizeScale(paddleLaser, to: 0.75, duration: 0.2)
+				runPaddleSizeScale(paddleSticky, to: 0.75, duration: 0.2)
+				runPaddleSizeScale(paddleRetroTexture, to: 0.79, duration: 0.2)
+				runPaddleSizeScale(paddleRetroLaserTexture, to: 0.79, duration: 0.2)
+				runPaddleSizeScale(paddleRetroStickyTexture, to: 0.79, duration: 0.2)
+			} else if paddleSizeTarget > 1.0 {
 				paddleSizeIcon.texture = self.iconPaddleSizeDisabledTexture
 				paddleSizeIconBar.isHidden = true
-				paddle.run(SKAction.scaleX(to: 1.0, duration: 0.2), completion: {
+				runPaddleSizeScale(paddle, to: 1.0, duration: 0.2, completion: {
 					self.recentreBall()
 					self.paddle.physicsBody!.collisionBitMask = CollisionTypes.paddleCategory.rawValue | CollisionTypes.boarderCategory.rawValue
 
 				})
-				paddleLaser.run(SKAction.scaleX(to: 1.0, duration: 0.2))
-				paddleSticky.run(SKAction.scaleX(to: 1.0, duration: 0.2))
-				paddleRetroTexture.run(SKAction.scaleX(to: 1.0, duration: 0.2))
-				paddleRetroLaserTexture.run(SKAction.scaleX(to: 1.0, duration: 0.2))
-				paddleRetroStickyTexture.run(SKAction.scaleX(to: 1.0, duration: 0.2))
+				runPaddleSizeScale(paddleLaser, to: 1.0, duration: 0.2)
+				runPaddleSizeScale(paddleSticky, to: 1.0, duration: 0.2)
+				runPaddleSizeScale(paddleRetroTexture, to: 1.0, duration: 0.2)
+				runPaddleSizeScale(paddleRetroLaserTexture, to: 1.0, duration: 0.2)
+				runPaddleSizeScale(paddleRetroStickyTexture, to: 1.0, duration: 0.2)
 				paddleCenterRectZero()
 			}
 			// Resize paddle based on its current size
@@ -5811,14 +5843,14 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                 if self.hapticsSetting {
 					self.rigidHaptic.impactOccurred()
 				}
-				self.paddle.run(SKAction.scaleX(to: 1, duration: 0.2), completion: {
+				self.runPaddleSizeScale(self.paddle, to: 1, duration: 0.2, completion: {
 					self.paddle.physicsBody!.collisionBitMask = CollisionTypes.paddleCategory.rawValue | CollisionTypes.boarderCategory.rawValue
 				})
-				self.paddleLaser.run(SKAction.scaleX(to: 1, duration: 0.2))
-				self.paddleSticky.run(SKAction.scaleX(to: 1, duration: 0.2))
-				self.paddleRetroTexture.run(SKAction.scaleX(to: 1, duration: 0.2))
-				self.paddleRetroLaserTexture.run(SKAction.scaleX(to: 1, duration: 0.2))
-				self.paddleRetroStickyTexture.run(SKAction.scaleX(to: 1, duration: 0.2))
+				self.runPaddleSizeScale(self.paddleLaser, to: 1, duration: 0.2)
+				self.runPaddleSizeScale(self.paddleSticky, to: 1, duration: 0.2)
+				self.runPaddleSizeScale(self.paddleRetroTexture, to: 1, duration: 0.2)
+				self.runPaddleSizeScale(self.paddleRetroLaserTexture, to: 1, duration: 0.2)
+				self.runPaddleSizeScale(self.paddleRetroStickyTexture, to: 1, duration: 0.2)
 				self.paddleCenterRectZero()
 				self.paddleSizeIcon.texture = self.iconPaddleSizeDisabledTexture
 				self.paddleSizeIconBar.isHidden = true
@@ -6891,14 +6923,14 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		// Giga-Ball/Undestructiball reset
 		
 		paddleCenterRectZero()
-		paddle.run(SKAction.scaleX(to: 1.0, duration: 0.2), completion: {
+		runPaddleSizeScale(paddle, to: 1.0, duration: 0.2, completion: {
 			self.paddle.physicsBody!.collisionBitMask = CollisionTypes.paddleCategory.rawValue | CollisionTypes.boarderCategory.rawValue
 		})
-		paddleLaser.run(SKAction.scaleX(to: 1.0, duration: 0.2))
-		paddleSticky.run(SKAction.scaleX(to: 1.0, duration: 0.2))
-		paddleRetroTexture.run(SKAction.scaleX(to: 1.0, duration: 0.2))
-		paddleRetroLaserTexture.run(SKAction.scaleX(to: 1.0, duration: 0.2))
-		paddleRetroStickyTexture.run(SKAction.scaleX(to: 1.0, duration: 0.2))
+		runPaddleSizeScale(paddleLaser, to: 1.0, duration: 0.2)
+		runPaddleSizeScale(paddleSticky, to: 1.0, duration: 0.2)
+		runPaddleSizeScale(paddleRetroTexture, to: 1.0, duration: 0.2)
+		runPaddleSizeScale(paddleRetroLaserTexture, to: 1.0, duration: 0.2)
+		runPaddleSizeScale(paddleRetroStickyTexture, to: 1.0, duration: 0.2)
 		paddleSizeIconBar.isHidden = true
 		// Paddle size reset
 		
@@ -8095,11 +8127,8 @@ laserTimer?.invalidate()
 	
     @objc func laserGenerator() {
 
-		guard endlessIIAimHold == false else { return }
-		// The aim hold freezes the world, but this runs on a Foundation Timer, which no
-		// amount of node-pausing touches - it kept firing over a held ball (play test).
-		// The beat is skipped rather than banked: the cadence carries on when the world
-		// does
+		// Lasers fire through an aim now (round 321): the hold no longer freezes the world, and an
+		// ordinary Sticky Paddle has always fired over a ball sitting on it
 
 		if gameState.currentState is Playing {
 
@@ -8510,22 +8539,22 @@ laserTimer?.invalidate()
 				}
 			}
 			if let paddleSizePowerUp = self.paddleSizeIconBar.action(forKey: "paddleSizeTimer") {
-				if paddle.xScale != 1.0 {
+				if paddleSizeTarget != 1.0 {
 					let remainingTime = Double(paddleSizePowerUp.duration) * Double(paddleSizeIconBar.xScale)
 					powerUpActiveArray?.append("paddleSizeTimer")
 					powerUpActiveDurationArray?.append(remainingTime)
 					powerUpActiveTimerArray?.append(Double(paddleSizePowerUp.duration))
 					var magnitude: Int?
-					if paddle.xScale < 1.0 {
-						if paddle.xScale < 0.75 {
+					if paddleSizeTarget < 1.0 {
+						if paddleSizeTarget < 0.75 {
 							magnitude = 0 // 0.5
 						} else {
 							magnitude = 1 // 0.75
 						}
 					} else {
-						if paddle.xScale < 2.0 {
+						if paddleSizeTarget < 2.0 {
 							magnitude = 2 // 1.5
-						} else if paddle.xScale < 2.5 {
+						} else if paddleSizeTarget < 2.5 {
 							magnitude = 3 // 2.0
 						} else {
 							magnitude = 4 // 2.5
@@ -9572,13 +9601,13 @@ laserTimer?.invalidate()
 						}
 						guard let setScale, let retroScale else { break }
 						paddleCenterRectPlus()
-						paddle.run(SKAction.scaleX(to: setScale, duration: 0.0))
+						runPaddleSizeScale(paddle, to: setScale, duration: 0.0)
 						paddle.physicsBody!.collisionBitMask = CollisionTypes.paddleCategory.rawValue | CollisionTypes.boarderCategory.rawValue
-						paddleLaser.run(SKAction.scaleX(to: setScale, duration: 0.0))
-						paddleSticky.run(SKAction.scaleX(to: setScale, duration: 0.0))
-						paddleRetroTexture.run(SKAction.scaleX(to: retroScale, duration: 0.0))
-						paddleRetroLaserTexture.run(SKAction.scaleX(to: retroScale, duration: 0.0))
-						paddleRetroStickyTexture.run(SKAction.scaleX(to: retroScale, duration: 0.0))
+						runPaddleSizeScale(paddleLaser, to: setScale, duration: 0.0)
+						runPaddleSizeScale(paddleSticky, to: setScale, duration: 0.0)
+						runPaddleSizeScale(paddleRetroTexture, to: retroScale, duration: 0.0)
+						runPaddleSizeScale(paddleRetroLaserTexture, to: retroScale, duration: 0.0)
+						runPaddleSizeScale(paddleRetroStickyTexture, to: retroScale, duration: 0.0)
 						
 						let waitDuration = SKAction.wait(forDuration: remainingTime)
 						let completionBlock = SKAction.run {
@@ -9586,15 +9615,15 @@ laserTimer?.invalidate()
 							if self.hapticsSetting {
 								self.rigidHaptic.impactOccurred()
 							}
-							self.paddle.run(SKAction.scaleX(to: 1, duration: 0.2), completion: {
+							self.runPaddleSizeScale(self.paddle, to: 1, duration: 0.2, completion: {
 								self.recentreBall()
 								self.paddle.physicsBody!.collisionBitMask = CollisionTypes.paddleCategory.rawValue | CollisionTypes.boarderCategory.rawValue
 							})
-							self.paddleLaser.run(SKAction.scaleX(to: 1, duration: 0.2))
-							self.paddleSticky.run(SKAction.scaleX(to: 1, duration: 0.2))
-							self.paddleRetroTexture.run(SKAction.scaleX(to: 1, duration: 0.2))
-							self.paddleRetroLaserTexture.run(SKAction.scaleX(to: 1, duration: 0.2))
-							self.paddleRetroStickyTexture.run(SKAction.scaleX(to: 1, duration: 0.2))
+							self.runPaddleSizeScale(self.paddleLaser, to: 1, duration: 0.2)
+							self.runPaddleSizeScale(self.paddleSticky, to: 1, duration: 0.2)
+							self.runPaddleSizeScale(self.paddleRetroTexture, to: 1, duration: 0.2)
+							self.runPaddleSizeScale(self.paddleRetroLaserTexture, to: 1, duration: 0.2)
+							self.runPaddleSizeScale(self.paddleRetroStickyTexture, to: 1, duration: 0.2)
 							self.paddleCenterRectZero()
 							self.paddleSizeIcon.texture = self.iconPaddleSizeDisabledTexture
 							self.paddleSizeIconBar.isHidden = true

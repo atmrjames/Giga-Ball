@@ -1371,6 +1371,16 @@ extension DailyTwist {
         DailyTwist.badgedLine(icon: icon, name: displayName, font: font, colour: colour)
     }
 
+    /// The same line, naming what the twist chose for this particular day.
+    ///
+    /// James, round 320: "when there's a theme twist in Daily Challenge, the selected theme
+    /// should be stated, so it would read: Theme icon, Theme - Theme Description." Only the
+    /// Theme twist has something to name today, so every other twist reads as it always has.
+    func titleLine(font: UIFont, colour: UIColor, dateKey: String) -> NSAttributedString {
+        DailyTwist.badgedLine(icon: icon, name: displayName(forKey: dateKey), font: font,
+                              colour: colour)
+    }
+
     /// What a day with no twists is called, and its badge.
     ///
     /// A baseline day is a *kind* of day, not an absence of one - the play test asked for

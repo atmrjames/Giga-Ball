@@ -5719,3 +5719,217 @@ final class PaddlePortalLookTests: XCTestCase {
                           "the tick is what notices, since no shape changed")
     }
 }
+
+/// **An Expand caught while the last one is shrinking back still expands.**
+///
+/// James, round 320: "I picked up an expand paddle at the same time a previous expand paddle power
+/// up was ending and the paddle shrink animation was happening. The paddle didn't expand back, it
+/// just stayed its normal size, but the power up hud showed correctly."
+final class PaddleSizeMidAnimationTests: XCTestCase {
+
+    private func scene() -> GameScene {
+        let scene = GameScene()
+        scene.totalStatsArray = [TotalStats()]
+        scene.gameMode = .classic
+        scene.hapticsSetting = false
+        scene.soundsSetting = false
+        scene.ballLostBool = false
+        // **It starts true**, and `applyPowerUp` refuses everything while it is - the same
+        // note ApplyPowerUpTests carries, and the first run of these measured nothing for it
+        scene.addChild(scene.ball)
+        scene.ball.physicsBody = SKPhysicsBody(circleOfRadius: 6)
+        scene.paddle.size = CGSize(width: 100, height: 12)
+        scene.paddle.physicsBody = SKPhysicsBody(rectangleOf: scene.paddle.size)
+        // The Expand/Shrink completions set the paddle body's collision mask
+        scene.addChild(scene.paddle)
+        for strip in [scene.paddleLaser, scene.paddleSticky, scene.paddleRetroTexture,
+                      scene.paddleRetroLaserTexture, scene.paddleRetroStickyTexture] {
+            scene.addChild(strip)
+        }
+        return scene
+    }
+
+    /// The report exactly: the old Expand's shrink is running and the paddle is part-way down.
+    func testAnExpandCaughtMidShrinkExpands() {
+        let scene = self.scene()
+        scene.runPaddleSizeScale(scene.paddle, to: 1.5, duration: 0)
+        scene.paddle.xScale = 1.5
+        scene.runPaddleSizeScale(scene.paddle, to: 1.0, duration: 0.2)
+        // The old Expand ending: the target is back to normal and the animation has begun
+        scene.paddle.xScale = 1.23
+        // Caught part-way, which is none of the exact values the branches used to test
+
+        scene.applyPowerUp(node: SKSpriteNode(texture: scene.powerUpIncreasePaddleSize),
+                           silently: true)
+
+        XCTAssertEqual(scene.paddleSizeTarget, 1.5, accuracy: 0.0001,
+                       "the paddle is heading for an expanded width, not staying normal")
+        let running = scene.paddle.action(forKey: GameScene.paddleSizeScaleKey)
+        XCTAssertNotNil(running, "and the new size animation is the one running")
+        XCTAssertEqual(running?.duration ?? 0, 0.2, accuracy: 0.01,
+                       "having replaced the shrink rather than racing it")
+    }
+
+    /// And the same the other way: a Shrink caught mid-expand shrinks from where it was going.
+    func testAShrinkCaughtMidExpandStepsFromTheTarget() {
+        let scene = self.scene()
+        scene.runPaddleSizeScale(scene.paddle, to: 1.5, duration: 0.2)
+        scene.paddle.xScale = 1.2
+
+        scene.applyPowerUp(node: SKSpriteNode(texture: scene.powerUpDecreasePaddleSize),
+                           silently: true)
+        XCTAssertEqual(scene.paddleSizeTarget, 1.0, accuracy: 0.0001,
+                       "a Shrink on an expanding paddle brings it back to normal, as it does "
+                       + "on an expanded one")
+    }
+}
+
+/// **The mirror wears the turrets its lasers leave from** (James, round 321: "mirror paddle is
+/// firing lasers but doesn't have any turrets").
+final class MirrorPaddleTurretTests: XCTestCase {
+
+    func testTheMirrorGetsTheLaserStripAndLosesItWithThePaddle() {
+        let scene = GameScene()
+        scene.gameMode = .endlessII
+        scene.totalStatsArray = [TotalStats()]
+        scene.paddle.texture = SKTexture(imageNamed: "regularPaddle")
+        scene.paddle.size = CGSize(width: 100, height: 12)
+        scene.paddle.position = CGPoint(x: -60, y: -300)
+        scene.addChild(scene.paddle)
+        scene.paddleLaser.texture = scene.laserPaddleTexture
+        scene.paddleLaser.anchorPoint = CGPoint(x: 0.5, y: 0)
+        scene.paddleLaser.size = CGSize(width: 100, height: 10)
+        scene.paddleLaser.position = CGPoint(x: -60, y: -306)
+        scene.paddleLaser.isHidden = false
+        scene.addChild(scene.paddleLaser)
+
+        scene.endlessIIMirrorPaddleClock.collect(turns: 5)
+        scene.showEndlessIIMirrorPaddle()
+        scene.tickEndlessIIMirrorPaddle()
+
+        guard let mirror = scene.childNode(withName: GameScene.endlessIIMirrorPaddleName) as? SKSpriteNode,
+              let strip = scene.childNode(withName: GameScene.endlessIIMirrorLaserStripName) as? SKSpriteNode
+        else { return XCTFail("a mirror with lasers running has turrets") }
+        XCTAssertEqual(strip.position.x, mirror.position.x, accuracy: 0.001, "on the mirror")
+        XCTAssertEqual(strip.anchorPoint, scene.paddleLaser.anchorPoint, "standing the same way")
+        XCTAssertEqual(strip.size, scene.paddleLaser.size, "the same strip")
+        XCTAssertEqual(strip.position.y - mirror.position.y,
+                       scene.paddleLaser.position.y - scene.paddle.position.y, accuracy: 0.001,
+                       "at the same height on the mirror as on the paddle")
+
+        scene.paddleLaser.isHidden = true
+        scene.tickEndlessIIMirrorPaddle()
+        XCTAssertNil(scene.childNode(withName: GameScene.endlessIIMirrorLaserStripName),
+                     "no lasers, no turrets")
+    }
+}
+
+
+/// **A spinning ball leaves a streak** (James, round 320: "ball spin stronger plus a motion
+/// trail"). The trail is there to make the curve visible, so it shows exactly while a ball
+/// carries a spin and fades with the spin.
+final class BallSpinTrailTests: XCTestCase {
+
+    private func scene() -> GameScene {
+        let scene = GameScene()
+        scene.gameMode = .endlessII
+        scene.totalStatsArray = [TotalStats()]
+        scene.ball.size = CGSize(width: 12, height: 12)
+        scene.ball.physicsBody = SKPhysicsBody(circleOfRadius: 6)
+        scene.addChild(scene.ball)
+        scene.gameState.enter(Playing.self)
+        // Playing, because the trail holds still outside play - the fixture
+        // `AimHoldKeepsTheFieldMovingTests` uses
+        return scene
+    }
+
+    private func ghosts(in scene: GameScene) -> [SKSpriteNode] {
+        scene.children.compactMap { $0 as? SKSpriteNode }
+            .filter { $0.name == GameScene.endlessIISpinTrailName }
+    }
+
+    /// Flies the ball up the field for a fifth of a second at 60fps.
+    private func fly(_ scene: GameScene, frames: Int = 12) {
+        for _ in 0..<frames {
+            scene.ball.position.y += 8
+            scene.tickEndlessIISpinTrails(1.0/60)
+        }
+    }
+
+    func testASpinningBallTrailsBehindItself() {
+        let scene = self.scene()
+        scene.endlessIIBallSpinRates[ObjectIdentifier(scene.ball)] = EndlessIIBallSpin.strongestTurn
+        fly(scene)
+
+        let shown = ghosts(in: scene).filter { $0.isHidden == false }
+        XCTAssertEqual(shown.count, GameScene.endlessIISpinTrailCount,
+                       "a fifth of a second of flight is long enough for the whole streak")
+        for ghost in shown {
+            XCTAssertLessThan(ghost.position.y, scene.ball.position.y,
+                              "behind the ball, where it has been")
+            XCTAssertLessThan(ghost.alpha, scene.ball.alpha, "and fainter than it")
+            XCTAssertLessThan(ghost.zPosition, scene.ball.zPosition, "and under it")
+        }
+        let byDistance = shown.sorted { $0.position.y > $1.position.y }
+        XCTAssertGreaterThan(byDistance.first!.alpha, byDistance.last!.alpha,
+                             "fading away from the ball")
+        XCTAssertGreaterThan(byDistance.first!.size.width, byDistance.last!.size.width,
+                             "and tapering")
+    }
+
+    func testABallWithNoSpinTrailsNothing() {
+        let scene = self.scene()
+        fly(scene)
+        XCTAssertTrue(ghosts(in: scene).isEmpty, "an ordinary ball is not streaked")
+    }
+
+    func testTheStreakGoesWhenTheSpinIsSpent() {
+        let scene = self.scene()
+        scene.endlessIIBallSpinRates[ObjectIdentifier(scene.ball)] = EndlessIIBallSpin.strongestTurn
+        fly(scene)
+        XCTAssertFalse(ghosts(in: scene).isEmpty)
+
+        scene.endlessIIBallSpinRates.removeAll()
+        scene.tickEndlessIISpinTrails(1.0/60)
+        XCTAssertTrue(ghosts(in: scene).isEmpty, "a ball that has straightened out trails nothing")
+    }
+
+    /// A wrap or a portal moves the ball across the field in one frame, and a streak drawn
+    /// from where it was would be a line of balls through the bricks.
+    func testAJumpStartsTheStreakAgain() {
+        let scene = self.scene()
+        scene.endlessIIBallSpinRates[ObjectIdentifier(scene.ball)] = EndlessIIBallSpin.strongestTurn
+        fly(scene)
+        scene.ball.position.x += 300
+        scene.tickEndlessIISpinTrails(1.0/60)
+        XCTAssertTrue(ghosts(in: scene).allSatisfy { $0.isHidden },
+                      "nothing is drawn back across the jump")
+    }
+
+    func testTheLifeEndingClearsTheStreak() {
+        let scene = self.scene()
+        scene.endlessIIBallSpinRates[ObjectIdentifier(scene.ball)] = EndlessIIBallSpin.strongestTurn
+        fly(scene)
+        scene.endlessIIResetBallSpin()
+        XCTAssertTrue(ghosts(in: scene).isEmpty)
+    }
+
+    func testTheStreakFadesWithTheSpin() {
+        XCTAssertEqual(EndlessIIBallSpin.trailStrength(rate: EndlessIIBallSpin.strongestTurn), 1)
+        XCTAssertEqual(EndlessIIBallSpin.trailStrength(rate: -EndlessIIBallSpin.strongestTurn), 1,
+                       "either way round")
+        XCTAssertLessThan(EndlessIIBallSpin.trailStrength(rate: 0.2),
+                          EndlessIIBallSpin.trailStrength(rate: 1.0))
+        XCTAssertEqual(EndlessIIBallSpin.trailStrength(rate: 0), 0)
+    }
+
+    /// "Stronger" (James, round 320), held as a number so it cannot drift back quietly: the
+    /// part of the curve seen near the paddle, the first quarter second, at full grip.
+    func testTheCurveNearThePaddleIsTwiceWhatItWas() {
+        let rate = EndlessIIBallSpin.turnRate(paddleSpeed: EndlessIIBallSpin.fullGripSpeed)
+        let whole = rate/log(1/EndlessIIBallSpin.decayPerSecond)
+        let early = whole*(1 - pow(EndlessIIBallSpin.decayPerSecond, 0.25))*180/CGFloat.pi
+        XCTAssertGreaterThan(early, 30, "it was 19 degrees before round 322")
+        XCTAssertLessThan(whole*180/CGFloat.pi, 120, "and still a curve over the flight, not a U-turn")
+    }
+}

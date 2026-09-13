@@ -421,7 +421,8 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
             } else {
                 for (index, twist) in challenge.twists.enumerated() {
                     if index > 0 { lines.append(NSAttributedString(string: "\n")) }
-                    lines.append(twist.titleLine(font: font, colour: colour))
+                    lines.append(twist.titleLine(font: font, colour: colour,
+                                                 dateKey: challenge.dateKey))
                 }
             }
             showRunKind()

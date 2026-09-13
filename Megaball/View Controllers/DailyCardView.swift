@@ -245,8 +245,9 @@ final class DailyCardView: UIView {
             ? [(DailyTwist.vanillaLine(font: .boldSystemFont(ofSize: 16), colour: .white),
                 DailyTwist.vanillaBlurb, nil)]
             : challenge.twists.map {
-                ($0.titleLine(font: .boldSystemFont(ofSize: 16), colour: .white),
-                 $0.blurb, $0)
+                ($0.titleLine(font: .boldSystemFont(ofSize: 16), colour: .white,
+                              dateKey: challenge.dateKey),
+                 $0.blurb(forKey: challenge.dateKey), $0)
             }
         // A day with no twists is Vanilla, named and badged like any other - the baseline
         // day is a kind of day, not the absence of one

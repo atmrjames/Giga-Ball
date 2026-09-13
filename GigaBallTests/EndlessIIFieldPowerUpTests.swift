@@ -3224,6 +3224,30 @@ final class RoundThreeTwelveRegressionTests: XCTestCase {
         XCTAssertEqual((strip as? SKSpriteNode)?.size, game.paddleSticky.size)
     }
 
+    /// **And the right way up** (James, round 321, with a screenshot: "sticky texture flipping
+    /// upside down when paddle is in wrap around").
+    ///
+    /// The real strip is anchored at its bottom edge in the scene file and a shaped or themed
+    /// face turns it with a negative scale. The ghost's strip is built in code, which inherits
+    /// none of that (§8.6), so it copies every property that says which way up it stands.
+    func testTheWrapGhostsStripStandsTheWayTheRealOneDoes() {
+        let game = scene()
+        game.paddleSticky.texture = game.stickyPaddleTexture
+        game.paddleSticky.anchorPoint = CGPoint(x: 0.5, y: 0)
+        game.paddleSticky.yScale = -1
+        game.paddleSticky.size = CGSize(width: 100, height: 8)
+        game.paddleSticky.isHidden = false
+        game.addChild(game.paddleSticky)
+
+        let ghost = SKSpriteNode(texture: game.paddle.texture, size: game.paddle.size)
+        game.addChild(ghost)
+        game.endlessIIDressTheWrapGhost(ghost)
+
+        let strip = ghost.childNode(withName: GameScene.endlessIIWrapGhostStickyName) as? SKSpriteNode
+        XCTAssertEqual(strip?.anchorPoint, CGPoint(x: 0.5, y: 0), "standing on the same edge")
+        XCTAssertEqual(strip?.yScale ?? 0, -1, accuracy: 0.0001, "and turned the same way")
+    }
+
     /// And drops it when the paddle does.
     func testTheWrapGhostDropsTheStripWithThePaddle() {
         let game = scene()

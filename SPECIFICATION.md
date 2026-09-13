@@ -179,9 +179,12 @@ scene is presented `aspectFit` for the same reason.
 **And the menus are a phone's menus, centred** (round 314). Their content is capped both by
 shape - `menuMaximumAspectRatio` - and by an absolute `menuMaximumWidth`, whichever is
 narrower, so a 13-inch iPad shows a phone-width column on a large background rather than a
-phone-width layout stretched across one. Nothing is ever taken off the *height*: round 180
-capped that too and round 181 removed it, because it left 40% of the screen empty with two
-level packs scrolled out of sight.
+phone-width layout stretched across one. **Since round 322 the height is capped too**, at an
+absolute `menuMaximumHeight` of 1000 points (James, round 320: "it also needs a height limit.
+to match similar to the largest iPhone, or maybe slightly larger"). Round 180 had capped the
+height by shape and round 181 removed it for leaving 40% of the screen empty with two level
+packs scrolled out of sight; an absolute cap a little over a Pro Max's 956 gives an iPad
+exactly the scrolling a Pro Max has, which is the look asked for, and touches no phone.
 
 **Paddle.** Dragged horizontally by touch. Sensitivity is a user setting (three levels)
 controlling the ratio of finger movement to paddle movement. The paddle cannot pass the

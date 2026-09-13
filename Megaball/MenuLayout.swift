@@ -99,6 +99,14 @@ extension UIViewController {
     /// copy of one.
     static let menuMaximumWidth: CGFloat = 460
 
+    /// The tallest a menu's content is allowed to be, in points, whatever the window's height.
+    ///
+    /// James, round 320: "it also needs a height limit. to match similar to the largest iPhone,
+    /// or maybe slightly larger". The largest phone is 956 tall; a thousand is slightly larger,
+    /// and keeps the capped box the same shape as that phone (460 by 1000 is 0.46, a Pro Max is
+    /// 0.46), so an iPad's menu is a Pro Max's menu with a little air around it.
+    static let menuMaximumHeight: CGFloat = 1000
+
     /// How large a mode's own logo is at the head of its menu.
     ///
     /// The three mode menus are a set and their logos should be the same size (play-test
@@ -431,21 +439,30 @@ extension UIViewController {
     ///   makes this idempotent however deep the stack goes.
     static func menuContentInsets(available: CGSize,
                                   inherited: UIEdgeInsets = .zero) -> UIEdgeInsets {
-        let widest = min(available.height*menuMaximumAspectRatio, menuMaximumWidth)
+        let tallest = min(available.height, menuMaximumHeight)
+        let vertical = max(0, (available.height - tallest)/2)
+        // **A height ceiling as well, on James's word** (round 320: "the iPad UI width limit
+        // looks good, but it also needs a height limit. to match similar to the largest
+        // iPhone, or maybe slightly larger"). Rounds 180 and 181 took height caps out twice,
+        // for a slide-over losing a row and the pack grid scrolling with room to spare; both
+        // were caps set by *shape*, which bit windows no taller than a phone. This one is an
+        // absolute height, so nothing phone-sized is touched, and a slide-over never reaches
+        // here anyway because `limitMenuContentSize` stops at a compact width
+        let widest = min(tallest*menuMaximumAspectRatio, menuMaximumWidth)
         let horizontal = max(0, (available.width - widest)/2)
         // Two ceilings, whichever is lower: a *shape* for windows that are merely too square,
         // and an absolute width for windows that are simply large. The ratio on its own leaves
         // a 13-inch iPad 853 points of content, which is not the phone app centred on a bigger
         // background - it is the phone app stretched across one
-        // **Width only, and only when the window is too square.** A window that is *taller*
-        // than a phone's shape is not the thing being guarded against - a tall thin slide-over
-        // is a narrow phone, which the menus were built for - so nothing is ever taken off the
-        // height. That is also what stops the pack grid scrolling with room to spare on an
-        // iPad, which capping the height was doing
-        return UIEdgeInsets(top: 0,
+        // The shape is taken against the *capped* height, so a window shortened by the ceiling
+        // is not then left wider than the shape allows for the height it actually shows
+        return UIEdgeInsets(top: max(0, vertical - inherited.top),
                             left: max(0, horizontal - inherited.left),
-                            bottom: 0,
+                            bottom: max(0, vertical - inherited.bottom),
                             right: max(0, horizontal - inherited.right))
+        // The inherited insets come off both axes alike: a child screen filling a parent that
+        // already stepped in only makes up the difference, and the device's own safe area
+        // counts towards the step rather than being added on top of it
     }
 
     /// Centres the menu's contents within `menuMaximumAspectRatio`, leaving its background alone.

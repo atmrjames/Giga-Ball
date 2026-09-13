@@ -4,6 +4,7 @@
 //
 
 import XCTest
+import SpriteKit
 import CoreGraphics
 @testable import Giga_Ball
 
@@ -265,3 +266,43 @@ final class AimedArrowPointsAtTheFingerTests: XCTestCase {
         }
     }
 }
+
+/// **An aim no longer pauses the field** (James, round 321: "Drift power up effect and rotating
+/// bricks are pausing when aimed sticky is on and ball is on the paddle. Aimed sticky shouldn't
+/// cause anything to pause anymore").
+///
+/// A spinning brick is the report's own example, and it is driven from the frame, so the question
+/// is simply whether two frames apart during a hold it has turned.
+final class AimHoldKeepsTheFieldMovingTests: XCTestCase {
+
+    func testASpinningBrickKeepsTurningWhileABallIsAimed() {
+        let scene = GameScene()
+        scene.gameMode = .endlessII
+        scene.totalStatsArray = [TotalStats()]
+        scene.brickWidth = 40
+        scene.brickHeight = 20
+        scene.gameWidth = 400
+
+        let brick = SKSpriteNode(texture: scene.brickNormalTexture,
+                                 size: CGSize(width: 40, height: 20))
+        brick.name = BrickCategoryName
+        scene.addChild(brick)
+        scene.applyEndlessIIStyle(.spinning, to: brick)
+
+        scene.ball.physicsBody = SKPhysicsBody(circleOfRadius: 5)
+        scene.addChild(scene.ball)
+        scene.ballIsOnPaddle = true
+        scene.gameState.enter(Playing.self)
+        // Playing, because the field ticks only run in play, and a ball with a body, because the
+        // play branch of `update` reads its velocity - the fixture `BallBounceTests` uses
+
+        scene.endlessIIAimHold = true
+        scene.update(100)
+        let before = brick.zRotation
+        scene.update(100.25)
+
+        XCTAssertNotEqual(brick.zRotation, before, accuracy: 0.0001,
+                          "a quarter of a second of aiming and the spinner should have turned")
+    }
+}
+

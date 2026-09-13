@@ -218,8 +218,8 @@ never drift from the document that explains it:
 
 - **ENDLESS-2-SPECIFICATION.md §12.0** - "Open, in rough priority order" (queued play-test
   features) and "Backlogged" (items blocked on something external). §8.5 is the asset and
-  sound shopping list, which is James's side along with the Quick Start Guide and the
-  App Store Connect leaderboards.
+  sound shopping list, which is James's side along with the App Store Connect leaderboards.
+  (The Quick Start Guide was too, until its 1.3 pages arrived in round 322.)
 - **DAILY-CHALLENGE-SPECIFICATION.md** - the status header says which build phases exist,
   §12 is the phase plan, §13 the open questions. The daily's test clock was the standing
   release blocker; its controls are gone as of round 19 and only

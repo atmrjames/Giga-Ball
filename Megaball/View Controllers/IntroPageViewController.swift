@@ -25,7 +25,13 @@ class IntroPageViewController: UIPageViewController, UIPageViewControllerDataSou
     }
 
     func populateItems() {
-        let imageView = ["IntroView1", "IntroView2", "IntroView3", "IntroView4", "IntroView5"]
+        let imageView = ["IntroView1", "IntroView8", "IntroView2", "IntroView3", "IntroView6",
+                         "IntroView7", "IntroView4", "IntroView5"]
+        // Welcome, then what is new in 1.3, then the four modes in the order the main menu
+        // lists them - Classic, Endless, Endless Mayhem, Daily Challenge - then Power-Ups and
+        // Tips & Tricks as before (James's 1.3 pages, round 322). The names are the order they
+        // were drawn in, not the order they are read in: 6 is Endless Mayhem, 7 the Daily
+        // Challenge, and 8 the Version 1.3 page, which arrived as "IntroView6 Copy"
         
         for t in imageView {
             let c = createCarouselItemController(with: t)

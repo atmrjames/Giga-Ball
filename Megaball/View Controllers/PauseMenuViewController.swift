@@ -846,7 +846,9 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
                 // Store Connect - the retry loop carries it and the briefing screen's
                 // badge tells the truth of where it got to
             } else {
-                resultLabel.text = "Free play"
+                resultLabel.isHidden = true
+                // Nothing to place, and the kind of run is said under the twists now, which
+                // is where James asked for it (round 320) - see `updateDailySummary`
             }
             return
         }
@@ -906,34 +908,47 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
                 UITapGestureRecognizer(target: self, action: #selector(dailyTwistsTapped)))
         }
 
-        let summary = NSMutableAttributedString()
+        packNameLabel.text = "Daily Challenge, "
+            + DailyChallengeSession.shared.displayName(forKey: challenge.dateKey).capitalized
+        // **The day, named where the level intro names it** (James, round 320: "on the pause
+        // menu view, this info is arranged differently with no date info and the twist and
+        // challenge or free play info swapped. Please arrange it in the same way as the level
+        // intro splash screen. Use the same layout for the game over, game complete view").
+        // The same words `InbetweenViewController.updateLabels` builds, so screens seconds
+        // apart read the same from the top: mode icon, Daily Challenge and the day, the mode
+        // or level, the twists, then what kind of run it is. An endless day left this line
+        // blank and a classic day said "Daily Challenge" with no day at all. Written here
+        // rather than in the branches above because every one of them is a daily's branch
 
-        if sender == "Pause" {
-            let scoring = DailyChallengeSession.shared.isScoringAttempt
-            summary.append(NSAttributedString(
-                string: scoring ? "COMPETITION RUN" : "FREE PLAY",
-                attributes: [.font: UIFont.boldSystemFont(ofSize: 13),
-                             .foregroundColor: scoring
-                                ? #colorLiteral(red: 0.8235294118, green: 1, blue: 0, alpha: 1)
-                                : UIColor(white: 1, alpha: 0.55)]))
-            summary.append(NSAttributedString(string: "\n"))
-            // Mid-run, what is riding on this one (play-test round 13). On the game-over
-            // screen the posted-or-not line below already says it, and better
-        }
-        // The day itself is no longer named here: the block sits under a header that
-        // already says Daily Challenge and which day it is, and saying it twice in two
-        // sizes six points apart was what made the block look bolted on
+        let summary = NSMutableAttributedString()
 
         for (position, twist) in challenge.twists.enumerated() {
             if position > 0 { summary.append(NSAttributedString(string: "\n")) }
             summary.append(twist.titleLine(font: .boldSystemFont(ofSize: 14),
-                                           colour: .white))
+                                           colour: .white, dateKey: challenge.dateKey))
         }
         if challenge.twists.isEmpty {
             summary.append(DailyTwist.vanillaLine(font: .boldSystemFont(ofSize: 14),
                                                   colour: .white))
             // A no-twist day is Vanilla, badged like any other (play-test round 3)
         }
+
+        let scoring = sender == "Pause"
+            ? DailyChallengeSession.shared.isScoringAttempt
+            : DailyChallengeSession.shared.lastRunPosted
+        summary.append(NSAttributedString(string: "\n"))
+        summary.append(NSAttributedString(
+            string: scoring ? "COMPETITION RUN" : "FREE PLAY",
+            attributes: [.font: UIFont.boldSystemFont(ofSize: 13),
+                         .foregroundColor: scoring
+                            ? #colorLiteral(red: 0.8235294118, green: 1, blue: 0, alpha: 1)
+                            : UIColor(white: 1, alpha: 0.55)]))
+        // **Under the twists, on every face of the screen**, which is where the intro puts it.
+        // Mid-run it is what is riding on this one (play-test round 13); on the end screens it
+        // is whether the run posted, which `updateResultLine` used to say from down among the
+        // numbers - "for some reason in this view the challenge or free play info moves to near
+        // the bottom of the screen". A posted run keeps its placing down there, because a
+        // standing on a board is one of the run's numbers rather than the kind of run it was
 
         let paragraph = NSMutableParagraphStyle()
         paragraph.alignment = .center
