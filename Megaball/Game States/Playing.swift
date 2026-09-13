@@ -139,6 +139,13 @@ class Playing: GKState {
         scene.paddle.removeAllActions()
         scene.paddleRetroTexture.removeAllActions()
         scene.ballIsOnPaddle = true
+        scene.ballRelativePositionOnPaddle = 0
+        // **Every level starts with the ball in the middle of the paddle** (James, round 323,
+        // with a screenshot: "at the start of levels, the ball was sometimes off centre from
+        // the paddle"). The ball and paddle were both put at zero here, but the offset the
+        // waiting ball is held at was left as the last level ended it - a level cleared with
+        // the ball caught off-centre on a sticky paddle - and `holdTheWaitingBallStill` pins the
+        // ball to paddle plus offset every frame, so it was back off-centre before it was drawn
         scene.paddle.position.x = 0
         scene.paddle.position.y = scene.paddlePositionY
         scene.paddleLaser.position.x = scene.paddle.position.x

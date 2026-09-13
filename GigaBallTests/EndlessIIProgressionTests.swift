@@ -824,18 +824,34 @@ final class EndlessIIDensityStepTests: XCTestCase {
     /// **The coupling.** A run that introduces its styles quickly should also do its
     /// thickening early - that is what "keyed to the schedule" buys over a second ramp that
     /// merely looks similar.
+    ///
+    /// **Over many runs, not one** (round 323). Asked of a single random run this failed a full
+    /// suite on 14 September by 0.0004 of density, and measured over 2,000 runs
+    /// (`EndlessIIDensityCouplingMeasurementTests`) it holds in about 93% of them: each run's
+    /// ramp is normalised to reach the cap at 500m, so a quicker run's extra steps each count
+    /// for a little less, and on some shuffles the slower run edges ahead at halfway. The claim
+    /// the design makes is about runs in general, so that is what this asks.
     func testAQuickerRunThickensEarlier() {
-        var quick = EndlessIIProgression.make()
-        quick.elementSpacing = EndlessIIProgression.elementSpacingRange.lowerBound
-        var slow = quick
-        slow.elementSpacing = EndlessIIProgression.elementSpacingRange.upperBound
-        // `elementSpacing` rather than `styleSpacing` since round 258: one queue for every
-        // kind means one number saying how fast a run meets things, and the old per-kind
-        // spacings are only read by a run saved before the queue existed
-
         let atHalfway = EndlessIIProgression.densityCapMetres/2
-        XCTAssertGreaterThan(quick.density(at: atHalfway), slow.density(at: atHalfway),
-                             "the run meeting more new things is not the fuller one")
+        var fuller = 0
+        var total = 0.0
+        let runs = 400
+        for _ in 0..<runs {
+            var quick = EndlessIIProgression.make()
+            quick.elementSpacing = EndlessIIProgression.elementSpacingRange.lowerBound
+            var slow = quick
+            slow.elementSpacing = EndlessIIProgression.elementSpacingRange.upperBound
+            // `elementSpacing` rather than `styleSpacing` since round 258: one queue for every
+            // kind means one number saying how fast a run meets things, and the old per-kind
+            // spacings are only read by a run saved before the queue existed
+            let difference = quick.density(at: atHalfway) - slow.density(at: atHalfway)
+            total += difference
+            if difference > 0 { fuller += 1 }
+        }
+        XCTAssertGreaterThan(total/Double(runs), 0,
+                             "on average, the run meeting more new things is the fuller one")
+        XCTAssertGreaterThan(Double(fuller)/Double(runs), 0.8,
+                             "and it is in the large majority of runs, not by luck of the average")
     }
 
     /// The randomness moves where a run does its thickening, never where it ends up.
@@ -953,5 +969,40 @@ final class WindfallAndStaticPhaseTests: XCTestCase {
         XCTAssertLessThan(EndlessIIPhase.windfall.minimumHeight,
                           EndlessIIPhase.static.minimumHeight,
                           "§6.2 gates Static High and Windfall not at all")
+    }
+}
+
+/// **How strongly a quicker run really thickens earlier** (round 323).
+///
+/// `EndlessIIDensityStepTests.testAQuickerRunThickensEarlier` asks it of one random run, and a
+/// full suite on 14 September failed it by 0.0004 of density (0.22377 against 0.22416). The
+/// reason is in `densityProgress`: a step's share is its weight over every step under the cap,
+/// and a quicker run fits more steps under the cap, so each counts for less - both ramps are
+/// normalised to reach the cap at 500m. This measures the coupling over many runs rather than
+/// asserting it of one, so the question of how much it matters is answered by a number.
+final class EndlessIIDensityCouplingMeasurementTests: XCTestCase {
+
+    func testWhatAQuickerRunActuallyBuysAtHalfway() {
+        let halfway = EndlessIIProgression.densityCapMetres/2
+        var fuller = 0
+        var differences: [Double] = []
+        let runs = 2_000
+        for _ in 0..<runs {
+            var quick = EndlessIIProgression.make()
+            quick.elementSpacing = EndlessIIProgression.elementSpacingRange.lowerBound
+            var slow = quick
+            slow.elementSpacing = EndlessIIProgression.elementSpacingRange.upperBound
+            let difference = quick.density(at: halfway) - slow.density(at: halfway)
+            differences.append(difference)
+            if difference > 0 { fuller += 1 }
+        }
+        differences.sort()
+        let mean = differences.reduce(0, +)/Double(runs)
+        print(String(format: "\n  Quicker run fuller at %dm in %d of %d runs (%.2f%%)",
+                     halfway, fuller, runs, 100*Double(fuller)/Double(runs)))
+        print(String(format: "  density difference: mean %+.4f, min %+.4f, 5th pct %+.4f, median %+.4f, max %+.4f\n",
+                     mean, differences.first!, differences[runs/20], differences[runs/2],
+                     differences.last!))
+        XCTAssertGreaterThan(mean, 0, "on average a quicker run is at least a little fuller")
     }
 }

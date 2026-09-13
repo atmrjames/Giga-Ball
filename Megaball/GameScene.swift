@@ -3519,6 +3519,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				if ballSpeedZeroTracker >= 50 {
 					ballSpeedZeroTracker = 0
 					ballIsOnPaddle = true
+					ballRelativePositionOnPaddle = 0
+					// Onto the centre, and held there: the hold places a waiting ball at the
+					// paddle plus this offset, so a stale one moved it straight back (round 323)
 					ball.position.x = paddle.position.x
 					setBallStartingPositionY()
 					ball.position.y = ballStartingPositionY

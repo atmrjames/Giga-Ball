@@ -1537,6 +1537,27 @@ final class CloudKitHandler: NSObject {
         if !iCloudSetting {
             return
         }
+
+        adoptCloudStatsAfterReset()
+        saveLocalData()
+    }
+
+    /// Takes another device's reset whole: every stat the cloud holds replaces this device's.
+    ///
+    /// Apart from `loadDataReset` so it can be tested (round 323): that function asks whether
+    /// iCloud is available first, which on a simulator always answers no and returns, so none
+    /// of this had ever run under a test - the CRAP pass put it first in the app, at complexity
+    /// 72 and 0% coverage. Loading and saving the stats file stay out there too, so a test
+    /// adopting a reset never writes the player's real file.
+    ///
+    /// **Every array whose length follows the game's content is padded to this device's
+    /// length** (round 323, found writing the test). `updateFromiCloud` has padded them since
+    /// the fifty-first power-up crashed a player at launch - an older build syncs shorter arrays,
+    /// and a shorter array read past its end is a crash. This path assigned them straight, so a
+    /// reset made on a phone still running an older version would shorten the newer iPad's
+    /// power-up, unlock and achievement arrays, and the next read of a newer entry would trap.
+    /// The run lists are not padded: a reset clears runs, and padding would bring them back.
+    func adoptCloudStatsAfterReset() {
         
         appOpenCount = Int(iCloudStore.longLong(forKey: "appOpenCount"))
         firstPause = iCloudStore.bool(forKey: "firstPause")
@@ -1604,16 +1625,16 @@ final class CloudKitHandler: NSObject {
             totalStatsArray[0].ballsLost = ballsLost!
         }
         if self.powerupsCollected != nil {
-            totalStatsArray[0].powerupsCollected = powerupsCollected!
+            totalStatsArray[0].powerupsCollected = CloudKitHandler.padded(powerupsCollected!, toMatch: totalStatsArray[0].powerupsCollected)
         }
         if self.powerupsGenerated != nil {
-            totalStatsArray[0].powerupsGenerated = powerupsGenerated!
+            totalStatsArray[0].powerupsGenerated = CloudKitHandler.padded(powerupsGenerated!, toMatch: totalStatsArray[0].powerupsGenerated)
         }
         if self.bricksHit != nil {
-            totalStatsArray[0].bricksHit = bricksHit!
+            totalStatsArray[0].bricksHit = CloudKitHandler.padded(bricksHit!, toMatch: totalStatsArray[0].bricksHit)
         }
         if self.bricksDestroyed != nil {
-            totalStatsArray[0].bricksDestroyed = bricksDestroyed!
+            totalStatsArray[0].bricksDestroyed = CloudKitHandler.padded(bricksDestroyed!, toMatch: totalStatsArray[0].bricksDestroyed)
         }
         if self.lasersFired != nil {
             totalStatsArray[0].lasersFired = lasersFired!
@@ -1643,67 +1664,67 @@ final class CloudKitHandler: NSObject {
             totalStatsArray[0].endlessModeHeightDate = endlessModeHeightDate!
         }
         if self.levelPackUnlockedArray != nil {
-            totalStatsArray[0].levelPackUnlockedArray = levelPackUnlockedArray!
+            totalStatsArray[0].levelPackUnlockedArray = CloudKitHandler.padded(levelPackUnlockedArray!, toMatch: totalStatsArray[0].levelPackUnlockedArray)
         }
         if self.themeUnlockedArray != nil {
-            totalStatsArray[0].themeUnlockedArray = themeUnlockedArray!
+            totalStatsArray[0].themeUnlockedArray = CloudKitHandler.padded(themeUnlockedArray!, toMatch: totalStatsArray[0].themeUnlockedArray)
         }
         if self.appIconUnlockedArray != nil {
-            totalStatsArray[0].appIconUnlockedArray = appIconUnlockedArray!
+            totalStatsArray[0].appIconUnlockedArray = CloudKitHandler.padded(appIconUnlockedArray!, toMatch: totalStatsArray[0].appIconUnlockedArray)
         }
         if self.levelUnlockedArray != nil {
-            totalStatsArray[0].levelUnlockedArray = levelUnlockedArray!
+            totalStatsArray[0].levelUnlockedArray = CloudKitHandler.padded(levelUnlockedArray!, toMatch: totalStatsArray[0].levelUnlockedArray)
         }
         if self.powerUpUnlockedArray != nil {
-            totalStatsArray[0].powerUpUnlockedArray = powerUpUnlockedArray!
+            totalStatsArray[0].powerUpUnlockedArray = CloudKitHandler.padded(powerUpUnlockedArray!, toMatch: totalStatsArray[0].powerUpUnlockedArray)
         }
         if self.achievementsUnlockedArray != nil {
-            totalStatsArray[0].achievementsUnlockedArray = achievementsUnlockedArray!
+            totalStatsArray[0].achievementsUnlockedArray = CloudKitHandler.padded(achievementsUnlockedArray!, toMatch: totalStatsArray[0].achievementsUnlockedArray)
         }
         if self.achievementsPercentageCompleteArray != nil {
-            totalStatsArray[0].achievementsPercentageCompleteArray = achievementsPercentageCompleteArray!
+            totalStatsArray[0].achievementsPercentageCompleteArray = CloudKitHandler.padded(achievementsPercentageCompleteArray!, toMatch: totalStatsArray[0].achievementsPercentageCompleteArray)
         }
         if self.achievementDates != nil {
-            totalStatsArray[0].achievementDates = achievementDates!
+            totalStatsArray[0].achievementDates = CloudKitHandler.padded(achievementDates!, toMatch: totalStatsArray[0].achievementDates)
         }
         if self.packHighScores != nil {
-            totalStatsArray[0].packHighScores = packHighScores!
+            totalStatsArray[0].packHighScores = CloudKitHandler.padded(packHighScores!, toMatch: totalStatsArray[0].packHighScores)
         }
         if self.packBestTimes != nil {
-            totalStatsArray[0].packBestTimes = packBestTimes!
+            totalStatsArray[0].packBestTimes = CloudKitHandler.padded(packBestTimes!, toMatch: totalStatsArray[0].packBestTimes)
         }
         if self.pack1LevelHighScores != nil {
-            totalStatsArray[0].pack1LevelHighScores = pack1LevelHighScores!
+            totalStatsArray[0].pack1LevelHighScores = CloudKitHandler.padded(pack1LevelHighScores!, toMatch: totalStatsArray[0].pack1LevelHighScores)
         }
         if self.pack2LevelHighScores != nil {
-            totalStatsArray[0].pack2LevelHighScores = pack2LevelHighScores!
+            totalStatsArray[0].pack2LevelHighScores = CloudKitHandler.padded(pack2LevelHighScores!, toMatch: totalStatsArray[0].pack2LevelHighScores)
         }
         if self.pack3LevelHighScores != nil {
-            totalStatsArray[0].pack3LevelHighScores = pack3LevelHighScores!
+            totalStatsArray[0].pack3LevelHighScores = CloudKitHandler.padded(pack3LevelHighScores!, toMatch: totalStatsArray[0].pack3LevelHighScores)
         }
         if self.pack4LevelHighScores != nil {
-            totalStatsArray[0].pack4LevelHighScores = pack4LevelHighScores!
+            totalStatsArray[0].pack4LevelHighScores = CloudKitHandler.padded(pack4LevelHighScores!, toMatch: totalStatsArray[0].pack4LevelHighScores)
         }
         if self.pack5LevelHighScores != nil {
-            totalStatsArray[0].pack5LevelHighScores = pack5LevelHighScores!
+            totalStatsArray[0].pack5LevelHighScores = CloudKitHandler.padded(pack5LevelHighScores!, toMatch: totalStatsArray[0].pack5LevelHighScores)
         }
         if self.pack6LevelHighScores != nil {
-            totalStatsArray[0].pack6LevelHighScores = pack6LevelHighScores!
+            totalStatsArray[0].pack6LevelHighScores = CloudKitHandler.padded(pack6LevelHighScores!, toMatch: totalStatsArray[0].pack6LevelHighScores)
         }
         if self.pack7LevelHighScores != nil {
-            totalStatsArray[0].pack7LevelHighScores = pack7LevelHighScores!
+            totalStatsArray[0].pack7LevelHighScores = CloudKitHandler.padded(pack7LevelHighScores!, toMatch: totalStatsArray[0].pack7LevelHighScores)
         }
         if self.pack8LevelHighScores != nil {
-            totalStatsArray[0].pack8LevelHighScores = pack8LevelHighScores!
+            totalStatsArray[0].pack8LevelHighScores = CloudKitHandler.padded(pack8LevelHighScores!, toMatch: totalStatsArray[0].pack8LevelHighScores)
         }
         if self.pack9LevelHighScores != nil {
-            totalStatsArray[0].pack9LevelHighScores = pack9LevelHighScores!
+            totalStatsArray[0].pack9LevelHighScores = CloudKitHandler.padded(pack9LevelHighScores!, toMatch: totalStatsArray[0].pack9LevelHighScores)
         }
         if self.pack10LevelHighScores != nil {
-            totalStatsArray[0].pack10LevelHighScores = pack10LevelHighScores!
+            totalStatsArray[0].pack10LevelHighScores = CloudKitHandler.padded(pack10LevelHighScores!, toMatch: totalStatsArray[0].pack10LevelHighScores)
         }
         if self.pack11LevelHighScores != nil {
-            totalStatsArray[0].pack11LevelHighScores = pack11LevelHighScores!
+            totalStatsArray[0].pack11LevelHighScores = CloudKitHandler.padded(pack11LevelHighScores!, toMatch: totalStatsArray[0].pack11LevelHighScores)
         }
 
         totalStatsArray[0].dailyChallengeRecords =
@@ -1716,6 +1737,5 @@ final class CloudKitHandler: NSObject {
         defaults.set(Int(iCloudStore.longLong(forKey: StatsSync.generationKey)),
                      forKey: StatsSync.generationKey)
 
-        saveLocalData()
     }
 }

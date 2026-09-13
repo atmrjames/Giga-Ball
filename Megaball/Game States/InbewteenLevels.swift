@@ -188,6 +188,8 @@ class InbetweenLevels: GKState {
         self.scene.run(waitEndScene, completion: {
             self.scene.removeAllActions()
             self.scene.ballIsOnPaddle = true
+            self.scene.ballRelativePositionOnPaddle = 0
+            // With it the offset the level ended on, so nothing carries into the next one
         })
         // Remove any remaining actions after short delay
         

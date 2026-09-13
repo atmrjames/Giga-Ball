@@ -1399,11 +1399,16 @@ final class ResumeTransitionTests: XCTestCase {
         // Five different speeds, because `didMove` sets them and a bare scene holds all five at
         // zero - where "the limit is the fast one" is true of every limit there is
         scene.finalBrickRowHeight = ResumeTransitionTests.bottomRow
+        // Where the field's lowest row sits, which `didMove` works out from the screen
         scene.packLevelHighScoresArray = Array(repeating: Array(repeating: 0, count: 10),
                                                count: LevelPackSetup().numberOfLevels.count - 2)
         // One row of level bests per campaign pack, as `didMove` builds it from the stats -
         // a finished level compares itself against its own, indexed from pack 2
-        // Where the field's lowest row sits, which `didMove` works out from the screen
+        scene.addChild(scene.ball)
+        // **On the field.** Round 322b's bottom-row edit replaced this line rather than going
+        // after it, and every resume test ran for a round with a ball that was never in the
+        // scene - positions written to a detached node still read back, so nothing failed.
+        // The ball-centring test found it by asking the one question the others did not
         scene.ball.physicsBody = SKPhysicsBody(circleOfRadius: 6)
         scene.paddle.size = CGSize(width: 90, height: 12)
         scene.paddle.physicsBody = SKPhysicsBody(rectangleOf: scene.paddle.size)
@@ -1676,5 +1681,157 @@ final class TestScenesKeepToThemselvesTests: XCTestCase {
         XCTAssertTrue(scene.defaults.bool(forKey: "gameInProgress"), "the scene's own store has it")
         XCTAssertEqual(UserDefaults.standard.object(forKey: "gameInProgress") as? Bool, before,
                        "and the app's settings are exactly as they were")
+    }
+}
+
+extension ResumeTransitionTests {
+
+    /// **Every level starts with the ball in the middle of the paddle** (James, round 323, with a
+    /// screenshot: "at the start of levels, the ball was sometimes off centre from the paddle. It
+    /// should be in the centre at the start of each level").
+    ///
+    /// A level that ends with the ball caught off-centre - a sticky catch lands it where it hit -
+    /// left that offset behind, and the waiting ball is pinned to the paddle plus its offset
+    /// every frame. So the next level put the ball in the middle and the pin moved it straight
+    /// back out.
+    func testTheNextLevelStartsWithTheBallInTheMiddleOfThePaddle() throws {
+        let setup = LevelPackSetup()
+        let pack = 2
+        let first = setup.startLevelNumber[pack]
+
+        let scene = try resumedScene(level: first, levels: setup.numberOfLevels[pack],
+                                     resuming: false)
+        XCTAssertNotNil(scene.ball.parent, "on the field when the level starts")
+        scene.levelScore = 300
+        scene.ballRelativePositionOnPaddle = 30
+        // The level ends with the ball held thirty points right of centre, as a sticky catch
+        // near the paddle's end leaves it
+        scene.gameState.enter(InbetweenLevels.self)
+        XCTAssertNotNil(scene.ball.parent, "on the field on the between-levels screen")
+        scene.gameState.enter(Playing.self)
+        // Continue
+
+        XCTAssertEqual(scene.levelNumber, first + 1, "on the next level")
+        XCTAssertTrue(scene.ballIsOnPaddle)
+        XCTAssertEqual(scene.ballRelativePositionOnPaddle, 0, accuracy: 0.0001,
+                       "with nothing left of where the last level's ball was held")
+
+        XCTAssertNotNil(scene.ball.parent, "the ball is still on the field")
+        XCTAssertNotNil(scene.ball.physicsBody, "with its body")
+        scene.paddle.position.x = 40
+        scene.holdTheWaitingBallStill()
+        XCTAssertEqual(scene.ball.position.x, scene.paddle.position.x, accuracy: 0.01,
+                       "and the waiting ball sits in the middle of the paddle, wherever it moves")
+    }
+}
+
+extension ResumeTransitionTests {
+
+    /// Mayhem's own power-ups, left running, come back running with the time they had.
+    func testMayhemPowerUpsInEffectComeBackRunning() throws {
+        var save = mayhemLeftAtHeight()
+        save.activePowerUps = ["endlessIIMagnetism", "endlessIIDrift"]
+        save.activePowerUpDurations = [5.0, 7.0]
+        save.activePowerUpTimers = [10.0, 10.0]
+        save.activePowerUpMagnitudes = [1, 0]
+        save.endlessIIDriftDirection = -1
+        // A second-level Magnetism half spent, and a leftward Drift with seven seconds to go
+
+        let scene = try resumedScene(from: save, mode: .endlessII, level: 0)
+        XCTAssertTrue(scene.gameState.currentState is Paused)
+
+        XCTAssertTrue(scene.endlessIIMagnetismClock.isRunning, "Magnetism is still on")
+        XCTAssertEqual(scene.endlessIIMagnetismClock.remaining, 5, accuracy: 0.01,
+                       "with the time it had, not a fresh ten seconds")
+        XCTAssertEqual(scene.endlessIIMagnetismClock.level, 1, "at the strength it had reached")
+
+        XCTAssertTrue(scene.endlessIIDriftClock.isRunning, "the field is still drifting")
+        XCTAssertEqual(scene.endlessIIDriftClock.remaining, 7, accuracy: 0.01)
+        XCTAssertEqual(scene.endlessIIDriftDirection, -1, "and still drifting left")
+    }
+
+    /// A Multi-Ball's extra balls, and a laser on its way up, are where they were.
+    func testExtraBallsAndLasersInFlightComeBack() throws {
+        var save = mayhemLeftAtHeight()
+        save.extraBallProperties = [60, 150, 200, 300,
+                                    -60, 160, -150, 250]
+        // Two extra balls, each travelling: position then heading
+        save.laserXPositions = [30]
+        save.laserYPositions = [50]
+
+        let scene = try resumedScene(from: save, mode: .endlessII, level: 0)
+
+        XCTAssertEqual(scene.endlessIIExtraBalls.count, 2, "both extra balls are back")
+        XCTAssertEqual(scene.endlessIIExtraBalls.map(\.position.x).sorted(), [-60, 60],
+                       "where they were")
+        XCTAssertTrue(scene.endlessIIExtraBalls.allSatisfy { $0.parent === scene },
+                      "and on the field")
+        XCTAssertEqual(scene.pauseExtraBallVelocities.count, 2,
+                       "each with its heading kept for when play resumes")
+
+        var lasers: [SKNode] = []
+        scene.enumerateChildNodes(withName: LaserCategoryName) { node, _ in lasers.append(node) }
+        XCTAssertEqual(lasers.count, 1, "the laser that was travelling is travelling again")
+        XCTAssertEqual(lasers.first?.position.x ?? 0, 30, accuracy: 0.01)
+        XCTAssertEqual(lasers.first?.position.y ?? 0, 50, accuracy: 0.01)
+    }
+
+    /// A daily comes back as the day it was, with a Time Trial's clock where it stopped - "the
+    /// one thing a Time Trial cannot give away" (round 197) - and a day that has closed comes
+    /// back as practice.
+    func testADailyComesBackWithItsDayAndItsClock() throws {
+        let key = "2026-09-05"
+        var save = leftMidLevel()
+        save.dailyDateKey = key
+        save.dailyWasScoringAttempt = true
+        save.dailyTimeTrialRemaining = 42
+
+        let session = DailyChallengeSession.shared
+        let wasScoring = session.isScoringAttempt
+        defer {
+            session.active = nil
+            session.isScoringAttempt = wasScoring
+            session.resumedAfterDeadline = false
+        }
+        session.restore(from: save)
+        // What `MenuViewController.loadSavedGame` does before the scene is built
+
+        let scene = try resumedScene(from: save)
+        XCTAssertTrue(scene.gameState.currentState is Paused)
+        XCTAssertEqual(session.active?.dateKey, key, "the day it was")
+        XCTAssertEqual(scene.dailyTimeTrialRemaining, 42, accuracy: 0.001,
+                       "and the Time Trial's clock where it stopped, not a fresh ninety seconds")
+        XCTAssertFalse(session.isScoringAttempt,
+                       "a day that has closed since comes back as practice")
+    }
+
+    /// The original Endless mode, which keeps its field in the older arrays rather than Mayhem's
+    /// brick records.
+    func testAnEndlessRunComesBackAtItsHeightWithItsRows() throws {
+        var save = leftMidLevel()
+        save.levelNumber = 0
+        save.endLevelNumber = 0
+        save.packNumber = 1
+        save.numberOfLevels = 1
+        save.endlessHeight = 120
+        save.gameMode = GameMode.endless.rawValue
+        save.fallingPowerUpXPositions = []
+        save.fallingPowerUpYPositions = []
+        save.fallingPowerUps = []
+
+        let scene = try resumedScene(from: save, mode: .endless, level: 0)
+        XCTAssertTrue(scene.gameState.currentState is Paused)
+        XCTAssertTrue(scene.endlessMode)
+        XCTAssertEqual(scene.endlessHeight, 120, "back at the height it was left at")
+
+        var bricks: [SKNode] = []
+        scene.enumerateChildNodes(withName: BrickCategoryName) { node, _ in bricks.append(node) }
+        XCTAssertEqual(bricks.count, 3)
+        let expected = Set(zip(save.brickXPositions, save.brickYPositions).map { column, row in
+            "\(scene.gameWidth/2 - scene.brickWidth/2 - scene.brickWidth*CGFloat(column)),"
+                + "\(scene.resumedBrickTopRow - scene.brickHeight*CGFloat(row))"
+        })
+        XCTAssertEqual(Set(bricks.map { "\($0.position.x),\($0.position.y)" }), expected,
+                       "every brick on the cell it was saved in")
     }
 }

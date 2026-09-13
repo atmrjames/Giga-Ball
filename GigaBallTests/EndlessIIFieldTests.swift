@@ -160,3 +160,158 @@ final class EndlessIIFieldTests: XCTestCase {
         XCTAssertNil(SKSpriteNode().endlessIIVulnerableSide)
     }
 }
+
+/// **The original Endless mode's row generator** (round 323's coverage pass: `buildNewEndlessRow`
+/// had 10% of its lines run under test, and it builds every row of the mode with years of
+/// leaderboard scores behind it - the scores CLAUDE.md says must stay valid).
+///
+/// Its twenty height bands are drawn at random per run by `prepEndlessMode`, and each band is
+/// written as its own branch with force-unwrapped heights, so the one thing worth pinning is
+/// what every band must share: a whole row, on the grid, of the original mode's bricks and
+/// nothing of Mayhem's.
+final class EndlessRowGenerationTests: XCTestCase {
+
+    override func setUp() {
+        super.setUp()
+        UserDefaults().removePersistentDomain(forName: GameScene.testSettingsSuite)
+    }
+
+    override func tearDown() {
+        UserDefaults().removePersistentDomain(forName: GameScene.testSettingsSuite)
+        super.tearDown()
+    }
+
+    private func endlessScene() -> GameScene {
+        let scene = GameScene(size: CGSize(width: 400, height: 800))
+        scene.gameMode = .endless
+        scene.totalStatsArray = [TotalStats()]
+        scene.gameWidth = 440
+        scene.brickWidth = 40
+        scene.brickHeight = 20
+        scene.numberOfBrickColumns = 11
+        scene.yBrickOffsetEndless = 300
+        scene.prepEndlessMode(height: 0)
+        return scene
+    }
+
+    func testEveryHeightBuildsAWholeRowOfTheOriginalModesBricks() {
+        for run in 0..<5 {
+            let scene = endlessScene()
+            // Five runs, because the bands are drawn afresh for each
+            let classic: [SKTexture] = [
+                scene.brickNormalTexture, scene.brickInvisibleTexture,
+                scene.brickMultiHit1Texture, scene.brickMultiHit2Texture,
+                scene.brickMultiHit3Texture, scene.brickMultiHit4Texture,
+                scene.brickIndestructible1Texture, scene.brickIndestructible2Texture,
+                scene.brickNullTexture]
+            let centres = Set((0..<11).map {
+                ((-scene.gameWidth/2 + scene.brickWidth/2 + scene.brickWidth*CGFloat($0))*10).rounded()
+            })
+
+            for height in stride(from: 0, through: 1_100, by: 5) {
+                scene.enumerateChildNodes(withName: BrickCategoryName) { node, _ in
+                    node.removeFromParent()
+                }
+                scene.endlessHeight = height
+                scene.buildNewEndlessRow()
+
+                var row: [SKSpriteNode] = []
+                scene.enumerateChildNodes(withName: BrickCategoryName) { node, _ in
+                    if let brick = node as? SKSpriteNode { row.append(brick) }
+                }
+                let at = "run \(run), \(height)m"
+                XCTAssertEqual(row.count, 11, "\(at): one brick for every column")
+                XCTAssertEqual(Set(row.map { ($0.position.x*10).rounded() }), centres,
+                               "\(at): on the column centres")
+                XCTAssertTrue(row.allSatisfy { abs($0.position.y - scene.yBrickOffsetEndless) < 0.01 },
+                              "\(at): all on the row being built")
+                for brick in row {
+                    XCTAssertTrue(classic.contains { $0 === brick.texture },
+                                  "\(at): one of the original mode's bricks")
+                    XCTAssertTrue(scene.endlessIIStyles(on: brick).isEmpty,
+                                  "\(at): and nothing of Mayhem's")
+                }
+            }
+        }
+    }
+}
+
+/// **The lasers leave the paddle's two ends in turn** (round 323's coverage pass: `laserGenerator`
+/// had 6% of its lines run under test, and it fires every laser in Classic and Endless as well as
+/// Mayhem).
+final class LaserGeneratorTests: XCTestCase {
+
+    override func setUp() {
+        super.setUp()
+        UserDefaults().removePersistentDomain(forName: GameScene.testSettingsSuite)
+    }
+
+    override func tearDown() {
+        UserDefaults().removePersistentDomain(forName: GameScene.testSettingsSuite)
+        super.tearDown()
+    }
+
+    private func playingScene() -> GameScene {
+        let scene = GameScene(size: CGSize(width: 400, height: 800))
+        scene.gameMode = .classic
+        scene.totalStatsArray = [TotalStats()]
+        scene.gameWidth = 360
+        scene.layoutUnit = 36
+        // A laser is sized from the layout unit, which `didMove` sets and a bare scene holds at 0
+        scene.paddle.size = CGSize(width: 90, height: 12)
+        scene.paddle.position = CGPoint(x: 20, y: -300)
+        scene.addChild(scene.paddle)
+        scene.paddleLaser.size = CGSize(width: 90, height: 8)
+        scene.ball.physicsBody = SKPhysicsBody(circleOfRadius: 6)
+        scene.addChild(scene.ball)
+        scene.gameState.enter(Playing.self)
+        return scene
+    }
+
+    private func lasers(in scene: GameScene) -> [SKSpriteNode] {
+        scene.children.compactMap { $0 as? SKSpriteNode }.filter { $0.name == LaserCategoryName }
+    }
+
+    func testLasersAlternateBetweenThePaddlesEndsAndAreCounted() {
+        let scene = playingScene()
+        scene.laserGenerator()
+        scene.laserGenerator()
+
+        let fired = lasers(in: scene).sorted { $0.position.x < $1.position.x }
+        XCTAssertEqual(fired.count, 2, "one laser a shot")
+        XCTAssertEqual(scene.totalStatsArray[0].lasersFired, 2, "and each one counted")
+
+        let left = scene.paddle.position.x - scene.paddle.size.width/2
+        let right = scene.paddle.position.x + scene.paddle.size.width/2
+        XCTAssertLessThan(fired[0].position.x, scene.paddle.position.x, "one from the left end")
+        XCTAssertGreaterThan(fired[1].position.x, scene.paddle.position.x, "and the next from the right")
+        XCTAssertTrue(fired.allSatisfy { $0.position.x > left && $0.position.x < right },
+                      "both from within the paddle's width")
+        XCTAssertTrue(fired.allSatisfy { $0.position.y > scene.paddle.position.y },
+                      "and above it, travelling up")
+        XCTAssertTrue(fired.allSatisfy { $0.size.width > 0 && $0.size.height > $0.size.width },
+                      "a laser is a visible upright bar")
+    }
+
+    func testAGigaBallsLasersPassThroughBricks() {
+        let scene = playingScene()
+        scene.totalStatsArray[0].achievementsUnlockedArray[25] = true
+        // Already earned, so the shot does not report an achievement to Game Center
+        scene.ballDress = .giga
+        scene.laserGenerator()
+
+        let laser = lasers(in: scene).first
+        XCTAssertNotNil(laser)
+        XCTAssertEqual(laser?.physicsBody?.collisionBitMask, 0,
+                       "a Giga-Ball's laser is not stopped by the bricks it hits")
+        XCTAssertTrue(laser?.texture === scene.laserGigaTexture, "and wears the giga laser")
+    }
+
+    func testNoLaserFiresOutsidePlay() {
+        let scene = playingScene()
+        scene.gameState.enter(Paused.self)
+        let before = lasers(in: scene).count
+        scene.laserGenerator()
+        XCTAssertEqual(lasers(in: scene).count, before, "a paused game fires nothing")
+    }
+}

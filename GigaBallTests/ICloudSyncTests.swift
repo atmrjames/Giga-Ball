@@ -291,3 +291,81 @@ final class ICloudSyncTests: XCTestCase {
                        "and the cloud holds the union rather than whichever synced last")
     }
 }
+
+/// Another device's reset, adopted (round 323). `loadDataReset` was the riskiest untested function
+/// in the app; its adoption is `adoptCloudStatsAfterReset` now, so a test can reach it.
+final class ICloudResetAdoptionTests: XCTestCase {
+
+    private let suite = "GigaBallTests.ICloudReset"
+
+    override func setUp() {
+        super.setUp()
+        UserDefaults().removePersistentDomain(forName: suite)
+    }
+
+    override func tearDown() {
+        UserDefaults().removePersistentDomain(forName: suite)
+        super.tearDown()
+    }
+
+    private func handler(store: InMemoryCloudStore, stats: TotalStats) throws -> CloudKitHandler {
+        let handler = CloudKitHandler()
+        handler.iCloudStore = store
+        handler.totalStatsArray = [stats]
+        handler.defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
+        // Its own suite: adopting a reset writes the generation and two settings
+        return handler
+    }
+
+    /// **A reset made on an older build does not shorten a newer device's arrays.** An older
+    /// build has fewer power-ups, levels and achievements, so its arrays are shorter - and a
+    /// shorter array read past its end is the crash `CloudKitHandler.padded` was written for.
+    func testAResetFromAnOlderBuildKeepsEveryArrayItsFullLength() throws {
+        let local = TotalStats()
+        let store = InMemoryCloudStore()
+        store.contents["powerupsCollected"] = Array(repeating: 0, count: local.powerupsCollected.count - 5)
+        store.contents["powerUpUnlockedArray"] = Array(repeating: true, count: local.powerUpUnlockedArray.count - 5)
+        store.contents["achievementsUnlockedArray"] = Array(repeating: false, count: local.achievementsUnlockedArray.count - 10)
+        store.contents["levelUnlockedArray"] = Array(repeating: true, count: local.levelUnlockedArray.count - 10)
+        // A phone a few rounds behind: five fewer power-ups, ten fewer achievements and levels
+
+        let handler = try self.handler(store: store, stats: local)
+        handler.adoptCloudStatsAfterReset()
+        let adopted = handler.totalStatsArray[0]
+
+        XCTAssertEqual(adopted.powerupsCollected.count, local.powerupsCollected.count,
+                       "a power-up the older phone has never heard of still has a tally")
+        XCTAssertEqual(adopted.powerUpUnlockedArray.count, local.powerUpUnlockedArray.count)
+        XCTAssertEqual(adopted.achievementsUnlockedArray.count, local.achievementsUnlockedArray.count)
+        XCTAssertEqual(adopted.levelUnlockedArray.count, local.levelUnlockedArray.count)
+        XCTAssertTrue(adopted.powerUpUnlockedArray.prefix(local.powerUpUnlockedArray.count - 5)
+                        .allSatisfy { $0 }, "and the entries the phone did send are the phone's")
+    }
+
+    /// And otherwise the reset is taken whole: counts, runs and the generation that says this
+    /// device has caught up.
+    func testAResetIsTakenWhole() throws {
+        var local = TotalStats()
+        local.levelsPlayed = 50
+        local.cumulativeScore = 123_456
+        local.endlessModeHeight = [80, 95]
+        local.endlessModeHeightDate = [Date(), Date()]
+
+        let store = InMemoryCloudStore()
+        store.contents["levelsPlayed"] = Int64(0)
+        store.contents["cumulativeScore"] = Int64(0)
+        store.contents["endlessModeHeight"] = [Int]()
+        store.contents["endlessModeHeightDate"] = [Date]()
+        store.contents[StatsSync.generationKey] = Int64(4)
+
+        let handler = try self.handler(store: store, stats: local)
+        handler.adoptCloudStatsAfterReset()
+        let adopted = handler.totalStatsArray[0]
+
+        XCTAssertEqual(adopted.levelsPlayed, 0, "the other device reset, so this one does too")
+        XCTAssertEqual(adopted.cumulativeScore, 0)
+        XCTAssertEqual(adopted.endlessModeHeight, [], "and its runs are cleared, not padded back in")
+        XCTAssertEqual(handler.defaults.integer(forKey: StatsSync.generationKey), 4,
+                       "and it records the reset it has caught up with, or it adopts it again")
+    }
+}
