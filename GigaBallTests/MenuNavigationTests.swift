@@ -988,3 +988,88 @@ final class QuickStartGuideTests: XCTestCase {
         }
     }
 }
+
+/// **Reset Data resets everything it says it does** (round 323's coverage pass: the Settings
+/// screen had none of its 1,020 lines run under test, and this is the one action on it that
+/// cannot be undone).
+///
+/// It could not be tested before without wiping the simulator app's real stats: the screen's
+/// settings store, stats file and save were all fixed to the app's own. They are the screen's to
+/// be told now, and a test hands it a suite and a temporary file.
+final class SettingsResetDataTests: XCTestCase {
+
+    private let suiteName = "GigaBallTests.SettingsReset"
+    private var statsFile: URL!
+
+    override func setUp() {
+        super.setUp()
+        UserDefaults().removePersistentDomain(forName: suiteName)
+        statsFile = FileManager.default.temporaryDirectory
+            .appendingPathComponent(suiteName + ".totalStats.plist")
+        try? FileManager.default.removeItem(at: statsFile)
+    }
+
+    override func tearDown() {
+        UserDefaults().removePersistentDomain(forName: suiteName)
+        try? FileManager.default.removeItem(at: statsFile)
+        super.tearDown()
+    }
+
+    func testResetDataPutsEverySettingBackAndForgetsTheRun() throws {
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+        defaults.set(false, forKey: "soundsSetting")
+        defaults.set(false, forKey: "musicSetting")
+        defaults.set(false, forKey: "swipeUpPause")
+        defaults.set(7, forKey: "ballSetting")
+        defaults.set(1, forKey: "brickSetting")
+        defaults.set(42, forKey: "appOpenCount")
+        // A player who has played a while and changed things
+
+        let save = SavedGame(
+            levelNumber: 3, endLevelNumber: 10, packNumber: 2, levelScore: 10, totalScore: 900,
+            numberOfLives: 2, endlessHeight: 0, numberOfLevels: 10, levelTimerValue: 1,
+            packTimerValue: 1, deathsPerLevel: 0, deathsPerPack: 0,
+            powerUpsGeneratedPerLevel: 0, powerUpsCollectedPerLevel: 0,
+            powerUpsGeneratedPerPack: 0, powerUpsCollectedPerPack: 0, paddleHitsPerLevel: 0,
+            multiplier: 1, brickTextures: [], brickColours: [], brickXPositions: [],
+            brickYPositions: [], ballProperties: [], fallingPowerUpXPositions: [],
+            fallingPowerUpYPositions: [], fallingPowerUps: [], activePowerUps: [],
+            activePowerUpDurations: [], activePowerUpTimers: [], activePowerUpMagnitudes: [])
+        save.save(to: defaults)
+        XCTAssertNotNil(SavedGame.load(from: defaults), "a run left to resume")
+
+        var played = TotalStats()
+        played.levelsPlayed = 120
+        played.cumulativeScore = 98_765
+
+        let board = UIStoryboard(name: "Main", bundle: Bundle(for: SettingsViewController.self))
+        let settings = try XCTUnwrap(board.instantiateViewController(withIdentifier: "settingsVC")
+                                        as? SettingsViewController)
+        settings.defaults = defaults
+        settings.totalStatsStore = statsFile
+        settings.navigatedFrom = "PauseMenu"
+        // Told before its view loads, because loading reads all three - and unwraps the last
+        settings.loadViewIfNeeded()
+        settings.totalStatsArray = [played]
+        // After, in case loading read the (absent) file over it
+
+        settings.resetData()
+
+        XCTAssertTrue(defaults.bool(forKey: "soundsSetting"), "sounds back on")
+        XCTAssertTrue(defaults.bool(forKey: "musicSetting"), "music back on")
+        XCTAssertTrue(defaults.bool(forKey: "swipeUpPause"), "swipe up to pause back on")
+        XCTAssertEqual(defaults.integer(forKey: "ballSetting"), 0, "the first ball")
+        XCTAssertEqual(defaults.integer(forKey: "brickSetting"), 0, "the standard bricks")
+        XCTAssertEqual(defaults.integer(forKey: "appOpenCount"), 0)
+
+        XCTAssertNil(SavedGame.load(from: defaults),
+                     "the run is forgotten - a reset that left a resume behind would bring back "
+                     + "a game from before it")
+        XCTAssertEqual(settings.totalStatsArray[0].levelsPlayed, 0, "the stats start again")
+        XCTAssertEqual(settings.totalStatsArray[0].cumulativeScore, 0)
+
+        let written = try PropertyListDecoder().decode([TotalStats].self,
+                                                       from: Data(contentsOf: statsFile))
+        XCTAssertEqual(written.first?.levelsPlayed, 0, "and the file on disk says so too")
+    }
+}

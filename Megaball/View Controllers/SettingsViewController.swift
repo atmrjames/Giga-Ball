@@ -20,7 +20,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
     
     var navigatedFrom: String?
     
-    let defaults = UserDefaults.standard
+    var defaults: UserDefaults = .standard
     var soundsSetting: Bool = true
     var musicSetting: Bool = true
     var hapticsSetting: Bool = true
@@ -41,7 +41,9 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
     // Game save settings
     
     
-    let totalStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("totalStatsStore.plist")
+    var totalStatsStore: URL? = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("totalStatsStore.plist")
+    // Settable, with `defaults`, so Reset Data can be tested without wiping the real stats
+    // (round 323) - the reset is the one action on this screen that cannot be undone
     let encoder = PropertyListEncoder()
     let decoder = PropertyListDecoder()
     var totalStatsArray: [TotalStats] = []
@@ -1060,7 +1062,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         defaults.set(firstPause, forKey: "firstPause")
         
         savedGame = nil
-        SavedGame.clear()
+        SavedGame.clear(from: defaults)
         // Reset user settings to defaults
         
         totalStatsArray[0] = TotalStats()
@@ -1068,11 +1070,15 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         do {
             let data = try encoder.encode(self.totalStatsArray)
             totalStatsArray[0].dateSaved = Date()
-            try data.write(to: totalStatsStore!)
+            if let totalStatsStore { try data.write(to: totalStatsStore) }
         } catch {
             Log.data.error("Error encoding total stats, \(String(describing: error), privacy: .public)")
         }
-        CloudKitHandler().saveDataReset()
+        if GameCenterHandler.isRunningTests == false {
+            CloudKitHandler().saveDataReset()
+        }
+        // Never under tests: it reads the real stats file and writes the app's own settings,
+        // and `StatsSyncTests` already drives the reset's generation bump on a store of its own
     }
     
     func changeIcon(to iconName: String) {
