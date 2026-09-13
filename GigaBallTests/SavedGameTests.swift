@@ -1413,6 +1413,8 @@ final class ResumeTransitionTests: XCTestCase {
         scene.paddle.size = CGSize(width: 90, height: 12)
         scene.paddle.physicsBody = SKPhysicsBody(rectangleOf: scene.paddle.size)
         scene.addChild(scene.paddle)
+        scene.backstop.physicsBody = SKPhysicsBody(rectangleOf: CGSize(width: 360, height: 12))
+        // The scene file gives the backstop its body, and a resumed Backstop sets its masks
 
         host = Host()
         host.selectedLevel = level
@@ -1833,5 +1835,76 @@ extension ResumeTransitionTests {
         })
         XCTAssertEqual(Set(bricks.map { "\($0.position.x),\($0.position.y)" }), expected,
                        "every brick on the cell it was saved in")
+    }
+}
+
+extension ResumeTransitionTests {
+
+    /// **Every one of the original power-ups a resume restores, restored** (round 323, the gap
+    /// round 322b's note left: "a resume for every one of `resumeGame`'s power-up cases").
+    ///
+    /// `resumeGame` is a switch written case by case, and a case that restored the icon but not
+    /// the effect - or the effect but not the timer that ends it - would read as a power-up that
+    /// quietly stops working, or never stops, after a player comes back to a run.
+    func testEveryOriginalPowerUpInEffectComesBack() throws {
+        var save = leftMidLevel()
+        let running: [(key: String, magnitude: Int)] = [
+            ("gravityTimer", 0), ("invisibleBricksTimer", 0), ("gigaBallTimer", 0),
+            ("laserTimer", 2), ("ballSizeTimer", 2), ("stickyPaddle", 3), ("backstop", 1),
+            ("endlessIITrajectory", 1), ("endlessIILanding", 0)]
+        save.activePowerUps = running.map(\.key)
+        save.activePowerUpDurations = running.map { _ in 6.0 }
+        save.activePowerUpTimers = running.map { _ in 10.0 }
+        save.activePowerUpMagnitudes = running.map(\.magnitude)
+
+        let scene = try resumedScene(from: save)
+        defer { scene.laserTimer?.invalidate() }
+        // The resumed Lasers start a real repeating timer on the scene; stopped here so it does
+        // not outlive the test
+        XCTAssertTrue(scene.gameState.currentState is Paused)
+
+        XCTAssertTrue(scene.gravityActivated, "Gravity is pulling again")
+        XCTAssertFalse(scene.gravityIconBar.isHidden)
+        XCTAssertNotNil(scene.action(forKey: "powerUpGravityBall"), "and will end")
+
+        XCTAssertFalse(scene.hiddenBricksIconBar.isHidden, "Hide Bricks is still counting down")
+        XCTAssertNotNil(scene.action(forKey: "powerUpInvisibleBricks"))
+
+        XCTAssertEqual(scene.ballDress, .giga, "the ball is still a Giga-Ball")
+        XCTAssertTrue(scene.ball.texture === scene.gigaBallTexture, "and looks it")
+        XCTAssertNotNil(scene.action(forKey: "powerUpGigaBall"))
+
+        XCTAssertTrue(scene.laserPowerUpIsOn, "the lasers are still firing")
+        XCTAssertEqual(scene.laserStacks, min(2, GameScene.laserMaxStacks), "at the stack they had")
+        XCTAssertFalse(scene.paddleLaser.isHidden, "from the turrets")
+        XCTAssertNotNil(scene.laserTimer, "on a timer")
+        XCTAssertNotNil(scene.action(forKey: "powerUpLasers"))
+
+        XCTAssertEqual(scene.ball.xScale, 1.5, accuracy: 0.001, "the ball is still big")
+        XCTAssertNotNil(scene.action(forKey: "powerUpIncreaseBallSize"))
+
+        XCTAssertEqual(scene.stickyPaddleCatches, 3, "the sticky paddle has its catches left")
+        XCTAssertFalse(scene.stickyPaddleIconBar.isHidden)
+
+        XCTAssertFalse(scene.backstop.isHidden, "the backstop is back under the field")
+        XCTAssertEqual(scene.backstopCatches, 1)
+
+        XCTAssertEqual(scene.endlessIITrajectoryRemaining, 6, accuracy: 0.01,
+                       "the trajectory line has the time it had")
+        XCTAssertEqual(scene.endlessIILandingRemaining, 6, accuracy: 0.01,
+                       "and so does the landing marker")
+    }
+
+    /// Giga-Ball's other form, which the save tells apart by magnitude.
+    func testAnUndestructiBallComesBackAsItself() throws {
+        var save = leftMidLevel()
+        save.activePowerUps = ["gigaBallTimer"]
+        save.activePowerUpDurations = [5.0]
+        save.activePowerUpTimers = [10.0]
+        save.activePowerUpMagnitudes = [1]
+
+        let scene = try resumedScene(from: save)
+        XCTAssertEqual(scene.ballDress, .undestructi, "an Undestructi-Ball, not a Giga-Ball")
+        XCTAssertTrue(scene.ball.texture === scene.undestructiballTexture)
     }
 }
