@@ -88,12 +88,17 @@ extension GameScene {
     /// Wrap-Around still says which end is which by tinting the walls themselves.
     /// How strongly the edge glows while a wrap or a portal is running.
     ///
-    /// **James, round 312: "make the wrap around and portal graphics on the edges and side of
-    /// the game view slightly more transparent."** It faded to full opacity, which on a field
-    /// with a ball and bricks to watch is a band of colour competing with the play rather than
-    /// framing it. Seven tenths is "slightly", and the walls behind it are already carrying
-    /// their share at a blend of 0.35.
-    static let endlessIIEdgeGlowAlpha: CGFloat = 0.7
+    /// **Back to full, because the transparency is in the picture now** (James, round 320:
+    /// "updated PortalLength graphic for the top portal and wrap arounds. Update the graphic
+    /// and set it back to 100% opacity").
+    ///
+    /// It was seven tenths from round 312, and that was the right answer to the question as it
+    /// stood: "make the wrap around and portal graphics on the edges and side of the game view
+    /// slightly more transparent", with only the old picture to work with. Fading a drawn
+    /// gradient is a blunt way to do it, though - it thins the bright edge and the falloff by
+    /// the same amount, when what wanted thinning was the falloff. The redraw does it properly,
+    /// so the code stops doing it at all rather than doing it twice.
+    static let endlessIIEdgeGlowAlpha: CGFloat = 1.0
 
     func showEndlessIIEdgeGlow(_ edge: EndlessIIEdge, wanted: Bool) {
         let existing = childNode(withName: edge.glowName) as? SKSpriteNode

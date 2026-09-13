@@ -5570,21 +5570,27 @@ final class PaddlePortalLookTests: XCTestCase {
         XCTAssertNil(glow.physicsBody, "a glow the ball can hit is a paddle bigger than it looks")
         XCTAssertLessThan(glow.zPosition, 0, "behind the paddle, not over it")
         XCTAssertEqual(glow.position, .zero, "centred on the paddle")
-        XCTAssertEqual(glow.size.width/scene.paddle.size.width,
-                       scene.endlessIIPaddleGlowScale().width, accuracy: 0.001)
+        XCTAssertEqual(glow.size.width - scene.paddle.size.width,
+                       scene.endlessIIPaddleGlowMargin().width, accuracy: 0.001)
 
         scene.paddle.size.width = 150
         scene.tickEndlessIIPaddleDressing()
-        XCTAssertEqual(try XCTUnwrap(self.glow(scene)).size.width/150,
-                       scene.endlessIIPaddleGlowScale().width, accuracy: 0.001,
-                       "an expanded paddle keeps its halo in proportion rather than growing "
-                       + "away from it")
+        XCTAssertEqual(try XCTUnwrap(self.glow(scene)).size.width - 150,
+                       scene.endlessIIPaddleGlowMargin().width, accuracy: 0.001,
+                       "an expanded paddle keeps the same rim of light rather than a "
+                       + "proportionally thicker one")
     }
 
-    /// **The halo scales with the paddle** (James, round 316: "same with the paddle portal
-    /// glows"), which a fixed margin does not: a paddle is stretched to whatever Expand and
-    /// Shrink leave it, so a halo twenty points proud fits at one width only.
-    func testTheHaloKeepsItsProportionAtAnyPaddleWidth() throws {
+    /// **The halo keeps the same rim at any paddle width** (James, round 320: "on
+    /// expanding/shrinking, scale the glows to keep them 40 points larger", and "paddle portal
+    /// glow should remain 20 points larger than paddle when paddle is longer and shorter").
+    ///
+    /// This asserted the opposite until round 320, and the reasoning was wrong in a way worth
+    /// keeping: a *proportional* halo is right for a brick, which is scaled to its cell, and
+    /// wrong for a paddle, whose width Expand and Shrink move directly. In proportion, a
+    /// doubled paddle gets a doubled rim of light, which reads as a different power-up at a
+    /// different width.
+    func testTheHaloKeepsTheSameRimAtAnyPaddleWidth() throws {
         let scene = self.scene()
         scene.endlessIIPortalPaddleClock.collect(turns: 5)
 
@@ -5592,30 +5598,32 @@ final class PaddlePortalLookTests: XCTestCase {
         for width in [50.0, 75.0, 140.0] as [CGFloat] {
             scene.paddle.size.width = width
             scene.tickEndlessIIPaddleDressing()
-            measured.append(try XCTUnwrap(glow(scene)).size.width/width)
+            measured.append(try XCTUnwrap(glow(scene)).size.width - width)
         }
-        for ratio in measured {
-            XCTAssertEqual(ratio, measured[0], accuracy: 0.001)
+        for rim in measured {
+            XCTAssertEqual(rim, measured[0], accuracy: 0.001,
+                           "the same light around the paddle at every width")
         }
     }
 
-    /// The proportion is measured off the artwork, like the bricks' is - and asked per shape,
-    /// because a shaped paddle is half as tall again while its halo grows by the same amount.
-    func testThePaddleGlowScaleComesFromTheArtwork() {
+    /// The margin is measured off the artwork, and asked per shape.
+    ///
+    /// Read rather than typed, which is what makes a redraw carry: James drew the glows twenty
+    /// points proud, then forty, and said both numbers in his own words a delivery apart. The
+    /// shape matters because a shaped paddle's picture is taller than the plain one while its
+    /// glow grows by the same absolute amount.
+    func testThePaddleGlowMarginComesFromTheArtwork() {
         let scene = self.scene()
-        XCTAssertGreaterThan(scene.endlessIIPaddleGlowScale().width, 1)
-        XCTAssertEqual(scene.endlessIIPaddleGlowScale().width,
-                       SKTexture(imageNamed: "squarePaddleGlow").size().width
-                           / SKTexture(imageNamed: "squarePaddle").size().width,
-                       accuracy: 0.001)
+        let plain = SKTexture(imageNamed: "squarePaddleGlow").size().width
+            - SKTexture(imageNamed: "squarePaddle").size().width
+        XCTAssertGreaterThan(scene.endlessIIPaddleGlowMargin().width, 0)
+        XCTAssertEqual(scene.endlessIIPaddleGlowMargin().width, plain, accuracy: 0.001)
 
         scene.endlessIIPaddleSurface = .convex
-        XCTAssertNotEqual(scene.endlessIIPaddleGlowScale().height,
-                          SKTexture(imageNamed: "squarePaddleGlow").size().height
-                              / SKTexture(imageNamed: "squarePaddle").size().height,
-                          accuracy: 0.001,
-                          "a dome's halo has its own proportion - one ratio for every shape "
-                          + "puts a dome's halo half a paddle too high")
+        let dome = SKTexture(imageNamed: "regularPaddleConvexGlow").size().height
+            - SKTexture(imageNamed: "regularPaddleConvex").size().height
+        XCTAssertEqual(scene.endlessIIPaddleGlowMargin().height, dome, accuracy: 0.001,
+                       "a dome's halo is measured against a dome")
     }
 
     // MARK: - The retro theme, which swaps its picture instead of being tinted

@@ -91,8 +91,8 @@ extension GameScene {
     /// The glow picture for the paddle's current shape, and the paddle picture it was drawn
     /// against.
     ///
-    /// The pair travels together because the second is what gives the first its scale - see
-    /// `endlessIIPaddleGlowScale`. Nil for a shape with no glow drawn, which is Jagged, the one
+    /// The pair travels together because the difference between the two is the halo's margin -
+    /// see `endlessIIPaddleGlowMargin`. Nil for a shape with no glow drawn, which is Jagged, the one
     /// shape with no paddle picture either: no halo rather than the plain one sitting wrong.
     func endlessIIPaddleGlowArt() -> (paddle: String, glow: String)? {
         let shape = endlessIIPaddleSurface.flatMap { endlessIIPaddleShapeSuffix($0) }
@@ -106,23 +106,29 @@ extension GameScene {
         return nil
     }
 
-    /// **How much bigger the paddle's glow is than the paddle, as a ratio.**
+    /// **How much bigger the paddle's glow is than the paddle, as a margin** - not as a ratio.
     ///
-    /// James, round 316: "same with the paddle portal glows" - do not scale them down, keep
-    /// them at the same scale as the thing they sit behind. A paddle is stretched to whatever
-    /// width Expand and Shrink leave it and to `paddleHeight` vertically, so the halo has to be
-    /// stretched by the same factors or it fits at one size only.
+    /// James, round 320: "on expanding/shrinking, scale the glows to keep them 40 points
+    /// larger", and from the same list: "paddle portal glow should remain 20 points larger than
+    /// paddle when paddle is longer and shorter". The two numbers are the same instruction a
+    /// delivery apart, which is the argument for reading it off the artwork rather than typing
+    /// it: the glows were drawn 20 points bigger and are now drawn 40, and this follows.
     ///
-    /// **Asked per shape**, because the shaped paddle pictures are half as tall again as the
-    /// plain one while their glows grow by the same absolute amount: the plain pair is 1.267 by
-    /// 3.0 and the convex 1.267 by 2.333. One ratio for all of them would put a dome's halo
-    /// half a paddle too high.
-    func endlessIIPaddleGlowScale() -> CGSize {
-        guard let art = endlessIIPaddleGlowArt() else { return CGSize(width: 1, height: 1) }
+    /// **A ratio was wrong here, and right for the bricks.** A brick is scaled to its cell, so
+    /// a glow at the same scale keeps the halo in proportion to the brick, which is what "at
+    /// the same scale" means there. A paddle is not scaled to anything: Expand and Shrink move
+    /// its width directly, so a ratio gives a doubled paddle a doubled halo - a thin rim at
+    /// one width and a thick one at another, when the whole point is that it looks like the
+    /// same light around the same paddle.
+    ///
+    /// Asked per shape because a shaped paddle's picture is taller than the plain one while
+    /// its glow grows by the same absolute amount, so the margin is the one thing they share.
+    func endlessIIPaddleGlowMargin() -> CGSize {
+        guard let art = endlessIIPaddleGlowArt() else { return .zero }
         let paddle = SKTexture(imageNamed: art.paddle).size()
         let glow = SKTexture(imageNamed: art.glow).size()
-        guard paddle.width > 0, paddle.height > 0 else { return CGSize(width: 1, height: 1) }
-        return CGSize(width: glow.width/paddle.width, height: glow.height/paddle.height)
+        guard paddle.width > 0, paddle.height > 0 else { return .zero }
+        return CGSize(width: glow.width - paddle.width, height: glow.height - paddle.height)
     }
 
     /// Puts it behind the paddle while the Portal Paddle runs, and takes it away after.
@@ -147,10 +153,10 @@ extension GameScene {
             return made
         }()
 
-        let scale = endlessIIPaddleGlowScale()
+        let margin = endlessIIPaddleGlowMargin()
         glow.texture = texture
-        glow.size = CGSize(width: paddle.size.width*scale.width,
-                           height: paddle.size.height*scale.height)
+        glow.size = CGSize(width: paddle.size.width + margin.width,
+                           height: paddle.size.height + margin.height)
         glow.position = .zero
         // Centred on the paddle node, which is where the paddle's own picture is drawn - and
         // a split paddle keeps its full span (round 313s), so one halo across the whole of it
