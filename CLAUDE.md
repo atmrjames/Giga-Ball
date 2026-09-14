@@ -183,6 +183,14 @@ its `PBXGroup`, and — the one that is easy to miss — the **right target's** 
   still *reads* through to the app's domain, so a test that cares what a setting says sets it.
   After a change near any of this, look at the simulator app's preferences plist once the
   suite has run.
+  **Round 325 found the same leak running the other way.** The suite launches the app, and the
+  app's menu reads its own settings - so a save left by *playing* on the test simulator was
+  resumed behind the tests, laid out the next time a test waited on the run loop, and
+  trapped. Two relaunches in a full run, both naming a frame-cost test that had only waited.
+  The menu no longer resumes under `isRunningTests`. If a relaunch names a test with no
+  assertion, read the crash report's stack before blaming the audio server: `ls -t
+  ~/Library/Logs/DiagnosticReports/Giga-Ball-*` - the audio trap is `SKSoundContext init`,
+  and anything else is a real fault.
 
 - **Tests are written from play-test reports.** When a bug is described, the test says what
   was reported, in the comment, in the reporter's terms. That is what stops a fix regressing

@@ -1684,6 +1684,35 @@ final class TestScenesKeepToThemselvesTests: XCTestCase {
         XCTAssertEqual(UserDefaults.standard.object(forKey: "gameInProgress") as? Bool, before,
                        "and the app's settings are exactly as they were")
     }
+
+    /// **A game laid out under tests reads no stats file rather than trapping on one** (round
+    /// 325). Round 322b gave a test scene no stats file and `loadGameData` still unwrapped it.
+    /// Nothing noticed until the suite ran on a simulator whose app held a real save: the host
+    /// resumed it behind the tests, and the game trapped in `didMove` the next time a test
+    /// waited, so a full run relaunched twice and named a frame-cost test that had only waited.
+    func testLoadingGameDataWithNoStatsFileKeepsTheStatsTheSceneWasGiven() {
+        let scene = GameScene()
+        XCTAssertNil(scene.totalStatsStore)
+        let given = TotalStats()
+        scene.totalStatsArray = [given]
+
+        scene.loadGameData()
+
+        XCTAssertTrue(scene.totalStatsArray.first === given, "nothing read over the scene's own record")
+        XCTAssertEqual(scene.packLevelHighScoresArray?.count, 11,
+                       "and the pack bests are still built from it, one list a pack")
+    }
+
+    /// And a scene given no record at all, which is what a presented game under tests has.
+    func testLoadingGameDataWithNoStatsFileAndNoRecordLeavesTheSceneAlone() {
+        let scene = GameScene()
+        scene.totalStatsArray = []
+
+        scene.loadGameData()
+
+        XCTAssertTrue(scene.totalStatsArray.isEmpty)
+        XCTAssertNil(scene.packLevelHighScoresArray, "no record, so no pack bests to build")
+    }
 }
 
 extension ResumeTransitionTests {

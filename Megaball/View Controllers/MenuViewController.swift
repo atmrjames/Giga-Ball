@@ -848,10 +848,20 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         refreshView()
         
         if resumeGameToLoad {
-            loadSavedGame()
+            if GameCenterHandler.isRunningTests == false {
+                loadSavedGame()
+            }
         } else {
             askForAReviewIfItIsTime()
         }
+        // **The test host does not resume the simulator's saved game** (round 325). The suite
+        // launches the app, and the app reads its own settings, so a save left by playing on
+        // that simulator was resumed six seconds in, behind the tests, as a real game. It was
+        // laid out the next time a test waited on the run loop and trapped in `loadGameData`,
+        // which under tests has no stats file - the run relaunched and named an innocent test.
+        // A suite that passes or crashes depending on what was last played on the simulator
+        // is the round 322b leak read the other way round, so it is closed the round 306 way:
+        // "am I being tested". The resume itself is driven by `ResumeTransitionTests`
         
         if appOpenCount == 0 {
             moveToIntro()

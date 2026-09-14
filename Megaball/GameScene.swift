@@ -2163,7 +2163,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     }
 	
 	func loadGameData() {
-		if let totalData = try? Data(contentsOf: totalStatsStore!) {
+		if let totalStatsStore, let totalData = try? Data(contentsOf: totalStatsStore) {
 			do {
 				totalStatsArray = try decoder.decode([TotalStats].self, from: totalData).map { $0.makeStoredArraysConsistent(); return $0 }
 			} catch {
@@ -2171,8 +2171,17 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			}
 		}
 		
+		guard let stats = totalStatsArray.first else { return }
+		// **A scene under tests has no stats file, and this used to unwrap it** (round 325).
+		// Round 322b pointed `totalStatsStore` at nothing under tests so a test scene could not
+		// write over a player's record, and left this line's `!` behind. No test scene reaches
+		// `didMove`, so nothing noticed - until the suite ran on a simulator whose installed
+		// app held a real save: the host app resumed it, a real game was laid out the next time
+		// a test spun the run loop, and it trapped here. Two relaunches in one full run, both
+		// named as the same frame-cost test, which had done nothing but wait. With no store
+		// there is nothing to read and no record to index, so the scene keeps what it was given
 		packLevelHighScoresArray = [
-			totalStatsArray[0].pack1LevelHighScores, totalStatsArray[0].pack2LevelHighScores, totalStatsArray[0].pack3LevelHighScores, totalStatsArray[0].pack4LevelHighScores, totalStatsArray[0].pack5LevelHighScores, totalStatsArray[0].pack6LevelHighScores, totalStatsArray[0].pack7LevelHighScores, totalStatsArray[0].pack8LevelHighScores, totalStatsArray[0].pack9LevelHighScores, totalStatsArray[0].pack10LevelHighScores, totalStatsArray[0].pack11LevelHighScores
+			stats.pack1LevelHighScores, stats.pack2LevelHighScores, stats.pack3LevelHighScores, stats.pack4LevelHighScores, stats.pack5LevelHighScores, stats.pack6LevelHighScores, stats.pack7LevelHighScores, stats.pack8LevelHighScores, stats.pack9LevelHighScores, stats.pack10LevelHighScores, stats.pack11LevelHighScores
 		]
 	}
 	// Load the total stats array from the NSCoder data store
