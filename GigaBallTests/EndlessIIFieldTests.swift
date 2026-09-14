@@ -315,3 +315,87 @@ final class LaserGeneratorTests: XCTestCase {
         XCTAssertEqual(lasers(in: scene).count, before, "a paused game fires nothing")
     }
 }
+
+/// **Which heights get a line, and when it is made** (round 324b's coverage follow-up: the height
+/// markers had a third of their lines run and no test of their own). The lines' movement is
+/// animated and verified by looking; what can be pinned is the decision - a hundred-metre line is
+/// created a whole field ahead of the height it names, so it reaches the bottom row as the
+/// counter gets there, the player's best gets a line of its own, and no other mode draws any.
+final class EndlessIIMilestoneMarkerTests: XCTestCase {
+
+    override func setUp() {
+        super.setUp()
+        UserDefaults().removePersistentDomain(forName: GameScene.testSettingsSuite)
+    }
+
+    override func tearDown() {
+        UserDefaults().removePersistentDomain(forName: GameScene.testSettingsSuite)
+        super.tearDown()
+    }
+
+    private func scene(best: Int? = nil) -> GameScene {
+        let scene = GameScene(size: CGSize(width: 400, height: 800))
+        scene.gameMode = .endlessII
+        var stats = TotalStats()
+        if let best { stats.endlessIIModeHeight = [best] }
+        scene.totalStatsArray = [stats]
+        scene.gameWidth = 360
+        scene.brickHeight = 20
+        scene.yBrickOffsetEndless = 300
+        return scene
+    }
+
+    /// What each line says, the height it was made at, and where it entered.
+    private func climb(_ scene: GameScene, to top: Int) -> [(made: Int, text: String, y: CGFloat)] {
+        var lines: [(made: Int, text: String, y: CGFloat)] = []
+        for height in 0...top {
+            let before = Set(scene.children.filter { $0.name == GameScene.endlessIIMarkerName }
+                                .map(ObjectIdentifier.init))
+            scene.endlessHeight = height
+            scene.addEndlessIIMarkerIfDue()
+            for node in scene.children where node.name == GameScene.endlessIIMarkerName
+                && before.contains(ObjectIdentifier(node)) == false {
+                let text = node.children.compactMap { $0 as? SKLabelNode }.first?.text ?? ""
+                lines.append((height, text, node.position.y))
+            }
+        }
+        return lines
+    }
+
+    func testAHundredMetreLineIsMadeAWholeFieldAheadOfTheHeightItNames() {
+        let scene = self.scene()
+        let lead = GameScene.endlessIIMarkerLead
+        let lines = climb(scene, to: 250)
+
+        XCTAssertEqual(lines.map(\.text), ["100m", "200m"],
+                       "one line for every hundred metres the climb reaches within a field")
+        for line in lines {
+            let names = Int(line.text.dropLast()) ?? -1
+            XCTAssertEqual(line.made + lead, names,
+                           "\(line.text) is made \(lead) rows early, so it reaches the bottom row "
+                           + "as the counter reads \(names)")
+        }
+        let topRow = scene.yBrickOffsetEndless - scene.brickHeight/2
+        for line in lines {
+            XCTAssertEqual(line.y, topRow, accuracy: 0.01,
+                           "\(line.text) enters on the row being built at the top of the field")
+        }
+    }
+
+    func testThePlayersBestGetsItsOwnLineOnce() {
+        let scene = self.scene(best: 137)
+        let lines = climb(scene, to: 200)
+
+        XCTAssertEqual(lines.filter { $0.text == "HI-SCORE 137m" }.count, 1,
+                       "the player's best has its own line, once: \(lines.map(\.text))")
+        XCTAssertTrue(lines.map(\.text).contains("100m"), "alongside the hundreds")
+    }
+
+    func testNoOtherModeDrawsAnyLines() {
+        for mode in [GameMode.classic, .endless] {
+            let scene = self.scene(best: 137)
+            scene.gameMode = mode
+            XCTAssertTrue(climb(scene, to: 250).isEmpty, "\(mode) draws no height lines")
+        }
+    }
+}
