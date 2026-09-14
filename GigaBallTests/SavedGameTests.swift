@@ -1881,6 +1881,8 @@ extension ResumeTransitionTests {
         XCTAssertNotNil(scene.action(forKey: "powerUpLasers"))
 
         XCTAssertEqual(scene.ball.xScale, 1.5, accuracy: 0.001, "the ball is still big")
+        XCTAssertEqual(scene.ballSizeTarget, 1.5, accuracy: 0.001,
+                       "and heading nowhere else, as the next Grow or Shrink will read it")
         XCTAssertNotNil(scene.action(forKey: "powerUpIncreaseBallSize"))
 
         XCTAssertEqual(scene.stickyPaddleCatches, 3, "the sticky paddle has its catches left")
@@ -1906,5 +1908,101 @@ extension ResumeTransitionTests {
         let scene = try resumedScene(from: save)
         XCTAssertEqual(scene.ballDress, .undestructi, "an Undestructi-Ball, not a Giga-Ball")
         XCTAssertTrue(scene.ball.texture === scene.undestructiballTexture)
+    }
+}
+
+// MARK: - A Classic level ending, played for real
+
+/// **What finishing a level records** (round 325's coverage pass: the between-levels ending had
+/// 41% of its lines run, and it writes the Classic stats and the scores behind the pack
+/// leaderboards - the scores CLAUDE.md says must stay valid). Driven through the same fixture as
+/// the resume tests, from `Playing` into `InbetweenLevels` as a level really ends.
+extension ResumeTransitionTests {
+
+    private var classicPack: (pack: Int, first: Int, levels: Int) {
+        let setup = LevelPackSetup()
+        return (2, setup.startLevelNumber[2], setup.numberOfLevels[2])
+    }
+
+    func testFinishingALevelMidPackCountsItUnlocksTheNextAndGivesABall() throws {
+        let (_, first, levels) = classicPack
+        let scene = try resumedScene(level: first, levels: levels, resuming: false)
+        let livesBefore = scene.numberOfLives
+        scene.levelScore = 300
+        scene.levelTimerBonus = 200
+        scene.levelTimerValue = 40
+
+        scene.gameState.enter(InbetweenLevels.self)
+        let stats = scene.totalStatsArray[0]
+
+        XCTAssertEqual(scene.totalScore, 500, "the level and its time bonus are banked")
+        XCTAssertEqual(scene.numberOfLives, livesBefore + 1, "a finished level gives a ball")
+        XCTAssertEqual(stats.levelsPlayed, 1)
+        XCTAssertEqual(stats.levelsCompleted, 1)
+        let next = try XCTUnwrap(Progression.nextLevelIndex(after: first, endLevelNumber: scene.endLevelNumber))
+        XCTAssertTrue(stats.levelUnlockedArray[next], "and the next level opens")
+        XCTAssertEqual(stats.pack1LevelHighScores[0], 500,
+                       "the level's best is its score and time bonus, against that level")
+        XCTAssertEqual(stats.packsPlayed, 0, "a pack is not played until it ends")
+        XCTAssertEqual(stats.packsCompleted, 0)
+    }
+
+    func testFinishingThePacksLastLevelCompletesThePack() throws {
+        let (_, first, levels) = classicPack
+        let scene = try resumedScene(level: first, levels: levels, resuming: false)
+        scene.levelNumber = scene.endLevelNumber
+        // The run has reached the last level of the pack
+        scene.numberOfLives = 2
+        scene.levelScore = 300
+        scene.levelTimerBonus = 200
+        scene.levelTimerValue = 40
+
+        scene.gameState.enter(InbetweenLevels.self)
+        let stats = scene.totalStatsArray[0]
+
+        XCTAssertEqual(scene.totalScore, 300 + 200 + 2*100,
+                       "the level, its time bonus, and a hundred for every ball left")
+        XCTAssertEqual(scene.numberOfLives, 2, "no extra ball after the last level")
+        XCTAssertEqual(stats.packsPlayed, 1)
+        XCTAssertEqual(stats.packsCompleted, 1, "the pack is complete")
+        XCTAssertEqual(stats.packHighScores[0], 700, "and its total is the pack's best")
+        XCTAssertEqual(stats.packBestTimes[0], 40, "with its time the best time")
+        XCTAssertEqual(stats.pack1LevelHighScores[levels - 1], 500,
+                       "the last level's own best leaves the lives bonus out")
+        XCTAssertEqual(first + levels - 1, scene.endLevelNumber, "the fixture is on the last level")
+    }
+
+    func testAGameOverMidPackRecordsThePackAsPlayedButNotCompleted() throws {
+        let (_, first, levels) = classicPack
+        let scene = try resumedScene(level: first, levels: levels, resuming: false)
+        scene.levelNumber = first + 2
+        scene.gameoverStatus = true
+        scene.levelScore = 300
+        scene.levelTimerBonus = 0
+        scene.levelTimerValue = 40
+
+        scene.gameState.enter(InbetweenLevels.self)
+        let stats = scene.totalStatsArray[0]
+
+        XCTAssertEqual(stats.packsPlayed, 1, "a pack that ended in a game over was played")
+        XCTAssertEqual(stats.packsCompleted, 0, "but not completed")
+        XCTAssertEqual(stats.packHighScores[0], 300, "its score still counts as the pack's best so far")
+        XCTAssertEqual(stats.packBestTimes[0], 0, "and no best time, for a pack not finished")
+        XCTAssertEqual(stats.levelsCompleted, 0, "the level it ended on was not completed")
+        XCTAssertEqual(stats.levelsPlayed, 1, "though it was played")
+        XCTAssertNil(SavedGame.load(from: try XCTUnwrap(UserDefaults(suiteName: suiteName))),
+                     "and a finished game is never left to resume")
+    }
+
+    func testALowerScoreNeverReplacesALevelsBest() throws {
+        let (_, first, levels) = classicPack
+        let scene = try resumedScene(level: first, levels: levels, resuming: false)
+        scene.packLevelHighScoresArray?[0][0] = 9_000
+        scene.levelScore = 300
+        scene.levelTimerBonus = 200
+
+        scene.gameState.enter(InbetweenLevels.self)
+        XCTAssertEqual(scene.totalStatsArray[0].pack1LevelHighScores[0], 9_000,
+                       "a player's best stays their best")
     }
 }
