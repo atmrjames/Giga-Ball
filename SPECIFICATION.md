@@ -520,6 +520,26 @@ notification name, not following a call stack.
   every real build passes. Xcode 27 beta compiles them. So local builds must use the beta
   toolchain, and an App Store build needs either Xcode 27 GA or the icons re-authored down
   to the 26.6 subset. Deferred until macOS 27 ships.
+- **TestFlight readiness, checked 14 September 2026 (round 324b)**, the night before the first
+  1.3 TestFlight build. macOS on this Mac is 27.0 (26A428, no beta suffix); the Xcode 27 here
+  is still a beta (27A5228h), so a local upload would be rejected and the route is Xcode Cloud
+  with the Xcode 27 RC selected in the workflow. What was checked so that build does not fail
+  on something the Debug test runs cannot see:
+  - A **Release** build for a generic iOS device succeeds, with one warning (App Intents
+    metadata skipped - the app has no App Intents). The product carries
+    `PrivacyInfo.xcprivacy`, the Icon Composer app icon compiled into `Assets.car`, and
+    version 1.3 (83).
+  - `ITSAppUsesNonExemptEncryption` is `false`, so builds are not held for export compliance.
+  - No ad SDK is linked (no Google Mobile Ads in the project, code or plists), which is what
+    makes the manifest's "no data collected, no tracking" true. The App Privacy answers in App
+    Store Connect were recorded as stale from the AdMob days and are worth re-checking against
+    that before external testers.
+  - The only required-reason API used is `UserDefaults`, declared with reason `CA92.1`; no
+    file-timestamp, boot-time, disk-space or active-keyboard APIs appear in the code.
+  - Everything behind `#if DEBUG` is diagnostics or the daily's test clock, which reads 0 in
+    Release, so a Release build loses nothing a player sees.
+  - `release-1.3` on GitHub was last pushed on 16 August (round 159) and the local branch is
+    256 commits ahead, so Xcode Cloud builds nothing current until it is pushed.
 - Xcode Cloud assigns its own build numbers; `CFBundleVersion` cannot be overridden from
   a pre-build script.
 - Signing is automatic, team `ZAGZPD36YG`.
