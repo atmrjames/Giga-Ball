@@ -845,6 +845,30 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 
 	static let paddleSizeScaleKey = "paddleSizeScale"
 
+	/// The size the ball is heading for, which is what Grow Ball, Shrink Ball and the save ask.
+	///
+	/// **The paddle's round 322 fix, given to the ball** (James: "give Ball Size the same target
+	/// fix as the paddle"). Grow and Shrink chose the next size by comparing `ball.xScale` against
+	/// exact values - `== 1.0`, `> 1.0` - so a ball caught part-way through a size animation was at
+	/// none of them, or at the wrong side of one; and the save turned the same passing scale into
+	/// a size band, so a ball paused mid-resize could resume one size off. Set in
+	/// `runBallSizeScale`, the one place a ball-size animation starts.
+	var ballSizeTarget: CGFloat = 1.0
+
+	/// Starts a ball-size animation, recording where it is heading.
+	///
+	/// Under one key, so a new size replaces one still animating rather than racing it - the
+	/// second half of the paddle's fault, and the same here.
+	func runBallSizeScale(to scale: CGFloat, duration: TimeInterval) {
+		ballSizeTarget = scale
+		ball.run(SKAction.sequence([
+			SKAction.scale(to: scale, duration: duration),
+			SKAction.run { [weak self] in self?.setBallStartingPositionY() }
+		]), withKey: GameScene.ballSizeScaleKey)
+	}
+
+	static let ballSizeScaleKey = "ballSizeScale"
+
 	var backstopCatches: Int = 0
 	var backstopCatchesTotal: Int = 0
 	/// Whether a Backstop has already been handed out in this run.
@@ -2629,6 +2653,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         ball.isHidden = false
         ball.alpha = 1
         ball.setScale(1)
+        ballSizeTarget = 1
         ball.position.x = paddle.position.x
         setBallStartingPositionY()
         ball.position.y = ballStartingPositionY
@@ -6365,14 +6390,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			ballSizeIconBar.isHidden = false
 			// Show power-up icon timer
 		
-			if ball.xScale == 1.0 {
-				ball.run(SKAction.scale(to: 1.5, duration: 0.2), completion: {
-					self.setBallStartingPositionY()
-				})
-			} else if ball.xScale > 1.0 {
-				ball.run(SKAction.scale(to: 2.0, duration: 0.2), completion: {
-					self.setBallStartingPositionY()
-				})
+			if ballSizeTarget == 1.0 {
+				runBallSizeScale(to: 1.5, duration: 0.2)
+			} else if ballSizeTarget > 1.0 {
+				runBallSizeScale(to: 2.0, duration: 0.2)
 				
 				if totalStatsArray[0].achievementsUnlockedArray[34] == false {
 					totalStatsArray[0].achievementsUnlockedArray[34] = true
@@ -6386,10 +6407,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 					}
 				}
 				// Maximum ball size achievement
-			} else if ball.xScale < 1.0 {
-				ball.run(SKAction.scale(to: 1.0, duration: 0.2), completion: {
-					self.setBallStartingPositionY()
-				})
+			} else if ballSizeTarget < 1.0 {
+				runBallSizeScale(to: 1.0, duration: 0.2)
 				ballSizeIcon.texture = self.iconBallSizeDisabledTexture
 				ballSizeIconBar.isHidden = true
 			}
@@ -6404,9 +6423,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				if self.hapticsSetting {
 					self.rigidHaptic.impactOccurred()
 				}
-				self.ball.run(SKAction.scale(to: 1, duration: 0.2), completion: {
-					self.setBallStartingPositionY()
-				})
+				self.runBallSizeScale(to: 1, duration: 0.2)
 				self.ballSizeIcon.texture = self.iconBallSizeDisabledTexture
 				self.ballSizeIconBar.isHidden = true
 				// Hide power-up icons
@@ -6675,14 +6692,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			ballSizeIconBar.isHidden = false
 			// Show power-up icon timer
 			
-			if ball.xScale == 1.0 {
-				ball.run(SKAction.scale(to: 0.75, duration: 0.2), completion: {
-					self.setBallStartingPositionY()
-				})
-			} else if ball.xScale < 1.0 {
-				ball.run(SKAction.scale(to: 0.5, duration: 0.2), completion: {
-					self.setBallStartingPositionY()
-				})
+			if ballSizeTarget == 1.0 {
+				runBallSizeScale(to: 0.75, duration: 0.2)
+			} else if ballSizeTarget < 1.0 {
+				runBallSizeScale(to: 0.5, duration: 0.2)
 				
 				if totalStatsArray[0].achievementsUnlockedArray[35] == false {
 					totalStatsArray[0].achievementsUnlockedArray[35] = true
@@ -6696,10 +6709,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 					}
 				}
 				// Minimum ball size achievement
-			} else if ball.xScale > 1.0 {
-				ball.run(SKAction.scale(to: 1.0, duration: 0.2), completion: {
-					self.setBallStartingPositionY()
-				})
+			} else if ballSizeTarget > 1.0 {
+				runBallSizeScale(to: 1.0, duration: 0.2)
 				ballSizeIcon.texture = self.iconBallSizeDisabledTexture
 				ballSizeIconBar.isHidden = true
 			}
@@ -6714,9 +6725,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				if self.hapticsSetting {
 					self.rigidHaptic.impactOccurred()
 				}
-				self.ball.run(SKAction.scale(to: 1, duration: 0.2), completion: {
-					self.setBallStartingPositionY()
-				})
+				self.runBallSizeScale(to: 1, duration: 0.2)
 				self.ballSizeIcon.texture = self.iconBallSizeDisabledTexture
 				self.ballSizeIconBar.isHidden = true
 				// Hide power-up icons
@@ -7004,9 +7013,7 @@ laserTimer?.invalidate()
 		// Backstop paddle reset
 		
 		ballSizeIconBar.isHidden = true
-		ball.run(SKAction.scale(to: 1.0, duration: 0.2), completion: {
-			self.setBallStartingPositionY()
-		})
+		runBallSizeScale(to: 1.0, duration: 0.2)
 		// Ball size reset
 		
 		if dailyFogIsOn == false {
@@ -8635,20 +8642,20 @@ laserTimer?.invalidate()
 				// The laser's magnitude was unused, so it carries the fire-rate stacking
 			}
 			if let ballSizePowerUp = self.ballSizeIconBar.action(forKey: "ballSizeTimer") {
-				if ball.xScale != 1.0 {
+				if ballSizeTarget != 1.0 {
 					let remainingTime = Double(ballSizePowerUp.duration) * Double(ballSizeIconBar.xScale)
 					powerUpActiveArray?.append("ballSizeTimer")
 					powerUpActiveDurationArray?.append(remainingTime)
 					powerUpActiveTimerArray?.append(Double(ballSizePowerUp.duration))
 					var magnitude: Int?
-					if ball.xScale < 1.0 {
-						if ball.xScale < 0.75 {
+					if ballSizeTarget < 1.0 {
+						if ballSizeTarget < 0.75 {
 							magnitude = 0 // Smallest
 						} else {
 							magnitude = 1 // Small
 						}
 					} else {
-						if ball.xScale < 2.0 {
+						if ballSizeTarget < 2.0 {
 							magnitude = 2 // Big
 						} else {
 							magnitude = 3 // Biggest
@@ -9817,8 +9824,10 @@ laserTimer?.invalidate()
 						default:
 							break
 						}
-						ball.xScale = setScale!
-						ball.yScale = setScale!
+						guard let setScale else { break }
+						// An unknown size is skipped, as Paddle Size's is, rather than trapping at launch
+						ballSizeTarget = setScale
+						ball.setScale(setScale)
 						self.setBallStartingPositionY()
 						
 						let waitDuration = SKAction.wait(forDuration: remainingTime)
@@ -9826,9 +9835,7 @@ laserTimer?.invalidate()
 							if self.hapticsSetting {
 								self.rigidHaptic.impactOccurred()
 							}
-							self.ball.run(SKAction.scale(to: 1, duration: 0.2), completion: {
-								self.setBallStartingPositionY()
-							})
+							self.runBallSizeScale(to: 1, duration: 0.2)
 							self.ballSizeIcon.texture = self.iconBallSizeDisabledTexture
 							self.ballSizeIconBar.isHidden = true
 							// Hide power-up icons

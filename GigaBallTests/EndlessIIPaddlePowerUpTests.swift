@@ -5933,3 +5933,82 @@ final class BallSpinTrailTests: XCTestCase {
         XCTAssertLessThan(whole*180/CGFloat.pi, 120, "and still a curve over the flight, not a U-turn")
     }
 }
+
+/// **Ball Size steps from where the ball is heading, like the paddle** (James, round 323: "give
+/// Ball Size the same target fix as the paddle"). Grow and Shrink read `ball.xScale`, so a ball
+/// part-way through a size animation was at none of the exact sizes the branches tested.
+final class BallSizeMidAnimationTests: XCTestCase {
+
+    override func setUp() {
+        super.setUp()
+        UserDefaults().removePersistentDomain(forName: GameScene.testSettingsSuite)
+    }
+
+    override func tearDown() {
+        UserDefaults().removePersistentDomain(forName: GameScene.testSettingsSuite)
+        super.tearDown()
+    }
+
+    private func scene() -> GameScene {
+        let scene = GameScene()
+        scene.totalStatsArray = [TotalStats()]
+        scene.gameMode = .classic
+        scene.hapticsSetting = false
+        scene.soundsSetting = false
+        scene.ballLostBool = false
+        // It starts true, and `applyPowerUp` refuses everything while it is
+        scene.addChild(scene.ball)
+        scene.ball.physicsBody = SKPhysicsBody(circleOfRadius: 6)
+        scene.paddle.size = CGSize(width: 100, height: 12)
+        scene.paddle.physicsBody = SKPhysicsBody(rectangleOf: scene.paddle.size)
+        scene.addChild(scene.paddle)
+        return scene
+    }
+
+    /// A Grow collected while the last Grow's shrink back to normal is still running.
+    func testAGrowCaughtMidShrinkGrows() {
+        let scene = self.scene()
+        scene.runBallSizeScale(to: 1.5, duration: 0)
+        scene.ball.setScale(1.5)
+        scene.runBallSizeScale(to: 1.0, duration: 0.2)
+        scene.ball.setScale(1.2)
+        // The old Grow ending, caught part-way - a scale none of the branches tested for
+
+        scene.applyPowerUp(node: SKSpriteNode(texture: scene.powerUpIncreaseBallSize), silently: true)
+
+        XCTAssertEqual(scene.ballSizeTarget, 1.5, accuracy: 0.0001,
+                       "the ball is heading for big again, not staying normal")
+        let running = scene.ball.action(forKey: GameScene.ballSizeScaleKey)
+        XCTAssertNotNil(running, "and the new size animation is the one running")
+        XCTAssertEqual(running?.duration ?? 0, 0.2, accuracy: 0.01,
+                       "having replaced the shrink rather than racing it")
+    }
+
+    /// And a Shrink caught mid-grow shrinks from where the ball was going.
+    func testAShrinkCaughtMidGrowStepsFromTheTarget() {
+        let scene = self.scene()
+        scene.runBallSizeScale(to: 1.5, duration: 0.2)
+        scene.ball.setScale(1.2)
+
+        scene.applyPowerUp(node: SKSpriteNode(texture: scene.powerUpDecreaseBallSize), silently: true)
+
+        XCTAssertEqual(scene.ballSizeTarget, 1.0, accuracy: 0.0001,
+                       "a Shrink on a growing ball brings it back to normal, as on a big one")
+    }
+
+    /// A Grow on a shrinking-back small ball follows its target too.
+    func testAGrowOnASmallBallHeadingBackToNormalGoesBig() {
+        let scene = self.scene()
+        scene.runBallSizeScale(to: 0.75, duration: 0)
+        scene.ball.setScale(0.75)
+        scene.runBallSizeScale(to: 1.0, duration: 0.2)
+        scene.ball.setScale(0.9)
+        // A Shrink expiring - still under 1.0 on screen, heading for normal
+
+        scene.applyPowerUp(node: SKSpriteNode(texture: scene.powerUpIncreaseBallSize), silently: true)
+
+        XCTAssertEqual(scene.ballSizeTarget, 1.5, accuracy: 0.0001,
+                       "the ball was heading for normal, so a Grow makes it big - it read as small "
+                       + "before and the Grow was spent putting it back to normal")
+    }
+}
