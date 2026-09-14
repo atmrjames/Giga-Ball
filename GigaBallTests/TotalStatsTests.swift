@@ -156,3 +156,26 @@ final class TotalStatsTests: XCTestCase {
         XCTAssertFalse(WhatsNew.shouldShow(seen: "1.2", current: "1.4", hasPlayedBefore: true))
     }
 }
+
+/// **What an updating player is told about 1.3** (round 325, found drafting the TestFlight notes).
+///
+/// The pop-up said Endless Mayhem had "twenty-three power-ups of its own" - a number from before
+/// the catalogue grew to its current size, and one James's own 1.3 guide page contradicts - and
+/// the first line carried a run of spaces from an old re-wrap, which a multi-line string keeps
+/// verbatim. The count is read off the catalogue now, so it cannot go stale again.
+final class WhatsNewCopyTests: XCTestCase {
+
+    func testTheMayhemPowerUpCountComesFromTheCatalogue() {
+        let mayhem = PowerUpCatalogue.endlessII.filter { $0.availability == .endlessII }.count
+        XCTAssertGreaterThan(mayhem, 30, "the catalogue's Mayhem list is where the number lives")
+        XCTAssertTrue(WhatsNew.message.contains("\(mayhem) power-ups"),
+                      "the pop-up should say \(mayhem): \(WhatsNew.message)")
+        XCTAssertFalse(WhatsNew.message.contains("twenty-three"), "not the number from before")
+    }
+
+    func testTheMessageHasNoGapsInTheMiddleOfASentence() {
+        for line in WhatsNew.message.split(separator: "\n") {
+            XCTAssertFalse(line.contains("  "), "a run of spaces shows in the pop-up: \"\(line)\"")
+        }
+    }
+}

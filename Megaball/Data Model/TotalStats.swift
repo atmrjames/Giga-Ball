@@ -46,12 +46,23 @@ enum WhatsNew {
     /// What it says.
     static let title = "What's New in 1.3"
     static let message = """
-        Endless Mayhem, a second endless mode with twenty-three power-ups of its own and         bricks that move, spin, explode and send the ball elsewhere.
+        Endless Mayhem, a second endless mode with \(mayhemPowerUpCount) power-ups of its own and bricks \
+        that move, spin, explode and send the ball elsewhere.
 
         A Daily Challenge that changes every day, with its own leaderboard.
 
         Statistics worth reading, split by mode, and a new look throughout.
         """
+
+    /// How many power-ups are Endless Mayhem's own, read off the catalogue (round 325).
+    ///
+    /// The message said "twenty-three", a count from before the catalogue grew, and the first
+    /// line carried a run of spaces from an old re-wrap, which a multi-line string keeps
+    /// verbatim. Counted rather than written, so the number an updating player is told cannot
+    /// drift from the game again; the retired entry is not one a player can meet.
+    static var mayhemPowerUpCount: Int {
+        PowerUpCatalogue.endlessII.filter { $0.availability == .endlessII }.count
+    }
 }
 
 class TotalStats: Codable {
