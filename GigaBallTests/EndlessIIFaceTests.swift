@@ -1607,3 +1607,52 @@ final class StyleOverlayTests: XCTestCase {
                      "no second picture: there is no picture at all any more")
     }
 }
+
+/// A shaped brick's body, at every cell size the field can produce.
+///
+/// **Round 329, the other half of the null-body trap.** `SKPhysicsBody(polygonFrom:)` hands back
+/// nothing for a silhouette too slight to build and Swift is told it cannot, so the null travels
+/// to `SKPhysicsBody(bodies:)` and raises there. The paddle met it first (a wedge cut into strips
+/// at a third of its width), and a brick face is built exactly the same way - a polygon, or two
+/// of them for the shapes that need it. Bricks shrink: the cell is the field's, not a constant.
+/// So every face is built here at every size down to a sliver, and what is asserted is that the
+/// game comes back with a brick that can still be hit.
+final class EndlessIIFaceBodyAtEverySizeTests: XCTestCase {
+
+    private func scene() -> GameScene {
+        let scene = GameScene()
+        scene.gameMode = .endlessII
+        scene.brickWidth = 40
+        scene.brickHeight = 20
+        scene.gameWidth = 400
+        scene.totalStatsArray = [TotalStats()]
+        return scene
+    }
+
+    func testEveryFaceBuildsABodyAtEveryCellSize() {
+        let sizes = [CGSize(width: 40, height: 20), CGSize(width: 20, height: 10),
+                     CGSize(width: 8, height: 4), CGSize(width: 3, height: 1.5),
+                     CGSize(width: 1, height: 0.5)]
+        let scene = self.scene()
+        // One scene for all of them: a `GameScene` is 350ms to build (round 329's timing) and a
+        // brick is nothing, so a scene per case would be half a minute of this test doing setup
+        for face in EndlessIIFace.allCases {
+            for cell in sizes {
+                for mirrored in [false, true] {
+                    let brick = SKSpriteNode(texture: scene.brickNormalTexture,
+                                             size: CGSize(width: 40, height: 20))
+                    brick.name = BrickCategoryName
+                    scene.addChild(brick)
+                    scene.makeFace(face, on: brick)
+                    brick.endlessIIFaceMirrored = mirrored
+                    scene.rebuildEndlessIIFaceBody(brick, to: cell)
+                    if cell.width > 0.01, cell.height > 0.01 {
+                        XCTAssertNotNil(brick.physicsBody,
+                            "\(face) at \(cell.width)x\(cell.height) left a brick with no body, "
+                            + "which is a brick the player can see and the ball goes through")
+                    }
+                }
+            }
+        }
+    }
+}
