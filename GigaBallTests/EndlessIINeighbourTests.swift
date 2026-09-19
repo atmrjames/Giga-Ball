@@ -428,7 +428,7 @@ final class EndlessIINeighbourTests: XCTestCase {
         scene.gameMode = .endlessII
         scene.totalStatsArray = [TotalStats()]
 
-        addBrick(scene, at: CGPoint(x: 0, y: 200), size: cell)
+        _ = addBrick(scene, at: CGPoint(x: 0, y: 200), size: cell)
         let faller = addBrick(scene, at: CGPoint(x: 0, y: 200 + cell.height*3), size: cell)
         faller.endlessIIRole = .gravity
 
@@ -505,7 +505,7 @@ final class EndlessIINeighbourTests: XCTestCase {
         // Under the brick's *right* column, three rows down. Its node is in column 4, so a
         // check that only looked at the node's column would not see this at all
         let floor = EndlessIICell(column: 5, row: 8)
-        addBrick(scene, at: scene.endlessIIGeometry.centre(of: floor), size: cell)
+        _ = addBrick(scene, at: scene.endlessIIGeometry.centre(of: floor), size: cell)
 
         scene.settleEndlessIIGravityBricks()
         let target = scene.endlessIIFallers[ObjectIdentifier(big)]?.targetY

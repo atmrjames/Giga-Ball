@@ -114,7 +114,7 @@ final class PowerUpArrayTests: XCTestCase {
 
     func testTheStatsFileIsMadeConsistentOnLoad() {
         // The padding is applied where a decoded file arrives, not only where it is declared
-        var older = TotalStats()
+        let older = TotalStats()
         older.powerupsCollected = Array(older.powerupsCollected.dropLast(3))
         older.powerupsGenerated = Array(older.powerupsGenerated.dropLast(3))
         older.powerUpUnlockedArray = Array(older.powerUpUnlockedArray.dropLast(3))
@@ -509,7 +509,7 @@ final class PowerUpReferencePageTests: XCTestCase {
     /// relies on rather than luck: a file from an older build is exactly what James is playing
     /// with and a fresh simulator is not.
     func testEverySquareWithAnOlderPlayersFile() {
-        var older = TotalStats()
+        let older = TotalStats()
         older.powerupsCollected = Array(older.powerupsCollected.dropLast(2))
         older.powerupsGenerated = Array(older.powerupsGenerated.dropLast(2))
         older.powerUpUnlockedArray = Array(older.powerUpUnlockedArray.dropLast(2))
@@ -582,7 +582,7 @@ final class PowerUpReferencePageLaysOutTests: XCTestCase {
     func testItBuildsWithEverythingLocked() {
         let page = page(from: "MainMenu")
         page.loadViewIfNeeded()
-        var locked = TotalStats()
+        let locked = TotalStats()
         locked.powerUpUnlockedArray = locked.powerUpUnlockedArray.map { _ in false }
         locked.levelPackUnlockedArray = locked.levelPackUnlockedArray.map { _ in false }
         page.totalStatsArray = [locked]

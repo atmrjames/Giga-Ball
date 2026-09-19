@@ -42,7 +42,7 @@ final class EndlessIIBrickTests: XCTestCase {
 
     func testAHiddenBrickAloneInTheBottomZoneAsksForTheFlash() {
         let scene = zoneScene()
-        zoneBrick(on: scene, y: 0, hidden: true)
+        _ = zoneBrick(on: scene, y: 0, hidden: true)
 
         XCTAssertTrue(scene.endlessIIBottomZoneIsAllHidden)
     }
@@ -57,8 +57,8 @@ final class EndlessIIBrickTests: XCTestCase {
     /// rest of the field looks.
     func testAVisibleBrickHigherUpDoesNotCallOffTheFlash() {
         let scene = zoneScene()
-        zoneBrick(on: scene, y: 0, hidden: true)
-        zoneBrick(on: scene, y: 200, hidden: false)
+        _ = zoneBrick(on: scene, y: 0, hidden: true)
+        _ = zoneBrick(on: scene, y: 200, hidden: false)
 
         XCTAssertTrue(scene.endlessIIBottomZoneIsAllHidden,
                       "the row is still held up by something nobody can see")
@@ -68,8 +68,8 @@ final class EndlessIIBrickTests: XCTestCase {
     /// something to hit and nothing to explain.
     func testAVisibleBrickOnTheSameRowCallsItOff() {
         let scene = zoneScene()
-        zoneBrick(on: scene, y: 0, hidden: true)
-        zoneBrick(on: scene, y: 0, hidden: false)
+        _ = zoneBrick(on: scene, y: 0, hidden: true)
+        _ = zoneBrick(on: scene, y: 0, hidden: false)
 
         XCTAssertFalse(scene.endlessIIBottomZoneIsAllHidden)
     }
@@ -78,7 +78,7 @@ final class EndlessIIBrickTests: XCTestCase {
     /// be the thing they are being pointed at, and it does not make the field look playable.
     func testAnIndestructibleInViewDoesNotCallOffTheFlash() {
         let scene = zoneScene()
-        zoneBrick(on: scene, y: 0, hidden: true)
+        _ = zoneBrick(on: scene, y: 0, hidden: true)
         let wall = zoneBrick(on: scene, y: 200, hidden: false)
         wall.texture = scene.brickIndestructible1Texture
 
@@ -98,7 +98,7 @@ final class EndlessIIBrickTests: XCTestCase {
             dateKey: "t", mode: .endlessII, classicLevel: nil, twists: [.fogOfWar])
         defer { DailyChallengeSession.shared.active = nil }
 
-        zoneBrick(on: scene, y: 0, hidden: true)
+        _ = zoneBrick(on: scene, y: 0, hidden: true)
         XCTAssertTrue(scene.dailyFogIsOn, "the day this is about")
         XCTAssertFalse(scene.endlessIIBottomZoneIsAllHidden,
                        "the fog is the reason, and the player was told it")
@@ -106,15 +106,15 @@ final class EndlessIIBrickTests: XCTestCase {
 
     func testAVisibleBrickInTheZoneExplainsItself() {
         let scene = zoneScene()
-        zoneBrick(on: scene, y: 0, hidden: true)
-        zoneBrick(on: scene, y: 0, hidden: false)
+        _ = zoneBrick(on: scene, y: 0, hidden: true)
+        _ = zoneBrick(on: scene, y: 0, hidden: false)
 
         XCTAssertFalse(scene.endlessIIBottomZoneIsAllHidden)
     }
 
     func testAnEmptyZoneAsksForNothing() {
         let scene = zoneScene()
-        zoneBrick(on: scene, y: 200, hidden: true)
+        _ = zoneBrick(on: scene, y: 200, hidden: true)
 
         XCTAssertFalse(scene.endlessIIBottomZoneIsAllHidden,
                        "nothing is holding the field up, so nothing needs explaining")
@@ -132,7 +132,7 @@ final class EndlessIIBrickTests: XCTestCase {
     func testTheClassicRuleIsNotAskedOfOtherModes() {
         let scene = zoneScene()
         scene.gameMode = .classic
-        zoneBrick(on: scene, y: 0, hidden: true)
+        _ = zoneBrick(on: scene, y: 0, hidden: true)
 
         XCTAssertFalse(scene.endlessIIBottomZoneIsAllHidden,
                        "Classic has its own rule and this is not it")
@@ -179,7 +179,7 @@ final class EndlessIIBrickTests: XCTestCase {
         // hit flashed it again. After a full flash cycle the field must look untouched, so the
         // Classic all-hidden rule reads exactly as it did before the flash.
         let scene = zoneScene()
-        zoneBrick(on: scene, y: 0, hidden: true)
+        _ = zoneBrick(on: scene, y: 0, hidden: true)
         let field = zoneBrick(on: scene, y: 300, hidden: false)
 
         scene.invisibleBrickFlash()

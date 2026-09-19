@@ -336,7 +336,7 @@ final class EndlessIIMilestoneMarkerTests: XCTestCase {
     private func scene(best: Int? = nil) -> GameScene {
         let scene = GameScene(size: CGSize(width: 400, height: 800))
         scene.gameMode = .endlessII
-        var stats = TotalStats()
+        let stats = TotalStats()
         if let best { stats.endlessIIModeHeight = [best] }
         scene.totalStatsArray = [stats]
         scene.gameWidth = 360

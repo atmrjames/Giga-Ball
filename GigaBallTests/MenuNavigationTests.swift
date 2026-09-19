@@ -1045,7 +1045,7 @@ final class SettingsResetDataTests: XCTestCase {
         save.save(to: defaults)
         XCTAssertNotNil(SavedGame.load(from: defaults), "a run left to resume")
 
-        var played = TotalStats()
+        let played = TotalStats()
         played.levelsPlayed = 120
         played.cumulativeScore = 98_765
 

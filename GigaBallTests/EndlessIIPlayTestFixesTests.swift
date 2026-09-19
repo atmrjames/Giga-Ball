@@ -437,7 +437,7 @@ final class EndlessIIFixedHardensTests: XCTestCase {
         brick.endlessIIRole = .fixed
         scene.addChild(brick)
 
-        scene.endlessIIAnchorIfNeeded(brick)
+        _ = scene.endlessIIAnchorIfNeeded(brick)
         XCTAssertEqual(brick.texture, scene.brickMultiHit3Texture,
                        "two hits already taken are not refunded")
     }

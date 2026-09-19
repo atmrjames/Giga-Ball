@@ -674,7 +674,7 @@ final class EndlessIIPaddleSceneTests: XCTestCase {
         scene.endlessIICollectAimedSticky()
         scene.ballStateBeforeStep[ObjectIdentifier(scene.ball)] =
             BallState(position: .zero, velocity: CGVector(dx: 0, dy: -100))
-        scene.endlessIIAimedCatch(scene.ball, isExtra: false)
+        _ = scene.endlessIIAimedCatch(scene.ball, isExtra: false)
 
         XCTAssertTrue(scene.endlessIIAimMoved(to: CGPoint(x: 150, y: 200)),
                       "the moving finger is the aim")
@@ -714,7 +714,7 @@ final class EndlessIIPaddleSceneTests: XCTestCase {
 
         scene.ballStateBeforeStep[ObjectIdentifier(scene.ball)] =
             BallState(position: .zero, velocity: CGVector(dx: 0, dy: -100))
-        scene.endlessIIAimedCatch(scene.ball, isExtra: false)
+        _ = scene.endlessIIAimedCatch(scene.ball, isExtra: false)
 
         XCTAssertTrue(scene.endlessIIAimLaunch())
         XCTAssertFalse(scene.ballIsOnPaddle)
@@ -5125,7 +5125,7 @@ final class EveryCatchLeavesTheBallOnThePaddleTests: XCTestCase {
         let scene = mayhem()
         scene.endlessIICollectAimedSticky()
         let subject = extra(scene, x: 54)
-        scene.endlessIIAimedCatch(subject, isExtra: true)
+        _ = scene.endlessIIAimedCatch(subject, isExtra: true)
 
         scene.paddle.xScale = 1.5
         scene.tickEndlessIIHeldBalls()
@@ -5174,8 +5174,8 @@ final class EveryCatchLeavesTheBallOnThePaddleTests: XCTestCase {
     func testEveryQueuedOffsetIsAShareRatherThanADistance() {
         let scene = mayhem()
         scene.endlessIICollectAimedSticky()
-        scene.endlessIIAimedCatch(extra(scene, x: 40), isExtra: true)
-        scene.endlessIIAimedCatch(extra(scene, x: -50), isExtra: true)
+        _ = scene.endlessIIAimedCatch(extra(scene, x: 40), isExtra: true)
+        _ = scene.endlessIIAimedCatch(extra(scene, x: -50), isExtra: true)
 
         XCTAssertEqual(scene.endlessIIHeldOffsets.count, 2)
         for offset in scene.endlessIIHeldOffsets {

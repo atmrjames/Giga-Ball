@@ -83,7 +83,7 @@ extension TotalStatsConsistencyTests {
 
     /// A stats file from before a power-up existed, which is what every current player has.
     private func aged(by missing: Int) -> TotalStats {
-        var stats = TotalStats()
+        let stats = TotalStats()
         stats.powerupsCollected.removeLast(missing)
         stats.powerupsGenerated.removeLast(missing)
         stats.powerUpUnlockedArray.removeLast(missing)
@@ -95,7 +95,7 @@ extension TotalStatsConsistencyTests {
         // file written before Endless 2.0's power-ups existed is shorter than the arrays this
         // build reads. The first read past the end is a crash, on the device of somebody who
         // has been playing for years
-        var stats = aged(by: 5)
+        let stats = aged(by: 5)
         let fresh = TotalStats()
 
         stats.makeStoredArraysConsistent()
@@ -108,7 +108,7 @@ extension TotalStatsConsistencyTests {
     func testWhatThePlayerAlreadyDidIsUntouched() {
         // Padding must only ever add. Rewriting the entries that were there would throw away
         // years of somebody's collection counts to make room for a power-up they have not met
-        var stats = aged(by: 3)
+        let stats = aged(by: 3)
         stats.powerupsCollected[0] = 412
         stats.powerupsGenerated[0] = 900
         stats.powerUpUnlockedArray[1] = false
@@ -121,7 +121,7 @@ extension TotalStatsConsistencyTests {
     }
 
     func testAPowerUpNobodyHasMetStartsAtNothing() {
-        var stats = aged(by: 2)
+        let stats = aged(by: 2)
         let known = stats.powerupsCollected.count
 
         stats.makeStoredArraysConsistent()
@@ -134,7 +134,7 @@ extension TotalStatsConsistencyTests {
         // Only ever lengthens. A file with more entries than this build knows about was
         // written by a newer version, and truncating it would lose that player's progress the
         // moment they opened an older build
-        var stats = TotalStats()
+        let stats = TotalStats()
         stats.powerupsCollected.append(77)
         stats.powerupsGenerated.append(88)
 
@@ -147,7 +147,7 @@ extension TotalStatsConsistencyTests {
     func testTheStoredArraysAllAgreeOnTheirLength() {
         // Three arrays indexed by the same number. One of them being shorter is the same crash
         // in a different place
-        var stats = aged(by: 4)
+        let stats = aged(by: 4)
         stats.makeStoredArraysConsistent()
 
         XCTAssertEqual(stats.powerupsCollected.count, stats.powerupsGenerated.count)
@@ -165,7 +165,7 @@ extension TotalStatsConsistencyTests {
     /// shape as the power-up arrays above and the same shape as the crash of round 118's
     /// twenty-ninth power-up. The cloud copy has always padded them; the file had not.
     func testTheUnlockArraysGrowWithTheirCatalogues() {
-        var stats = TotalStats()
+        let stats = TotalStats()
         let fresh = TotalStats()
 
         stats.themeUnlockedArray = Array(stats.themeUnlockedArray.dropLast(2))
@@ -185,7 +185,7 @@ extension TotalStatsConsistencyTests {
 
     /// And what the player had already unlocked survives the growing.
     func testGrowingTheUnlockArraysKeepsWhatWasUnlocked() {
-        var stats = TotalStats()
+        let stats = TotalStats()
         stats.themeUnlockedArray = [true, false, true]
 
         stats.makeStoredArraysConsistent()
@@ -196,7 +196,7 @@ extension TotalStatsConsistencyTests {
     }
 
     func testAnEmptyFileIsFilledRatherThanLeftEmpty() {
-        var stats = TotalStats()
+        let stats = TotalStats()
         stats.powerupsCollected = []
         stats.powerupsGenerated = []
         stats.powerUpUnlockedArray = []

@@ -261,7 +261,7 @@ extension EndlessIIStyleTests {
     func testAnAnchorLeavesTheBrickBesideItAlone() {
         // Every pair of neighbours touches; touching is not overlapping
         let scene = overlapScene()
-        brick(on: scene, at: 0, wide: false, anchored: true)
+        _ = brick(on: scene, at: 0, wide: false, anchored: true)
         let big = brick(on: scene, at: scene.brickWidth*2, wide: true)
 
         scene.endlessIIResolveAnchorOverlaps()
@@ -280,7 +280,7 @@ extension EndlessIIStyleTests {
 
     func testAnAnchoredBigBrickIsNotDestroyedByAnotherAnchor() {
         let scene = overlapScene()
-        brick(on: scene, at: 0, wide: false, anchored: true)
+        _ = brick(on: scene, at: 0, wide: false, anchored: true)
         let big = brick(on: scene, at: 20, wide: true, anchored: true)
 
         scene.endlessIIResolveAnchorOverlaps()
@@ -311,7 +311,7 @@ extension EndlessIIStyleTests {
     /// quarter of a cell, leave half a cell of daylight between them.
     func testAnAnchorLeavesTheOrdinaryBrickInTheNextCellAlone() {
         let scene = overlapScene()
-        brick(on: scene, at: 0, wide: false, anchored: true)
+        _ = brick(on: scene, at: 0, wide: false, anchored: true)
         let neighbour = brick(on: scene, at: scene.brickWidth, wide: false)
 
         scene.endlessIIResolveAnchorOverlaps()

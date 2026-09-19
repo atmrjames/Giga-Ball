@@ -79,7 +79,7 @@ final class ICloudSyncTests: XCTestCase {
 
     func testAPhonesMayhemRunsReachTheCloud() {
         let store = InMemoryCloudStore()
-        var stats = TotalStats()
+        let stats = TotalStats()
         stats.endlessIIModeHeight = [120, 340, 260]
         stats.endlessIIModeHeightDate = [Date(), Date(), Date()]
 
@@ -93,7 +93,7 @@ final class ICloudSyncTests: XCTestCase {
 
     func testTheOriginalEndlessStillReachesTheCloudToo() {
         let store = InMemoryCloudStore()
-        var stats = TotalStats()
+        let stats = TotalStats()
         stats.endlessModeHeight = [80, 95]
         stats.endlessModeHeightDate = [Date(), Date()]
 
@@ -126,7 +126,7 @@ final class ICloudSyncTests: XCTestCase {
         let store = InMemoryCloudStore()
         store.contents["endlessIIModeHeight"] = [50]
 
-        var stats = TotalStats()
+        let stats = TotalStats()
         stats.endlessIIModeHeight = [120, 340, 260]
 
         let handler = self.handler(store: store, stats: stats)
@@ -258,7 +258,7 @@ final class ICloudSyncTests: XCTestCase {
         let store = InMemoryCloudStore()
         store.contents["endlessIIModeHeight"] = [50]
 
-        var stats = TotalStats()
+        let stats = TotalStats()
         stats.endlessIIModeHeight = [120, 340, 260]
         // No dates at all, which is what a device from before they existed carries
 
@@ -273,12 +273,12 @@ final class ICloudSyncTests: XCTestCase {
     func testAPhoneAndAnIPadEndUpWithTheSameRuns() {
         let store = InMemoryCloudStore()
 
-        var phone = TotalStats()
+        let phone = TotalStats()
         phone.endlessIIModeHeight = [120, 340]
         phone.endlessIIModeHeightDate = [moment(0), moment(10)]
         handler(store: store, stats: phone).updateToiCloud()
 
-        var pad = TotalStats()
+        let pad = TotalStats()
         pad.endlessIIModeHeight = [55]
         pad.endlessIIModeHeightDate = [moment(5)]
         let padHandler = handler(store: store, stats: pad)
@@ -345,7 +345,7 @@ final class ICloudResetAdoptionTests: XCTestCase {
     /// And otherwise the reset is taken whole: counts, runs and the generation that says this
     /// device has caught up.
     func testAResetIsTakenWhole() throws {
-        var local = TotalStats()
+        let local = TotalStats()
         local.levelsPlayed = 50
         local.cumulativeScore = 123_456
         local.endlessModeHeight = [80, 95]

@@ -192,6 +192,16 @@ its `PBXGroup`, and — the one that is easy to miss — the **right target's** 
   ~/Library/Logs/DiagnosticReports/Giga-Ball-*` - the audio trap is `SKSoundContext init`,
   and anything else is a real fault.
 
+- **The system's accessibility settings are honoured, not just the app's own** (round 328).
+  Giga-Ball has had a parallax setting since long before it had any regard for
+  `UIAccessibility.isReduceMotionEnabled`, and the two are different questions: the app's
+  setting is a preference about this game, the system's is a decision made once for every app
+  on the phone. Motion effects are added through `UIView.motionEffectsAreWelcome` now, which
+  asks the system, and the player's own setting is never written to or turned off - nothing
+  changes back when they stop reducing motion. The round buttons carry VoiceOver names from
+  `MainMenuCollectionViewCell.spokenName`, keyed by the artwork every caller already passes, so
+  a new button added to the glass table without a name fails `RoundButtonVoiceOverTests`.
+
 - **Tests are written from play-test reports.** When a bug is described, the test says what
   was reported, in the comment, in the reporter's terms. That is what stops a fix regressing
   into something that merely passes.
