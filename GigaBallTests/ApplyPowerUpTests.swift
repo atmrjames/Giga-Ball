@@ -495,6 +495,50 @@ final class PowerUpPairInteractionTests: XCTestCase {
                        + "frame could not survive:\n" + faults.prefix(12).joined(separator: "\n"))
     }
 
+    /// A long messy run: two thousand collections on one scene, nothing ever reset.
+    ///
+    /// **A pair is not what a run is.** The sweep above puts the scene back between pairs, which
+    /// is what makes a failure attributable - and it means nothing in it ever meets a scene that
+    /// has been collecting power-ups for ten minutes, which is the state every real run is in by
+    /// the time it gets interesting. This is that: a seeded walk through the whole list, applied
+    /// on top of whatever the last one left, with the geometry checked after every single one.
+    ///
+    /// The seed is fixed so a failure can be run again, and the step is reported with it: the
+    /// message names the collection number and the power-up, which is enough to replay by hand.
+    /// Lives are left out of the check here rather than topped up - thirty Lose A Lifes in a row
+    /// is not a state the game can be in, and faking it back would be checking the fixture.
+    func testALongChainOfCollectionsKeepsTheSceneInOnePiece() {
+        let names = LevelPackSetup().powerUpNameArray
+        let scene = self.scene()
+        let count = scene.powerUpTexturesInOrder.count
+        var seed: UInt64 = 0x9E3779B97F4A7C15
+
+        for step in 0..<2_000 {
+            seed = seed &* 6364136223846793005 &+ 1442695040888963407
+            let index = Int((seed >> 33) % UInt64(count))
+            scene.ballLostBool = false
+            scene.numberOfLives = 3
+            collect(index, on: scene)
+            scene.tickEndlessIIPaddlePowerUps(1.0/60)
+            scene.tickEndlessIIRescue(1.0/60)
+
+            let where_ = "collection \(step), \(names[index])"
+            XCTAssertNotNil(scene.ball.physicsBody, "\(where_): the ball lost its body")
+            XCTAssertTrue(scene.ball.position.x.isFinite && scene.ball.position.y.isFinite,
+                          "\(where_): the ball is at \(scene.ball.position)")
+            XCTAssertTrue(scene.paddle.size.width.isFinite && scene.paddle.size.width > 0,
+                          "\(where_): the paddle is \(scene.paddle.size.width)pt wide")
+            XCTAssertTrue(scene.paddle.xScale.isFinite && scene.paddle.xScale > 0,
+                          "\(where_): the paddle is scaled to \(scene.paddle.xScale)")
+            XCTAssertTrue(scene.ballSize.isFinite && scene.ballSize > 0,
+                          "\(where_): the ball is \(scene.ballSize)pt")
+            XCTAssertTrue(scene.multiplier.isFinite, "\(where_): the multiplier is \(scene.multiplier)")
+            if scene.ball.physicsBody == nil { break }
+            // One broken frame is the finding; two thousand copies of it are noise
+        }
+        retire(scene)
+    }
+
     /// And the same power-up twice, which is a pair the field produces more often than most:
     /// two of a kind fall together whenever the weights come up that way.
     func testCollectingTheSameOneTwiceIsSafe() {
