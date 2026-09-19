@@ -100,6 +100,7 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
 
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
+        view.applyMenuParallaxToContent()
         limitMenuContentSize()
         // **The iPad cap reaches this screen too, as of round 319b.** James, round 314: "for
         // the iPad, can we limit how tall and wide the UI elements become. It should really

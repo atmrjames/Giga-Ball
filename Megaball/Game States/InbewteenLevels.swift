@@ -67,9 +67,25 @@ class InbetweenLevels: GKState {
         showEndOfLevelView()
     }
 
+    /// **Every completion in this file holds the state weakly, and that is a crash fix**
+    /// (round 329, from James's device log: `Fatal error: Attempted to read an unowned reference
+    /// but the object was already destroyed`, the moment a Daily Challenge started right after a
+    /// Mayhem run ended).
+    ///
+    /// A state holds its scene `unowned`, and the scene owns the state machine - so the two are
+    /// meant to die together. A completion block capturing `self` strongly breaks that: the
+    /// block keeps the *state* alive after the scene it points at has gone, and the first line
+    /// to touch `scene` reads a dead reference. It needs no delay to happen, only a scene that
+    /// is replaced while an action is still in flight, which is exactly what leaving a finished
+    /// run and starting another game does.
+    ///
+    /// Weakly, the answer is the one that was always intended: the state has gone with its
+    /// scene, so there is nothing to do and the block returns. `endEverythingInFlight` covers
+    /// the same ground from the other end by cancelling the actions before the scene goes.
     func showEndOfLevelView() {
         let waitScene = SKAction.wait(forDuration: 0.5)
-        self.scene.run(waitScene, completion: {
+        self.scene.run(waitScene, completion: { [weak self] in
+            guard let self else { return }
             if self.scene.endlessMode || self.scene.gameoverStatus == true {
                 self.scene.showPauseMenu(sender: "Game Over")
                 // Show game over pop-up
@@ -105,19 +121,25 @@ class InbetweenLevels: GKState {
         scene.ball.physicsBody!.velocity = CGVector(dx: 0, dy: 0)
         // Stop ball
         
-        scene.ball.run(ballSequence, completion: {
-            self.scene.ball.run(resetGroup, completion: {
+        scene.ball.run(ballSequence, completion: { [weak self] in
+            guard let self else { return }
+            self.scene.ball.run(resetGroup, completion: { [weak self] in
+                guard let self else { return }
                 self.scene.ball.isHidden = true
             })
         })
-        scene.paddle.run(paddleSequence, completion: {
-            self.scene.paddle.run(resetGroupPaddle, completion: {
+        scene.paddle.run(paddleSequence, completion: { [weak self] in
+            guard let self else { return }
+            self.scene.paddle.run(resetGroupPaddle, completion: { [weak self] in
+                guard let self else { return }
                 self.scene.paddle.isHidden = true
                 self.scene.paddle.physicsBody!.collisionBitMask = CollisionTypes.paddleCategory.rawValue | CollisionTypes.boarderCategory.rawValue
             })
         })
-        scene.paddleRetroTexture.run(paddleSequence, completion: {
-            self.scene.paddleRetroTexture.run(resetGroupPaddle, completion: {
+        scene.paddleRetroTexture.run(paddleSequence, completion: { [weak self] in
+            guard let self else { return }
+            self.scene.paddleRetroTexture.run(resetGroupPaddle, completion: { [weak self] in
+                guard let self else { return }
                 self.scene.paddleRetroTexture.isHidden = true
             })
         })
@@ -185,7 +207,8 @@ class InbetweenLevels: GKState {
         // Remove any remaining lasers
         
         let waitEndScene = SKAction.wait(forDuration: 1.0)
-        self.scene.run(waitEndScene, completion: {
+        self.scene.run(waitEndScene, completion: { [weak self] in
+            guard let self else { return }
             self.scene.removeAllActions()
             self.scene.ballIsOnPaddle = true
             self.scene.ballRelativePositionOnPaddle = 0

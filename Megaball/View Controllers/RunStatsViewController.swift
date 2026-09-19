@@ -199,6 +199,7 @@ class RunStatsViewController: UIViewController, UITableViewDataSource, UITableVi
 
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
+        view.applyMenuParallaxToContent()
         let wanted = facts.contentSize.height
         if let factsHeight {
             if abs(factsHeight.constant - wanted) > 0.5 { factsHeight.constant = wanted }

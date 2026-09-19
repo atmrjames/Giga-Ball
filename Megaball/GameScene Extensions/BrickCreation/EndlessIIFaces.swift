@@ -483,14 +483,20 @@ extension GameScene {
                         mirrored: brick.endlessIIFaceMirrored ?? false,
                         flipped: brick.endlessIIFaceFlipped ?? false)
             .map { $0.copy(using: &shift) ?? $0 }
-            .map { SKPhysicsBody(polygonFrom: $0) }
+            .map { path -> SKPhysicsBody? in
+                let made: SKPhysicsBody? = SKPhysicsBody(polygonFrom: path)
+                return made
+            }
         // **Moved with the outline.** A polygon body is given in the node's own coordinates
         // and the silhouette is drawn in the face node's, so a face that has been moved off the
         // node needs its body moved by the same amount - or the brick you hit is a cell away
         // from the brick you see, which is the thing §8.6 keeps having to say
-        brick.physicsBody = brickBody(pieces.count == 1 ? pieces[0]
-                                                        : SKPhysicsBody(bodies: pieces))
-        // One convex polygon where the shape allows it, a compound of two where it does not
+        brick.physicsBody = brickBody(SKPhysicsBody.compound(of: pieces)
+                                      ?? SKPhysicsBody(rectangleOf: cell))
+        // One convex polygon where the shape allows it, a compound of two where it does not -
+        // and the cell's own rectangle where SpriteKit could make nothing of the silhouette at
+        // all, because a brick you can see and cannot hit is worse than a brick with square
+        // corners. `SKPhysicsBody.compound(of:)` is where that null is caught
     }
 
     /// Keeps a shaped brick's face showing what the brick is.

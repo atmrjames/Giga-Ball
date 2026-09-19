@@ -414,3 +414,65 @@ final class ReferenceHeadingBandTests: XCTestCase {
         XCTAssertEqual(band?.frame.maxX, 1000 - inset, "and from the right")
     }
 }
+
+/// **The four screens that were not drifting** (James, round 328, asked whether their having no
+/// parallax was deliberate: "yes" - meaning yes, give them it).
+///
+/// Daily Challenge, Music, Paddle Speed and Run Statistics are built in code and put their
+/// content straight onto `view`, so there is no content view to hand to `applyMenuParallax` the
+/// way the storyboard screens do. Every direct subview takes the drift instead - except the dark
+/// blur each of them lays over the menu behind it, which is the backdrop the rest drifts over.
+final class CodeBuiltScreenParallaxTests: XCTestCase {
+
+    private func laidOut(_ screen: UIViewController, wants parallax: Bool) -> UIViewController {
+        let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 402, height: 874))
+        window.rootViewController = screen
+        window.isHidden = false
+        for _ in 0..<3 {
+            screen.view.setNeedsLayout()
+            screen.view.layoutIfNeeded()
+        }
+        screen.view.applyMenuParallaxToContent(
+            settings: InMemoryKeyValueStore(["parallaxSetting": parallax]))
+        // Asked directly with a store of its own rather than by writing the real setting: a test
+        // may not leave a durable value behind, and this one would be the player's
+        return screen
+    }
+
+    private func screens() -> [(String, UIViewController)] {
+        [("Daily Challenge", DailyChallengeViewController()),
+         ("Music", MusicViewController()),
+         ("Paddle Speed", PaddleSpeedViewController()),
+         ("Run Statistics", RunStatsViewController())]
+    }
+
+    func testTheContentDriftsAndTheBlurDoesNot() {
+        for (name, screen) in screens() {
+            _ = laidOut(screen, wants: true)
+            let subviews = screen.view.subviews
+            XCTAssertFalse(subviews.isEmpty, "\(name) built nothing to drift")
+
+            let drifting = subviews.filter { $0.motionEffects.isEmpty == false }
+            XCTAssertFalse(drifting.isEmpty, "\(name): nothing on the screen drifts")
+
+            for blur in subviews.compactMap({ $0 as? UIVisualEffectView }) {
+                XCTAssertTrue(blur.motionEffects.isEmpty,
+                              "\(name): the backdrop drifted, so nothing is parallax")
+            }
+        }
+    }
+
+    /// And a player who has turned it off gets a still screen, including one turned off while
+    /// the screen is open - Settings is reachable from most of them.
+    func testNothingDriftsWhenTheSettingIsOff() {
+        for (name, screen) in screens() {
+            _ = laidOut(screen, wants: true)
+            screen.view.applyMenuParallaxToContent(
+                settings: InMemoryKeyValueStore(["parallaxSetting": false]))
+
+            for subview in screen.view.subviews {
+                XCTAssertTrue(subview.motionEffects.isEmpty, "\(name) is still drifting")
+            }
+        }
+    }
+}

@@ -1258,10 +1258,24 @@ enum DailyChallengeBoards {
     static let total = "leaderboardDailyChallengeTotal"
 
     /// What the overall board counts a score as (§7): no one mode may dominate, and
-    /// Classic scores (thousands) and endless heights (tens) are orders of magnitude
-    /// apart. The factor is §13's open question; the daily board is immune either way.
+    /// Classic scores (thousands) and endless heights (tens) are orders of magnitude apart.
+    ///
+    /// **Ten, settled by James in round 329** - §13's open question, answered before external
+    /// testers could post under one rule and read the board under another. It was a hundred,
+    /// which was the first guess written when the board was designed, and a hundred made the
+    /// overall board an endless-height board with Classic days as rounding error: the game
+    /// scores 10 a brick, 100 for finishing a level, at most 500 of timer bonus and a
+    /// multiplier capped at two, so a strong Classic day lands in the low thousands, while a
+    /// hundred metres of Mayhem counted ten thousand and James's own best of 478m would have
+    /// counted 47,800. At ten, a good endless run is worth about the same as a good Classic
+    /// level, which is what "no one mode may dominate" was asking for.
+    ///
+    /// Only future days move: `postedNormalisedScore` is stored when a day is posted, so every
+    /// day already counted keeps the number it was given.
+    static let endlessHeightToPoints = 10
+
     static func normalised(score: Int, mode: GameMode) -> Int {
-        mode == .classic ? score : score*100
+        mode == .classic ? score : score*DailyChallengeBoards.endlessHeightToPoints
     }
 }
 

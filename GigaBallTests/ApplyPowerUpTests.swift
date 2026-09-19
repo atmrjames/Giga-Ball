@@ -22,6 +22,23 @@ import SpriteKit
 
 final class ApplyPowerUpTests: XCTestCase {
 
+    /// The pair the sweep is inside, so a crash can say which one it was.
+    ///
+    /// **An ObjC exception is not an assertion.** It unwinds the test method where it is
+    /// thrown, so a sweep of thousands of pairs reports "attempt to insert nil object" with no
+    /// word about which pair was being collected - which is most of the information. The pair
+    /// is written here as it starts and cleared when the sweep finishes, and `tearDown` says
+    /// what it was holding if the sweep never got there.
+    private var pairUnderTest: String?
+
+    override func tearDown() {
+        if let pair = pairUnderTest {
+            XCTFail("the sweep stopped inside '\(pair)'")
+        }
+        pairUnderTest = nil
+        super.tearDown()
+    }
+
     private func scene() -> GameScene {
         let scene = GameScene(size: CGSize(width: 400, height: 800))
         scene.totalStatsArray = [TotalStats()]
@@ -262,5 +279,224 @@ final class MayhemSoundTests: XCTestCase {
         XCTAssertNotNil(GameScene.mayhemSound("brickHit"),
                         "brickHit.mp3 ships with the app, so the bundle lookup has to find "
                         + "it - or these tests are asserting that a broken lookup is broken")
+    }
+}
+
+/// **Every power-up collected on top of every other one** (James, round 329: "make sure all the
+/// power-ups are working as intended, including all the interactions between the different
+/// power-ups").
+///
+/// Sixty-five power-ups make 4,225 ordered pairs, which is far past what anybody can play - and
+/// the pairs are where this game's faults have actually lived: an Expand caught while a Shrink
+/// was animating (round 321), a Grow on a ball already heading back to normal (round 324), a
+/// sticky catch spending another paddle power-up's turn (round 312). Each was one pair, and each
+/// was found by a person meeting it.
+///
+/// What a machine can do here is not judge whether a pair *feels* right - that is James's - but
+/// prove that no pair leaves the scene in a state the next frame cannot survive. The invariants
+/// are the ones the game itself relies on everywhere: a ball with a body, finite positions, a
+/// paddle with a width, and a rack that has not gone negative.
+final class PowerUpPairInteractionTests: XCTestCase {
+
+    /// The pair the sweep is inside, so a crash can say which one it was.
+    ///
+    /// **An ObjC exception is not an assertion.** It unwinds the test method where it is
+    /// thrown, so a sweep of thousands of pairs reports "attempt to insert nil object" with no
+    /// word about which pair was being collected - which is most of the information. The pair
+    /// is written here as it starts and cleared when the sweep finishes, and `tearDown` says
+    /// what it was holding if the sweep never got there.
+    private var pairUnderTest: String?
+
+    override func tearDown() {
+        if let pair = pairUnderTest {
+            XCTFail("the sweep stopped inside '\(pair)'")
+        }
+        pairUnderTest = nil
+        super.tearDown()
+    }
+
+    private func scene() -> GameScene {
+        let scene = GameScene(size: CGSize(width: 400, height: 800))
+        scene.gameMode = .endlessII
+        let stats = TotalStats()
+        stats.achievementsUnlockedArray = stats.achievementsUnlockedArray.map { _ in true }
+        scene.totalStatsArray = [stats]
+        scene.multiplier = Scoring.multiplierBase
+        // **Both of these are what a running game has and a bare scene does not.** The
+        // multiplier is zero on a fresh `GameScene` and set to its base when a run starts, so a
+        // fixture without it reports every power-up that returns before the multiplier line as
+        // having zeroed it. And an achievement that has not been earned calls Game Center on
+        // the way out, which in a test is a slow no-op with an error in the log for each one -
+        // 4,225 pairs of those is a test nobody will run twice
+        scene.gameWidth = 360
+        scene.brickWidth = 40
+        scene.brickHeight = 20
+        scene.ballSize = 12
+        scene.paddleWidth = 90
+        scene.numberOfLives = 3
+        scene.hapticsSetting = false
+        scene.soundsSetting = false
+        scene.ballLostBool = false
+        scene.powerUpTextureArray = scene.powerUpTexturesInOrder
+        scene.addChild(scene.ball)
+        scene.ball.physicsBody = SKPhysicsBody(circleOfRadius: 6)
+        scene.ball.physicsBody?.velocity = CGVector(dx: 120, dy: 200)
+        scene.addChild(scene.paddle)
+        scene.paddle.size = CGSize(width: 90, height: 12)
+        scene.paddle.physicsBody = SKPhysicsBody(rectangleOf: scene.paddle.size)
+        return scene
+    }
+
+    /// Put a scene beyond use before letting go of it.
+    ///
+    /// **A pair that collects Lasers leaves a repeating `Timer` behind, and a `Timer` holds its
+    /// target.** One is nothing; this test makes thousands of scenes, and every one that ever
+    /// held lasers would have stayed alive with its nodes, its physics world and its timer for
+    /// the rest of the run. The first attempt at this test died twice without reaching an
+    /// assertion, four minutes in, and that is what it was: scenes piling up faster than
+    /// anything could reclaim them. `endEverythingInFlight` is the app's own way out of a
+    /// scene, which is the right thing to lean on here - if it stops being enough for the app,
+    /// this test notices first.
+    private func retire(_ scene: GameScene) {
+        scene.endEverythingInFlight()
+        scene.removeAllChildren()
+    }
+
+    /// Between pairs: the app's own reset, and then the geometry by hand.
+    ///
+    /// **`powerUpsReset` hands the paddle and the ball back their size with an `SKAction`**,
+    /// and an action does not run in a scene with no view - so in this fixture the animated
+    /// half of the reset is a no-op and a Shrink Paddle's width survives into the next pair,
+    /// and the next, until the paddle is too narrow for SpriteKit to build a body from and the
+    /// app's own force-unwrap of it traps. That is the fixture's problem rather than the
+    /// game's: on a phone the action runs. So the sizes are put back here, to the numbers the
+    /// fixture started with, and everything else is left to the game.
+    private func putBack(_ scene: GameScene) {
+        scene.paddle.removeAllActions()
+        scene.paddle.setScale(1)
+        scene.paddle.size = CGSize(width: 90, height: 12)
+        scene.paddle.physicsBody = SKPhysicsBody(rectangleOf: scene.paddle.size)
+        scene.paddleWidth = 90
+        scene.ball.removeAllActions()
+        scene.ball.setScale(1)
+        scene.ball.position = .zero
+        scene.ball.physicsBody = SKPhysicsBody(circleOfRadius: 6)
+        scene.ball.physicsBody?.velocity = CGVector(dx: 120, dy: 200)
+        scene.ballSize = 12
+        scene.powerUpsReset()
+        scene.numberOfLives = 3
+        scene.ballLostBool = false
+        // A rack is the run's, not the power-ups'; a lost ball is what Lose A Life leaves.
+        // The geometry goes back *before* the game's own reset rather than after, because the
+        // reset reads the paddle and the ball it is handed
+    }
+
+    private func collect(_ index: Int, on scene: GameScene) {
+        let node = SKSpriteNode(texture: scene.powerUpTexturesInOrder[index])
+        node.name = PowerUpCategoryName
+        scene.addChild(node)
+        scene.ballLostBool = false
+        scene.applyPowerUp(node: node, silently: true)
+    }
+
+    /// What must be true of the scene whatever has just been collected.
+    private func survives(_ scene: GameScene, _ pair: String) -> [String] {
+        var broken: [String] = []
+        if scene.ball.physicsBody == nil { broken.append("the ball lost its body") }
+        if scene.ball.position.x.isFinite == false || scene.ball.position.y.isFinite == false {
+            broken.append("the ball is at \(scene.ball.position)")
+        }
+        if let velocity = scene.ball.physicsBody?.velocity,
+           velocity.dx.isFinite == false || velocity.dy.isFinite == false {
+            broken.append("the ball's velocity is \(velocity)")
+        }
+        if scene.paddle.size.width.isFinite == false || scene.paddle.size.width <= 0 {
+            broken.append("the paddle is \(scene.paddle.size.width)pt wide")
+        }
+        if scene.paddle.xScale.isFinite == false || scene.paddle.xScale <= 0 {
+            broken.append("the paddle is scaled to \(scene.paddle.xScale)")
+        }
+        if scene.ballSize.isFinite == false || scene.ballSize <= 0 {
+            broken.append("the ball is \(scene.ballSize)pt")
+        }
+        if scene.numberOfLives < 0 { broken.append("the rack is \(scene.numberOfLives)") }
+        if scene.multiplier.isFinite == false || scene.multiplier <= 0 {
+            broken.append("the multiplier is \(scene.multiplier)")
+        }
+        return broken.map { "\(pair): \($0)" }
+    }
+
+    /// The sweep: every power-up collected on top of every other one.
+    ///
+    /// **A fresh `GameScene` costs 350ms to build and a collection costs two**, measured in
+    /// round 329 - so 4,225 fresh scenes is twenty-one minutes and 4,225 collections on one
+    /// scene is twenty seconds. The scene is reused and put back between pairs with
+    /// `powerUpsReset`, which is the app's own way of taking everything off after a lost ball:
+    /// leaning on it means the residue this sweep runs against is the residue the game itself
+    /// leaves, and if that stops being enough for the game it stops being enough here.
+    ///
+    /// **Anything the sweep flags is then collected again on a scene of its own**, and only a
+    /// pair that fails twice is reported. That is what keeps the cheap sweep honest: a fault
+    /// that only appears after four thousand resets is a fault in the reset, not in the pair,
+    /// and the second pass is where the two are told apart.
+    func testNoPairOfPowerUpsLeavesTheSceneBroken() {
+        let names = LevelPackSetup().powerUpNameArray
+        let scene = self.scene()
+        let count = scene.powerUpTexturesInOrder.count
+        XCTAssertGreaterThan(count, 60, "the list is empty, so this test proves nothing")
+
+        var suspects: [(first: Int, second: Int, pair: String)] = []
+        for first in 0..<count {
+            for second in 0..<count {
+                let pair = "\(names[first]) then \(names[second])"
+                pairUnderTest = pair
+                putBack(scene)
+                collect(first, on: scene)
+                collect(second, on: scene)
+                scene.tickEndlessIIPaddlePowerUps(1.0/60)
+                scene.tickEndlessIIRescue(1.0/60)
+                if survives(scene, pair).isEmpty == false {
+                    suspects.append((first, second, pair))
+                }
+                pairUnderTest = nil
+            }
+        }
+        retire(scene)
+
+        var faults: [String] = []
+        for suspect in suspects {
+            autoreleasepool {
+                let fresh = self.scene()
+                pairUnderTest = suspect.pair
+                collect(suspect.first, on: fresh)
+                collect(suspect.second, on: fresh)
+                fresh.tickEndlessIIPaddlePowerUps(1.0/60)
+                fresh.tickEndlessIIRescue(1.0/60)
+                faults.append(contentsOf: survives(fresh, suspect.pair))
+                retire(fresh)
+                pairUnderTest = nil
+            }
+        }
+        XCTAssertEqual(faults, [], "\(faults.count) pairs left the scene in a state the next "
+                       + "frame could not survive:\n" + faults.prefix(12).joined(separator: "\n"))
+    }
+
+    /// And the same power-up twice, which is a pair the field produces more often than most:
+    /// two of a kind fall together whenever the weights come up that way.
+    func testCollectingTheSameOneTwiceIsSafe() {
+        let names = LevelPackSetup().powerUpNameArray
+        let count = scene().powerUpTexturesInOrder.count
+        var faults: [String] = []
+        for index in 0..<count {
+            autoreleasepool {
+                let scene = self.scene()
+                collect(index, on: scene)
+                collect(index, on: scene)
+                scene.tickEndlessIIPaddlePowerUps(1.0/60)
+                faults.append(contentsOf: survives(scene, "\(names[index]) twice"))
+                retire(scene)
+            }
+        }
+        XCTAssertEqual(faults, [], faults.joined(separator: "\n"))
     }
 }

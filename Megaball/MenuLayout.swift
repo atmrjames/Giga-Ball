@@ -660,6 +660,42 @@ extension UIView {
         return group
     }
 
+    /// Drifts this view's content over the backdrop inside it.
+    ///
+    /// **For the screens built in code** (James, round 328, asked whether the five screens with
+    /// no parallax were deliberate: "yes" - they were not). The Daily Challenge, Music, Paddle
+    /// Speed and Run Statistics screens put their content straight onto `view` rather than into
+    /// a content view of their own, so there is nothing to hand to `applyMenuParallax` the way
+    /// the storyboard screens do. Every direct subview gets the same drift instead, which comes
+    /// to the same thing: they move together, because they are given the same travel.
+    ///
+    /// **The blur stays still**, which is what makes it parallax rather than the screen sliding
+    /// about: these four each lay a dark `UIVisualEffectView` over the menu behind them, and
+    /// that is the backdrop the content drifts over. It is the same split the storyboard
+    /// screens have, where the blur lives on `backgroundView` and the drift on the content.
+    ///
+    /// Called from `viewDidLayoutSubviews` rather than once, because the daily rebuilds its card
+    /// when the day changes and a subview added later would otherwise be the one thing standing
+    /// still. `applyMenuParallax` removes any drift it finds before adding its own, so asking
+    /// twice costs a group rather than doubling the travel.
+    /// - Parameter settings: where the player's own parallax setting is read from. Injectable so
+    ///   a test can ask for both answers without writing a durable one - CLAUDE.md's rule that a
+    ///   test may not leave anything behind, met the way `SavedGame` and the daily's clock meet
+    ///   it. `object(forKey:)` rather than `bool(forKey:)` because the protocol has the first and
+    ///   not the second, and the registered default is true either way.
+    func applyMenuParallaxToContent(settings: KeyValueStore = UserDefaults.standard) {
+        guard (settings.object(forKey: "parallaxSetting") as? Bool) ?? true else {
+            subviews.forEach { subview in
+                subview.motionEffects.forEach { subview.removeMotionEffect($0) }
+            }
+            return
+            // Turned off while the screen is open - Settings is reachable from most of them
+        }
+        for subview in subviews where (subview is UIVisualEffectView) == false {
+            subview.applyMenuParallax()
+        }
+    }
+
     /// Every view under this one that is drifting with the tilt, including this one.
     ///
     /// The screens do not all hang their parallax off the same view - the pause menu drifts

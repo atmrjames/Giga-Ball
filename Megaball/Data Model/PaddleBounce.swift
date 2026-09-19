@@ -237,6 +237,42 @@ enum PaddleBounce {
 /// convex by construction, and handed over as a compound body - the same answer
 /// `EndlessIIFaceGeometry` gives the concave brick, at a finer grain because the paddle is the
 /// surface the game is played on.
+extension SKPhysicsBody {
+
+    /// One body from several pieces, dropping anything SpriteKit refused to build.
+    ///
+    /// **SpriteKit's body initialisers are imported as though they always succeed, and they do
+    /// not.** `SKPhysicsBody(polygonFrom:)` and `SKPhysicsBody(rectangleOf:)` return nil for a
+    /// shape too slight to make anything of, Swift is told they return a body, and the null
+    /// travels until something tries to put it in an array - at which point
+    /// `SKPhysicsBody(bodies:)` raises `NSInvalidArgumentException: attempt to insert nil
+    /// object` and the app is gone. SpriteKit logs "PhysicsBody: Could not create physics body"
+    /// one line earlier, which is the only warning there is.
+    ///
+    /// Round 329 met it on the paddle: the ordered-pair sweep collected Wedge Left Paddle and
+    /// then Split Paddle, the split rebuilt the wedge's outline at a segment's width, and one
+    /// strip of it came out too thin. Every compound body in the game is built the same way, so
+    /// they all come through here: hand it what you have, and take nil for "there is nothing
+    /// here to hit", which every caller already has an answer for.
+    ///
+    /// The pieces arrive as optionals because that is the only way to see the null: assigning
+    /// the initialiser's result to an `SKPhysicsBody?` turns a null reference into `nil`, and
+    /// leaving it as a plain `SKPhysicsBody` hides it again.
+    static func compound(of pieces: [SKPhysicsBody?]) -> SKPhysicsBody? {
+        let made = pieces.compactMap { $0 }
+        guard made.isEmpty == false else { return nil }
+        return made.count == 1 ? made[0] : SKPhysicsBody(bodies: made)
+    }
+
+    /// A rectangle, or nil where the size is not one - the same trap as `compound(of:)`.
+    static func rectangle(of size: CGSize, centre: CGPoint = .zero) -> SKPhysicsBody? {
+        guard size.width.isFinite, size.height.isFinite,
+              size.width > 0.5, size.height > 0.5 else { return nil }
+        let made: SKPhysicsBody? = SKPhysicsBody(rectangleOf: size, center: centre)
+        return made
+    }
+}
+
 enum PaddleOutline {
 
     /// How many strips a paddle is cut into.
@@ -480,8 +516,21 @@ extension PaddleOutline {
         let pieces = pieces(of: image, size: size)
         guard pieces.isEmpty == false else { return nil }
 
-        let bodies = pieces.map { SKPhysicsBody(polygonFrom: $0) }
-        let body = bodies.count == 1 ? bodies[0] : SKPhysicsBody(bodies: bodies)
+        guard let body = SKPhysicsBody.compound(of: pieces.map { piece -> SKPhysicsBody? in
+            let box = piece.boundingBox
+            guard box.isNull == false, box.isInfinite == false,
+                  box.width > 0.5, box.height > 0.5 else { return nil }
+            let made: SKPhysicsBody? = SKPhysicsBody(polygonFrom: piece)
+            return made
+        }) else { return nil }
+        // **A strip can be too slight for SpriteKit to make a body of**, and it says so by
+        // handing back a null that Swift believes is a body: `SKPhysicsBody.compound(of:)`
+        // above is where that whole trap is written down. Measured here before it is offered,
+        // because the strips are cut at the paddle's current width - the narrower the paddle
+        // the thinner each one, and a wedge's taper to a point at one end on top of that. A
+        // shape that loses every strip returns nil, which the caller reads as "bounce the way
+        // you did yesterday" and falls back to the traced body
+
         cache[key] = body
         return body.copy() as? SKPhysicsBody
         // Kept and copied, the way `TracedBodyCache` keeps a traced one: reading the picture and

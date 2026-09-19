@@ -197,10 +197,11 @@ extension GameScene {
             ? endlessIIPaddleShapeArtName : nil
         let body: SKPhysicsBody
         if let pieces = endlessIISafetyPaddleSegmentCentres(span: size.width) {
-            body = SKPhysicsBody(bodies: pieces.centres.map {
-                SKPhysicsBody(rectangleOf: CGSize(width: pieces.segment, height: size.height),
-                              center: CGPoint(x: $0, y: 0))
-            })
+            body = SKPhysicsBody.compound(of: pieces.centres.map {
+                SKPhysicsBody.rectangle(of: CGSize(width: pieces.segment,
+                                                   height: size.height),
+                                        centre: CGPoint(x: $0, y: 0))
+            }) ?? SKPhysicsBody(rectangleOf: size)
             // **A bar with the paddle's holes in it** (James, round 313: with a Split Paddle,
             // "the safety paddle should also be split"). One body of several rectangles, the
             // way the paddle's own split is built - every contact still arrives as a safety

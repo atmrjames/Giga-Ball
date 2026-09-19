@@ -121,12 +121,23 @@ enum GigaBallConfirm: CaseIterable {
     }
 
     /// Asks it, on top of whatever is on screen.
-    func show(on presenter: UIViewController) {
+    ///
+    /// - Parameter restart: what a third button should do, where the screen behind has no
+    ///   button of its own for it. **The pause screen shows Info, Play and Settings and no
+    ///   Restart** - the replay only appears once a run has ended - so a player who has paused
+    ///   and decided against going home has no way to start the level again without doing it.
+    ///   James, round 329: "yes, add a restart button, that is a good idea! Restart only shows
+    ///   up at game over, so show restart in the pop-up on occasions where it isn't already
+    ///   available in the main view." Passed by the caller rather than decided here, because
+    ///   "is it already on screen" is a question about the screen, not about the question.
+    func show(on presenter: UIViewController, restart: (() -> Void)? = nil) {
         GigaBallAlert.show(on: presenter, title: title, message: message, symbol: symbol,
                            dismissTitle: dismissTitle,
                            dismiss: { GigaBallConfirm.stepBack(self, from: presenter) },
                            confirmTitle: confirmTitle,
-                           confirm: confirmTitle == nil ? nil : { self.go(from: presenter) })
+                           confirm: confirmTitle == nil ? nil : { self.go(from: presenter) },
+                           otherTitle: restart == nil ? nil : "Restart",
+                           other: restart)
         // `dismiss` is never nil, which is what keeps a tap outside the card from answering
         // for the player: `GigaBallAlert` only offers tap-to-close where the pale button does
         // nothing, and none of these four are that. The old sheet could not be dismissed by
@@ -220,11 +231,14 @@ enum GigaBallAlert {
                      dismissTitle: String = "OK",
                      dismiss: (() -> Void)? = nil,
                      confirmTitle: String? = nil,
-                     confirm: (() -> Void)? = nil) {
+                     confirm: (() -> Void)? = nil,
+                     otherTitle: String? = nil,
+                     other: (() -> Void)? = nil) {
         show(on: presenter, title: title,
              attributed: NSAttributedString(string: message), symbol: symbol,
              dismissTitle: dismissTitle, dismiss: dismiss,
-             confirmTitle: confirmTitle, confirm: confirm)
+             confirmTitle: confirmTitle, confirm: confirm,
+             otherTitle: otherTitle, other: other)
     }
     // `confirm` is deliberately the *last* parameter, so a trailing closure means the green
     // button - the one that does the thing. When `dismiss` was added after it, the daily's
@@ -244,12 +258,15 @@ enum GigaBallAlert {
                      dismissTitle: String = "OK",
                      dismiss: (() -> Void)? = nil,
                      confirmTitle: String? = nil,
-                     confirm: (() -> Void)? = nil) {
+                     confirm: (() -> Void)? = nil,
+                     otherTitle: String? = nil,
+                     other: (() -> Void)? = nil) {
         let alert = GigaBallAlertViewController(title: title, message: message,
                                                 symbol: symbol,
                                                 dismissTitle: dismissTitle,
                                                 confirmTitle: confirmTitle,
-                                                confirm: confirm, dismiss: dismiss)
+                                                confirm: confirm, dismiss: dismiss,
+                                                otherTitle: otherTitle, other: other)
         alert.stoodDown = UIView.standDownParallax(under: presenter.view)
         // Before the alert's own view goes in, so the search finds the screen behind it and
         // not the card about to sit on top. Put back when the pop-up closes
@@ -271,6 +288,10 @@ final class GigaBallAlertViewController: UIViewController {
     private let confirmTitle: String?
     private let confirm: (() -> Void)?
     private let dismiss: (() -> Void)?
+    /// A third answer, offered only where the screen behind has no button for it - see
+    /// `GigaBallConfirm.show(on:restart:)`.
+    private let otherTitle: String?
+    private let other: (() -> Void)?
     private let card = UIView()
 
     /// The views behind this pop-up whose drift was taken off while it is up, to be handed
@@ -284,7 +305,8 @@ final class GigaBallAlertViewController: UIViewController {
 
     init(title: String, message: NSAttributedString, symbol: String? = nil,
          dismissTitle: String, confirmTitle: String? = nil,
-         confirm: (() -> Void)? = nil, dismiss: (() -> Void)? = nil) {
+         confirm: (() -> Void)? = nil, dismiss: (() -> Void)? = nil,
+         otherTitle: String? = nil, other: (() -> Void)? = nil) {
         self.heading = title.uppercased()
         self.symbol = symbol
         // Every pop-up wears the app's heading in capitals (play-test round 17), decided
@@ -294,6 +316,8 @@ final class GigaBallAlertViewController: UIViewController {
         self.confirmTitle = confirmTitle
         self.confirm = confirm
         self.dismiss = dismiss
+        self.otherTitle = otherTitle
+        self.other = other
         super.init(nibName: nil, bundle: nil)
     }
 
@@ -393,33 +417,69 @@ final class GigaBallAlertViewController: UIViewController {
         // choice out of two identical shapes
         button.addTarget(self, action: #selector(dismissTapped), for: .touchUpInside)
 
-        let buttons = UIStackView(arrangedSubviews: [button])
-        buttons.axis = .horizontal
-        buttons.spacing = 10
-        buttons.distribution = .fillEqually
-
-        if let confirmTitle {
-            let go = UIButton(type: .system)
-            go.setTitle(confirmTitle, for: .normal)
-            go.titleLabel?.font = .boldSystemFont(ofSize: 17)
-            go.setTitleColor(UIColor(red: 0.16, green: 0, blue: 0.24, alpha: 1), for: .normal)
-            go.backgroundColor = #colorLiteral(red: 0.8235294118, green: 1, blue: 0, alpha: 1)
-            go.layer.cornerRadius = 22
-            SettingsTableViewCell.addColouredGlass(
-                behind: go, cornerRadius: 22,
-                tint: SettingsTableViewCell.prominentTint)
-            // Coloured glass rather than flat lime (round 89, James's request after seeing
-            // the same idea in another app's picker). The green button is the one that does
-            // the thing, so it is the right first place to try a material that is meant to
-            // be noticed - and the pale one beside it stays plain glass, which is what keeps
-            // the pair a choice rather than two shouts. Below iOS 26 both keep the flat
-            // colours they have always had
-
-            go.addTarget(self, action: #selector(confirmTapped), for: .touchUpInside)
-            buttons.addArrangedSubview(go)
-            // The green one is the one that does the thing; the pale one steps back. Two
-            // is the most this pop-up offers - a choice with three answers wants a screen
+        var third: UIButton?
+        if let otherTitle {
+            let extra = UIButton(type: .system)
+            extra.setTitle(otherTitle, for: .normal)
+            extra.titleLabel?.font = .boldSystemFont(ofSize: 17)
+            extra.setTitleColor(UIColor(red: 0.16, green: 0, blue: 0.24, alpha: 1), for: .normal)
+            extra.backgroundColor = UIColor(white: 0.92, alpha: 1)
+            extra.layer.cornerRadius = 22
+            _ = SettingsTableViewCell.addGlass(behind: extra, cornerRadius: 22)
+            extra.addTarget(self, action: #selector(otherTapped), for: .touchUpInside)
+            third = extra
         }
+        // **The third answer wears the pale material, like the step-back** (round 329). There is
+        // one green button in a pop-up and it is the thing the pop-up was raised to ask about -
+        // going to the main menu, here. Restart is a way out of the question rather than the
+        // answer to it, so it reads as a second pale option rather than a rival shout
+
+        var go: UIButton?
+        if let confirmTitle {
+            let confirmButton = UIButton(type: .system)
+            confirmButton.setTitle(confirmTitle, for: .normal)
+            confirmButton.titleLabel?.font = .boldSystemFont(ofSize: 17)
+            confirmButton.setTitleColor(UIColor(red: 0.16, green: 0, blue: 0.24, alpha: 1),
+                                        for: .normal)
+            confirmButton.backgroundColor = #colorLiteral(red: 0.8235294118, green: 1, blue: 0, alpha: 1)
+            confirmButton.layer.cornerRadius = 22
+            SettingsTableViewCell.addColouredGlass(
+                behind: confirmButton, cornerRadius: 22,
+                tint: SettingsTableViewCell.prominentTint)
+            // Coloured glass rather than flat lime (round 89, James's request after seeing the
+            // same idea in another app's picker). The green button is the one that does the
+            // thing, so it is the right first place to try a material that is meant to be
+            // noticed - and the pale one beside it stays plain glass, which is what keeps the
+            // pair a choice rather than two shouts. Below iOS 26 both keep the flat colours
+            // they have always had
+            confirmButton.addTarget(self, action: #selector(confirmTapped), for: .touchUpInside)
+            go = confirmButton
+        }
+
+        let ordered: [UIButton]
+        let buttons: UIStackView
+        if let third {
+            ordered = [go, third, button].compactMap { $0 }
+            buttons = UIStackView(arrangedSubviews: ordered)
+            buttons.axis = .vertical
+            buttons.distribution = .fillEqually
+            for control in ordered {
+                control.heightAnchor.constraint(equalToConstant: 44).isActive = true
+            }
+        } else {
+            ordered = [button, go].compactMap { $0 }
+            buttons = UIStackView(arrangedSubviews: ordered)
+            buttons.axis = .horizontal
+            buttons.distribution = .fillEqually
+        }
+        buttons.spacing = 10
+        // **Three answers stack rather than squeeze** (round 329, James: "yes, add a restart
+        // button, that is a good idea ... show restart in the pop-up on occasions where it isn't
+        // already available in the main view"). Two sit side by side and read as a choice;
+        // three across a card this wide would be three cramped words, and the order carries
+        // more than the row does - what was asked for first, the way out second, the way back
+        // last. A stacked row needs its own height, because a horizontal `fillEqually` takes
+        // the tallest button's and a vertical one has nothing to take
 
         var pieces: [UIView] = [titleLabel, bodyLabel, buttons]
         if let symbol,
@@ -470,7 +530,16 @@ final class GigaBallAlertViewController: UIViewController {
             stack.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: 24),
             stack.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -24),
             stack.bottomAnchor.constraint(equalTo: card.bottomAnchor, constant: -22),
-            buttons.heightAnchor.constraint(equalToConstant: 44),
+            buttons.heightAnchor.constraint(
+                equalToConstant: buttons.axis == .vertical
+                    ? 44*CGFloat(buttons.arrangedSubviews.count)
+                        + buttons.spacing*CGFloat(max(0, buttons.arrangedSubviews.count - 1))
+                    : 44),
+            // **A row is one button tall; a column is as tall as it holds** (round 329). This
+            // said 44 flat, which was right for every pop-up in the app until one of them had
+            // three answers and stacked them - and a stack of three inside 44 points is three
+            // buttons eight points tall, which is what the test caught. Derived from the
+            // buttons rather than typed, so it cannot drift from what is in the stack
         ])
     }
 
@@ -523,6 +592,12 @@ final class GigaBallAlertViewController: UIViewController {
     @objc private func dismissTapped() {
         if hapticsSetting { interfaceHaptic.impactOccurred() }
         let action = dismiss
+        close { action?() }
+    }
+
+    @objc private func otherTapped() {
+        if hapticsSetting { interfaceHaptic.impactOccurred() }
+        let action = other
         close { action?() }
     }
 

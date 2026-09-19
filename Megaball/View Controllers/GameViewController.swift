@@ -159,6 +159,13 @@ class GameViewController: UIViewController, GameViewControllerDelegate {
     }
     
     func moveToMainMenu() {
+        (view as? SKView)?.scene.flatMap { $0 as? GameScene }?.endEverythingInFlight()
+        // **Before the view goes** (round 329). This path removes the view from its superview
+        // rather than presenting another scene, so nothing else tells the scene it is finished:
+        // its laser `Timer` would keep it - and its whole node tree - alive for ever, and an
+        // action still in flight could fire a completion into a run that has ended. James's log
+        // caught the second of those as a crash when a daily started after a Mayhem run
+
         CloudKitHandler().saveToiCloud()
         NotificationCenter.default.post(name: .returnMenuNotification, object: nil,
                                         userInfo: ["packNumber": levelPack ?? 0])

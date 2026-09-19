@@ -403,14 +403,31 @@ class SplashViewController: UIViewController {
         // The pause screen's own detail face, so the rack reads as a footnote to the score
         // rather than as a second number competing with it
 
-        let carded = [resumingLabel, modeLabel, detailLabel, scoreLabel].compactMap { $0 }
-        for constraint in container.constraints {
-            guard let first = constraint.firstItem as? UIView else { continue }
-            let second = constraint.secondItem as? UIView
-            if carded.contains(where: { $0 === first || $0 === second }) {
-                constraint.isActive = false
+        let carded = [resumingLabel, modeLabel, detailLabel, scoreLabel, livesLabel]
+            .compactMap { $0 }
+        for label in carded {
+            var node: UIView? = label
+            while let view = node {
+                for constraint in view.constraints
+                where constraint.firstItem === label || constraint.secondItem === label {
+                    constraint.isActive = false
+                }
+                node = view.superview
             }
         }
+        // **Up the whole chain, not just the one view** (round 329, from James's device log).
+        // Round 312 cleared `container.constraints`, which is where a constraint between a
+        // label and that container lives - and is not where every one of them lives. A
+        // constraint is held by the nearest common ancestor of the two views it names, so a
+        // label pinned inside some intermediate view of the storyboard keeps its tie somewhere
+        // this never looked, and a label's own width or height sits on the label itself.
+        //
+        // Six conflicts were still being logged on every launch that offered a resume - the
+        // stack's `UISV-alignment` and `UISV-canvas-connection` against storyboard leading and
+        // centreX ties, and its `UISV-spacing` of 14 against a storyboard 10. UIKit broke one
+        // of each pair to recover, silently, which is why the card still looked right; what it
+        // broke was usually the stack's, so the spacing James asked for in round 311 was being
+        // drawn at the storyboard's old numbers on a real device.
         // **The storyboard's chain has to go, not just be replaced** (round 312, found in James's
         // iPad log rather than by looking).
         //

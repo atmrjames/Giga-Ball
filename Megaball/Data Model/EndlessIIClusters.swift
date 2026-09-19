@@ -458,6 +458,63 @@ struct EndlessIICluster {
         // A brick that turns permanent when struck is a decision, but a shape with nothing
         // breakable in it is still a shape with nothing to earn - so going in there is worth
         // something now, and the posts are no harder to thread than they were
+
+        // MARK: - Round 329's four
+
+        // James, round 329, asking for layouts "of different types, shapes, using different
+        // bricks". These four are chosen by what the catalogue was thin on rather than by what
+        // would look good written down: the concave face had no cluster at all, breathing had
+        // only the flashing Lantern beside it, directional had none, and nothing here was built
+        // around a brick that anchors itself.
+
+        EndlessIICluster(name: "Bowl", rows: ["C...C",
+                                              ".CCC."], minimumHeight: 140, weight: 7,
+                         legend: ["C": EndlessIIBrickSpec(behaviour: .standard,
+                                                          shape: .concave)]),
+        // Five scoops in a dish. A concave face gathers a bounce toward the middle of the cell
+        // rather than throwing it off, so a ball that drops into this one is handed along the
+        // curve instead of away from it - the only shape in either catalogue that holds onto
+        // the ball for a moment. Drawn two rows deep for a cell twice as wide as it is tall,
+        // which is what makes a written line and a half read as a curve on screen
+
+        EndlessIICluster(name: "Lung", rows: ["bbb",
+                                              "b?b",
+                                              "bbb"], minimumHeight: 150, weight: 6,
+                         legend: ["b": EndlessIIBrickSpec(behaviour: .standard,
+                                                          actions: [.breathing])]),
+        // A ring that swells and shrinks around whatever the generator put inside it. The
+        // Lantern is the timing problem where the walls disappear; this is the one where they
+        // never disappear and the gap between them does - so the shot is there the whole time
+        // and only fits for part of it. The centre is a `?` for the reason every ring here
+        // uses one: the shape is designed and what is caught inside it is not
+
+        EndlessIICluster(name: "Quiver", rows: ["u.u",
+                                                ".N.",
+                                                "d.d"], minimumHeight: 230, weight: 5,
+                         legend: ["u": EndlessIIBrickSpec(behaviour: .standard,
+                                                          actions: [.directional],
+                                                          side: .top),
+                                  "d": EndlessIIBrickSpec(behaviour: .standard,
+                                                          actions: [.directional],
+                                                          side: .bottom)]),
+        // Four one-way bricks with their soft sides facing out of the formation, and an
+        // ordinary brick in the middle of them. The pair above can only be hurt from above and
+        // the pair below only from below, so the cluster cannot be cleared from where the
+        // player is standing: the middle brick is reachable and the corners are a job for a
+        // ball that has got behind them. The one formation here that is easier at the end of a
+        // rally than at the start of one
+
+        EndlessIICluster(name: "Mooring", rows: [".F.",
+                                                 "FNF",
+                                                 ".F."], minimumHeight: 220, weight: 5,
+                         legend: ["F": EndlessIIBrickSpec(behaviour: .standard,
+                                                          actions: [.fixed])]),
+        // Four bricks that stop where they are the moment they are struck, around one that does
+        // not. The field descends and this shape does not, so what begins as a diamond in the
+        // middle of a row becomes a diamond standing in the middle of the field with the rest
+        // of the rows sliding past it - a landmark that the player made, by hitting it. The
+        // ordinary brick in the centre is the catalogue's own dotting rule: a formation with
+        // nothing breakable in it is a formation with nothing to earn
     ]
 
     /// The ones allowed at this height.

@@ -478,11 +478,33 @@ final class DailyChallengeTests: XCTestCase {
     }
 
     func testTheOverallBoardNormalisesHeightsNotScores() {
-        // §7: Classic posts its score as it stands, an endless height rides ×100 so no
+        // §7: Classic posts its score as it stands, an endless height rides the factor so no
         // one mode dominates the running total.
+        //
+        // **Ten since round 329** (James: "multiply endless mode and mayhem runs by 10, not
+        // 100"). A hundred made the overall board an endless board with Classic as rounding
+        // error - a strong Classic day is a few thousand, and a hundred metres counted ten
+        // thousand. Read off the constant rather than typed twice, so the day it moves again
+        // this test moves with it and the numbers below are the arithmetic rather than a copy.
+        let factor = DailyChallengeBoards.endlessHeightToPoints
+        XCTAssertEqual(factor, 10, "the factor James settled on")
         XCTAssertEqual(DailyChallengeBoards.normalised(score: 4200, mode: .classic), 4200)
-        XCTAssertEqual(DailyChallengeBoards.normalised(score: 34, mode: .endless), 3400)
-        XCTAssertEqual(DailyChallengeBoards.normalised(score: 34, mode: .endlessII), 3400)
+        XCTAssertEqual(DailyChallengeBoards.normalised(score: 34, mode: .endless), 34*factor)
+        XCTAssertEqual(DailyChallengeBoards.normalised(score: 34, mode: .endlessII), 34*factor)
+    }
+
+    /// **A good endless day and a good Classic day are worth about the same**, which is the
+    /// whole of what the factor is for. The game scores 10 a brick, 100 for finishing a level,
+    /// at most 500 of timer bonus and a multiplier capped at two, so a strong Classic day lands
+    /// in the low thousands; 75 to 150 metres is a strong endless one.
+    func testAStrongDayOfEitherKindCountsAboutTheSame() {
+        let strongClassic = 60*Scoring.brickDestroyed*2 + Scoring.levelCompleted + 500
+        let strongEndless = DailyChallengeBoards.normalised(score: 120, mode: .endlessII)
+
+        XCTAssertLessThan(Double(max(strongClassic, strongEndless))
+                            / Double(min(strongClassic, strongEndless)), 2.5,
+                          "one kind of day is worth several of the other: classic "
+                          + "\(strongClassic), endless \(strongEndless)")
     }
 
     func testTheTotalPostedScoreIsDerivedFromTheRecords() {
@@ -592,7 +614,9 @@ final class DailyChallengeTests: XCTestCase {
         XCTAssertTrue(posted.isPending,
                       "the score is pending until Game Center confirms it landed (§12.5)")
         XCTAssertFalse(posted.posted, "posted waits for the confirmation")
-        XCTAssertEqual(posted.postedNormalisedScore, 3400)
+        XCTAssertEqual(posted.postedNormalisedScore,
+                       34*DailyChallengeBoards.endlessHeightToPoints,
+                       "the height rides the overall board's factor, which round 329 made ten")
         XCTAssertTrue(session.lastRunPosted)
         XCTAssertFalse(session.isScoringAttempt, "the attempt is settled exactly once")
 

@@ -73,7 +73,8 @@ class Playing: GKState {
         // would leave it empty until something else happened to show it
 
         let wait = SKAction.wait(forDuration: 0.35)
-        self.scene.run(wait, completion: {
+        self.scene.run(wait, completion: { [weak self] in
+            guard let self else { return }
             self.scene.scoreLabel.isHidden = false
             self.scene.multiplierLabel.isHidden = false
             self.scene.pauseButton.isHidden = false
@@ -179,13 +180,15 @@ class Playing: GKState {
             
             scene.ball.run(startingGroup)
             scene.ball.isHidden = false
-            scene.ball.run(animationSequence, completion: {
+            scene.ball.run(animationSequence, completion: { [weak self] in
+                guard let self else { return }
                 self.scene.ballStartingPositionY = self.scene.ball.position.y
                 // Resets the ball's starting position incase it is moved during the animation in
             })
             scene.paddle.run(startingGroupPaddle)
             scene.paddle.isHidden = false
-            scene.paddle.run(animationSequencePaddle, completion: {
+            scene.paddle.run(animationSequencePaddle, completion: { [weak self] in
+                guard let self else { return }
                 self.scene.paddle.physicsBody!.collisionBitMask = CollisionTypes.paddleCategory.rawValue | CollisionTypes.boarderCategory.rawValue
             })
             
@@ -274,7 +277,8 @@ class Playing: GKState {
             
             
             let wait = SKAction.wait(forDuration: waitDuration)
-            self.scene.run(wait, completion: {
+            self.scene.run(wait, completion: { [weak self] in
+                guard let self else { return }
             // Add slight delay for loading first level to allow blur view to cover brick build animation properly
                 
                 self.scene.loadLevel(self.scene.levelNumber)

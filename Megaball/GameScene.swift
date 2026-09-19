@@ -1794,7 +1794,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         ballPhysicsBodySet()
         ball.zPosition = 3
 		ball.physicsBody!.usesPreciseCollisionDetection = true
-		ball.physicsBody!.linearDamping = ballLinearDampening
+		ball.physicsBody?.linearDamping = ballLinearDampening
         ball.physicsBody!.angularDamping = 0
 		ball.physicsBody!.restitution = 1
 		ball.physicsBody!.density = 2
@@ -2240,6 +2240,31 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	}
 	// Load the total stats array from the NSCoder data store
 	
+	/// Stops everything this scene has in flight, before it is taken off the screen.
+	///
+	/// **Two things were outliving a run** (round 329). The laser `Timer` retains its target, so
+	/// a run quit while Lasers were firing kept the whole scene - and everything it owns - alive
+	/// for ever, still generating lasers into a scene nobody could see. And an action still
+	/// running when the scene was replaced could fire its completion afterwards; where that
+	/// completion belonged to a game state, it read the state's `unowned` scene and trapped,
+	/// which is the crash James's log caught when a daily started straight after a Mayhem run.
+	///
+	/// Cancelling an action cancels its completion - SpriteKit does not call the handler for
+	/// work it has removed - so this closes both. Called from `willMove(from:)`, which covers a
+	/// scene being replaced, and directly by `GameViewController` on the way back to the menus,
+	/// which is the path that removes the view without replacing the scene.
+	func endEverythingInFlight() {
+		laserTimer?.invalidate()
+		laserTimer = nil
+		removeAllActions()
+		enumerateChildNodes(withName: "//*") { node, _ in node.removeAllActions() }
+	}
+
+	override func willMove(from view: SKView) {
+		super.willMove(from: view)
+		endEverythingInFlight()
+	}
+
 	func startLevelTimer() {
 		let timerInterval = SKAction.wait(forDuration: 1.0)
 		let timerAction = SKAction.run({
@@ -4359,7 +4384,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		gravityDeactivate = false
 		gravityIcon.texture = iconGravityDisabledTexture
 		physicsWorld.gravity = CGVector(dx: 0, dy: 0)
-		ball.physicsBody!.affectedByGravity = false
+		ball.physicsBody?.affectedByGravity = false
 		gravityActivated = false
 
 		guard gameState.currentState is Playing, ballIsOnPaddle == false else { return }
@@ -7113,8 +7138,17 @@ laserTimer?.invalidate()
 			self.backstop.physicsBody!.contactTestBitMask = 0
 			self.backstop.run(SKAction.scaleX(by: 4, y: 1, duration: 0.0))
 		})
-		paddle.physicsBody!.isDynamic = true
+		paddle.physicsBody?.isDynamic = true
 		// Backstop paddle reset
+		//
+		// **Asked rather than insisted on**, here and on the two lines above. Every one of
+		// these bodies is built by an `SKPhysicsBody` initialiser that Swift believes cannot
+		// fail and that returns nil for a shape too slight to make anything of - see
+		// `SKPhysicsBody.compound(of:)` - so a paddle narrow enough, or a picture thin enough,
+		// can leave the node with no body at all. Losing a ball is the worst possible moment
+		// to find that out: this runs on every lost ball in every mode, and a force-unwrap
+		// here turns a body that could not be built into a crash in the middle of a run. There
+		// is nothing to put back on a node with no body, so the reset simply carries on
 		
 		ballSizeIconBar.isHidden = true
 		runBallSizeScale(to: 1.0, duration: 0.2)

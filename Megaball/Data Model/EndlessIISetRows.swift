@@ -313,6 +313,97 @@ struct EndlessIISetRow {
         // which is either a rally that never ends or a way of getting behind the row, depending
         // entirely on how it is set up. The deepest gated of the nine, and the one most likely
         // to come back from a play test wanting a different pair of columns
+
+        // MARK: - Round 329's eight
+
+        // James, round 329: "create some new brick layout designs for Endless Mayhem mode of
+        // different types, shapes, using different bricks, etc." Written to fill the gaps the
+        // thirty above leave rather than to add more of what is already there: two shapes that
+        // had no designed row, three actions that had only one apiece, and three formations
+        // that are about the *arrangement* rather than about any one brick.
+
+        EndlessIISetRow(name: "Ratchet", rows: ["WEWEWEWEWEW"], minimumHeight: 110,
+                        legend: ["W": EndlessIIBrickSpec(behaviour: .standard, shape: .wedge,
+                                                         mirrored: true),
+                                 "E": EndlessIIBrickSpec(behaviour: .standard, shape: .wedge,
+                                                         mirrored: false)]),
+        // Wedges alternating the way they face, which Palisade and Chevron each do half of -
+        // one is a row all facing the same way, the other is two halves meeting in the middle.
+        // Alternating every column makes a row with no flat face anywhere along it: whichever
+        // cell the ball meets, it leaves at an angle, and the angle reverses cell to cell. The
+        // shallowest of the eight, because a row that scatters the ball is punishment enough
+        // early on without anything else in it
+
+        EndlessIISetRow(name: "Cradle", rows: ["CCCCCCCCCCC"], minimumHeight: 150,
+                        legend: ["C": EndlessIIBrickSpec(behaviour: .standard, shape: .concave)]),
+        // The concave face had no row of its own - Ripple alternates it with convex, where the
+        // two cancel. A whole row of scoops does the opposite of Palisade: a wedge throws the
+        // ball off, a scoop gathers it back toward the middle of the cell it struck, so this
+        // row hands the ball back rather than away. Worth a row on its own because it is the
+        // one shaped face that makes a rally *easier*, and the field is allowed to be kind
+        // sometimes
+
+        EndlessIISetRow(name: "Trestle", rows: ["MMMMMMMMMMM",
+                                               "...NNNNN...",
+                                               "....N.N...."], minimumHeight: 240,
+                        legend: [:]),
+        // Heavy across the top, narrowing to two legs. The multi-hit lid means the shape cannot
+        // be opened from above in one pass, so the way in is up through the legs and into the
+        // pocket between them - and the pocket is the point: a ball that gets inside has the
+        // lid above it and a leg either side, which is the best few seconds of scoring the mode
+        // offers. Deep, because a ball that goes in can also come straight back down the middle
+
+        EndlessIISetRow(name: "Cage", rows: ["I.........I",
+                                             "I.MMMMMMM.I",
+                                             "I.........I"], minimumHeight: 320,
+                        legend: [:]),
+        // Six indestructible posts down the two edges with a multi-hit bar strung between them,
+        // and the rows above and below it left open. Everything here is about the *columns*:
+        // the posts make the outside lanes unplayable for three rows, so the field is
+        // temporarily nine columns wide, and the bar is the only thing in it worth hitting.
+        // The deepest of the eight - it takes the walls away, which is the one thing a player
+        // always has
+
+        EndlessIISetRow(name: "Avalanche", rows: ["gggg.ggg.gg"], minimumHeight: 260,
+                        legend: ["g": EndlessIIBrickSpec(behaviour: .standard,
+                                                         actions: [.gravity])]),
+        // A row that falls. Rockfall spaces its fallers out; this one is nearly solid, so what
+        // drops is a sheet rather than a handful - and what it drops *onto* is whatever the
+        // generator made underneath, which is how a designed row gets to rearrange an
+        // undesigned one. The two gaps are deliberate: a solid row of fallers lands as a solid
+        // row, and the holes are what make the landing uneven enough to be interesting
+
+        EndlessIISetRow(name: "Rookery", rows: ["..p.....p..",
+                                                 ".NNN...NNN."], minimumHeight: 300,
+                        legend: ["p": EndlessIIBrickSpec(behaviour: .standard,
+                                                         actions: [.spawner])]),
+        // Two spawners, each sitting over three ordinary bricks. Clearing the three underneath
+        // is what makes room for the spawner above to refill them, so the shape rewards leaving
+        // the spawner alone and punishes clearing around it - the opposite way round from
+        // everything else in the field, where the dangerous brick is the one to leave. Break
+        // the spawner first and the row is three bricks and a gap; break the bricks first and
+        // it is a job
+
+        EndlessIISetRow(name: "Fuse", rows: ["X.N.X.N.X.N"], minimumHeight: 250,
+                        legend: ["X": EndlessIIBrickSpec(behaviour: .standard,
+                                                         actions: [.exploding])]),
+        // Four charges spaced two columns apart with ordinary bricks between them. Magazine
+        // buries one charge in a row nobody designed; this one is the charges *and* the spacing,
+        // so that each blast reaches the bricks either side of it and stops short of the next
+        // charge. It is a row that can be cleared in four hits by a player who knows what it is
+        // and in eleven by one who does not, which is exactly the kind of thing a designed row
+        // is for
+
+        EndlessIISetRow(name: "Comet", rows: ["s.........s",
+                                               "...........",
+                                               "....s.s...."], minimumHeight: 200,
+                        legend: ["s": EndlessIIBrickSpec(behaviour: .standard,
+                                                         actions: [.spinning])]),
+        // Four spinners falling inward, two wide and two near the middle, with the row between
+        // them left empty for the clearance a spinner needs - the same booking Orrery makes and
+        // for the same reason: a formation cannot ask the row above it for room, because that
+        // row was built before this one was drawn. What the arrangement adds is a *gradient*:
+        // the outer pair are reachable from the wall lanes, the inner pair only from the middle
     ]
 
     /// The ones allowed at this height.

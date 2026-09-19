@@ -158,10 +158,10 @@ extension GameScene {
         // The *body* is the paddle's own height, whatever the picture's is: the Retro dress is
         // two and a half times as tall as the paddle it stands for, and a body built to the
         // picture would catch balls above and below the paddle everybody else is playing with
-        paddle.physicsBody = paddleBodyMatchingCurrent(SKPhysicsBody(
-            bodies: centres.map {
-                SKPhysicsBody(rectangleOf: bodySize, center: CGPoint(x: $0, y: 0))
-            }))
+        paddle.physicsBody = paddleBodyMatchingCurrent(
+            SKPhysicsBody.compound(of: centres.map {
+                SKPhysicsBody.rectangle(of: bodySize, centre: CGPoint(x: $0, y: 0))
+            }) ?? SKPhysicsBody(rectangleOf: paddle.size))
         // One body made of several rectangles. Every contact still arrives as a paddle
         // contact, which is the whole trick - nothing downstream has to know how many pieces
         // there are. The gaps carry no rectangle at all, so there is nothing in them for the

@@ -23,7 +23,8 @@ class PreGame: GKState {
         
         let wait = SKAction.wait(forDuration: 1.0)
         // Add slight delay when moving in from main menu
-        scene.self.run(wait, completion: {
+        scene.self.run(wait, completion: { [weak self] in
+            guard let self else { return }
             if self.scene.musicSetting {
                 MusicHandler.sharedHelper.crossfadeMusic(sender: "PreGame")
                 // **Mixed, not cut** (James, round 210: "when the music goes from the main menu

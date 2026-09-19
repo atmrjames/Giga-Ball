@@ -159,6 +159,7 @@ final class PaddleSpeedViewController: UIViewController, MenuNavigable {
 
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
+        view.applyMenuParallaxToContent()
         if let closeButton { alignCloseButtonWithReturnToGame(closeButton) }
         // In to the narrow position when the big play is here (round 176) - this screen is a
         // child of Settings, which the pause menu opens

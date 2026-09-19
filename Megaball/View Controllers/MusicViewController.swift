@@ -60,6 +60,7 @@ final class MusicViewController: UIViewController, UITableViewDelegate, UITableV
 
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
+        view.applyMenuParallaxToContent()
         if let closeButton { alignCloseButtonWithReturnToGame(closeButton) }
         // In to the narrow position when the pause screen's play button is on screen behind
         // this one (round 176) - Settings is reached from the pause menu as well as the main

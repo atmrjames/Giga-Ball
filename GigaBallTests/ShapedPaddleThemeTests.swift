@@ -149,3 +149,43 @@ final class ShapedPaddleThemeTests: XCTestCase {
         }
     }
 }
+
+/// The shaped paddle's body, at widths a run can actually reach.
+///
+/// **Round 329: the ordered-pair sweep collected Wedge Left Paddle and then Split Paddle, and
+/// the app went down with `NSInvalidArgumentException: attempt to insert nil object`.** The
+/// split rebuilds the shape at a segment's width, about a third of the paddle's; one strip of
+/// the wedge came out too slight for SpriteKit to make a body of; SpriteKit's initialiser is
+/// imported as though it always succeeds, so the null travelled to `SKPhysicsBody(bodies:)`,
+/// which is where it raised. Every narrow shaped paddle is one strip away from that - Shrink
+/// Paddle reaches the same place by the shorter road - so the widths below are the ones a run
+/// produces, and the only thing asserted is that the game comes back with something rather
+/// than not coming back.
+final class ShapedPaddleBodyTests: XCTestCase {
+
+    func testAShapeStillBuildsABodyHoweverNarrowThePaddleIs() {
+        for surface in PaddleBounce.Surface.allCases {
+            let scene = GameScene(size: CGSize(width: 400, height: 800))
+            scene.gameMode = .endlessII
+            guard let name = scene.endlessIIPaddleShapeTextureName(surface) else { continue }
+            let texture = SKTexture(imageNamed: name)
+            for width in [90.0, 45.0, 30.0, 12.0, 6.0, 2.0] as [CGFloat] {
+                let size = CGSize(width: width, height: 12)
+                _ = PaddleOutline.body(for: texture, size: size)
+                // Nil is a perfectly good answer - the caller falls back to the traced body -
+                // and a crash is not, which is the whole of this test
+            }
+        }
+    }
+
+    /// And the trap itself, said in one line: a compound of nothing is nothing.
+    func testACompoundBodyDropsThePiecesSpriteKitRefused() {
+        XCTAssertNil(SKPhysicsBody.compound(of: [nil, nil]),
+                     "a compound of nothing is nothing, not a crash")
+        XCTAssertNil(SKPhysicsBody.rectangle(of: CGSize(width: 0, height: 12)),
+                     "a rectangle with no width is not a body")
+        XCTAssertNotNil(SKPhysicsBody.compound(of: [
+            SKPhysicsBody.rectangle(of: CGSize(width: 20, height: 12)), nil,
+        ]), "and one good piece beside a refused one still makes a body")
+    }
+}

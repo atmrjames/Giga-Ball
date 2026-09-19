@@ -1520,12 +1520,30 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
     /// difference between a reference a player uses and one they know exists.
     ///
     /// Every mode, because the question is the same in all of them.
+    /// Whether the Main Menu question should offer a third answer: start this run again.
+    ///
+    /// **Only where the screen behind has no Restart of its own** (James, round 329). The pause
+    /// screen carries Info, Play and Settings; the replay button only appears once a run has
+    /// ended, which is a screen that has its own. So the offer belongs to the pause, and
+    /// nowhere else.
+    ///
+    /// **Never in a Daily Challenge.** The scoring attempt is spent the moment it starts, and
+    /// the daily's own game over has no replay for the same reason - another go is a deliberate
+    /// trip back through the briefing screen, labelled free play. A Restart here would look
+    /// like a second attempt and would not be one.
+    var offersRestartInTheConfirm: Bool {
+        self.sender == "Pause" && isDailyChallenge == false
+    }
+
     @IBAction func homeButton(_ sender: Any) {
         if hapticsSetting {
             interfaceHaptic.impactOccurred()
         }
         if self.sender == "Pause" {
-            GigaBallConfirm.mainMenu.show(on: self)
+            GigaBallConfirm.mainMenu.show(on: self, restart: offersRestartInTheConfirm
+                                          ? { [weak self] in
+                                              self?.removeAnimate(nextAction: .restartGameNotificiation)
+                                          } : nil)
         } else {
             MenuViewController().clearSavedGame()
             moveToMainMenu()

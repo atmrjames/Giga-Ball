@@ -1263,3 +1263,161 @@ final class ReduceMotionTests: XCTestCase {
         XCTAssertTrue(view.motionEffects.isEmpty)
     }
 }
+
+/// **A way to start the level again without leaving it** (James, round 329: "yes, add a restart
+/// button, that is a good idea! Restart only shows up at game over, so show restart in the pop-up
+/// on occasions where it isn't already available in the main view").
+///
+/// The pause screen carries Info, Play and Settings; the replay button only appears once a run
+/// has ended. So a player who paused, thought about quitting and changed their mind had no way to
+/// start the level again short of doing it. The Main Menu question offers it as a third answer,
+/// and only where the screen behind has none of its own.
+final class RestartOnTheMainMenuConfirmTests: XCTestCase {
+
+    override func tearDown() {
+        DailyChallengeSession.shared.active = nil
+        super.tearDown()
+    }
+
+    private func pauseScreen(sender: String) -> PauseMenuViewController {
+        let screen = PauseMenuViewController()
+        screen.sender = sender
+        return screen
+    }
+
+    func testAnOrdinaryPauseOffersIt() {
+        XCTAssertTrue(pauseScreen(sender: "Pause").offersRestartInTheConfirm)
+    }
+
+    /// A finished run has its own replay button, so the question does not repeat it.
+    func testAFinishedRunDoesNot() {
+        for sender in ["Game Over", "Complete"] {
+            XCTAssertFalse(pauseScreen(sender: sender).offersRestartInTheConfirm, sender)
+        }
+    }
+
+    /// **And never in a Daily Challenge**, where the scoring attempt is spent the moment it
+    /// starts - which is why the daily's own game over has no replay either.
+    func testADailyDoesNotOfferIt() {
+        DailyChallengeSession.shared.active = DailyChallenge(
+            dateKey: "2026-09-20", mode: .endlessII, classicLevel: nil, twists: [])
+        XCTAssertFalse(pauseScreen(sender: "Pause").offersRestartInTheConfirm)
+    }
+}
+
+/// **What a pop-up with three answers looks like** (round 329).
+///
+/// Two answers sit side by side and read as a choice. Three across a card this wide would be
+/// three cramped words, so they stack: what was asked for first, the way out second, the way back
+/// last. Every other pop-up in the app has two and is untouched.
+final class PopUpWithAThirdAnswerTests: XCTestCase {
+
+    private func buttons(in view: UIView) -> [UIButton] {
+        view.subviews.flatMap { [$0].compactMap { $0 as? UIButton } + buttons(in: $0) }
+    }
+
+    private func stack(in view: UIView) -> UIStackView? {
+        for subview in view.subviews {
+            if let found = subview as? UIStackView,
+               found.arrangedSubviews.contains(where: { $0 is UIButton }) { return found }
+            if let deeper = stack(in: subview) { return deeper }
+        }
+        return nil
+    }
+
+    private func shown(third: Bool) -> UIViewController {
+        let host = UIViewController()
+        let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 402, height: 874))
+        window.rootViewController = host
+        window.isHidden = false
+        GigaBallAlert.show(on: host, title: "Main Menu", message: "Are you sure?",
+                           symbol: "house.fill", dismissTitle: "Cancel", dismiss: {},
+                           confirmTitle: "OK", confirm: {},
+                           otherTitle: third ? "Restart" : nil,
+                           other: third ? {} : nil)
+        host.view.setNeedsLayout()
+        host.view.layoutIfNeeded()
+        return host
+    }
+
+    func testTwoAnswersStaySideBySide() throws {
+        let host = shown(third: false)
+        let row = try XCTUnwrap(stack(in: host.view))
+        XCTAssertEqual(row.axis, .horizontal)
+        XCTAssertEqual(row.arrangedSubviews.compactMap { $0 as? UIButton }.count, 2)
+    }
+
+    func testThreeAnswersStackInOrder() throws {
+        let host = shown(third: true)
+        let column = try XCTUnwrap(stack(in: host.view))
+        XCTAssertEqual(column.axis, .vertical, "three across a card is three cramped words")
+
+        let titles = column.arrangedSubviews.compactMap { ($0 as? UIButton)?.title(for: .normal) }
+        XCTAssertEqual(titles, ["OK", "Restart", "Cancel"],
+                       "what was asked for, then the way out, then the way back")
+    }
+
+    /// Every button is still reachable: a stacked card must not push one off the bottom.
+    ///
+    /// The three in the stack, not every `UIButton` in the hierarchy - the glass material behind
+    /// each one carries its own, sized to nothing, and a test that measures those is measuring
+    /// the decoration rather than the controls.
+    func testAllThreeAnswersAreInsideTheCard() throws {
+        let host = shown(third: true)
+        let column = try XCTUnwrap(stack(in: host.view))
+        for button in column.arrangedSubviews.compactMap({ $0 as? UIButton }) {
+            let frame = button.convert(button.bounds, to: host.view)
+            XCTAssertGreaterThanOrEqual(frame.minY, 0, "\(button.title(for: .normal) ?? "") is off the top")
+            XCTAssertLessThanOrEqual(frame.maxY, host.view.bounds.height,
+                                     "\(button.title(for: .normal) ?? "") is off the bottom")
+            XCTAssertGreaterThan(frame.height, 30, "too short to tap")
+        }
+    }
+}
+
+/// **Nothing a run started may fire after the run has gone** (round 329, from James's device log:
+/// `Fatal error: Attempted to read an unowned reference but the object was already destroyed`,
+/// the moment a Daily Challenge started straight after a Mayhem run ended).
+final class SceneTeardownTests: XCTestCase {
+
+    private func scene() -> GameScene {
+        let scene = GameScene()
+        scene.gameMode = .endlessII
+        scene.totalStatsArray = [TotalStats()]
+        return scene
+    }
+
+    func testLeavingCancelsTheScenesOwnActions() {
+        let scene = self.scene()
+        scene.run(.repeatForever(.sequence([.wait(forDuration: 1), .run {}])), withKey: "gameTimer")
+        XCTAssertNotNil(scene.action(forKey: "gameTimer"))
+
+        scene.endEverythingInFlight()
+
+        XCTAssertNil(scene.action(forKey: "gameTimer"),
+                     "a cancelled action runs no completion, which is the whole of the fix")
+    }
+
+    func testLeavingCancelsWhatTheChildrenAreDoing() {
+        let scene = self.scene()
+        scene.addChild(scene.ball)
+        scene.ball.run(.repeatForever(.rotate(byAngle: 1, duration: 1)), withKey: "spin")
+        XCTAssertTrue(scene.ball.hasActions())
+
+        scene.endEverythingInFlight()
+
+        XCTAssertFalse(scene.ball.hasActions())
+    }
+
+    /// The laser timer retains the scene, so a run quit mid-Lasers kept the whole scene - and
+    /// everything it owns - alive for ever, still generating lasers nobody could see.
+    func testLeavingInvalidatesTheLaserTimer() {
+        let scene = self.scene()
+        scene.laserTimer = Timer.scheduledTimer(withTimeInterval: 60, repeats: true) { _ in }
+        XCTAssertEqual(scene.laserTimer?.isValid, true)
+
+        scene.endEverythingInFlight()
+
+        XCTAssertNil(scene.laserTimer)
+    }
+}
