@@ -154,9 +154,20 @@ extension GameScene {
         }()
 
         let margin = endlessIIPaddleGlowMargin()
+        let stretch = max(abs(paddle.xScale), 0.01)
         glow.texture = texture
-        glow.size = CGSize(width: paddle.size.width + margin.width,
+        glow.size = CGSize(width: paddle.size.width + margin.width/stretch,
                            height: paddle.size.height + margin.height)
+        // **Divided by the paddle's scale, because the glow is the paddle's child** (James,
+        // round 327: "paddle glow is expanding and shrinking too far. It should stay 40 points
+        // bigger than the paddle, not expand at the same rate"). Round 320 made the margin an
+        // absolute 40 points rather than a ratio, and it was right until Expand and Shrink
+        // stopped writing `paddle.size` and started animating `xScale` instead (round 321's
+        // fix for a paddle caught mid-resize). A child's size is in the parent's coordinates,
+        // so a doubled paddle drew the margin at double as well - a ratio again by the back
+        // door, from the one direction the round 320 note did not cover. Dividing puts 40
+        // points on the screen at every width. Only the width: `scaleX` is the only one
+        // Expand and Shrink touch, and the height is already in screen points
         glow.position = .zero
         // Centred on the paddle node, which is where the paddle's own picture is drawn - and
         // a split paddle keeps its full span (round 313s), so one halo across the whole of it
@@ -164,8 +175,18 @@ extension GameScene {
     }
 
     private func dressEndlessIIPaddle() {
-        let tint: UIColor? = endlessIIMagnetismClock.isRunning
-            ? GameScene.endlessIIMagnetColour : nil
+        let tint: UIColor? = nil
+        // **Nothing tints the paddle any more** (James, round 327b: "for the magnetism graphic,
+        // there's no need to colour the paddle - show magnetism lines flowing towards the
+        // paddle from the ball, like it is being attracted to the paddle"). Round 316 took the
+        // Portal Paddle's tint away on the same reasoning - the effect is the thing to draw,
+        // not the paddle - and Magnetism was the last one left wearing one. What says a magnet
+        // is running is the pull itself, drawn below: dashes travelling up the line from the
+        // ball to the paddle, which is the direction the force acts in.
+        //
+        // The variable stays rather than the branches below losing their parameter: a shaped
+        // paddle, a split paddle and a mirror all paint through here, and the next power-up
+        // that wants a colour should find one place to say so
         // **The Portal Paddle is no longer tinted** (James, round 316: "I don't think the
         // paddles require a tint any more. The glow effect is enough").
         //
@@ -254,7 +275,7 @@ extension GameScene {
     /// the paddle" - and it fades in as the pull gets stronger, so the strength near the
     /// paddle can be *seen* rising.
     private func drawEndlessIIPullLines() {
-        var wanted: [(ball: SKSpriteNode, colour: UIColor, strength: CGFloat)] = []
+        var wanted: [(ball: SKSpriteNode, colour: UIColor, strength: CGFloat, flowing: Bool)] = []
 
         if endlessIIMagnetismClock.isRunning {
             for subject in endlessIIBallsInPlay where subject.parent != nil {
@@ -263,7 +284,7 @@ extension GameScene {
                 guard gap > 0 else { continue }
                 let proximity = max(0, 1 - gap/EndlessIIPaddleEffects.magnetismReach)
                 guard proximity > 0.05 else { continue }
-                wanted.append((subject, GameScene.endlessIIMagnetColour, proximity))
+                wanted.append((subject, GameScene.endlessIIMagnetColour, proximity, true))
             }
         }
 
@@ -271,7 +292,9 @@ extension GameScene {
             for subject in endlessIIBallsInPlay where subject.parent != nil {
                 guard subject !== ball || ballIsOnPaddle == false else { continue }
                 guard endlessIIHeldBalls.contains(where: { $0 === subject }) == false else { continue }
-                wanted.append((subject, GameScene.endlessIIHaloColour, 0.5))
+                wanted.append((subject, GameScene.endlessIIHaloColour, 0.5, false))
+                // Ball Steering keeps its solid line: the player is aiming that one, and a line
+                // that flows toward the paddle would say the paddle is doing the work
             }
         }
 
@@ -286,13 +309,66 @@ extension GameScene {
             endlessIIPullLines.removeLast().removeFromParent()
         }
 
+        endlessIIMagnetFlowPhase += CGFloat(frameDelta)*GameScene.endlessIIMagnetFlowSpeed
+        let span = GameScene.endlessIIMagnetDash + GameScene.endlessIIMagnetGap
+        if endlessIIMagnetFlowPhase > span { endlessIIMagnetFlowPhase -= span }
+        // Wrapped rather than left to grow: the dashes repeat every `span` points, so the phase
+        // only ever has to say where inside one repeat they are
+
         for (index, entry) in wanted.enumerated() {
             let line = endlessIIPullLines[index]
-            let path = CGMutablePath()
-            path.move(to: entry.ball.position)
-            path.addLine(to: CGPoint(x: paddle.position.x, y: paddleTopY))
-            line.path = path
+            let target = CGPoint(x: paddle.position.x, y: paddleTopY)
+            line.path = entry.flowing
+                ? endlessIIFlowingPath(from: entry.ball.position, to: target,
+                                       phase: endlessIIMagnetFlowPhase)
+                : {
+                    let path = CGMutablePath()
+                    path.move(to: entry.ball.position)
+                    path.addLine(to: target)
+                    return path
+                }()
             line.strokeColor = entry.colour.withAlphaComponent(0.15 + entry.strength*0.45)
         }
     }
+
+    /// The ball-to-paddle line as dashes that have travelled `phase` points toward the paddle.
+    ///
+    /// **Drawn from the ball's end** (James, round 327b: "show magnetism lines flowing towards
+    /// the paddle from the ball, like it is being attracted to the paddle"). A solid line says
+    /// the two are joined; dashes moving one way say which of them is pulling, and that is the
+    /// whole of what a magnet has to communicate.
+    ///
+    /// The first dash starts one full span behind the ball so it arrives rather than appearing:
+    /// clipped to the segment, what the player sees is a dash growing out of the ball, running
+    /// down the line and disappearing into the paddle.
+    func endlessIIFlowingPath(from start: CGPoint, to end: CGPoint, phase: CGFloat) -> CGPath {
+        let path = CGMutablePath()
+        let dx = end.x - start.x, dy = end.y - start.y
+        let length = hypot(dx, dy)
+        guard length > 1 else { return path }
+        let unit = CGPoint(x: dx/length, y: dy/length)
+        let span = GameScene.endlessIIMagnetDash + GameScene.endlessIIMagnetGap
+
+        var travelled = phase.truncatingRemainder(dividingBy: span) - span
+        while travelled < length {
+            let from = max(0, travelled)
+            let to = min(length, travelled + GameScene.endlessIIMagnetDash)
+            if to > from {
+                path.move(to: CGPoint(x: start.x + unit.x*from, y: start.y + unit.y*from))
+                path.addLine(to: CGPoint(x: start.x + unit.x*to, y: start.y + unit.y*to))
+            }
+            travelled += span
+        }
+        return path
+    }
+
+    /// How long each dash is, how far apart they sit, and how fast they run, in points.
+    ///
+    /// Short dashes with a gap of their own size read as movement at a glance; a longer dash
+    /// reads as a dashed line that happens to be shifting. The speed is a little quicker than a
+    /// falling ball, so the pull looks like it is drawing the ball in rather than keeping up
+    /// with it.
+    static let endlessIIMagnetDash: CGFloat = 9
+    static let endlessIIMagnetGap: CGFloat = 9
+    static let endlessIIMagnetFlowSpeed: CGFloat = 220
 }

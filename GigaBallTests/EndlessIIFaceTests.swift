@@ -1481,12 +1481,18 @@ final class PortalGlowTests: XCTestCase {
 }
 
 
-/// **James's overlays, on the bricks he drew them for and nowhere they would be wrong.**
+/// **What a styled brick wears, which since round 327c is a mark or nothing.**
 ///
-/// Round 321: "semi transparent overlays for the different brick types: spinning, flashing,
-/// breathing, moving, gravity, fixed, exploding, spawner - add these over the top of these bricks
-/// as an overlay. Remove any existing tints or icons from these bricks. I have supplied the
-/// graphics just for the normal bricks."
+/// Round 321 put James's semi-transparent overlays on all eight styles. He played with them and
+/// took five of them off again (round 327c): "removed the brick overlay graphics for spinning,
+/// flashing, breathing, moving and gravity bricks as their actions are obvious, so there's no
+/// need for additional graphics. For fixed, exploding and spawner, I think we should return to
+/// the old icons we had previous: upside down T for fixed, which goes bold once the brick is
+/// fixed in place after being hit, asterisks for exploding and plus for spawner."
+///
+/// So `endlessIIOverlaidStyles` is empty, the three on-hit styles draw the glyphs round 321 kept
+/// as a fallback, and the eight still wear no tint - which is now `endlessIIUntintedStyles`,
+/// because the list that used to say so is the empty one.
 final class StyleOverlayTests: XCTestCase {
 
     private func scene() -> GameScene {
@@ -1512,23 +1518,25 @@ final class StyleOverlayTests: XCTestCase {
             .filter { $0.name == GameScene.styleOverlayName }
     }
 
-    /// Every one of the eight wears its own picture on a plain brick, untinted and unmarked.
-    func testEachOfTheEightWearsItsOwnOverlayAndNoTintOrGlyph() {
-        for style in GameScene.endlessIIOverlaidStyles {
+    /// **Nothing wears an overlay, and the motions wear nothing at all** (round 327c).
+    func testNoStyleWearsAnOverlayAndOnlyTheOnHitThreeAreMarked() {
+        XCTAssertTrue(GameScene.endlessIIOverlaidStyles.isEmpty,
+                      "the pictures are still in the bundle; what changed is that none is used")
+
+        let marked: [EndlessIIStyle] = [.exploding, .spawner, .fixed]
+        for style in GameScene.endlessIIUntintedStyles {
             let scene = self.scene()
             let brick = self.brick(in: scene)
             scene.applyEndlessIIStyle(style, to: brick)
 
-            let worn = overlays(on: brick)
-            XCTAssertEqual(worn.count, 1, "\(style) wears one overlay")
-            let name = GameScene.endlessIIStyleOverlayArtName(style)
-            XCTAssertTrue(String(describing: worn.first?.texture).contains(name),
-                          "\(style) wears \(name)")
+            XCTAssertTrue(overlays(on: brick).isEmpty, "\(style) wears no overlay")
             XCTAssertEqual(brick.colorBlendFactor, 0, accuracy: 0.0001,
-                           "\(style) is not tinted - the overlay says what it is")
-            XCTAssertNil(brick.childNode(withName: GameScene.glyphName),
-                         "\(style) carries no icon")
-            XCTAssertEqual(worn.first?.size, brick.size, "the overlay covers the brick exactly")
+                           "\(style) is not tinted either - that went in round 321 and stays gone")
+            XCTAssertEqual(brick.childNode(withName: GameScene.glyphName) != nil,
+                           marked.contains(style),
+                           marked.contains(style)
+                            ? "\(style) looks like any other brick until struck, so it is marked"
+                            : "\(style) says what it is by moving")
         }
     }
 
@@ -1552,39 +1560,50 @@ final class StyleOverlayTests: XCTestCase {
         }
     }
 
-    /// Order does not matter: an Exploding brick later given a shape loses the rectangle.
-    func testAShapeArrivingAfterTheStyleTakesTheRectangularOverlayAway() {
+    /// Order does not matter: an Exploding brick given a shape afterwards keeps its burst.
+    func testAShapeArrivingAfterTheStyleKeepsTheMark() {
         let scene = self.scene()
         let brick = self.brick(in: scene)
         scene.applyEndlessIIStyle(.exploding, to: brick)
-        XCTAssertEqual(overlays(on: brick).count, 1)
+        XCTAssertNotNil(brick.childNode(withName: GameScene.glyphName))
 
         scene.applyEndlessIIStyle(.wedge, to: brick)
-        XCTAssertTrue(overlays(on: brick).isEmpty, "a wedge wearing a rectangle's picture")
+        XCTAssertTrue(overlays(on: brick).isEmpty)
         XCTAssertNotNil(brick.childNode(withName: GameScene.glyphName),
-                        "and the burst comes back, because the player still has to be told")
+                        "the burst survives the shape, because the player still has to be told")
     }
 
-    /// A breathing brick's overlay stays on the brick as it shrinks.
-    func testTheOverlayFollowsABreathingBrick() {
+    /// A breathing brick wears nothing, at whatever size it has breathed to.
+    func testABreathingBrickWearsNothingAtAnySize() {
         let scene = self.scene()
         let brick = self.brick(in: scene)
         scene.applyEndlessIIStyle(.breathing, to: brick)
         brick.size = CGSize(width: 20, height: 10)
         scene.refreshEndlessIIBrickMarks(on: brick)
-        XCTAssertEqual(overlays(on: brick).first?.size, CGSize(width: 20, height: 10))
+
+        XCTAssertTrue(overlays(on: brick).isEmpty)
+        XCTAssertNil(brick.childNode(withName: GameScene.glyphName),
+                     "the breathing is the signal - James took the picture off in round 327c")
     }
 
-    /// Anchored, Fixed wears its overlay twice - the heavier mark round 271 asked for.
-    func testAnAnchoredFixedBrickLooksHeavier() {
+    /// **Anchored, the T is drawn heavier** - round 271's "the same mark, thicker", which the
+    /// glyph does with its own line rather than by being drawn twice as the overlay had to be.
+    func testAnAnchoredFixedBrickLooksHeavier() throws {
         let scene = self.scene()
         let brick = self.brick(in: scene)
         scene.applyEndlessIIStyle(.fixed, to: brick)
-        XCTAssertNil(brick.childNode(withName: GameScene.styleOverlayLockName))
+        let loose = try XCTUnwrap(brick.childNode(withName: GameScene.glyphName) as? SKShapeNode)
+        let looseWidth = loose.lineWidth
+        let looseContrast = loose.strokeColor.cgColor.alpha
 
         brick.endlessIIIsAnchored = true
         scene.endlessIIDressStyleMarks(on: brick)
-        XCTAssertNotNil(brick.childNode(withName: GameScene.styleOverlayLockName),
-                        "the same picture laid over itself once it has locked")
+
+        let locked = try XCTUnwrap(brick.childNode(withName: GameScene.glyphName) as? SKShapeNode)
+        XCTAssertGreaterThan(locked.lineWidth, looseWidth, "thicker once it has stopped")
+        XCTAssertGreaterThan(locked.strokeColor.cgColor.alpha, looseContrast,
+                             "and higher contrast, which is the other half of round 271's ask")
+        XCTAssertNil(brick.childNode(withName: GameScene.styleOverlayLockName),
+                     "no second picture: there is no picture at all any more")
     }
 }

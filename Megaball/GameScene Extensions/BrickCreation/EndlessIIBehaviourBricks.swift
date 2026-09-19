@@ -145,7 +145,7 @@ extension GameScene {
         }
 
         let styles = endlessIIStyles(on: brick)
-        if GameScene.endlessIIOverlaidStyles.contains(where: styles.contains) {
+        if GameScene.endlessIIUntintedStyles.contains(where: styles.contains) {
             brick.colorBlendFactor = 0
         }
         // **No tint on anything these eight are carried by.** The styles stopped tinting in round
@@ -982,7 +982,13 @@ extension GameScene {
             made += 1
         }
 
-        if made > 0 { countBricks() }
+        if made > 0 {
+            countBricks()
+            playMayhemSound("spawner")
+            // James's `spawnerBrick` recording (round 327c), and only when something was
+            // actually put back: a Spawner whose neighbours are all full has done nothing, and
+            // a sound for nothing is the audible version of the dud power-up rule
+        }
     }
 
     // MARK: - Fixed
@@ -1355,7 +1361,7 @@ extension GameScene {
 
         endlessIIShowPortalJump(from: from, to: to)
         if hapticsSetting { mediumHaptic.impactOccurred() }
-        playMayhemSound("brickPortal")
+        playMayhemSound("brickPortal", or: "portalJump")
         partner?.run(.sequence([.fadeAlpha(to: 0.35, duration: 0.08),
                                 .fadeAlpha(to: 1, duration: 0.12)]))
 
@@ -1720,14 +1726,27 @@ extension GameScene {
         let path = CGMutablePath()
         path.move(to: from)
         path.addLine(to: to)
-        let streak = SKShapeNode(path: path)
-        streak.zPosition = 2
-        streak.strokeColor = GameScene.portalBrickColour
-        streak.lineWidth = 3
-        streak.lineCap = .round
-        streak.alpha = 0.5
-        addChild(streak)
-        streak.run(.sequence([.fadeOut(withDuration: 0.25), .removeFromParent()]))
+        for (colour, width, glow, alpha) in
+            [(GameScene.endlessIIHaloColour, CGFloat(3), CGFloat(8), CGFloat(0.55)),
+             (UIColor.white, CGFloat(2), CGFloat(0), CGFloat(1))] {
+            let streak = SKShapeNode(path: path)
+            streak.zPosition = 2
+            streak.strokeColor = colour
+            streak.lineWidth = width
+            streak.glowWidth = glow
+            streak.lineCap = .round
+            streak.alpha = alpha
+            addChild(streak)
+            streak.run(.sequence([.fadeOut(withDuration: 0.25), .removeFromParent()]))
+        }
+        // **White, with the Giga-Ball glow around it** (James, round 327b: "the graphic that
+        // shows up when a ball moves between one portal and another, can we just use a line
+        // coloured white with the giga-ball yellow-green glow?"). Two lines rather than one
+        // with a `glowWidth`: a glow takes the colour of the line it belongs to, so a white
+        // line can only have a white halo. The lime one underneath is wider and glowing, the
+        // white one over it is the line itself - which is also how the ball, the paddle and
+        // the wordmark are lit, so the jump now belongs to the same set of lights as
+        // everything else the player is asked to look at
         // A line joining the two, so the eye is taken from one end to the other rather than
         // having to find the ball again. Drawn between the actual points rather than as a
         // vertical bar: a lone Portal is a lift and its journey really is straight up, but a

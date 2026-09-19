@@ -1025,7 +1025,7 @@ extension GameScene {
         // angle is the bounce this spot would have given (play test: the ball just
         // carried on, and the portal gave no control)
         if hapticsSetting { mediumHaptic.impactOccurred() }
-        playMayhemSound("paddlePortal")
+        playMayhemSound("paddlePortal", or: "portalJump")
         return true
     }
 
@@ -1053,7 +1053,7 @@ extension GameScene {
         endlessIIPendingPortalCollisions[ObjectIdentifier(subject)] = collision
         endlessIIPortalPaddleClock.spendTurn(thenLingerFor: EndlessIIClock.lingerSeconds)
         if hapticsSetting { mediumHaptic.impactOccurred() }
-        playMayhemSound("paddlePortal")
+        playMayhemSound("paddlePortal", or: "portalJump")
         return true
     }
 

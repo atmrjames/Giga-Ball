@@ -274,3 +274,143 @@ final class MenuHeaderSwapTests: XCTestCase {
                                  "and what hung under the icon hangs under the header now")
     }
 }
+
+/// **The Endless and Mayhem screens before a first run** (James, round 326: "If there's no scores
+/// yet, hide the tableview and centre the icon and game mode header on the page whilst disabling
+/// scrolling. Same on the Endless Mode screen.").
+///
+/// Both modes are the one `LevelStatsViewController` at level 0, told apart by the stored mode, so
+/// one set of runs is given to both lists and either mode reads it.
+final class EndlessModeScreenWithNoRunsTests: XCTestCase {
+
+    private let shapes: [(String, CGSize)] = [
+        ("phone", CGSize(width: 402, height: 874)),
+        ("iPad portrait", CGSize(width: 1032, height: 1376)),
+    ]
+
+    private func screen(runs: [Int], in size: CGSize) -> LevelStatsViewController {
+        let window = UIWindow(frame: CGRect(origin: .zero, size: size))
+        let board = UIStoryboard(name: "Main", bundle: Bundle(for: LevelStatsViewController.self))
+        let screen = board.instantiateViewController(withIdentifier: "levelStatsView")
+            as! LevelStatsViewController
+        let stats = TotalStats()
+        stats.endlessModeHeight = runs
+        stats.endlessModeHeightDate = runs.map { _ in Date() }
+        stats.endlessIIModeHeight = runs
+        stats.endlessIIModeHeightDate = runs.map { _ in Date() }
+        screen.totalStatsArray = [stats]
+        // Under tests the screen has no stats file, so this is what it shows
+        screen.startLevel = 0
+        screen.levelNumber = 0
+        screen.packNumber = 1
+        window.rootViewController = screen
+        window.isHidden = false
+        for _ in 0..<4 {
+            screen.view.setNeedsLayout()
+            screen.view.layoutIfNeeded()
+        }
+        return screen
+    }
+
+    private func rect(_ view: UIView, in screen: LevelStatsViewController) -> CGRect {
+        view.convert(view.bounds, to: screen.view)
+    }
+
+    /// The logo and the mode's name, as the one block they read as.
+    private func header(_ screen: LevelStatsViewController) -> CGRect {
+        rect(screen.levelImageView, in: screen).union(rect(screen.levelNameLabel, in: screen))
+    }
+
+    func testWithNoRunsTheHeaderIsInTheMiddleOfThePage() {
+        for (name, size) in shapes {
+            let screen = screen(runs: [], in: size)
+            let page = rect(screen.levelStatsView, in: screen)
+            let block = header(screen)
+            XCTAssertEqual(block.midY, page.midY, accuracy: 1,
+                           "\(name): the header's middle is at \(Int(block.midY)), the page's at \(Int(page.midY))")
+            XCTAssertEqual(block.midX, page.midX, accuracy: 1, "\(name): and centred across it")
+        }
+    }
+
+    func testWithNoRunsThereIsNoListAndNothingScrolls() {
+        for (name, size) in shapes {
+            let screen = screen(runs: [], in: size)
+            XCTAssertTrue(screen.runHistoryTable == nil || screen.runHistoryTable?.isHidden == true,
+                          "\(name): no run list")
+            let scrolling = screen.levelStatsView.subviews
+                .compactMap { $0 as? UIScrollView }
+                .filter { $0.isHidden == false && $0.isScrollEnabled }
+            XCTAssertTrue(scrolling.isEmpty, "\(name): nothing on the page scrolls, found \(scrolling)")
+        }
+    }
+
+    /// The logo is the size it will be once there are runs, so a first run does not shrink it.
+    func testTheLogoIsTheSameSizeWithRunsAndWithout() {
+        for (name, size) in shapes {
+            let empty = screen(runs: [], in: size)
+            let without = rect(empty.levelImageView, in: empty)
+            let with = screen(runs: [120, 340], in: size)
+            XCTAssertEqual(without.width, UIViewController.menuModeLogoSize, accuracy: 0.5, "\(name)")
+            XCTAssertEqual(rect(with.levelImageView, in: with).width,
+                           UIViewController.menuModeLogoSize, accuracy: 0.5, "\(name)")
+        }
+    }
+
+    /// With runs, nothing changes from before: the header at the top and the list under it.
+    func testWithRunsTheHeaderIsAtTheTopAndTheListIsShown() {
+        for (name, size) in shapes {
+            let screen = screen(runs: [120, 340], in: size)
+            let page = rect(screen.levelStatsView, in: screen)
+            let block = header(screen)
+            XCTAssertLessThan(block.midY, page.midY - 100, "\(name): the header is at the top")
+            guard let table = screen.runHistoryTable else {
+                XCTFail("\(name): no run list was built")
+                continue
+            }
+            XCTAssertFalse(table.isHidden, "\(name): the list is there")
+            XCTAssertEqual(table.numberOfRows(inSection: 0), 2, "\(name): with both runs")
+            XCTAssertGreaterThanOrEqual(rect(table, in: screen).minY, block.maxY,
+                                        "\(name): under the header")
+        }
+    }
+
+    /// And a list emptied while the screen is open - Reset Data, or an iCloud reset - goes back
+    /// to the empty page rather than leaving an empty table under a header at the top.
+    func testEmptyingTheRunsWhileTheScreenIsOpenCentresTheHeaderAgain() {
+        let screen = screen(runs: [120], in: shapes[0].1)
+        XCTAssertNotNil(screen.runHistoryTable)
+        screen.totalStatsArray[0].endlessModeHeight = []
+        screen.totalStatsArray[0].endlessModeHeightDate = []
+        screen.totalStatsArray[0].endlessIIModeHeight = []
+        screen.totalStatsArray[0].endlessIIModeHeightDate = []
+        screen.updateLabels()
+        for _ in 0..<4 {
+            screen.view.setNeedsLayout()
+            screen.view.layoutIfNeeded()
+        }
+        let page = rect(screen.levelStatsView, in: screen)
+        XCTAssertEqual(header(screen).midY, page.midY, accuracy: 1)
+        XCTAssertEqual(screen.runHistoryTable?.isHidden, true)
+        XCTAssertEqual(screen.runHistoryTable?.isScrollEnabled, false)
+    }
+}
+
+/// **The sticky heading's band is as wide as the tiles** (James, round 326, on an iPad: the
+/// Power-Ups sticky header "is slightly wider than the tiles below it").
+final class ReferenceHeadingBandTests: XCTestCase {
+
+    func testTheBandStartsAndEndsWhereTheTilesDo() {
+        let header = UICollectionReusableView(
+            frame: CGRect(x: 0, y: 0, width: 400, height: ReferenceHeading.height))
+        let inset = PackSelectViewController.gridInset
+        ReferenceHeading.fill(header, title: "Classic game modes", inset: inset)
+        let band = header.subviews.compactMap { $0 as? UIVisualEffectView }.first
+        XCTAssertEqual(band?.frame, CGRect(x: inset, y: 0, width: 400 - 2*inset,
+                                           height: ReferenceHeading.height))
+
+        header.frame.size.width = 1000
+        header.layoutIfNeeded()
+        XCTAssertEqual(band?.frame.minX, inset, "still in from the left on a wider screen")
+        XCTAssertEqual(band?.frame.maxX, 1000 - inset, "and from the right")
+    }
+}

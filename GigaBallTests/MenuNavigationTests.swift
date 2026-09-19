@@ -262,12 +262,19 @@ final class GigaBallConfirmTests: XCTestCase {
         XCTAssertTrue(UIView.standDownParallax(under: screen).isEmpty)
     }
 
-    func testResetDataStillSaysWhatSurvivesIt() {
-        // The one confirm that cannot be undone. It has always promised that purchases are
-        // kept, and a merge is exactly the kind of change that quietly drops a sentence
+    func testResetDataSaysWhatItTakesAndNothingAboutAShopThatIsGone() {
+        // The one confirm that cannot be undone, so what it warns about has to stay said.
+        //
+        // **And the purchases line is gone** (round 328). It promised that in-app purchases
+        // survive a reset, which was true when there were purchases; the monetisation
+        // architecture came out before 1.3 and every StoreKit call in the app is commented
+        // out, so the sentence was telling players about a shop the app does not have. This
+        // asserts the promise that is still true and the sentence that must not come back.
         let message = GigaBallConfirm.resetData.message
         XCTAssertTrue(message.contains("irreversibly"), message)
-        XCTAssertTrue(message.contains("In-app purchases will remain."), message)
+        XCTAssertTrue(message.contains("progress, statistics and settings"), message)
+        XCTAssertFalse(message.lowercased().contains("in-app"), message)
+        XCTAssertFalse(message.lowercased().contains("purchase"), message)
     }
 }
 
@@ -1071,5 +1078,188 @@ final class SettingsResetDataTests: XCTestCase {
         let written = try PropertyListDecoder().decode([TotalStats].self,
                                                        from: Data(contentsOf: statsFile))
         XCTAssertEqual(written.first?.levelsPlayed, 0, "and the file on disk says so too")
+    }
+}
+
+/// **Every icon the app's pop-ups wear, drawn for review** (James, round 327b: "can you show me
+/// all the icons that are used in the pop-up views throughout the app and what they're used for?
+/// I'd like to review them and make sure I'm happy with them").
+///
+/// Rendered the way `GigaBallAlert` renders them - 30pt bold, the app's lime, on the pop-up's own
+/// dark ground - so what is reviewed is what a player sees rather than an approximation of it.
+/// The five questions come from `GigaBallConfirm` itself; the free-standing messages name their
+/// symbol at the call site, so those are listed here with where they are raised.
+final class PopUpIconSheetTests: XCTestCase {
+
+    /// The messages that are not `GigaBallConfirm` cases, with where each is raised.
+    private let messages: [(symbol: String, title: String, raised: String)] = [
+        ("sparkles", "What's New in 1.3", "Main menu, first launch after an update"),
+        ("calendar.badge.exclamationmark", "Challenge Closed",
+         "Pause menu, resuming a daily whose day has ended"),
+        ("dice.fill", "Today's Twists", "Pause menu and the Daily Challenge card"),
+        ("dice.fill", "A twist's own explainer", "Daily Challenge card, tapping one twist"),
+        ("arrow.up.circle.fill", "A power-up's explainer", "Pause menu, tapping a power-up"),
+        ("gamecontroller.fill", "Free play", "Daily Challenge, after the scoring attempt"),
+        ("hand.draw.fill", "Swipe Up To Pause", "Settings, turning the gesture on"),
+    ]
+
+    func testEverySymbolThePopUpsAskForExists() {
+        for confirm in GigaBallConfirm.allCases {
+            XCTAssertNotNil(UIImage(systemName: confirm.symbol),
+                            "\(confirm.title) asks for \(confirm.symbol), which iOS does not have")
+        }
+        for message in messages {
+            XCTAssertNotNil(UIImage(systemName: message.symbol),
+                            "\(message.title) asks for \(message.symbol)")
+        }
+    }
+
+    /// Each icon on its own, drawn as the pop-up draws it, for a page that lays them out itself.
+    func testEachPopUpIconCanBeLookedAtOnItsOwn() throws {
+        let lime = UIColor(red: 0.8235294118, green: 1, blue: 0, alpha: 1)
+        let side: CGFloat = 96
+        let folder = URL(fileURLWithPath: NSTemporaryDirectory())
+            .appendingPathComponent("pop-up-icons", isDirectory: true)
+        try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+
+        var written = 0
+        for symbol in Set(GigaBallConfirm.allCases.map(\.symbol) + messages.map(\.symbol)) {
+            let image = UIGraphicsImageRenderer(size: CGSize(width: side, height: side)).image { _ in
+                guard let drawn = UIImage(systemName: symbol,
+                                          withConfiguration: UIImage.SymbolConfiguration(
+                                            pointSize: 44, weight: .bold))?
+                    .withTintColor(lime, renderingMode: .alwaysOriginal) else { return }
+                drawn.draw(at: CGPoint(x: side/2 - drawn.size.width/2,
+                                       y: side/2 - drawn.size.height/2))
+            }
+            let name = symbol.replacingOccurrences(of: ".", with: "-") + ".png"
+            try XCTUnwrap(image.pngData()).write(to: folder.appendingPathComponent(name))
+            written += 1
+        }
+        print("\n  Pop-up icons, one each: \(folder.path)\n  \(written) files\n")
+        XCTAssertGreaterThan(written, 0)
+    }
+
+    func testThePopUpIconsCanBeLookedAt() throws {
+        let entries: [(symbol: String, title: String, detail: String)] =
+            GigaBallConfirm.allCases.map {
+                ($0.symbol, $0.title, "Question - " + $0.message.replacingOccurrences(of: "\n", with: " "))
+            } + messages.map { ($0.symbol, $0.title.uppercased(), "Message - " + $0.raised) }
+
+        let rowHeight: CGFloat = 76
+        let size = CGSize(width: 720, height: rowHeight*CGFloat(entries.count) + 24)
+        let sheet = UIGraphicsImageRenderer(size: size).image { context in
+            UIColor(red: 0.10, green: 0.02, blue: 0.16, alpha: 1).setFill()
+            context.fill(CGRect(origin: .zero, size: size))
+
+            for (index, entry) in entries.enumerated() {
+                let top = 12 + CGFloat(index)*rowHeight
+                let lime = UIColor(red: 0.8235294118, green: 1, blue: 0, alpha: 1)
+                if let image = UIImage(systemName: entry.symbol,
+                                       withConfiguration: UIImage.SymbolConfiguration(
+                                        pointSize: 30, weight: .bold))?
+                    .withTintColor(lime, renderingMode: .alwaysOriginal) {
+                    image.draw(at: CGPoint(x: 40 - image.size.width/2 + 20,
+                                           y: top + rowHeight/2 - image.size.height/2 - 6))
+                }
+                (entry.title as NSString).draw(
+                    at: CGPoint(x: 110, y: top + 12),
+                    withAttributes: [.font: UIFont.systemFont(ofSize: 17, weight: .bold),
+                                     .foregroundColor: UIColor.white])
+                (entry.symbol as NSString).draw(
+                    at: CGPoint(x: 110, y: top + 34),
+                    withAttributes: [.font: UIFont.monospacedSystemFont(ofSize: 12, weight: .regular),
+                                     .foregroundColor: UIColor(white: 1, alpha: 0.5)])
+                let detail = entry.detail.count > 92
+                    ? String(entry.detail.prefix(92)) + "..." : entry.detail
+                (detail as NSString).draw(
+                    at: CGPoint(x: 340, y: top + 22),
+                    withAttributes: [.font: UIFont.systemFont(ofSize: 13),
+                                     .foregroundColor: UIColor(white: 1, alpha: 0.75)])
+                UIColor(white: 1, alpha: 0.12).setFill()
+                context.fill(CGRect(x: 24, y: top + rowHeight - 1, width: size.width - 48, height: 1))
+            }
+        }
+
+        let url = URL(fileURLWithPath: NSTemporaryDirectory())
+            .appendingPathComponent("pop-up-icons.png")
+        try XCTUnwrap(sheet.pngData()).write(to: url)
+        print("\n  Pop-up icons, drawn: \(url.path)\n  \(entries.count) icons\n")
+        XCTAssertEqual(entries.count, GigaBallConfirm.allCases.count + messages.count)
+    }
+}
+
+/// **What a screen reader hears on a menu** (round 328).
+///
+/// Every round button along the bottom of every screen is a picture of a glyph in a circle, so
+/// until now VoiceOver had a bare "button" to offer for each of the three or four on screen -
+/// which is the same as offering nothing. `setButton` is the one funnel they all come through,
+/// so it is where the name is given.
+final class RoundButtonVoiceOverTests: XCTestCase {
+
+    private func cell() throws -> MainMenuCollectionViewCell {
+        let nib = UINib(nibName: "MainMenuCollectionViewCell",
+                        bundle: Bundle(for: MainMenuCollectionViewCell.self))
+        return try XCTUnwrap(nib.instantiate(withOwner: nil).first as? MainMenuCollectionViewCell)
+    }
+
+    func testAButtonIsNamedForWhatItDoes() throws {
+        for (artwork, spoken) in MainMenuCollectionViewCell.spokenName {
+            let cell = try cell()
+            cell.setButton(artwork + ".png")
+            XCTAssertTrue(cell.isAccessibilityElement, artwork)
+            XCTAssertEqual(cell.accessibilityLabel, spoken, artwork)
+            XCTAssertTrue(cell.accessibilityTraits.contains(.button), artwork)
+        }
+    }
+
+    /// The pressed artwork is the same button, so it keeps the same name.
+    func testTheHighlightedArtworkKeepsTheName() throws {
+        let cell = try cell()
+        cell.setButton("ButtonLeaderboardHighlighted.png")
+        XCTAssertEqual(cell.accessibilityLabel, "Leaderboards")
+    }
+
+    /// `ButtonNull` is the invisible spacer that keeps a three-cell row even. A reader that
+    /// stops on it is a reader announcing a gap.
+    func testTheSpacerIsNotSomethingToStopOn() throws {
+        let cell = try cell()
+        cell.setButton("ButtonNull")
+        XCTAssertFalse(cell.isAccessibilityElement)
+        XCTAssertNil(cell.accessibilityLabel)
+    }
+
+    /// Every button that can become glass has a name, which is the list read the other way:
+    /// a new button added to one table and not the other is a button with no name.
+    func testEveryGlassButtonHasASpokenName() {
+        for artwork in MainMenuCollectionViewCell.systemGlyph.keys {
+            XCTAssertNotNil(MainMenuCollectionViewCell.spokenName[artwork],
+                            "\(artwork) can be glassed but has nothing to say")
+        }
+    }
+}
+
+/// **Motion effects stand down when the system asks for less motion** (round 328).
+///
+/// The app has had a parallax setting of its own since long before this - the Settings row calls
+/// it Perspective Zoom - and what it did not have was any regard for the setting a player makes
+/// once, for every app on the phone. Apple's rule is that the app stops animating and leaves its
+/// own setting alone, so nothing changes back when Reduce Motion is switched off again.
+final class ReduceMotionTests: XCTestCase {
+
+    func testTheAppAsksTheSystemRatherThanAssuming() {
+        XCTAssertEqual(UIView.motionEffectsAreWelcome,
+                       UIAccessibility.isReduceMotionEnabled == false,
+                       "the answer is the system's, whatever the simulator is set to")
+    }
+
+    /// And the parallax helper every screen shares refuses to add one while that is true.
+    func testNoMotionEffectIsAddedWhenMotionIsNotWelcome() throws {
+        try XCTSkipUnless(UIAccessibility.isReduceMotionEnabled,
+                          "Reduce Motion is off on this simulator, so there is nothing to assert "
+                          + "- turn it on in Settings > Accessibility > Motion to run this")
+        let view = UIView(frame: CGRect(x: 0, y: 0, width: 393, height: 852))
+        view.applyMenuParallax()
+        XCTAssertTrue(view.motionEffects.isEmpty)
     }
 }

@@ -538,8 +538,21 @@ notification name, not following a call stack.
     file-timestamp, boot-time, disk-space or active-keyboard APIs appear in the code.
   - Everything behind `#if DEBUG` is diagnostics or the daily's test clock, which reads 0 in
     Release, so a Release build loses nothing a player sees.
-  - `release-1.3` on GitHub was last pushed on 16 August (round 159) and the local branch is
-    256 commits ahead, so Xcode Cloud builds nothing current until it is pushed.
+  - ~~`release-1.3` on GitHub was last pushed on 16 August (round 159) and the local branch is
+    256 commits ahead, so Xcode Cloud builds nothing current until it is pushed.~~ **Pushed on
+    14 September** (round 324c), and Xcode Cloud built from it: **1.3 has been on TestFlight for
+    internal testers since 19 September** (James). Local commits after that push still have to
+    be pushed before Xcode Cloud sees them - `git status -sb` says how many.
+- **For external testers** (round 328's check, against what App Store Connect asks for):
+  - **Test Information** has to be filled in once - beta description, feedback email, and a
+    **privacy policy URL**, which external testing requires. `https://giga-ball.app/privacy`
+    exists and says what the app does: no ads, no analytics, no tracking, no accounts, and
+    iCloud and Game Center only. That matches `PrivacyInfo.xcprivacy` and the linked SDKs.
+  - **The first build of a version goes to Beta App Review**; later builds of 1.3 usually do
+    not. A public link can be turned on per group once approved.
+  - **The App Privacy answers on the app's product page** are the one thing recorded as stale,
+    from the AdMob days. The app collects nothing now, so they should read Data Not Collected -
+    and beta review can compare the two.
 - Xcode Cloud assigns its own build numbers; `CFBundleVersion` cannot be overridden from
   a pre-build script.
 - Signing is automatic, team `ZAGZPD36YG`.

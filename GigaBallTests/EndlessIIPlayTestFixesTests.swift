@@ -1001,3 +1001,101 @@ final class PhantomBrickTests: XCTestCase {
         XCTAssertNotNil(alive.parent)
     }
 }
+
+/// **The mid-flight turn James has been reporting since round 128** (round 327b, from his device
+/// log: "the ball is still randomly changing angle mid flight near nothing").
+///
+/// The log named it without meaning to - `CROOKED BALL, unexplained: bent 8.02 deg` - and 8.02
+/// degrees is `endlessIINudgeAngle` exactly. The Mayhem rescue turns the ball after fourteen
+/// seconds without a brick being destroyed, which in this mode is ordinary play: a climb past
+/// indestructibles, a sparse field, a rally while the rows come down. A ball that keeps reaching
+/// the paddle is being played rather than stuck.
+final class EndlessIIStuckRescueTests: XCTestCase {
+
+    private func mayhem() -> GameScene {
+        let scene = GameScene()
+        scene.gameMode = .endlessII
+        scene.brickWidth = 40
+        scene.brickHeight = 20
+        scene.totalStatsArray = [TotalStats()]
+        scene.addChild(scene.ball)
+        scene.ball.physicsBody = SKPhysicsBody(circleOfRadius: 5)
+        scene.ball.physicsBody?.velocity = CGVector(dx: 300, dy: 0)
+        scene.ballIsOnPaddle = false
+        scene.gameState.enter(Playing.self)
+        return scene
+    }
+
+    private func heading(_ scene: GameScene) -> CGFloat {
+        let velocity = scene.ball.physicsBody?.velocity ?? .zero
+        return atan2(velocity.dy, velocity.dx)
+    }
+
+    /// It still rescues a ball that really is getting nowhere.
+    func testAfterFourteenQuietSecondsTheBallIsTurned() {
+        let scene = mayhem()
+        let before = heading(scene)
+
+        for _ in 0..<14 { scene.tickEndlessIIRescue(1) }
+
+        XCTAssertEqual(abs(heading(scene) - before), GameScene.endlessIINudgeAngle, accuracy: 0.001,
+                       "the rescue is still there for a ball with nothing else to break it out")
+    }
+
+    /// And a rally is not a stall: reaching the paddle starts the clock over.
+    func testReachingThePaddleStartsTheClockOver() {
+        let scene = mayhem()
+        let before = heading(scene)
+
+        for _ in 0..<13 { scene.tickEndlessIIRescue(1) }
+        scene.endlessIINotedProgress()
+        for _ in 0..<13 { scene.tickEndlessIIRescue(1) }
+
+        XCTAssertEqual(heading(scene), before, accuracy: 0.0001,
+                       "twenty-six seconds of play with a touch in the middle is not a stuck ball")
+    }
+
+    /// The paddle itself is what calls that, which is the half the log was missing.
+    func testAPaddleHitIsWhatNotesTheProgress() {
+        let scene = mayhem()
+        for _ in 0..<13 { scene.tickEndlessIIRescue(1) }
+        XCTAssertGreaterThan(scene.endlessIIStuckTimer, 12)
+
+        scene.paddleHit(scene.ball)
+
+        XCTAssertEqual(scene.endlessIIStuckTimer, 0, accuracy: 0.0001,
+                       "the ball came back to the paddle, so nothing is stuck")
+    }
+
+    /// **Any ball, not only the first** (James, round 327c: "the stuck-ball rescue timer should be
+    /// reset every time the ball hits the paddle"). The reset began life inside the branch that
+    /// runs for the main ball alone, so a Multi-Ball rally - three balls the player is visibly
+    /// keeping up - ran the clock down and had the first of them turned for it.
+    func testAnExtraBallReachingThePaddleCountsToo() {
+        let scene = mayhem()
+        let extra = SKSpriteNode(color: .white, size: CGSize(width: 10, height: 10))
+        extra.name = BallCategoryName
+        extra.physicsBody = SKPhysicsBody(circleOfRadius: 5)
+        scene.addChild(extra)
+        scene.endlessIIExtraBalls.append(extra)
+
+        for _ in 0..<13 { scene.tickEndlessIIRescue(1) }
+        XCTAssertGreaterThan(scene.endlessIIStuckTimer, 12)
+
+        scene.paddleHit(extra)
+
+        XCTAssertEqual(scene.endlessIIStuckTimer, 0, accuracy: 0.0001,
+                       "a rally with three balls in it is the opposite of a stuck one")
+    }
+
+    /// And when it does fire it says so, or the next log reads as the regression again.
+    func testTheNudgeLeavesItsNote() {
+        let scene = mayhem()
+        scene.crookedBallNotes.removeAll()
+
+        for _ in 0..<14 { scene.tickEndlessIIRescue(1) }
+
+        XCTAssertTrue(scene.crookedBallNotes.contains { $0.contains("stuck-rescue") },
+                      "an unexplained bend is a sighting; an explained one is a line in the log")
+    }
+}

@@ -387,16 +387,21 @@ final class PerStyleArtCostTests: XCTestCase {
         XCTAssertGreaterThan(total, 0, "if this is zero the rules stopped answering")
     }
 
-    /// **Which overlay pictures are still to draw, asked of the rules rather than listed.**
+    /// **No overlay pictures are wanted any more** (round 327c), which is the largest single
+    /// item ever struck off this list.
     ///
-    /// James, round 321: "I have supplied the graphics just for the normal bricks. Let me know if
-    /// I need to create different variants of these graphics for the different shapes and sizes
-    /// of bricks." The answer is every silhouette one of the eight styles can actually be carried
-    /// by, which the game already knows: `suits(_ size:)`, `stacksWith`, and what each shape
-    /// takes. A Tiny brick shares the Normal picture, being the same shape, so it is not asked for.
+    /// Round 321 asked the question - James: "I have supplied the graphics just for the normal
+    /// bricks. Let me know if I need to create different variants of these graphics for the
+    /// different shapes and sizes of bricks" - and the rules answered it with every silhouette
+    /// each of the eight styles can be carried by, which ran to dozens of pictures at three
+    /// scales each. Round 327c answered it the other way instead: he played with the overlays
+    /// and took them off, so the five motions wear nothing and the three on-hit styles wear the
+    /// drawn marks they had before.
     ///
-    /// Printed as the list to send, and counted, so a rule change moves the list with it.
-    func testWhatBrickOverlaysAreStillToDraw() {
+    /// The computation stays exactly as it was. `endlessIIOverlaidStyles` is the input, so if he
+    /// ever puts a style back the list comes back with it, and this test starts failing with the
+    /// names to draw in its own message.
+    func testNoBrickOverlaysAreWantedAnyMore() {
         var wanted: [String] = []
         let shapes: [(name: String, style: EndlessIIStyle?)] =
             [("", nil), (GameScene.ShapedBrickArt.rounded.rawValue, .rounded)]
@@ -419,7 +424,9 @@ final class PerStyleArtCostTests: XCTestCase {
         print("\n  Brick overlays still to draw (\(wanted.count)):")
         for name in wanted.sorted() { print("    \(name)") }
         print("")
-        XCTAssertFalse(wanted.contains { $0.hasPrefix("BrickNormal") == false })
+        XCTAssertTrue(GameScene.endlessIIOverlaidStyles.isEmpty,
+                      "a style has been put back; the list below is what it would need drawing")
+        XCTAssertTrue(wanted.isEmpty, "nothing is waiting on artwork: \(wanted.sorted())")
     }
 }
 

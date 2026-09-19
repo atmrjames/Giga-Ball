@@ -366,8 +366,12 @@ the survivor, which turns a dead branch live. The result was a crash on the firs
 Classic Mode from a clean install. Unit tests were green throughout — it was view-
 controller wiring, found only by a clean-install walkthrough.
 
-Still open: `premiumTableView` outlets, `IAPTableViewCell.xib` and the `ButtonPremium` /
-`iconPremium` assets are unreferenced from Swift but still in Interface Builder.
+~~Still open: `premiumTableView` outlets, `IAPTableViewCell.xib` and the `ButtonPremium` /
+`iconPremium` assets are unreferenced from Swift but still in Interface Builder.~~ **Gone, and
+checked in round 328's release pass:** none of those names appears in any Swift file, the
+storyboard, any xib, or the asset catalogue. What is left of the shop is the commented-out
+StoreKit code in `MenuViewController` and `InbetweenViewController` and three commented rows in
+Settings - inert, but worth knowing about before anyone reads them as a feature.
 
 #### ✅ Add a test target and cover what is testable
 Done. `GigaBallTests`, 88 tests, about two seconds.

@@ -350,6 +350,7 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
     }
     
     func addParallax() {
+        guard UIView.motionEffectsAreWelcome else { return }
         var amount = 25
         if view.frame.width > 450 {
             amount = 50

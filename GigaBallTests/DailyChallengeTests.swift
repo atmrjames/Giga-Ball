@@ -260,18 +260,14 @@ final class DailyChallengeTests: XCTestCase {
             "2026-09-17|endless|-|",
             "2026-09-18|classic|35|drought",
             "2026-09-19|endlessII|-|noGoodNews",
-            "2026-09-20|classic|87|fogOfWar,spareBalls",
-            "2026-09-21|endless|-|",
-            "2026-09-22|classic|10|powerShower",
-            "2026-09-23|endlessII|-|fogOfWar",
-            "2026-09-24|classic|86|upsideDown",
-            "2026-09-25|endlessII|-|fogOfWar,noPowerUps",
-            "2026-09-26|endless|-|fogOfWar",
-            "2026-09-27|endless|-|",
-            "2026-09-28|endless|-|fogOfWar,spareBalls",
-            "2026-09-29|classic|96|fogOfWar,oneLife",
-            "2026-09-30|endless|-|",
         ]
+        // **It ends the day before `twistMixKey`, which moved** (round 327). The list ran to
+        // 2026-09-30 while the new mix began on 2026-10-01; bringing the mix forward to
+        // 2026-09-20 makes the last eleven of those days draw differently. None of them had
+        // been played - the 20th was tomorrow when this was written - so what they held was
+        // not history but a record of a draw nobody had seen. Every day that *has* been played
+        // is still here and still asserted, which is the whole of what this test promises;
+        // `DailyTwistMixTests` measures the days from the 20th on.
         for line in recorded {
             let parts = line.split(separator: "|", omittingEmptySubsequences: false).map(String.init)
             let challenge = DailyChallengeGenerator.challenge(forKey: parts[0])
@@ -2901,7 +2897,7 @@ final class DailyTwistMixTests: XCTestCase {
     /// so the distribution the draw produces and the distribution the calendar shows are two
     /// different things. Measuring the first and quoting it as the second is how a tuned
     /// constant ends up tuned against nothing.
-    private func year(from start: String = "2026-10-01") -> [DailyChallenge] {
+    private func year(from start: String = "2026-09-20") -> [DailyChallenge] {
         var days: [DailyChallenge] = []
         var components = DateComponents()
         let calendar = Calendar(identifier: .gregorian)
@@ -2935,16 +2931,16 @@ final class DailyTwistMixTests: XCTestCase {
 
     /// **Most days wear a look.** "A theme or B&W pretty much every day."
     ///
-    /// Measured from the day the look category opens rather than from `twistMixKey`, and the
-    /// month between them is the reason. The new mix begins on 2026-10-01, when `nerve` and
-    /// `tempo` activate; Monochromatic and Theme are not in any pool until 2026-11-01. So
-    /// October runs the new mix with the look draw finding nothing, by design, and counting
-    /// those 31 days against a rule about looks would measure the activation table instead of
-    /// the mix. The share over the whole year including October is printed too, since that is
-    /// what a player living through it sees.
+    /// Measured from the day the look category opens, which is now the day the mix begins.
+    ///
+    /// The two were a month apart until round 327: the mix started on 2026-10-01 and the look
+    /// category did not open until 2026-11-01, so October ran the new mix with the look draw
+    /// finding nothing. James, still play-testing 1.3, read that as the change not having
+    /// happened - "daily challenges are still mostly single twists with no theme" - so the
+    /// look category came forward to meet the mix on 2026-09-20 and both start together.
     func testMostDaysWearTheDaysThemeOrBlackAndWhite() {
         let whole = year()
-        let open = year(from: "2026-11-01")
+        let open = year(from: "2026-09-20")
         let looked = open.filter { day in day.twists.contains { $0.category == .look } }.count
         let share = Double(looked)/Double(open.count)
         let overall = whole.filter { day in
@@ -2994,7 +2990,7 @@ final class DailyTwistMixTests: XCTestCase {
         // Against what is live by the *end* of the window, not its start: the year crosses
         // three activation dates, so counting the openers would flatter the result by
         // comparing twenty twists met against the sixteen that existed on day one.
-        let last = days.last?.dateKey ?? "2026-10-01"
+        let last = days.last?.dateKey ?? "2026-09-20"
         let live = DailyTwist.allCases.filter { twist in
             twist.category.activationKey <= last
         }
@@ -3015,7 +3011,7 @@ final class DailyTwistMixTests: XCTestCase {
     /// could not be done in place - every day before `twistMixKey` takes the old branch. This
     /// says so directly rather than relying on the thirty pinned days above to notice.
     func testDaysBeforeTheChangeDrawExactlyAsTheyDid() {
-        for key in ["2026-08-01", "2026-08-15", "2026-09-01", "2026-09-30"] {
+        for key in ["2026-08-01", "2026-08-15", "2026-09-01", "2026-09-19"] {
             let day = DailyChallengeGenerator.rawChallenge(forKey: key)
             XCTAssertLessThanOrEqual(day.twists.count, 2,
                                      "\(key) drew more than the old mix ever could")

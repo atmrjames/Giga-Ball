@@ -284,6 +284,7 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
     }
     
     func addParallaxToView() {
+        guard UIView.motionEffectsAreWelcome else { return }
         var amount = 20
         if view.frame.width > 450 {
             amount = 25
@@ -863,6 +864,16 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         // is the round 322b leak read the other way round, so it is closed the round 306 way:
         // "am I being tested". The resume itself is driven by `ResumeTransitionTests`
         
+        guard GameCenterHandler.isRunningTests == false else { return }
+        // **A test run is not an app opening** (round 328, closing the note round 325c left).
+        // The suite launches the app once a batch, and this line counted every one of them into
+        // the player's own settings - 63 to 66 in a single session's runs. What it decides is
+        // when the intro is shown and when a review is asked for, so a machine that has run the
+        // suite a few hundred times is a machine that would never be asked for a review, and
+        // the count is durable: it outlives the process, which is exactly what CLAUDE.md says a
+        // test may not leave behind. The intro is skipped with it, because showing the
+        // onboarding screen over a test run is the other half of the same mistake
+
         if appOpenCount == 0 {
             moveToIntro()
         }

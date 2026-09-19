@@ -179,17 +179,45 @@ final class ApplyPowerUpTests: XCTestCase {
     }
 }
 
-/// **The fifteen Mayhem events that fire a haptic and no sound** (§8.5, round 314).
+/// **The Mayhem events and the sounds they are waiting for** (§8.5, round 314).
 ///
-/// James is writing the sounds; the code is wired to play them the moment a file appears
-/// under the right name, so he needs nothing from here to iterate. These say the wiring is
-/// safe while the files do not exist, which is the whole of what could go wrong before then.
+/// James is writing the sounds; the code is wired to play them the moment a file appears under
+/// the right name, so he needs nothing from here to iterate. **Six have arrived** (rounds 327b
+/// and 327c), which is what this class now has to say: the delivered ones resolve, the awaited
+/// ones are still silence rather than a crash, and the three portal events find the one
+/// recording they share.
 final class MayhemSoundTests: XCTestCase {
 
-    /// Every name the scene asks for, which is the list James works from.
-    private let names = ["explosion", "cull", "aura", "infill", "brickPortal", "brickLocked",
-                         "paddlePortal", "paddleHalo", "wrapAround", "multiBall",
+    /// Delivered, and therefore expected to resolve. The portal jump is one recording for three
+    /// events, so it is listed under its own name rather than theirs.
+    private let delivered = ["explosion", "cull", "infill", "spawner", "laserBeam", "portalJump"]
+
+    /// Still to be made. Each is silence and a haptic until it is.
+    private let names = ["aura", "brickLocked", "paddleHalo", "multiBall",
                          "safetyPaddle", "mirrorPaddle", "drift"]
+
+    /// The three that have no file of their own and play the shared jump instead.
+    private let sharingThePortalJump = ["brickPortal", "paddlePortal", "wrapAround"]
+
+    func testTheDeliveredSoundsAreFound() {
+        for name in delivered {
+            XCTAssertNotNil(GameScene.mayhemSound(name),
+                            "\(name) is in Megaball/Sounds and in the Resources phase, so the "
+                            + "bundle lookup has to find it")
+        }
+    }
+
+    /// **A name with no file of its own falls through to the shared one** (round 327b). James
+    /// delivered `portalJump` for "either portal brick, or portal paddle, or wrap-around", and
+    /// naming the event first keeps that a default: a `brickPortal` recording would win the day
+    /// it lands, with nothing to rewire.
+    func testThePortalEventsFallBackToTheSharedRecording() {
+        for name in sharingThePortalJump {
+            XCTAssertNil(GameScene.mayhemSound(name), "\(name) has no recording of its own yet")
+        }
+        XCTAssertNotNil(GameScene.mayhemSound("portalJump"),
+                        "which is why the fallback has to resolve")
+    }
 
     /// **Nil until the file exists, and never a crash.**
     ///
@@ -201,7 +229,7 @@ final class MayhemSoundTests: XCTestCase {
     func testAnUnrecordedSoundIsSilenceRatherThanAnything() {
         for name in names {
             XCTAssertNil(GameScene.mayhemSound(name),
-                         "\(name).mp3 is not in the bundle yet, so this has to answer nil")
+                         "\(name) has no recording yet, so this has to answer nil")
         }
     }
 
@@ -219,7 +247,10 @@ final class MayhemSoundTests: XCTestCase {
         let scene = GameScene(size: CGSize(width: 400, height: 800))
         for setting in [true, false] {
             scene.soundsSetting = setting
-            for name in names { scene.playMayhemSound(name) }
+            for name in names + delivered + sharingThePortalJump {
+                scene.playMayhemSound(name)
+                scene.playMayhemSound(name, or: "portalJump")
+            }
         }
     }
 

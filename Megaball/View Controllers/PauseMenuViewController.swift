@@ -1486,6 +1486,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
     }
     
     func addParallaxToView() {
+        guard UIView.motionEffectsAreWelcome else { return }
         
         var amount = 25
         if view.frame.width > 450 {

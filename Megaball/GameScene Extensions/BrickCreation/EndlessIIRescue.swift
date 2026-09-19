@@ -49,6 +49,20 @@ extension GameScene {
     }
 
     /// Called whenever a brick goes, because that is the definition of progress here.
+    ///
+    /// **And whenever the paddle is reached** (James, round 327b, with a device log: "the ball
+    /// is still randomly changing angle mid flight near nothing"). His log named this function
+    /// without meaning to - `CROOKED BALL, unexplained: bent 8.02 deg`, and 8.02 degrees is
+    /// `endlessIINudgeAngle` to the last digit - so the ball he saw turn was not near anything
+    /// because nothing was involved: fourteen seconds had passed without a brick breaking.
+    ///
+    /// That is not a stuck ball in this mode. A Mayhem field has stretches with nothing
+    /// destructible in reach - a climb through indestructibles, a sparse field, a rally while
+    /// the rows come down - and a player working through one was being turned every fourteen
+    /// seconds for it. **A ball that keeps coming back to the paddle is being played**, which
+    /// is the difference between a rally and a loop: the geometrically clean cases this exists
+    /// for - a vertical channel between two indestructible columns, a circuit round a pocket -
+    /// never reach the paddle at all, so the timer they run is untouched by this.
     func endlessIINotedProgress() {
         endlessIIStuckTimer = 0
     }
@@ -66,5 +80,11 @@ extension GameScene {
         let turn = Bool.random() ? GameScene.endlessIINudgeAngle : -GameScene.endlessIINudgeAngle
         let angle = atan2(body.velocity.dy, body.velocity.dx) + turn
         body.velocity = CGVector(dx: cos(angle)*speed, dy: sin(angle)*speed)
+        crookedBallNote(String(format: "stuck-rescue %.1f deg",
+                               GameScene.endlessIINudgeAngle*180/CGFloat.pi))
+        // **It says so now** (round 327b). This turned the ball with no contact, no clock and
+        // no note, which is precisely the tripwire's definition of a sighting - so for three
+        // rounds it was logged as the unexplained regression being hunted, by the instrument
+        // built to find it. The loop-breaker learned the same lesson in round 190
     }
 }

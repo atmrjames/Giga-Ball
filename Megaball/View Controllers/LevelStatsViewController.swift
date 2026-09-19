@@ -20,7 +20,10 @@ class LevelStatsViewController: UIViewController, UICollectionViewDelegate, UICo
     var gameCenterSetting: Bool = false
     // User settings
     
-    let totalStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("totalStatsStore.plist")
+    var totalStatsStore: URL? = GameCenterHandler.isRunningTests ? nil
+        : FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("totalStatsStore.plist")
+    // Nowhere under tests, as `GameScene`'s is (round 322b): a test lays this screen out with
+    // the runs it wants to see, rather than whatever was last played on the simulator
     let encoder = PropertyListEncoder()
     let decoder = PropertyListDecoder()
     var totalStatsArray: [TotalStats] = []
@@ -285,7 +288,7 @@ class LevelStatsViewController: UIViewController, UICollectionViewDelegate, UICo
     }
     
     func loadData() {
-        if let totalData = try? Data(contentsOf: totalStatsStore!) {
+        if let totalStatsStore, let totalData = try? Data(contentsOf: totalStatsStore) {
             do {
                 totalStatsArray = try decoder.decode([TotalStats].self, from: totalData).map { $0.makeStoredArraysConsistent(); return $0 }
             } catch {
@@ -293,8 +296,9 @@ class LevelStatsViewController: UIViewController, UICollectionViewDelegate, UICo
             }
         }
         
+        guard let stats = totalStatsArray.first else { return }
         packLevelHighScoresArray = [
-            totalStatsArray[0].pack1LevelHighScores, totalStatsArray[0].pack2LevelHighScores, totalStatsArray[0].pack3LevelHighScores, totalStatsArray[0].pack4LevelHighScores, totalStatsArray[0].pack5LevelHighScores, totalStatsArray[0].pack6LevelHighScores, totalStatsArray[0].pack7LevelHighScores, totalStatsArray[0].pack8LevelHighScores, totalStatsArray[0].pack9LevelHighScores, totalStatsArray[0].pack10LevelHighScores, totalStatsArray[0].pack11LevelHighScores
+            stats.pack1LevelHighScores, stats.pack2LevelHighScores, stats.pack3LevelHighScores, stats.pack4LevelHighScores, stats.pack5LevelHighScores, stats.pack6LevelHighScores, stats.pack7LevelHighScores, stats.pack8LevelHighScores, stats.pack9LevelHighScores, stats.pack10LevelHighScores, stats.pack11LevelHighScores
         ]
         
         // Load the total stats array from the NSCoder data store
@@ -319,6 +323,7 @@ class LevelStatsViewController: UIViewController, UICollectionViewDelegate, UICo
     }
     
     func addParallax() {
+        guard UIView.motionEffectsAreWelcome else { return }
         var amount = 25
         if view.frame.width > 450 {
             amount = 50
@@ -453,33 +458,35 @@ class LevelStatsViewController: UIViewController, UICollectionViewDelegate, UICo
     /// the buttons - which means taking some of the logo's room: it is re-pinned smaller so
     /// the list has somewhere to live.
     func setupRunHistory() {
-        guard runHistory.isEmpty == false else { return }
-        // Nothing to list yet: the table waits for a first run, and the logo keeps the room
+        pinTheLogoToTheModeSize()
+        let empty = runHistory.isEmpty
+        centreTheHeader(empty)
+        runHistoryTable?.isHidden = empty
+        runHistoryTable?.wantsScrolling = empty == false
+        runHistoryTable?.isScrollEnabled = empty == false
+        // Both, because `ContentAwareTableView` sets `isScrollEnabled` from `wantsScrolling` on
+        // every layout - the flag alone lasted until the table next laid itself out
+        runHistorySortButton?.isHidden = empty
+        runHistoryCountLabel?.isHidden = empty
+        guard empty == false else {
+            logoWidth?.constant = UIViewController.menuModeLogoSize
+            header = MenuHeaderCollapse(restSize: UIViewController.menuModeLogoSize,
+                                        scrolledSize: UIViewController.menuModeLogoScrolledSize)
+            return
+        }
+        // **No runs yet: no list, nothing to scroll, and the header in the middle of the page**
+        // (James, round 326: "If there's no scores yet, hide the tableview and centre the icon
+        // and game mode header on the page whilst disabling scrolling. Same on the Endless Mode
+        // screen."). The table is only ever built for a first run, so on a fresh mode it never
+        // exists; the hiding is for the other way round, a list already on screen when Reset
+        // Data or an iCloud reset empties it. Both endless modes are this one screen, which is
+        // how the Endless Mode half of the request comes for free
         guard runHistoryTable == nil else {
             runHistoryCountLabel?.text = runHistory.count == 1
                 ? "1 run" : "\(runHistory.count) runs"
             runHistoryTable?.reloadData()
             return
         }
-
-        for constraint in levelStatsView.constraints {
-            let involves = constraint.firstItem === levelImageView
-                || constraint.secondItem === levelImageView
-            let horizontal = [NSLayoutConstraint.Attribute.leading, .trailing]
-                .contains(constraint.firstAttribute)
-            if involves && horizontal { constraint.isActive = false }
-        }
-        let width = levelImageView.widthAnchor.constraint(
-            equalToConstant: UIViewController.menuModeLogoSize)
-        logoWidth = width
-        NSLayoutConstraint.activate([
-            levelImageView.centerXAnchor.constraint(equalTo: levelStatsView.centerXAnchor),
-            width,
-        ])
-        // The logo was pinned wall to wall and sized by its 1:1 aspect. Cutting it loose
-        // horizontally and giving it a width leaves the aspect doing the height, and the
-        // labels below follow it up because they were pinned to its bottom all along.
-        // The width is kept, because it is what the collapse writes to
 
 
 
@@ -555,6 +562,68 @@ class LevelStatsViewController: UIViewController, UICollectionViewDelegate, UICo
     }
 
     private var logoWidth: NSLayoutConstraint?
+
+    /// Gives the logo the size every mode screen's logo has, once.
+    ///
+    /// The logo was pinned wall to wall and sized by its 1:1 aspect. Cutting it loose
+    /// horizontally and giving it a width leaves the aspect doing the height, and the labels
+    /// below follow it up because they were pinned to its bottom all along. The width is kept,
+    /// because it is what the collapse writes to. Done whether or not there are runs (round
+    /// 326): a screen with none used to keep the storyboard's wall-to-wall picture, so a
+    /// player's first run shrank the logo out from under them on the way back.
+    private func pinTheLogoToTheModeSize() {
+        guard logoWidth == nil else { return }
+        for constraint in levelStatsView.constraints {
+            let involves = constraint.firstItem === levelImageView
+                || constraint.secondItem === levelImageView
+            let horizontal = [NSLayoutConstraint.Attribute.leading, .trailing]
+                .contains(constraint.firstAttribute)
+            if involves && horizontal { constraint.isActive = false }
+        }
+        let width = levelImageView.widthAnchor.constraint(
+            equalToConstant: UIViewController.menuModeLogoSize)
+        logoWidth = width
+        NSLayoutConstraint.activate([
+            levelImageView.centerXAnchor.constraint(equalTo: levelStatsView.centerXAnchor),
+            width,
+        ])
+    }
+
+    /// What pins the logo to the top of the screen, which the centring stands down.
+    private var headerTop: NSLayoutConstraint?
+    /// What holds the logo and the mode's name in the middle of the screen instead.
+    private var headerCentring: [NSLayoutConstraint] = []
+
+    /// Puts the logo and the mode's name in the middle of the screen, or back at the top.
+    ///
+    /// The two are one block - the name hangs from the logo's bottom since round 210's
+    /// `swapMenuHeader` - so the block is described by a layout guide from the top of the one to
+    /// the bottom of the other, and it is the guide that is centred. The logo's own top
+    /// constraint is the only thing placing the block vertically (that same function makes sure
+    /// of it), so it is stood down while the guide is in charge and put back when it is not.
+    private func centreTheHeader(_ centred: Bool) {
+        if headerTop == nil {
+            headerTop = levelStatsView.constraints.first {
+                ($0.firstItem === levelImageView && $0.firstAttribute == .top)
+                    || ($0.secondItem === levelImageView && $0.secondAttribute == .top)
+            }
+        }
+        if centred, headerCentring.isEmpty {
+            let block = UILayoutGuide()
+            levelStatsView.addLayoutGuide(block)
+            headerCentring = [
+                block.topAnchor.constraint(equalTo: levelImageView.topAnchor),
+                block.bottomAnchor.constraint(equalTo: levelNameLabel.bottomAnchor),
+                block.centerYAnchor.constraint(equalTo: levelStatsView.centerYAnchor),
+            ]
+            headerTop?.isActive = false
+            NSLayoutConstraint.activate(headerCentring)
+        } else if centred == false, headerCentring.isEmpty == false {
+            NSLayoutConstraint.deactivate(headerCentring)
+            headerCentring = []
+            headerTop?.isActive = true
+        }
+    }
     private var header = MenuHeaderCollapse(
         restSize: UIViewController.menuModeLogoSize,
         scrolledSize: UIViewController.menuModeLogoScrolledSize)

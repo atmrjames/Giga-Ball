@@ -158,7 +158,7 @@ Drawn in this order, each from the day's PRNG stream:
    on a Food Pack level they have not unlocked is the point, not a bug. (Their campaign
    progress is untouched.)
 3. **Twist count and the twists**. Round 319 rewrote this, and dated the rewrite:
-   days before **2026-10-01** draw exactly as they always did (none 30%, one 50%, two 20%,
+   days before **2026-09-20** draw exactly as they always did (none 30%, one 50%, two 20%,
    categories drawn blind), because the promise in §3 is that a day already played replays
    identically. From that key onward:
    - **A plain day is rolled first, at 5%.** It was 30, close to one day in three, which is
@@ -171,9 +171,8 @@ Drawn in this order, each from the day's PRNG stream:
    - **The look category is drawn deliberately, at 90%**, rather than waiting to come up in a
      blind category draw. Monochromatic and Daily Theme are the two the player sees before
      reading anything, so "a theme or B&W pretty much every day" is a rule about what the day
-     *looks* like and is implemented as one. The category itself does not activate until
-     2026-11-01, so October runs the new mix with the look draw finding nothing: the month
-     loses its themes and gains everything else about the change a month early.
+     *looks* like and is implemented as one. The category opens on the same day the mix does,
+     since round 327.
    - **A second twist at 45%**, drawn from the categories still open, so a look is usually
      wearing something.
    - **A zero-guard**: if the rolls said the day was not plain but every category the draw
@@ -186,11 +185,19 @@ Drawn in this order, each from the day's PRNG stream:
    weights change rather than a design change. Plain days are still deliberate: the baseline
    day is what makes twist days feel like twists, which is why the roll survives at all.
 
+   **Round 327 brought both dates forward to 2026-09-20.** The rewrite was dated a fortnight
+   ahead of the calendar it was written on and the look category a month behind that, so every
+   day James play-tested afterwards still drew under the old rules - he reported it as the
+   change not having happened: "daily challenges are still mostly single twists with no theme".
+   The mix and the look category now start together, on the day after the report, which keeps
+   §3's promise exactly: every day up to and including the one being played is untouched, and
+   the golden list in `DailyChallengeTests` ends there rather than pinning days nobody has seen.
+
    `DailyTwistMixTests` generates a year and measures, so the numbers above are assertions
    rather than intentions. **It measures `challenge(forKey:)` and not `rawChallenge(forKey:)`**,
    which is the difference between the draw and the day: the no-repeats rule sits between them
    and re-rolls a day that reads like the one before it, so the two distributions are not the
-   same and only the second one is ever seen. As delivered, over the year from 2026-10-01:
+   same and only the second one is ever seen. As delivered, over the year from 2026-09-20:
    7.7% plain (one every 13 days), 81.9% carrying a theme or B&W once that category is open,
    83.2% of those paired with another twist, 64.9% with two or more twists, and 20 distinct
    twists met inside the year.

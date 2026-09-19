@@ -937,6 +937,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
     }
     
     func addParallaxToView() {
+        guard UIView.motionEffectsAreWelcome else { return }
         var amount = 25
         if view.frame.width > 450 {
             amount = 50

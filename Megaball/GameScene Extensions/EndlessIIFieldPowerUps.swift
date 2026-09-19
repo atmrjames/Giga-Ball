@@ -238,6 +238,10 @@ extension GameScene {
     /// whole column including Indestructible (§5.4).
     func endlessIIFireLaserBeams() {
         guard gameMode == .endlessII else { return }
+        playMayhemSound("laserBeam")
+        // Once a firing rather than once a ball (round 327c): a Multi-Ball beam is one volley
+        // as far as the ear is concerned, and four copies of the same recording inside one
+        // frame is a flanged mess rather than four lasers
 
         for subject in endlessIIBallsInPlay where subject.parent != nil {
             let beamX = subject.position.x

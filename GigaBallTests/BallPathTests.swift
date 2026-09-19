@@ -8,6 +8,7 @@
 //
 
 import XCTest
+import SpriteKit
 import CoreGraphics
 @testable import Giga_Ball
 
@@ -726,5 +727,77 @@ final class BallLoopDetectorFieldChangeTests: XCTestCase {
         _ = detector.recordBounce(x: 100, y: 200, headingDegrees: 88, cell: 20)
         detector.playerIntervened()
         XCTAssertNil(detector.recordBounce(x: 100, y: 200, headingDegrees: 88, cell: 20))
+    }
+}
+
+/// **A bounce off a brick nobody can see says so in the log** (round 327, chasing James: "the
+/// ball is still randomly changing angle mid flight near nothing").
+///
+/// `crookedBallWatch` prints nothing when a frame's only excuse is "contact", which is right for
+/// the thousands of ordinary bounces and wrong for this report: a brick that is hidden,
+/// transparent or scaled to nothing is still solid, and a bounce off one is exactly what a turn
+/// "near nothing" looks like from the player's chair. The note carries the reason and the place,
+/// so the next sighting names itself rather than being filed as an ordinary bounce.
+final class UnseeableContactNoteTests: XCTestCase {
+
+    private func scene() -> GameScene {
+        let scene = GameScene()
+        scene.gameMode = .endlessII
+        scene.totalStatsArray = [TotalStats()]
+        return scene
+    }
+
+    private func brick(in scene: GameScene) -> SKSpriteNode {
+        let brick = SKSpriteNode(color: .white, size: CGSize(width: 40, height: 20))
+        brick.name = BrickCategoryName
+        brick.position = CGPoint(x: 30, y: 120)
+        scene.addChild(brick)
+        return brick
+    }
+
+    func testAnOrdinaryBrickIsFiledAsAnOrdinaryContact() {
+        let scene = scene()
+        XCTAssertEqual(scene.crookedContactNote(for: brick(in: scene)), "contact")
+    }
+
+    func testTheBallIsFiledAsAnOrdinaryContact() {
+        let scene = scene()
+        XCTAssertEqual(scene.crookedContactNote(for: scene.paddle), "contact",
+                       "the paddle, the walls and the backstop are all things you can see")
+        XCTAssertEqual(scene.crookedContactNote(for: nil), "contact")
+    }
+
+    func testATransparentBrickIsNamedWithItsPlace() {
+        let scene = scene()
+        let brick = brick(in: scene)
+        brick.alpha = 0
+
+        let note = scene.crookedContactNote(for: brick)
+        XCTAssertTrue(note.contains("unseeable"), note)
+        XCTAssertTrue(note.contains("alpha"), note)
+        XCTAssertTrue(note.contains("(30, 120)"), "and where it was, so it can be found: \(note)")
+        XCTAssertNotEqual(note, "contact", "or the watch would stay silent about it")
+    }
+
+    func testABrickScaledAwayIsNamed() {
+        let scene = scene()
+        let brick = brick(in: scene)
+        brick.setScale(0.01)
+        XCTAssertTrue(scene.crookedContactNote(for: brick).contains("scale"))
+    }
+
+    /// And Hide Bricks is not a mystery: a field the player has been told is invisible is the
+    /// power-up doing its job.
+    func testAHiddenBrickIsOnlyNamedWhileHideBricksIsNotRunning() {
+        let scene = scene()
+        let brick = brick(in: scene)
+        brick.isHidden = true
+
+        scene.hiddenBricksIconBar.isHidden = true
+        XCTAssertTrue(scene.crookedContactNote(for: brick).contains("hidden"))
+
+        scene.hiddenBricksIconBar.isHidden = false
+        XCTAssertEqual(scene.crookedContactNote(for: brick), "contact",
+                       "Hide Bricks is running, so an invisible brick is expected")
     }
 }

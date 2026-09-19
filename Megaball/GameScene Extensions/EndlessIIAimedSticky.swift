@@ -331,7 +331,7 @@ extension GameScene {
         }
         endlessIIShowPortalJump(from: from, to: target.position)
         if hapticsSetting { mediumHaptic.impactOccurred() }
-        playMayhemSound("paddlePortal")
+        playMayhemSound("paddlePortal", or: "portalJump")
     }
 
     // MARK: - The arrow

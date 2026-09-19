@@ -568,7 +568,16 @@ struct CrookedBallTripwire {
     }
 
     /// Records this frame and reports whether it needs explaining.
-    mutating func recordFrame(position: CGPoint, velocity: CGVector) -> Trip? {
+    /// - Parameter seconds: how long this frame actually took. **The frame's own length, not a
+    ///   sixtieth** (round 327b). James's log carried two sightings reading `jumped 29.3 pt`
+    ///   with the ball travelling almost straight down, both the same distance because the
+    ///   ball's speed is constant and both stalls were the same length - a stutter of about
+    ///   six frames on a 120Hz phone, not a teleport. Measured against a fixed sixtieth, every
+    ///   hitch long enough to be felt reports itself as a jump, and a tripwire that cries at
+    ///   stutters is one whose real sightings get read past. Defaulted so a test that cares
+    ///   only about bending need not say it.
+    mutating func recordFrame(position: CGPoint, velocity: CGVector,
+                              seconds: TimeInterval = 1.0/60) -> Trip? {
         let speed = hypot(velocity.dx, velocity.dy)
         let heading = atan2(Double(velocity.dy), Double(velocity.dx))*180/Double.pi
         defer { last = (position, heading, speed) }
@@ -581,7 +590,7 @@ struct CrookedBallTripwire {
         }
 
         let travelled = hypot(position.x - last.position.x, position.y - last.position.y)
-        let expected = max(last.speed, speed)/60
+        let expected = max(last.speed, speed)*CGFloat(max(seconds, 1.0/240))
         if travelled > max(expected*3, 12) {
             trip.jumpDistance = travelled
         }

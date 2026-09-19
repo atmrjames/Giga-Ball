@@ -503,7 +503,33 @@ extension GameScene {
     /// own conclusion: a tint lands on whatever brick is underneath and so needed 274 drawn
     /// combinations to replace, while a semi-transparent layer lets the brick's own artwork -
     /// multi-hit, indestructible, retro - show through and needs one picture per silhouette.
-    static let endlessIIOverlaidStyles: [EndlessIIStyle] = [
+    static let endlessIIOverlaidStyles: [EndlessIIStyle] = []
+    // **Empty since round 327b, and the delivery above is why it could be** (James, having
+    // played with them: "removed the brick overlay graphics for spinning, flashing, breathing,
+    // moving and gravity bricks as their actions are obvious, so there's no need for additional
+    // graphics. For fixed, exploding and spawner, I think we should return to the old icons we
+    // had previous: upside down T for fixed, which goes bold once the brick is fixed in place
+    // after being hit, asterisks for exploding and plus for spawner").
+    //
+    // The five motions say what they are by moving, which is the same argument round 320 made
+    // for Gravity and Moving losing their marks a round before the overlays arrived. The three
+    // on-hit styles look like any other brick until struck, so they still have to be marked -
+    // and the marks they had are still here, because round 321 kept them as the fallback for
+    // every silhouette it had no picture for. Emptying this list is therefore the whole change:
+    // `endlessIIDressStyleMarks` draws no overlay and falls through to the glyph, and a Fixed
+    // brick's T still thickens when it locks, which the overlay could only do by being drawn
+    // twice.
+    //
+    // A list rather than a deleted branch, because the artwork exists and the decision is
+    // James's to take back. What must not drift is the tint: the eight styles stopped tinting
+    // in round 321 and still do not, which `endlessIIUntintedStyles` now says on its own.
+
+    /// The styles that wear no tint, whether or not they wear a picture.
+    ///
+    /// Round 321 took the colour off all eight, and a resume restores a saved colour before it
+    /// re-applies the styles - so an older save's green Flashing or pink Breathing brick has to
+    /// be cleared by something. That used to be a side effect of this list, which is now empty.
+    static let endlessIIUntintedStyles: [EndlessIIStyle] = [
         .spinning, .flashing, .breathing, .moving, .gravity, .fixed, .exploding, .spawner,
     ]
 

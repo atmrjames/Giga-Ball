@@ -347,6 +347,12 @@
 		1ACA35C724ED2AE700AF505E /* ballPaddleHit.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = 1ACA35BB24ED2A5A00AF505E /* ballPaddleHit.mp3 */; };
 		1ACA35D024ED32ED00AF505E /* laserFired.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = 1ACA35CE24ED32EC00AF505E /* laserFired.mp3 */; };
 		1ACA35D124ED32ED00AF505E /* endlessRowDown.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = 1ACA35CF24ED32ED00AF505E /* endlessRowDown.mp3 */; };
+		1AA3270C0000000000000009 /* spawner.m4a in Resources */ = {isa = PBXBuildFile; fileRef = 1AA3270C000000000000000A /* spawner.m4a */; };
+		1AA3270C0000000000000007 /* laserBeam.m4a in Resources */ = {isa = PBXBuildFile; fileRef = 1AA3270C0000000000000008 /* laserBeam.m4a */; };
+		1AA3270C0000000000000005 /* infill.m4a in Resources */ = {isa = PBXBuildFile; fileRef = 1AA3270C0000000000000006 /* infill.m4a */; };
+		1AA3270C0000000000000003 /* explosion.m4a in Resources */ = {isa = PBXBuildFile; fileRef = 1AA3270C0000000000000004 /* explosion.m4a */; };
+		1AA3270C0000000000000001 /* cull.m4a in Resources */ = {isa = PBXBuildFile; fileRef = 1AA3270C0000000000000002 /* cull.m4a */; };
+		1AA3270B0000000000000001 /* portalJump.m4a in Resources */ = {isa = PBXBuildFile; fileRef = 1AA3270B0000000000000002 /* portalJump.m4a */; };
 		1ACC0F3C23FD59EE00B7EFE9 /* Level999.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1ACC0F3923FD56F200B7EFE9 /* Level999.swift */; };
 		1ACC0F3E23FDA3B000B7EFE9 /* EndlessRowCreation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1ACC0F3D23FDA3B000B7EFE9 /* EndlessRowCreation.swift */; };
 		1AE2B3010000000000000301 /* EndlessIIBricks.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AE2B3010000000000000302 /* EndlessIIBricks.swift */; };
@@ -748,6 +754,12 @@
 		1ACA35BF24ED2A5B00AF505E /* brickHit.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = brickHit.mp3; sourceTree = "<group>"; };
 		1ACA35CE24ED32EC00AF505E /* laserFired.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = laserFired.mp3; sourceTree = "<group>"; };
 		1ACA35CF24ED32ED00AF505E /* endlessRowDown.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = endlessRowDown.mp3; sourceTree = "<group>"; };
+		1AA3270C000000000000000A /* spawner.m4a */ = {isa = PBXFileReference; lastKnownFileType = file; path = spawner.m4a; sourceTree = "<group>"; };
+		1AA3270C0000000000000008 /* laserBeam.m4a */ = {isa = PBXFileReference; lastKnownFileType = file; path = laserBeam.m4a; sourceTree = "<group>"; };
+		1AA3270C0000000000000006 /* infill.m4a */ = {isa = PBXFileReference; lastKnownFileType = file; path = infill.m4a; sourceTree = "<group>"; };
+		1AA3270C0000000000000004 /* explosion.m4a */ = {isa = PBXFileReference; lastKnownFileType = file; path = explosion.m4a; sourceTree = "<group>"; };
+		1AA3270C0000000000000002 /* cull.m4a */ = {isa = PBXFileReference; lastKnownFileType = file; path = cull.m4a; sourceTree = "<group>"; };
+		1AA3270B0000000000000002 /* portalJump.m4a */ = {isa = PBXFileReference; lastKnownFileType = file; path = portalJump.m4a; sourceTree = "<group>"; };
 		1ACC0F3923FD56F200B7EFE9 /* Level999.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Level999.swift; sourceTree = "<group>"; };
 		1ACC0F3D23FDA3B000B7EFE9 /* EndlessRowCreation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndlessRowCreation.swift; sourceTree = "<group>"; };
 		1AE2B3010000000000000302 /* EndlessIIBricks.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndlessIIBricks.swift; sourceTree = "<group>"; };
@@ -1028,6 +1040,12 @@
 				1ACA35BB24ED2A5A00AF505E /* ballPaddleHit.mp3 */,
 				1ACA35BD24ED2A5A00AF505E /* ballRelease.mp3 */,
 				1ACA35CF24ED32ED00AF505E /* endlessRowDown.mp3 */,
+				1AA3270C000000000000000A /* spawner.m4a */,
+				1AA3270C0000000000000008 /* laserBeam.m4a */,
+				1AA3270C0000000000000006 /* infill.m4a */,
+				1AA3270C0000000000000004 /* explosion.m4a */,
+				1AA3270C0000000000000002 /* cull.m4a */,
+				1AA3270B0000000000000002 /* portalJump.m4a */,
 				1ACA35CE24ED32EC00AF505E /* laserFired.mp3 */,
 				1ACA35BF24ED2A5B00AF505E /* brickHit.mp3 */,
 				1ACA35B924ED2A5900AF505E /* powerUpSound.mp3 */,
@@ -1619,6 +1637,12 @@
 				1ACA35C724ED2AE700AF505E /* ballPaddleHit.mp3 in Resources */,
 				1A2D233324C44393002D5CE5 /* IconPreviewGreen@3x.png in Resources */,
 				1ACA35D124ED32ED00AF505E /* endlessRowDown.mp3 in Resources */,
+				1AA3270C0000000000000009 /* spawner.m4a in Resources */,
+				1AA3270C0000000000000007 /* laserBeam.m4a in Resources */,
+				1AA3270C0000000000000005 /* infill.m4a in Resources */,
+				1AA3270C0000000000000003 /* explosion.m4a in Resources */,
+				1AA3270C0000000000000001 /* cull.m4a in Resources */,
+				1AA3270B0000000000000001 /* portalJump.m4a in Resources */,
 				1A41E80624FCF94B0070FA50 /* IconPreviewPurple@2x.png in Resources */,
 				1A5F63BA2417F0FE0072EC61 /* ModeSelectTableViewCell.xib in Resources */,
 				1A2FEA5624D4F5F00052488A /* IntroContainerView.xib in Resources */,

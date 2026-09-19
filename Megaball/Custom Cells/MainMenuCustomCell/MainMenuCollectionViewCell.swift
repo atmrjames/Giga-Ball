@@ -33,6 +33,39 @@ class MainMenuCollectionViewCell: UICollectionViewCell {
     }
 
 
+    /// What VoiceOver calls this button.
+    ///
+    /// **The app said nothing at all until round 328.** Every round button is a picture of a
+    /// glyph in a circle, so a screen reader had a bare "button" to offer for each of the three
+    /// or four along the bottom of every screen - which is the same as offering nothing. The
+    /// names are the player's words for them rather than the artwork's: `ButtonHome` is the way
+    /// back to the menus, and "Main menu" is what the pop-up it raises calls itself.
+    ///
+    /// `ButtonNull` is the invisible spacer that keeps the row's three cells even, so it is
+    /// taken out of the reader's way entirely rather than named.
+    static let spokenName: [String: String] = [
+        "ButtonClose": "Close",
+        "ButtonInfo": "Information",
+        "ButtonSettings": "Settings",
+        "ButtonPlay": "Play",
+        "ButtonRestart": "Restart",
+        "ButtonHome": "Main menu",
+        "ButtonLeaderboard": "Leaderboards",
+        "Pause": "Pause",
+    ]
+
+    /// Gives this cell the name and the trait a button needs, or hides it if it is the spacer.
+    private func speak(_ base: String) {
+        guard let name = MainMenuCollectionViewCell.spokenName[base] else {
+            isAccessibilityElement = false
+            accessibilityLabel = nil
+            return
+        }
+        isAccessibilityElement = true
+        accessibilityTraits = .button
+        accessibilityLabel = name
+    }
+
     /// Dresses this round button as Liquid Glass with an SF Symbol on it.
     ///
     /// The round buttons are PNGs with the circle and the glyph welded into one opaque disc,
@@ -100,10 +133,17 @@ class MainMenuCollectionViewCell: UICollectionViewCell {
     static let largeButtonSize: CGFloat = 75
 
     func setButton(_ named: String, pointSize: CGFloat = 20, rimmed: Bool = false) {
-        guard isGlass == false else { return }
-        iconImage.image = UIImage(named: named)
         let base = named.replacingOccurrences(of: ".png", with: "")
                         .replacingOccurrences(of: "Highlighted", with: "")
+        speak(base)
+        // **Named for VoiceOver before anything else happens** (round 328), including before
+        // the glass guard below: a cell already wearing glass returns early, and a button that
+        // is pressed, highlighted and set again would otherwise keep whatever name it was
+        // given first. The name comes off the artwork, which is the one thing every caller
+        // passes
+
+        guard isGlass == false else { return }
+        iconImage.image = UIImage(named: named)
         guard let symbol = MainMenuCollectionViewCell.systemGlyph[base] else { return }
         applyGlass(symbol: symbol, pointSize: pointSize, rimmed: rimmed)
     }

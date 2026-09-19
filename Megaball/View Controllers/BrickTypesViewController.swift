@@ -215,7 +215,8 @@ class BrickTypesViewController: UIViewController, UITableViewDelegate, UITableVi
                         at indexPath: IndexPath) -> UICollectionReusableView {
         let header = collectionView.dequeueReusableSupplementaryView(
             ofKind: kind, withReuseIdentifier: "gridHeader", for: indexPath)
-        ReferenceHeading.fill(header, title: sections[indexPath.section].title)
+        ReferenceHeading.fill(header, title: sections[indexPath.section].title,
+                              inset: PackSelectViewController.gridInset)
         // The recipe lives in `ReferenceHeading` since round 145, because the power-up page
         // draws the same heading and the two had drifted apart
         return header
@@ -439,6 +440,7 @@ class BrickTypesViewController: UIViewController, UITableViewDelegate, UITableVi
     }
 
     func addParallax() {
+        guard UIView.motionEffectsAreWelcome else { return }
         var amount = 25
         if view.frame.width > 450 {
             amount = 50

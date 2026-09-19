@@ -127,10 +127,11 @@ enum DailyTwist: String, CaseIterable, Codable {
             switch self {
             case .economy, .lives, .dress: return "2026-08-01"
             case .layout: return "2026-09-01"
-            case .nerve: return "2026-10-01"
-            case .tempo: return "2026-10-01"
-            case .look, .standing, .field: return "2026-11-01"
-            case .disclosure: return "2026-12-01"
+            case .nerve: return "2026-09-20"
+            case .tempo: return "2026-09-20"
+            case .look: return "2026-09-20"
+            case .standing, .field: return "2026-09-20"
+            case .disclosure: return "2026-09-20"
             }
             // **Three categories of one, and that is the design saying what it means.** A
             // category is how a day refuses to draw two of a kind, and each of these three
@@ -333,11 +334,11 @@ enum DailyTwist: String, CaseIterable, Codable {
         // Joins the layout category on the category's own date. Safe to add to that pool
         // because no date this changes has been played: the pool only shifts days from the
         // activation forward, and the golden test pins the days behind it
-        case .noPausing, .timeTrial: return "2026-10-01"
-        case .mayhemBricks: return "2026-10-01"
-        case .monochromatic, .dailyTheme: return "2026-11-01"
-        case .alwaysOn, .landslide: return "2026-11-01"
-        case .fullDeck, .levelPegging: return "2026-12-01"
+        case .noPausing, .timeTrial: return "2026-09-20"
+        case .mayhemBricks: return "2026-09-20"
+        case .monochromatic, .dailyTheme: return "2026-09-20"
+        case .alwaysOn, .landslide: return "2026-09-20"
+        case .fullDeck, .levelPegging: return "2026-09-20"
         default: return "2026-08-01"
         }
         // The launch pool activates together; later twists carry later dates. A twist's date
@@ -971,7 +972,26 @@ enum DailyChallengeGenerator {
 
     /// The day the twist mix changes shape (round 319). Days before it draw exactly as they
     /// always did, which is the promise at the top of this file.
-    static let twistMixKey = "2026-10-01"
+    static let twistMixKey = "2026-09-20"
+    // **And every twist and category with it** (James, round 327b: "let's make the new daily
+    // challenge twists available from immediately"). The staged dates were a drip feed for a
+    // release that has not happened, and what they did to the person play-testing was hide two
+    // thirds of the daily from him: nerve and tempo in October, standing, field and the look in
+    // November, disclosure in December. They all open on the same day the mix does now. The
+    // promise those dates protect is protected anyway by that day being tomorrow - a twist
+    // joining a pool shifts the days from its own date forward and no others.
+    //
+    // **Brought forward from 2026-10-01** (James, round 327, still play-testing 1.3: "daily
+    // challenges are still mostly single twists with no theme"). Round 319 wrote the mix he
+    // asked for and dated it a fortnight ahead of where the calendar then was, so every day he
+    // has played since has taken the old branch - none 30, one 50, two 20, and the look
+    // category not in any pool until November. The look category and its two twists come
+    // forward with it, because the mix's first act is to draw a look and a mix whose look pool
+    // is empty is half the change.
+    //
+    // **Tomorrow rather than today**, which is the whole of what keeps the header's promise:
+    // every day up to and including the one being played right now draws exactly as it did,
+    // and testers who have already played a day see that day unchanged for ever.
 
     /// How often a day has no twists at all, in a hundred.
     ///

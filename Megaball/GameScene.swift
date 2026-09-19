@@ -208,6 +208,30 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var phantomAuditDue: TimeInterval = 1
 	#endif
 
+	#if DEBUG
+	/// What to file a contact as: "contact" for a bounce off something the player can see, and
+	/// a named sighting for one off something they cannot.
+	///
+	/// The same three tests `phantomBrickReasons` uses, asked of the node actually struck. Hide
+	/// Bricks is allowed for, because a field the player has been told is invisible is not a
+	/// mystery - `endlessHiddenBricksIsRunning` is the difference between a power-up doing its
+	/// job and a brick nobody can account for.
+	func crookedContactNote(for node: SKNode?) -> String {
+		guard let sprite = node as? SKSpriteNode, sprite.name == BrickCategoryName else {
+			return "contact"
+		}
+		var why: [String] = []
+		if sprite.isHidden && endlessHiddenBricksIsRunning == false { why.append("hidden") }
+		if sprite.alpha < 0.05 { why.append(String(format: "alpha %.2f", sprite.alpha)) }
+		if sprite.xScale < 0.05 || sprite.yScale < 0.05 {
+			why.append(String(format: "scale %.2f x %.2f", sprite.xScale, sprite.yScale))
+		}
+		guard why.isEmpty == false else { return "contact" }
+		return String(format: "contact with an unseeable brick (%@) at (%.0f, %.0f)",
+					  why.joined(separator: ", "), sprite.position.x, sprite.position.y)
+	}
+	#endif
+
 	/// Records that something legitimate moved the main ball this frame. Free in Release
 	/// builds; every deliberate velocity or position writer outside the engine calls it,
 	/// so a tripwire log with no notes means a writer nobody knows about.
@@ -845,6 +869,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 
 	static let paddleSizeScaleKey = "paddleSizeScale"
 
+	/// Wipe's place in every power-up array, read off the names rather than typed (round 327).
+	static let wipePowerUpIndex: Int = LevelPackSetup().powerUpNameArray.firstIndex(of: "Wipe") ?? 50
+
 	/// The size the ball is heading for, which is what Grow Ball, Shrink Ball and the save ask.
 	///
 	/// **The paddle's round 322 fix, given to the ball** (James: "give Ball Size the same target
@@ -1343,6 +1370,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	let powerUpSound = SKAction.playSoundFileNamed("powerUpSound.mp3", waitForCompletion: true)
 	let stickyPaddleHitSound = SKAction.playSoundFileNamed("stickyPaddleHit.mp3", waitForCompletion: true)
 
+	/// How far along the ball-to-paddle line Magnetism's dashes have travelled.
+	///
+	/// Advanced by `drawEndlessIIPullLines` every frame it draws, so the dashes move toward the
+	/// paddle rather than sitting still - which is the difference between a line joining two
+	/// things and a pull acting on one of them (James, round 327b).
+	var endlessIIMagnetFlowPhase: CGFloat = 0
+
 	/// A sound that may not have been made yet.
 	///
 	/// **Fifteen Endless Mayhem events fire haptics and no sound** (§8.5, and the list James
@@ -1362,11 +1396,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	/// locals: building an `SKAction` for a sound is not free, and these fire mid-play.
 	static func mayhemSound(_ name: String) -> SKAction? {
 		if let known = mayhemSounds[name] { return known }
-		guard Bundle.main.url(forResource: name, withExtension: "mp3") != nil else {
+		guard let kind = GameScene.mayhemSoundKinds.first(where: {
+			Bundle.main.url(forResource: name, withExtension: $0) != nil
+		}) else {
 			mayhemSounds[name] = SKAction?.none
 			return nil
 		}
-		let action = SKAction.playSoundFileNamed(name + ".mp3", waitForCompletion: false)
+		let action = SKAction.playSoundFileNamed(name + "." + kind, waitForCompletion: false)
 		mayhemSounds[name] = action
 		return action
 		// `waitForCompletion: false`, unlike the ten above: these fire while the ball is in
@@ -1376,9 +1412,27 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 
 	private static var mayhemSounds: [String: SKAction?] = [:]
 
+	/// What a delivered sound may be, in the order the bundle is asked (round 327b).
+	///
+	/// `.m4a` because that is what arrived - "portalJump.m4a in File Sharing is a sound effect
+	/// file to play when the ball goes through a portal" - and `.mp3` first because the ten
+	/// sounds already in the game are mp3s and a replacement dropped in beside one should win.
+	static let mayhemSoundKinds = ["mp3", "m4a"]
+
 	/// Plays one of those, if it exists and the player wants sounds.
-	func playMayhemSound(_ name: String) {
-		guard soundsSetting, let action = GameScene.mayhemSound(name) else { return }
+	///
+	/// - Parameter shared: a sound covering several events, used when the event has none of its
+	///   own. **One recording can answer three events** (James, round 327b: the portal sound is
+	///   "to play when the ball goes through a portal, either portal brick, or portal paddle,
+	///   or wrap-around"), and naming the event first keeps that a default rather than a
+	///   decision: the day a `brickPortal` recording lands it is played without touching this.
+	func playMayhemSound(_ name: String, or shared: String? = nil) {
+		guard soundsSetting else { return }
+		if let action = GameScene.mayhemSound(name) {
+			run(action)
+			return
+		}
+		guard let shared, let action = GameScene.mayhemSound(shared) else { return }
 		run(action)
 	}
 	// Sounds defined - pre-loaded to prevent game lag
@@ -3404,7 +3458,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         // nothing to compare: the first flying frame only records
 
         guard let trip = crookedBallTripwire.recordFrame(position: ball.position,
-                                                         velocity: body.velocity)
+                                                         velocity: body.velocity,
+                                                         seconds: frameDelta)
         else { return }
 
         var excuses = crookedBallNotes
@@ -3901,10 +3956,23 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 
 			if firstBody.categoryBitMask == CollisionTypes.ballCategory.rawValue
 				&& struckBall === ball {
+				#if DEBUG
+				crookedBallNote(crookedContactNote(for: secondBody.node))
+				#else
 				crookedBallNote("contact")
+				#endif
 			}
 			// The tripwire's ordinary excuse: a frame with a genuine contact is allowed to
 			// bend the heading, and the ball's category is the lowest so it is always first
+			//
+			// **And it says when the thing struck could not be seen** (round 327, chasing
+			// James's "the ball is still randomly changing angle mid flight near nothing").
+			// `crookedBallWatch` stays silent when a frame's only excuse is "contact", which
+			// is right for the thousands of ordinary bounces and is exactly wrong for this
+			// report: a bounce off a brick that is hidden, transparent or scaled away *is*
+			// a contact, and it is also precisely what "changing angle near nothing" looks
+			// like from the player's chair. Naming it makes the note something other than
+			// "contact", which is what gets the frame printed
 
 			if firstBody.categoryBitMask == CollisionTypes.ballCategory.rawValue && secondBody.categoryBitMask == CollisionTypes.boarderCategory.rawValue {
 
@@ -4978,6 +5046,14 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		// from bouncing because the first one is. Shadowing `ball` with the one that was
 		// actually in the contact is what lets the rest of this read unchanged
 
+		endlessIINotedProgress()
+		// **Every ball, every landing** (James, round 327c: "the stuck-ball rescue timer should be
+		// reset every time the ball hits the paddle. If the ball hits the paddle, it suggests it
+		// is not stuck"). It was inside the branch below, which is the main ball's alone - so a
+		// Multi-Ball rally kept the timer running and the rescue still turned the ball mid-play.
+		// The rescue is about the field having stopped giving, and a paddle that is being
+		// reached is the plainest evidence there is that it has not
+
 		if isExtra == false {
 			ballLoopDetector.playerIntervened()
 			endlessIIPortalDriftDegrees = 0
@@ -4985,6 +5061,14 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		// A loop is only a loop while the player cannot touch it. The paddle is the touch:
 		// whatever was repeating, the player can now change it, so the detector starts
 		// over and the portals go back to sending the ball exactly where they say
+		//
+		// **And the Mayhem stuck timer starts over too** (round 327b). It ran on one question -
+		// has a brick been destroyed in the last fourteen seconds - and answered "no" for
+		// perfectly ordinary Mayhem play: a climb past indestructibles, a sparse field, a rally
+		// while the rows come down. Every fourteen of those seconds the ball was turned eight
+		// degrees, which is the mid-flight turn James has been reporting since round 128 and
+		// the 8.02 in his round 327 log. A rally is not a stall, and the same reasoning the
+		// loop detector has used since round 101 says why: the player can touch this ball
 
 		if isOnPaddle {
 			return
@@ -5403,6 +5487,17 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		}
 		// Put all textures from current on-screen power-ups in an array
 		
+		if gameMode == .endlessII, endlessIIWipeMayDrop == false {
+			powerUpProbArray[GameScene.wipePowerUpIndex] = 0
+		}
+		// **Live at the drop, not once a row** (James, round 327: "Wipe power up should only
+		// show when a power up is active"). The row's weights are set as the row is built, and
+		// the brick that carries this drop may be broken a minute later with everything that
+		// was running long over. A Wipe with nothing to end is the gift the row's own comment
+		// refuses, so the question is asked again at the moment something is actually chosen.
+		// Only zeroed here: `applyEndlessRowPowerUpWeights` puts the weight back on the next
+		// row, which is where every other weight is decided
+
 		powerUpProbSum = powerUpProbArray.reduce(0, +)
 
 		guard powerUpProbSum > 0 else {

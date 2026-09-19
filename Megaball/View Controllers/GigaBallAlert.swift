@@ -33,7 +33,7 @@ import UIKit
 ///
 /// The wiring is untouched: each answer posts the notification it always posted, to the same
 /// observer. What went is the second card.
-enum GigaBallConfirm {
+enum GigaBallConfirm: CaseIterable {
     /// Settings, mid-game: put a stuck ball back on the paddle.
     case resetBall
     /// Settings: throw away every score, statistic and setting on the device.
@@ -68,7 +68,13 @@ enum GigaBallConfirm {
             return "Only reset if the ball becomes stuck."
         case .resetData:
             return "Are you sure you want to reset the game data? You will irreversibly lose "
-                + "all game progress, statistics and settings.\nIn-app purchases will remain."
+                + "all game progress, statistics and settings."
+            // **The line about in-app purchases went in round 328.** It had outlived the
+            // purchases: the monetisation architecture came out before 1.3 (FUTURE-RELEASES,
+            // "finish removing the monetisation architecture"), every StoreKit call in the app
+            // is commented out, and there is nothing a player can buy - so the one sentence
+            // still mentioning purchases was the app telling them about a shop that is not
+            // there. Nothing else in the message changes: what it warns about is still true
         case .mainMenu:
             return "Are you sure?\nCurrent progress will be lost."
         case .swipeUpToPause:
@@ -489,11 +495,12 @@ final class GigaBallAlertViewController: UIViewController {
     /// free play, a power-up's description and the four confirms. That is the point of there
     /// being one pop-up type.
     private func applyParallax() {
-        guard parallaxSetting else {
+        guard parallaxSetting, UIView.motionEffectsAreWelcome else {
             card.motionEffects.forEach { card.removeMotionEffect($0) }
             return
             // A player who has turned it off may have turned it off while this was on screen -
-            // Settings is one of the places a pop-up is raised from
+            // Settings is one of the places a pop-up is raised from. The system's Reduce Motion
+            // is asked here too (round 328), for the same reason and with the same answer
         }
         card.applyMenuParallax()
     }

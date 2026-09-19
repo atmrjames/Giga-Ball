@@ -31,16 +31,27 @@ enum ReferenceHeading {
     /// alone - see `stickyHeaderBand`.
     static let height: CGFloat = 34
 
+    /// How far in from the band's own edge the title starts.
+    static let titlePadding: CGFloat = 12
+
     /// Fills a dequeued supplementary view in: a dark blur, and the title over it.
     ///
     /// The blur is what lets the heading pin: squares travelling under it disappear behind it
     /// rather than showing through the bare label.
-    static func fill(_ header: UICollectionReusableView, title: String) {
+    ///
+    /// - Parameter inset: how far in from each side the band starts, which is the grid's own
+    ///   inset. **The band runs as wide as the squares and no wider** (James, round 326, on an
+    ///   iPad: the Power-Ups sticky header "is slightly wider than the tiles below it"). A
+    ///   header is as wide as its collection view and the squares sit `gridInset` in from each
+    ///   side - the flow layout spreads a full row to exactly that width - so the band stuck
+    ///   twenty points out past the tiles at both ends, on every device; an iPad's larger,
+    ///   emptier screen is simply where it showed. The title keeps `titlePadding` inside the band.
+    static func fill(_ header: UICollectionReusableView, title: String, inset: CGFloat = 0) {
         header.subviews.forEach { $0.removeFromSuperview() }
         // Reused like a cell, so last time's label has to go or they stack up
 
         let blur = UIVisualEffectView(effect: UIBlurEffect(style: .dark))
-        blur.frame = header.bounds
+        blur.frame = header.bounds.insetBy(dx: inset, dy: 0)
         blur.autoresizingMask = [.flexibleWidth, .flexibleHeight]
         header.addSubview(blur)
 
@@ -51,11 +62,16 @@ enum ReferenceHeading {
         label.translatesAutoresizingMaskIntoConstraints = false
         header.addSubview(label)
         NSLayoutConstraint.activate([
-            label.leadingAnchor.constraint(equalTo: header.leadingAnchor, constant: 24),
+            label.leadingAnchor.constraint(equalTo: header.leadingAnchor,
+                                           constant: inset + ReferenceHeading.titlePadding),
             label.trailingAnchor.constraint(lessThanOrEqualTo: header.trailingAnchor,
-                                            constant: -24),
+                                            constant: -(inset + ReferenceHeading.titlePadding)),
             label.centerYAnchor.constraint(equalTo: header.centerYAnchor),
         ])
+        // Measured from the band rather than from the header (round 326). The title sat 24 in
+        // from a band that reached the screen's edge; with the band pulled in to the tiles, the
+        // same 24 left four points between the band's edge and the first letter, which looked
+        // like the words had been pushed up against a wall
     }
 }
 
@@ -618,6 +634,12 @@ extension UIView {
         // All of them, not the first: this runs on every layout pass, and one missed group is
         // a card that drifts twice as far as the screen it is sitting on
 
+        guard UIView.motionEffectsAreWelcome else { return UIMotionEffectGroup() }
+        // **And nothing drifts while the system asks for less motion** (round 328). Guarded
+        // here as well as at the screens' own `addParallax`, because this is what a pop-up
+        // closing calls to hand the parallax back to the screens underneath it - a path that
+        // does not go through any of them
+
         let amount = UIView.parallaxTravel(forWidth: window?.bounds.width ?? bounds.width)
         let horizontal = UIInterpolatingMotionEffect(keyPath: "center.x",
                                                      type: .tiltAlongHorizontalAxis)
@@ -684,5 +706,21 @@ extension UICollectionView {
     /// `.zero`, which is what these were returning anyway.
     var ownSectionInset: UIEdgeInsets {
         (collectionViewLayout as? UICollectionViewFlowLayout)?.sectionInset ?? .zero
+    }
+}
+
+extension UIView {
+
+    /// Whether the app may add motion effects - the parallax that drifts a background under the
+    /// device's tilt, and anything else that moves without being asked to.
+    ///
+    /// **Off when the system says Reduce Motion** (round 328). The app has had a parallax
+    /// setting of its own since long before this, which is the right control to keep; what it
+    /// did not have was any regard for the one a player sets once, in Settings, for every app
+    /// on the phone. Apple's rule is that the app simply stops animating - the app's own
+    /// setting is left exactly as the player left it, so nothing changes back when they turn
+    /// Reduce Motion off again.
+    static var motionEffectsAreWelcome: Bool {
+        UIAccessibility.isReduceMotionEnabled == false
     }
 }

@@ -6012,3 +6012,144 @@ final class BallSizeMidAnimationTests: XCTestCase {
                        + "before and the Grow was spent putting it back to normal")
     }
 }
+
+/// **The paddle's glow keeps its forty points at every paddle width** (James, round 327, with a
+/// screenshot of a Portal Paddle running beside an Expand Paddle: "paddle glow is expanding and
+/// shrinking too far. It should stay 40 points bigger than the paddle, not expand at the same
+/// rate").
+///
+/// Round 320 answered the same request by making the margin absolute - read off the two pictures
+/// rather than typed - and it was right until round 321 moved Expand and Shrink from writing
+/// `paddle.size` to animating `xScale`. A child's size is in its parent's coordinates, so the
+/// margin was multiplied by the paddle's scale from that round on: a ratio again, arrived at from
+/// the one direction the note did not cover.
+final class PaddleGlowMarginTests: XCTestCase {
+
+    private func mayhem() -> GameScene {
+        let scene = GameScene()
+        scene.gameMode = .endlessII
+        scene.totalStatsArray = [TotalStats()]
+        scene.addChild(scene.paddle)
+        scene.paddle.size = CGSize(width: 120, height: 12)
+        scene.endlessIIPortalPaddleClock.remaining = 10
+        return scene
+    }
+
+    private func glow(in scene: GameScene) throws -> SKSpriteNode {
+        try XCTUnwrap(scene.paddle.childNode(withName: GameScene.paddleGlowName) as? SKSpriteNode,
+                      "the Portal Paddle is running, so there is a glow")
+    }
+
+    /// What the player sees: the glow's width on screen, less the paddle's own.
+    private func marginOnScreen(_ scene: GameScene, _ glow: SKSpriteNode) -> CGFloat {
+        (glow.size.width - scene.paddle.size.width)*scene.paddle.xScale
+    }
+
+    func testTheMarginIsTheSameAtEveryPaddleWidth() throws {
+        let scene = mayhem()
+
+        scene.paddle.xScale = 1
+        scene.refreshEndlessIIPaddleGlow()
+        let plain = marginOnScreen(scene, try glow(in: scene))
+        XCTAssertGreaterThan(plain, 0, "the glow is bigger than the paddle")
+
+        for stretch in [CGFloat(0.5), 1.5, 2, 2.5] {
+            scene.paddle.xScale = stretch
+            scene.refreshEndlessIIPaddleGlow()
+            let margin = marginOnScreen(scene, try glow(in: scene))
+            XCTAssertEqual(margin, plain, accuracy: 0.5,
+                           "at \(stretch)x the paddle the glow reaches \(Int(margin)) points "
+                           + "past it, where a normal paddle's reaches \(Int(plain))")
+        }
+    }
+
+    /// And it is the artwork's own margin, which is the forty points James asked for.
+    func testTheMarginIsTheOneTheArtworkWasDrawnWith() throws {
+        let scene = mayhem()
+        scene.paddle.xScale = 1
+        scene.refreshEndlessIIPaddleGlow()
+        XCTAssertEqual(marginOnScreen(scene, try glow(in: scene)),
+                       scene.endlessIIPaddleGlowMargin().width, accuracy: 0.5)
+    }
+}
+
+/// **Magnetism draws the pull instead of painting the paddle** (James, round 327c: "there's no
+/// need to colour the paddle - show magnetism lines flowing towards the paddle from the ball,
+/// like it is being attracted to the paddle").
+///
+/// A solid line says the two are joined; dashes travelling one way say which of them is pulling.
+final class EndlessIIMagnetFlowTests: XCTestCase {
+
+    private func dashes(_ path: CGPath) -> [(from: CGPoint, to: CGPoint)] {
+        var found: [(CGPoint, CGPoint)] = []
+        var pen = CGPoint.zero
+        path.applyWithBlock { element in
+            switch element.pointee.type {
+            case .moveToPoint: pen = element.pointee.points[0]
+            case .addLineToPoint:
+                found.append((pen, element.pointee.points[0]))
+                pen = element.pointee.points[0]
+            default: break
+            }
+        }
+        return found.map { (from: $0.0, to: $0.1) }
+    }
+
+    private func scene() -> GameScene {
+        let scene = GameScene()
+        scene.gameMode = .endlessII
+        scene.totalStatsArray = [TotalStats()]
+        return scene
+    }
+
+    func testTheLineIsDrawnAsDashesRatherThanOnePiece() {
+        let scene = self.scene()
+        let path = scene.endlessIIFlowingPath(from: CGPoint(x: 0, y: 200),
+                                              to: CGPoint(x: 0, y: 0), phase: 0)
+        let drawn = dashes(path)
+        XCTAssertGreaterThan(drawn.count, 3, "200 points of pull is several dashes, not a line")
+        for dash in drawn {
+            let length = hypot(dash.to.x - dash.from.x, dash.to.y - dash.from.y)
+            XCTAssertLessThanOrEqual(length, GameScene.endlessIIMagnetDash + 0.01,
+                                     "no dash is longer than the dash length")
+        }
+    }
+
+    /// Every dash lies on the segment: nothing is drawn beyond the ball or past the paddle.
+    func testNothingIsDrawnOutsideTheBallAndThePaddle() {
+        let scene = self.scene()
+        let span = GameScene.endlessIIMagnetDash + GameScene.endlessIIMagnetGap
+        for step in 0..<8 {
+            let path = scene.endlessIIFlowingPath(from: CGPoint(x: 0, y: 120),
+                                                  to: CGPoint(x: 0, y: 0),
+                                                  phase: span*CGFloat(step)/8)
+            for dash in dashes(path) {
+                for point in [dash.from, dash.to] {
+                    XCTAssertGreaterThanOrEqual(point.y, -0.01, "past the paddle")
+                    XCTAssertLessThanOrEqual(point.y, 120.01, "behind the ball")
+                }
+            }
+        }
+    }
+
+    /// And the dashes travel toward the paddle as the phase advances, which is the whole point.
+    func testTheDashesTravelTowardsThePaddle() throws {
+        let scene = self.scene()
+        let ball = CGPoint(x: 0, y: 200)
+        let paddle = CGPoint(x: 0, y: 0)
+
+        let first = try XCTUnwrap(dashes(scene.endlessIIFlowingPath(from: ball, to: paddle,
+                                                                    phase: 0)).first)
+        let later = try XCTUnwrap(dashes(scene.endlessIIFlowingPath(from: ball, to: paddle,
+                                                                    phase: 4)).first)
+        XCTAssertLessThan(later.from.y, first.from.y,
+                          "four points on, the leading dash is four points nearer the paddle")
+    }
+
+    /// A ball sitting on the paddle has no line at all rather than a dot.
+    func testNoLineWhenThereIsNoDistance() {
+        let scene = self.scene()
+        let path = scene.endlessIIFlowingPath(from: .zero, to: CGPoint(x: 0, y: 0.5), phase: 0)
+        XCTAssertTrue(dashes(path).isEmpty)
+    }
+}

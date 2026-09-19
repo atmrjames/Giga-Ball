@@ -346,10 +346,15 @@ enum BrickTypeIcons {
     /// motions move on this page and say it themselves.
     private static func drawOverlay(for style: EndlessIIStyle, in frame: CGRect,
                                     context: CGContext) {
-        if let overlay = UIImage(named: GameScene.endlessIIStyleOverlayArtName(style)) {
+        if GameScene.endlessIIOverlaidStyles.contains(style),
+           let overlay = UIImage(named: GameScene.endlessIIStyleOverlayArtName(style)) {
             overlay.draw(in: frame)
             return
         }
+        // Asked of the list and not only of the assets (round 327b). The pictures are still in
+        // the bundle - James may want them back - and a page that drew one the field no longer
+        // wears would be the reference disagreeing with the game, which is the one thing this
+        // file exists to prevent
         guard [.exploding, .spawner, .fixed].contains(style) else { return }
         stroke(glyph(for: style, in: frame), in: context, width: max(1.5, frame.height*0.08))
     }

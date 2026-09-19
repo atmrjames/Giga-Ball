@@ -545,7 +545,7 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
             ? (indexPath.section == 0 ? "Classic game modes" : "Endless Mayhem")
             : (indexPath.section == 0 ? "This run" : "Other")
         // Which pair of headings applies is the same question as which sections exist
-        ReferenceHeading.fill(header, title: title)
+        ReferenceHeading.fill(header, title: title, inset: PackSelectViewController.gridInset)
         // The bricks page's own recipe, shared since round 145 - these two pages were showing
         // the same kind of heading in two different sizes
         return header
@@ -1072,6 +1072,7 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
     }
     
     func addParallax() {
+        guard UIView.motionEffectsAreWelcome else { return }
         var amount = 25
         if view.frame.width > 450 {
             amount = 50

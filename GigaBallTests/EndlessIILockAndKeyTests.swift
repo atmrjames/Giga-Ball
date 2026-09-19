@@ -527,3 +527,52 @@ final class WipeEndsTheOldTimersTests: XCTestCase {
         }
     }
 }
+
+/// **A Wipe brick is not built while there is nothing to wipe** (James, round 327: "Wipe power
+/// up should only show when a power up is active").
+///
+/// The weights already answered this - `applyEndlessRowPowerUpWeights` zeroes Wipe while nothing
+/// is running - and a brick outlives the row that built it, which is the hole. A row built while
+/// a Lasers ran could hand a brick a Wipe, and the brick then sat in the field wearing its icon
+/// long after the Lasers had ended, promising to take away something that was already gone.
+final class WipeOnlyShowsWhileSomethingIsRunningTests: XCTestCase {
+
+    private func mayhem() -> GameScene {
+        let scene = GameScene()
+        scene.gameMode = .endlessII
+        scene.totalStatsArray = [TotalStats()]
+        scene.brickWidth = 40
+        scene.brickHeight = 20
+        scene.gameWidth = 400
+        scene.endlessHeight = 5000
+        // High enough that the kindness gate lets a brick hold a bad power-up: early bricks
+        // hold good ones only (round 202), and a Wipe is not one
+        scene.totalStatsArray[0].powerUpUnlockedArray = Array(
+            repeating: true, count: scene.totalStatsArray[0].powerUpUnlockedArray.count)
+        scene.powerUpProbArray = Array(repeating: 0, count: scene.powerUpProbArray.count)
+        scene.powerUpProbArray[GameScene.wipePowerUpIndex] = 5
+        // Only a Wipe on the table, so what comes back is the decision being tested rather
+        // than the draw
+        return scene
+    }
+
+    func testNoPowerUpBrickIsBuiltForAWipeWithNothingRunning() {
+        let scene = mayhem()
+        XCTAssertFalse(scene.endlessIIWipeMayDrop)
+
+        XCTAssertNil(scene.endlessIIMakePowerUpBrick(column: 2, rowY: 100),
+                     "a brick holding a Wipe with nothing to end is a gift wearing a threat")
+        XCTAssertTrue(scene.endlessIIPowerUpBricksInPlay.isEmpty)
+    }
+
+    func testTheSameBrickIsBuiltOnceSomethingIsRunning() throws {
+        let scene = mayhem()
+        scene.runClassicPowerUpTimer(key: "powerUpLasers", wait: .wait(forDuration: 10),
+                                     ending: .run {})
+        XCTAssertTrue(scene.endlessIIWipeMayDrop)
+
+        let brick = try XCTUnwrap(scene.endlessIIMakePowerUpBrick(column: 2, rowY: 100),
+                                  "with a Lasers running there is something for it to take")
+        XCTAssertEqual(brick.endlessIIPowerUpIndex, GameScene.wipePowerUpIndex)
+    }
+}

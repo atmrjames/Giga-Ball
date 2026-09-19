@@ -281,20 +281,24 @@ final class SplitPaddleTintTests: XCTestCase {
         XCTAssertNotNil(scene.paddle.childNode(withName: GameScene.paddleGlowName))
     }
 
-    /// **Magnetism is the one paddle power-up that still paints**, which is worth its own test
-    /// now that it is alone in doing it: it has no glow drawn for it, and red is the whole of
-    /// how a magnet paddle says so. A round that removed the last tint by accident would
-    /// otherwise take Magnetism's only signal with it.
-    func testMagnetismStillPaintsBecauseItHasNoGlow() {
+    /// **Magnetism was the last power-up tinting the paddle, and now nothing does** (James,
+    /// round 327c: "for the magnetism graphic, there's no need to colour the paddle - show
+    /// magnetism lines flowing towards the paddle from the ball, like it is being attracted to
+    /// the paddle").
+    ///
+    /// Round 316 took the Portal Paddle's tint away on the same argument - draw the effect, not
+    /// the paddle - and this is that argument finished. What says a magnet is running is the
+    /// pull itself: dashes travelling up the line from the ball, which `drawEndlessIIPullLines`
+    /// owns and `EndlessIIMagnetFlowTests` measures.
+    func testMagnetismNoLongerPaintsThePaddle() {
         let scene = self.scene()
         scene.endlessIICollectMagnetism()
         scene.tickEndlessIIPaddlePowerUps(0)
 
-        XCTAssertGreaterThan(scene.paddle.colorBlendFactor, 0,
-                             "Magnetism has nothing but its colour")
-        isSame(scene.paddle.color, GameScene.endlessIIMagnetColour)
+        XCTAssertEqual(scene.paddle.colorBlendFactor, 0, accuracy: 0.0001,
+                       "nothing paints the paddle any more")
         XCTAssertNil(scene.paddle.childNode(withName: GameScene.paddleGlowName),
-                     "and no halo, which is why it needs the colour")
+                     "and Magnetism still has no halo - the lines are its whole signal")
     }
 
     /// The tint comes off the pieces when the power-up ends, like everything else here.

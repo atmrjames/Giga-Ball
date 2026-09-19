@@ -376,7 +376,7 @@ extension GameScene {
         guard overshoot > 0.5 else { return }
         paddleIsAgainstTheWall = true
         lightHaptic.impactOccurred(intensity: 0.7)
-        playMayhemSound("wrapAround")
+        playMayhemSound("wrapAround", or: "portalJump")
         // Round 200 asked for softer than a full light tap and round 202 found 0.4 too
         // light to feel at all - 0.7 is the split. The hysteresis is what actually fixed
         // the annoyance; the intensity just has to be present without being an event
