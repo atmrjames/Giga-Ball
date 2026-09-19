@@ -260,6 +260,39 @@ final class ScreenLayoutAuditTests: XCTestCase {
         }
     }
 
+    /// And the splash with nothing to resume, which is what most launches show.
+    ///
+    /// The resume card is the interesting half of this screen and the reason the audit came
+    /// here, but James's list said "splash" rather than "the resume card" - and the plain one
+    /// carries its own furniture: the logo, the version, the play button's label and whatever
+    /// the day has to say. It costs one more pass to know that all of it fits on an iPhone SE
+    /// and in a Slide Over.
+    func testTheSplashIsTidyWithNothingToResume() {
+        defer { UserDefaults().removePersistentDomain(forName: ScreenLayoutAuditTests.auditSuite) }
+        for (deviceName, size) in sizes {
+            let store = auditStore()
+            store.set(false, forKey: SavedGame.resumeFlagKey)
+            let board = UIStoryboard(name: "Main", bundle: Bundle(for: SplashViewController.self))
+            let splash = board.instantiateViewController(withIdentifier: "splashView")
+                as! SplashViewController
+            splash.defaults = store
+            splash.gameToResume = false
+            screens.append(splash)
+            splash.view.frame = CGRect(origin: .zero, size: size)
+            splash.beginAppearanceTransition(true, animated: false)
+            splash.endAppearanceTransition()
+            // **The credit fades in rather than being there**, so a splash that is only loaded
+            // has nothing on it to measure: every label on this screen starts at alpha zero and
+            // is brought up in `viewDidAppear`. Driving the appearance is what puts the screen
+            // into the state a player sees
+            for _ in 0..<3 {
+                splash.view.setNeedsLayout()
+                splash.view.layoutIfNeeded()
+            }
+            audit(splash, "Splash", deviceName)
+        }
+    }
+
     func testTheBetweenLevelsScreenIsTidyAtEverySize() throws {
         for (deviceName, size) in sizes {
             guard let screen = betweenLevels(size: size) else {

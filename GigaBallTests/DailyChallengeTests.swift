@@ -2824,7 +2824,12 @@ final class DailyMonochromeTests: XCTestCase {
     /// and a brick's `position.y` is its row (§8.6). This test is the reminder of why the
     /// two-line version is the right one.
     func testTheSceneIsItsOwnEffectNode() {
-        XCTAssertTrue(GameScene() is SKEffectNode)
+        let scene: AnyObject = GameScene()
+        XCTAssertTrue(scene is SKEffectNode)
+        // Through `AnyObject` because the compiler can see the answer from the declaration and
+        // warns that the test is always true. It is - today. The point of the test is the day
+        // somebody wraps the world in an effect node instead, which is the change §8.6 says
+        // not to make, and a compile-time answer is exactly the one that stops being right
     }
 
 }

@@ -95,7 +95,7 @@ final class LevelIntroLogoTests: XCTestCase {
 
     /// And the mode icon still does travel with the name, which is the deliberate half.
     func testTheModeIconStillTravelsWithTheName() throws {
-        let (host, intro) = shownIntro()
+        let (_, intro) = shownIntro()
         func icons(_ root: UIView) -> [UIImageView] {
             root.subviews.flatMap { child -> [UIImageView] in
                 let mine = (child as? UIImageView).map { [$0] } ?? []

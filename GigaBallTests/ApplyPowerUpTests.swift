@@ -315,9 +315,9 @@ final class PowerUpPairInteractionTests: XCTestCase {
         super.tearDown()
     }
 
-    private func scene() -> GameScene {
+    private func scene(mode: GameMode = .endlessII) -> GameScene {
         let scene = GameScene(size: CGSize(width: 400, height: 800))
-        scene.gameMode = .endlessII
+        scene.gameMode = mode
         let stats = TotalStats()
         stats.achievementsUnlockedArray = stats.achievementsUnlockedArray.map { _ in true }
         scene.totalStatsArray = [stats]
@@ -440,15 +440,29 @@ final class PowerUpPairInteractionTests: XCTestCase {
     /// that only appears after four thousand resets is a fault in the reset, not in the pair,
     /// and the second pass is where the two are told apart.
     func testNoPairOfPowerUpsLeavesTheSceneBroken() {
+        sweepEveryPair(in: .endlessII)
+    }
+
+    /// And the same sweep in Classic, which is the mode with the years of scores on it.
+    ///
+    /// Most of Mayhem's own power-ups stand down outside Mayhem - they guard on the mode - so
+    /// this is mainly the original set meeting each other, on a scene that answers questions
+    /// the Mayhem one does not: level numbers, a pack, a rack of lives. It costs another
+    /// forty seconds and it covers the mode a player is most likely to be in.
+    func testNoPairOfPowerUpsBreaksAClassicRun() {
+        sweepEveryPair(in: .classic)
+    }
+
+    private func sweepEveryPair(in mode: GameMode) {
         let names = LevelPackSetup().powerUpNameArray
-        let scene = self.scene()
+        let scene = self.scene(mode: mode)
         let count = scene.powerUpTexturesInOrder.count
         XCTAssertGreaterThan(count, 60, "the list is empty, so this test proves nothing")
 
         var suspects: [(first: Int, second: Int, pair: String)] = []
         for first in 0..<count {
             for second in 0..<count {
-                let pair = "\(names[first]) then \(names[second])"
+                let pair = "\(mode): \(names[first]) then \(names[second])"
                 pairUnderTest = pair
                 putBack(scene)
                 collect(first, on: scene)
@@ -466,7 +480,7 @@ final class PowerUpPairInteractionTests: XCTestCase {
         var faults: [String] = []
         for suspect in suspects {
             autoreleasepool {
-                let fresh = self.scene()
+                let fresh = self.scene(mode: mode)
                 pairUnderTest = suspect.pair
                 collect(suspect.first, on: fresh)
                 collect(suspect.second, on: fresh)
