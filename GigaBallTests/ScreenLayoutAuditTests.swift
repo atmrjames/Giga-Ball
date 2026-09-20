@@ -480,3 +480,89 @@ final class BetweenLevelsScoreBlockTests: XCTestCase {
                        "still centred, because there is nothing beside it")
     }
 }
+/// The level intro's furniture, at the five shapes.
+///
+/// **James, round 332's layout notes: "move all labels down to prevent clipping with giga-ball
+/// logo", and "add more space between giga-ball logo and game mode logo".** The wordmark is
+/// hosted one level out from the intro, so nothing in the screen's own layout knows where it
+/// is - which is how the mode icon came to reach up into it.
+final class LevelIntroFurnitureTests: XCTestCase {
+
+    private var hosts: [UIView] = []
+    private var screens: [UIViewController] = []
+
+    override func tearDown() {
+        DailyChallengeSession.shared.active = nil
+        hosts.removeAll()
+        screens.removeAll()
+        super.tearDown()
+    }
+
+    private let sizes: [(name: String, size: CGSize)] = [
+        ("iPhone SE", CGSize(width: 320, height: 568)),
+        ("iPhone 16 Pro", CGSize(width: 402, height: 874)),
+        ("iPhone 17 Pro Max", CGSize(width: 440, height: 956)),
+        ("iPad 13-inch", CGSize(width: 1032, height: 1376)),
+        ("Slide Over", CGSize(width: 320, height: 1024)),
+    ]
+
+    /// The intro inside a host, which is what the game gives it - and what the wordmark needs.
+    private func intro(size: CGSize) -> (UIView, InbetweenViewController)? {
+        let board = UIStoryboard(name: "Main", bundle: Bundle(for: InbetweenViewController.self))
+        guard let screen = board.instantiateViewController(withIdentifier: "inbetweenView")
+                as? InbetweenViewController else { return nil }
+        screen.levelNumber = LevelPackSetup().startLevelNumber[2] + 2
+        screen.packNumber = 2
+        screen.numberOfLevels = 10
+        screen.firstLevel = true
+
+        let host = UIView(frame: CGRect(origin: .zero, size: size))
+        screen.loadViewIfNeeded()
+        screen.view.frame = host.bounds
+        host.addSubview(screen.view)
+        hosts.append(host)
+        screens.append(screen)
+        for _ in 0..<3 {
+            host.setNeedsLayout()
+            host.layoutIfNeeded()
+        }
+        return (host, screen)
+    }
+
+    private func wordmark(in host: UIView) -> UIImageView? {
+        host.subviews.compactMap { $0 as? UIImageView }.first
+    }
+
+    private func modeIcon(in screen: InbetweenViewController) -> UIImageView? {
+        screen.view.subviews.compactMap { $0 as? UIImageView }
+            .first { $0.image != nil && $0.bounds.width == $0.bounds.height }
+    }
+
+    /// The mode's icon never reaches up into the wordmark.
+    func testTheModeIconClearsTheWordmark() throws {
+        for (name, size) in sizes {
+            guard let (host, screen) = intro(size: size) else {
+                return XCTFail("the storyboard no longer has an inbetweenView")
+            }
+            guard let logo = wordmark(in: host), let icon = modeIcon(in: screen) else { continue }
+
+            let mark = logo.convert(logo.bounds, to: host)
+            let badge = icon.convert(icon.bounds, to: host)
+            XCTAssertGreaterThanOrEqual(badge.minY, mark.maxY,
+                                        "\(name): the mode icon is drawn over the wordmark, "
+                                        + "\(mark) against \(badge)")
+
+            // And clearing it by pushing the block off the other end is not clearing it.
+            // Round 332's first attempt at this passed nothing and drove the icon to -397;
+            // the second would have satisfied a bare clearance check by sending the text
+            // out of the bottom of the screen instead.
+            XCTAssertGreaterThanOrEqual(badge.minY, -0.5,
+                                        "\(name): the mode icon is off the top of the screen")
+            let tap = screen.tapLabel.convert(screen.tapLabel.bounds, to: host)
+            XCTAssertLessThanOrEqual(tap.maxY, size.height + 0.5,
+                                     "\(name): the tap line is off the bottom of the screen")
+            XCTAssertGreaterThan(tap.minY, badge.maxY,
+                                 "\(name): the screen still reads icon, then text, then tap")
+        }
+    }
+}

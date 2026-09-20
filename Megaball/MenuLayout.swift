@@ -187,6 +187,15 @@ extension UIViewController {
     static let inGameLogoHeight: CGFloat = 36
     static let inGameModeIconGap: CGFloat = 4
 
+    /// How much clear air the wordmark keeps below it on the level intro.
+    ///
+    /// The mode icon is pinned *above* the first line of text, so it grows upwards out of a
+    /// block the storyboard centres - which on a 320 by 568 screen put its top at -59, off
+    /// the top of the phone entirely. The intro's own layout cannot see the wordmark (it is
+    /// hosted one level out, beside the screen rather than in it), so the clearance is
+    /// measured after a pass and the block moved down by whatever it is short.
+    static let inGameLogoToIconGap: CGFloat = 16
+
     /// How far the bottom row of buttons sits above the bottom of an in-game screen.
     ///
     /// The pause and game-over screens put their button row here, and round 332's layout notes

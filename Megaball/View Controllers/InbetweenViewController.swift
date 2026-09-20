@@ -688,6 +688,43 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
         introLogoView = logo
     }
 
+    /// The storyboard constant each of those two ties started at, so a screen that is laid
+    /// out many times cannot walk its labels down the screen one pass at a time.
+    private var introBlockBaseConstant: [ObjectIdentifier: CGFloat] = [:]
+
+    /// Moves the intro's text block down until the mode icon clears the wordmark.
+    ///
+    /// **James, round 332's layout notes: "move all labels down to prevent clipping with
+    /// giga-ball logo", and "add more space between giga-ball logo and game mode logo".**
+    ///
+    /// Nothing in this screen's layout can express that as a constraint: the wordmark is a
+    /// subview of the intro's *host*, added in `showIntroLogo`, so the two are in different
+    /// subtrees and the icon is pinned upwards from the first line of text rather than
+    /// downwards from anything. So it is measured instead. The tie that positions the block
+    /// reads `container.centerY == label.bottom + constant`, which means the constant counts
+    /// *upwards* - the block moves down when it shrinks, which is why round 332's first
+    /// attempt at this drove the icon to -397 rather than on to the screen.
+    private func keepTheModeIconClearOfTheWordmark() {
+        guard let icon = modeIconView, let logo = introLogoView,
+              let host = logo.superview, icon.window != nil || icon.superview != nil else { return }
+
+        let mark = logo.convert(logo.bounds, to: host).maxY + UIViewController.inGameLogoToIconGap
+        let badge = icon.convert(icon.bounds, to: host).minY
+        let shortfall = mark - badge
+        guard shortfall > 0.5 else { return }
+
+        for constraint in [completeLabelConstraint, packAndLevelConstriant].compactMap({ $0 })
+        where constraint.isActive {
+            let key = ObjectIdentifier(constraint)
+            let base = introBlockBaseConstant[key] ?? constraint.constant
+            introBlockBaseConstant[key] = base
+            // Never further than the block's own height from where the storyboard put it: a
+            // clamp is cheaper than trusting that every future screen shape converges.
+            constraint.constant = max(base - 160, constraint.constant - shortfall)
+        }
+        host.layoutIfNeeded()
+    }
+
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         giveTheTwistsTheRoomTheyNeed()
@@ -696,6 +733,7 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
                         keeping: &modeIconBottom)
         }
         showIntroLogo()
+        keepTheModeIconClearOfTheWordmark()
         // **The first moment the right host is known.** `viewDidLoad` calls `showAnimate`, and
         // `updateLabels` builds the mode icon and the wordmark beside it - all of that runs
         // when `GameViewController` first touches `.view`, which is the line *before* the one
