@@ -9660,7 +9660,12 @@ laserTimer?.invalidate()
 			overlay.isHidden = false
 			overlay.colorBlendFactor = 0
 			overlay.color = .clear
-			overlay.texture = gradientBackgroundTexture(size: overlay.size, green: true)
+			overlay.texture = gradientBackgroundTexture(size: overlay.size, flavour: .green)
+		case .sunsetGradient:
+			overlay.isHidden = false
+			overlay.colorBlendFactor = 0
+			overlay.color = .clear
+			overlay.texture = gradientBackgroundTexture(size: overlay.size, flavour: .sunset)
 		}
 		background.isHidden = setting != .classic
 	}
@@ -9813,7 +9818,8 @@ laserTimer?.invalidate()
 
 	/// The borders' purple at the top, the Classic background's purple by the paddle, then
 	/// away to near black at the bottom of the playfield.
-	func gradientBackgroundTexture(size: CGSize, green: Bool = false) -> SKTexture? {
+	func gradientBackgroundTexture(size: CGSize,
+								   flavour: GameBackground.Flavour = .purple) -> SKTexture? {
 		guard size.width > 0, size.height > 0 else { return nil }
 
 		// Where the paddle sits within the background, measured from its bottom.
@@ -9822,7 +9828,7 @@ laserTimer?.invalidate()
 
 		guard let image = GameBackground.gradientImage(size: size,
 													  paddleFraction: paddleFraction,
-													  green: green) else {
+													  flavour: flavour) else {
 			return nil
 		}
 		// Just the fade now: the Glow's haze and the Clouds' drift are nodes of their own,

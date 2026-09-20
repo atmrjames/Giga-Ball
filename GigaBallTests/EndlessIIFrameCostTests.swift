@@ -1988,7 +1988,7 @@ final class EndlessIIFrameCostTests: XCTestCase {
             switch background.paint {
             case .greenGradient:
                 let image = try XCTUnwrap(GameBackground.gradientImage(
-                    size: panel, paddleFraction: 0.18, green: true))
+                    size: panel, paddleFraction: 0.18, flavour: .green))
                 node = SKSpriteNode(texture: SKTexture(image: image), size: panel)
             case .picture(let named):
                 node = SKSpriteNode(texture: SKTexture(imageNamed: named), size: panel)

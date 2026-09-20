@@ -36,6 +36,9 @@ enum GameBackground: Int, CaseIterable {
     /// The gradient in Giga-Ball green rather than purple - drawn, like the gradient it is a
     /// sibling of, so it fits any screen without an asset per device.
     case deepGreen = 9
+    /// James's sunset (round 334): "goes from dark purple to dark blue to lighter blue to
+    /// white to orange, pink and red, just like a sunset."
+    case sunset = 10
 
     /// The order the picker offers them in.
     ///
@@ -49,7 +52,7 @@ enum GameBackground: Int, CaseIterable {
     /// three deep colours together, then the pictures.
     static let inDisplayOrder: [GameBackground] = [
         .classic, .solid, .black,
-        .gradient, .deepBlue, .deepGreen,
+        .gradient, .deepBlue, .deepGreen, .sunset,
         .starrySky, .glow, .clouds, .prism,
     ]
 
@@ -77,6 +80,7 @@ enum GameBackground: Int, CaseIterable {
         case .clouds: return "Clouds"
         case .prism: return "Prism"
         case .deepGreen: return "Deep Green"
+        case .sunset: return "Sunset"
         }
     }
 
@@ -93,6 +97,7 @@ enum GameBackground: Int, CaseIterable {
         case .clouds: return "Slow cloud, drifting behind the field"
         case .prism: return "Cut glass, catching the light down the field"
         case .deepGreen: return "Giga-Ball green at the top, black below the paddle"
+        case .sunset: return "Night at the top of the field, the last of the light below it"
         }
     }
 
@@ -118,6 +123,8 @@ enum GameBackground: Int, CaseIterable {
         case glow
         /// A vertical fade like `gradient`, in Giga-Ball green rather than purple.
         case greenGradient
+        /// The sky at sunset: night at the top, the last of the light at the paddle line.
+        case sunsetGradient
         /// The fade with cloud drifting across it - two layers at two speeds.
         ///
         /// The only background that moves, which is the whole of it: everything else here is
@@ -138,6 +145,7 @@ enum GameBackground: Int, CaseIterable {
         case .clouds: return .clouds
         case .prism: return .picture("backgroundPrism")
         case .deepGreen: return .greenGradient
+        case .sunset: return .sunsetGradient
         }
     }
 
@@ -159,6 +167,57 @@ enum GameBackground: Int, CaseIterable {
         let fraction = min(max(paddleFraction, 0), 1)
         return ([borderPurple, purple, deepPurple], [0, 1 - fraction, 1])
     }
+
+    /// The sunset's seven stops, pinned to the paddle the way the other two gradients are.
+    ///
+    /// **James, round 334: "new sunset game background that goes from dark purple to dark blue
+    /// to lighter blue to white to orange, pink and red, just like a sunset."** That order is
+    /// his, top to bottom, and the only decision left is *where* the light band falls.
+    ///
+    /// **It falls at the paddle, and it has to.** The bricks in this game are white, and the
+    /// field fills the upper two thirds of the screen: a sky that turns pale up there is a sky
+    /// that hides the bricks. So everything above the paddle line is night - the purple, then
+    /// the two blues, each dark enough to leave a white brick reading as a white brick - and
+    /// the horizon's glare sits just above the paddle, where no brick ever reaches. Below it,
+    /// the orange and the pink fall away to a deep red, so the white paddle still has
+    /// something dark to sit against.
+    ///
+    /// Pinning the band to `paddleFraction` rather than to a fixed fraction is the same trick
+    /// the purple gradient has used since it was drawn: the paddle is in a different place on
+    /// every screen shape, and a horizon that drifted up into the field on a short phone would
+    /// take the bricks with it.
+    ///
+    /// **The glare sits a little above the paddle rather than behind it**, which the first
+    /// version got wrong and a screenshot showed: a white paddle on the palest band of the sky
+    /// is the one piece of this that has to be read at a glance, so the haze is pulled up into
+    /// the empty strip under the field and the paddle is left sitting against the orange.
+    static func sunsetStops(paddleFraction: CGFloat) -> (colours: [UIColor],
+                                                         locations: [CGFloat]) {
+        let paddle = min(max(1 - paddleFraction, 0.35), 0.95)
+        let colours = [sunsetNight, sunsetDeepBlue, sunsetBlue, sunsetHaze,
+                       sunsetOrange, sunsetPink, sunsetRed]
+        let locations: [CGFloat] = [0,
+                                    paddle*0.42,
+                                    paddle*0.74,
+                                    max(0, paddle - 0.12),
+                                    max(0, paddle - 0.02),
+                                    min(1, paddle + 0.09),
+                                    1]
+        return (colours, locations.sorted())
+        // Sorted because the two clamps above can cross on an unusually short screen, and a
+        // `CGGradient` given locations out of order draws nothing at all
+    }
+
+    static let sunsetNight = UIColor(red: 20/255, green: 10/255, blue: 40/255, alpha: 1)
+    static let sunsetDeepBlue = UIColor(red: 16/255, green: 32/255, blue: 63/255, alpha: 1)
+    static let sunsetBlue = UIColor(red: 36/255, green: 71/255, blue: 110/255, alpha: 1)
+    static let sunsetHaze = UIColor(red: 214/255, green: 193/255, blue: 160/255, alpha: 1)
+    static let sunsetOrange = UIColor(red: 196/255, green: 86/255, blue: 31/255, alpha: 1)
+    static let sunsetPink = UIColor(red: 142/255, green: 34/255, blue: 70/255, alpha: 1)
+    static let sunsetRed = UIColor(red: 42/255, green: 7/255, blue: 16/255, alpha: 1)
+    // The haze is a warm off-white rather than white: the ball is white, the paddle is white
+    // and the bricks are white, and the one place this background is bright is the one place
+    // all three of them meet
 
     /// The Giga-Ball green, which the glow is made of.
     static let glowGreen = UIColor(red: 210/255, green: 1, blue: 0, alpha: 1)
@@ -510,12 +569,19 @@ enum GameBackground: Int, CaseIterable {
     ///
     /// UIKit's y runs down the image, so the stops above - measured from the top - are used
     /// as they are, and the paddle's fraction is what gets flipped.
+    /// Which of the three fades to draw. Was a `green: Bool` until the sunset made it three.
+    enum Flavour { case purple, green, sunset }
+
     static func gradientImage(size: CGSize, paddleFraction: CGFloat,
-                              green: Bool = false) -> UIImage? {
+                              flavour: Flavour = .purple) -> UIImage? {
         guard size.width > 0, size.height > 0 else { return nil }
 
-        let stops = green ? greenGradientStops(paddleFraction: paddleFraction)
-                          : gradientStops(paddleFraction: paddleFraction)
+        let stops: (colours: [UIColor], locations: [CGFloat])
+        switch flavour {
+        case .purple: stops = gradientStops(paddleFraction: paddleFraction)
+        case .green: stops = greenGradientStops(paddleFraction: paddleFraction)
+        case .sunset: stops = sunsetStops(paddleFraction: paddleFraction)
+        }
         // One builder for both, because they are the same picture in two colours - a second
         // copy would be a second place to fix the day the stops move
         return UIGraphicsImageRenderer(size: size).image { context in
