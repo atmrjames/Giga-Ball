@@ -104,8 +104,30 @@ class Paused: GKState {
     }
     // Call the function to unpause the game if a notification from the pause menu popup is received
     
+    /// **A restart leaves a pause for `PreGame`, not for `Playing`** (James, round 329d: "the
+    /// new restart button doesn't work"). Until this, the only way out of a pause was back into
+    /// the game, so `gameState.enter(PreGame.self)` returned false without a word and the
+    /// player was left looking at their own paused scene.
     override func isValidNextState(_ stateClass: AnyClass) -> Bool {
-        return stateClass is Playing.Type
+        stateClass is Playing.Type || stateClass is PreGame.Type
+    }
+
+    /// The pause comes off on the way to `PreGame`, and only there.
+    ///
+    /// Going back to `Playing` already has its own way out - `playFromPause`, which restores
+    /// every ball's heading and asks the field to carry on descending - and running both would
+    /// be two unpauses for one resume. A restart wants none of that: the run it was saving is
+    /// over, and `scene.liftThePauseForARestart` clears the board instead of restoring it.
+    override func willExit(to nextState: GKState) {
+        NotificationCenter.default.removeObserver(self, name: .killBallNotification, object: nil)
+        NotificationCenter.default.removeObserver(self, name: .unpause, object: nil)
+        // **Added on the way in, so they have to come off on the way out.** A state is made
+        // once and entered many times, and `NotificationCenter` keeps duplicate registrations
+        // of the same observer and selector rather than collapsing them - so before this, a
+        // player on their fourth pause had four observers and every unpause ran four times.
+
+        guard nextState is PreGame else { return }
+        scene.liftThePauseForARestart()
     }
 }
 

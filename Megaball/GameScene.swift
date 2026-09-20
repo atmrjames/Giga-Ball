@@ -7064,6 +7064,62 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         // Show locked icon if power-up locked
 	}
     
+    /// Everything on the field, taken off, so a new run can be built on an empty one.
+    ///
+    /// **Extracted in round 329d, because a restart from the pause menu needed exactly what a
+    /// finished level already did** (`InbetweenLevels.resetGameScene`) and a second copy of it
+    /// would have been wrong the first time a new kind of node joined the field. The level-end
+    /// path still owns the rest of its job - the ball and paddle animating out, the backstop
+    /// achievement, the sounds - and calls this for the part that is only "clear the board".
+    ///
+    /// The nodes fade rather than vanish because that is what a level ending looks like, and a
+    /// restart is a level ending in every way that matters to the field.
+    func clearTheFieldForANewRun() {
+        powerUpsReset()
+        endlessIIClearExtraBalls()
+        // The extras are a Mayhem thing and the call is harmless anywhere else - a run that
+        // never had any clears an empty list
+
+        let removeItem = SKAction.group([SKAction.scale(to: 0.1, duration: 0.2),
+                                         SKAction.fadeOut(withDuration: 0.2)])
+        for category in [BrickCategoryName, BrickRemovalCategoryName,
+                         PowerUpCategoryName, LaserCategoryName] {
+            enumerateChildNodes(withName: category) { node, _ in
+                node.removeAllActions()
+                node.run(removeItem, completion: { node.removeFromParent() })
+            }
+        }
+        bricksLeft = 0
+        powerUpsOnScreen = 0
+    }
+
+    /// Lifts the pause so a restart can actually start something.
+    ///
+    /// **James, round 329d: "the new restart button doesn't work. It just shows the current
+    /// paused game scene as it was left. I had to close the app."** Two things were stopping
+    /// it, and each on its own was enough. `Paused` would only ever allow `Playing` as a next
+    /// state, so `gameState.enter(PreGame.self)` quietly returned false and nothing happened at
+    /// all; and a paused scene runs no actions, so even once the transition was allowed,
+    /// `PreGame`'s one-second wait before it enters `Playing` would never have fired. The
+    /// scene sat exactly as the player left it, which is precisely what he saw.
+    ///
+    /// So the pause comes off here: the scene, every node under it, the icon timers and the
+    /// pause button's own pressed look. Then the field is cleared, because a restart from the
+    /// middle of a run has a board full of the old run's bricks, balls and falling power-ups,
+    /// and nothing on the `PreGame` path clears one - a level ending is what normally does it.
+    func liftThePauseForARestart() {
+        countdownStarted = false
+        isPaused = false
+        enumerateChildNodes(withName: "//*") { node, _ in node.isPaused = false }
+        iconTimerArray.forEach { $0.isPaused = false }
+        pauseButton.texture = pauseTexture
+        pauseButton.size.width = pauseButtonSize
+        pauseButton.size.height = pauseButtonSize
+        directionMarker.isHidden = true
+        endlessIIHideExtraDirectionMarkers()
+        clearTheFieldForANewRun()
+    }
+
     func powerUpsReset() {
         self.removeAllActions()
         // Stop all timers and animations
@@ -7728,6 +7784,23 @@ laserTimer?.invalidate()
 	// Every size-dependent value derived from the scene bounds. Pure maths, no node
 	// changes, so it is safe to call again whenever the bounds or safe area change.
 
+	/// Balls lost so far in this run, whatever level it is on.
+	///
+	/// **James, round 329d: "I played a full classic mode pack, losing lots of balls, yet by
+	/// the end of the pack, the stats showed 0 lost balls."**
+	///
+	/// The scene keeps two counters: `deathsPerLevel` for the level being played and
+	/// `deathsPerPack` for every level before it. Completing a level folds the first into the
+	/// second and zeroes it - `InbetweenLevels` does that while checking the two per-level
+	/// achievements - and the fold happens *before* the end-of-level card is built, so a card
+	/// reading `deathsPerLevel` showed nought at the end of every completed level, not only at
+	/// the end of a pack. A game over is the same fault from the other side: nothing folds
+	/// there, so the card would show the last level's losses and forget the nine before it.
+	///
+	/// The sum is right at both moments, because whichever of the two has just been emptied,
+	/// the other is holding what it held.
+	var ballsLostThisRun: Int { deathsPerPack + deathsPerLevel }
+
 	func showPauseMenu(sender: String) {
 
 		self.removeAction(forKey: "gameTimer")
@@ -7754,7 +7827,7 @@ laserTimer?.invalidate()
 			durationSeconds: levelTimerValue,
 			paddleHits: InGameRecents.shared.paddleHitsThisRun,
 			bricksDestroyed: InGameRecents.shared.bricksDestroyedThisRun,
-			ballsLost: deathsPerLevel,
+			ballsLost: ballsLostThisRun,
 			powerUpsSeen: InGameRecents.shared.powerUpsSeen,
 			powerUpsCollected: InGameRecents.shared.powerUpsCollected,
 			score: totalScore + levelScore,
@@ -7762,6 +7835,8 @@ laserTimer?.invalidate()
 			isEndless: endlessMode,
 			isMultiLevel: endlessMode == false && numberOfLevels > 1,
 			bestBallHits: max(hitsOnThisBall, runBestBallHits))
+		// Balls lost is `ballsLostThisRun`, which is both counters added together - the note
+		// on the property says why neither of them alone is the run's number
 		logTheRunEnding(sender: sender)
 			// `numberOfLevels` is how many the run was given, which is 1 for a Classic daily
 			// and for single-level mode - the same number the pause menu already branches on

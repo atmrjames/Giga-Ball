@@ -8,6 +8,7 @@
 //
 
 import XCTest
+import SpriteKit
 @testable import Giga_Ball
 
 final class RunLogTests: XCTestCase {
@@ -84,5 +85,53 @@ final class RunLogTests: XCTestCase {
         for _ in 0..<12 { recents.paddleHit() }
         recents.reset()
         XCTAssertEqual(recents.paddleHitsThisRun, 0)
+    }
+}
+
+/// What the end-of-run card says about balls lost.
+///
+/// **James, round 329d, with a screenshot of a finished Emoji Pack: "I played a full classic
+/// mode pack, losing lots of balls, yet by the end of the pack, the stats showed 0 lost
+/// balls."** Nine levels cleared, and the row said nought.
+final class BallsLostThisRunTests: XCTestCase {
+
+    private func scene() -> GameScene {
+        let scene = GameScene(size: CGSize(width: 400, height: 800))
+        scene.gameMode = .classic
+        scene.totalStatsArray = [TotalStats()]
+        return scene
+    }
+
+    /// The level being played, before anything has been folded.
+    func testTheCurrentLevelsLossesCount() {
+        let scene = self.scene()
+        scene.deathsPerLevel = 2
+        XCTAssertEqual(scene.ballsLostThisRun, 2)
+    }
+
+    /// And the moment the level ends, which is what the report was about.
+    ///
+    /// The fold is `InbetweenLevels`' - `deathsPerPack += deathsPerLevel; deathsPerLevel = 0` -
+    /// and it runs before the card is built, so this is the state the card is built in.
+    func testTheFoldAtTheEndOfALevelTakesNothingAway() {
+        let scene = self.scene()
+        scene.deathsPerLevel = 3
+        scene.deathsPerPack = scene.deathsPerPack + scene.deathsPerLevel
+        scene.deathsPerLevel = 0
+        XCTAssertEqual(scene.ballsLostThisRun, 3,
+                       "the level's losses moved into the pack's count, they did not vanish")
+    }
+
+    /// A pack run: nine levels behind it, and a tenth in progress.
+    func testAPackRunCountsEveryLevelOfIt() {
+        let scene = self.scene()
+        scene.deathsPerPack = 11
+        scene.deathsPerLevel = 2
+        XCTAssertEqual(scene.ballsLostThisRun, 13,
+                       "a game over in the last level still has the nine levels before it")
+    }
+
+    func testAFreshRunHasLostNothing() {
+        XCTAssertEqual(scene().ballsLostThisRun, 0)
     }
 }

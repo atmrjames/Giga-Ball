@@ -158,8 +158,10 @@ class InbetweenLevels: GKState {
         }
         // Backstop active at end of level achievement
         
-        scene.powerUpsReset()
-        // Reset any power ups
+        scene.clearTheFieldForANewRun()
+        // Every power-up ended and the board taken off: the bricks, the ones being removed, the
+        // falling power-ups and the lasers. Shared with the restart the pause menu offers
+        // (round 329d), which needs the same empty field and used to have no way to ask for it
         
         if scene.soundsSetting {
             if scene.gameoverStatus || scene.endlessMode {
@@ -168,43 +170,6 @@ class InbetweenLevels: GKState {
                 self.scene.run(scene.levelCompleteSound)
             }
         }
-        
-        let scaleDown2 = SKAction.scale(to: 0.1, duration: 0.2)
-        let fadeOut2 = SKAction.fadeOut(withDuration: 0.2)
-        let removeItemGroup = SKAction.group([scaleDown2, fadeOut2])
-        scene.enumerateChildNodes(withName: BrickCategoryName) { (node, _) in
-            node.removeAllActions()
-            node.run(removeItemGroup, completion: {
-                node.removeFromParent()
-            })
-        }
-        scene.bricksLeft = 0
-        // Remove any remaining bricks
-        
-        scene.enumerateChildNodes(withName: BrickRemovalCategoryName) { (node, _) in
-            node.removeAllActions()
-            node.run(removeItemGroup, completion: {
-                node.removeFromParent()
-            })
-        }
-        // Remove any remaining bricks being removed
-        
-        scene.enumerateChildNodes(withName: PowerUpCategoryName) { (node, _) in
-            node.removeAllActions()
-            node.run(removeItemGroup, completion: {
-                node.removeFromParent()
-            })
-        }
-        scene.powerUpsOnScreen = 0
-        // Remove any remaining power-ups
-        
-        scene.enumerateChildNodes(withName: LaserCategoryName) { (node, _) in
-            node.removeAllActions()
-            node.run(removeItemGroup, completion: {
-                node.removeFromParent()
-            })
-        }
-        // Remove any remaining lasers
         
         let waitEndScene = SKAction.wait(forDuration: 1.0)
         self.scene.run(waitEndScene, completion: { [weak self] in
