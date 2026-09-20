@@ -63,6 +63,20 @@ enum DailyDay {
         return String(format: "%04d-%02d-%02d", parts.year!, parts.month!, parts.day!)
     }
 
+    /// The key of the day before this one, in the same UTC calendar.
+    ///
+    /// Round 331, for the pending-post repair: the daily board is a recurring leaderboard and
+    /// Game Center will hand back exactly one closed occurrence, the one that ended last. So
+    /// "the day before today" is the only closed day the app can ask a question about, and this
+    /// is how that day is named.
+    static func dayBefore(_ key: String) -> String? {
+        guard let date = date(forKey: key),
+              let before = utcCalendar.date(byAdding: .day, value: -1, to: date) else {
+            return nil
+        }
+        return self.key(for: before)
+    }
+
     /// The seed for a day: yyyymmdd as a number, so the mapping is inspectable by eye.
     static func seed(forKey key: String) -> UInt64 {
         UInt64(key.replacingOccurrences(of: "-", with: "")) ?? 0
@@ -1174,6 +1188,27 @@ enum DailyChallengePosting {
         return (settled, changed)
     }
 
+    /// What a confirmation does to a record, or nil where it does nothing.
+    ///
+    /// **Not "only while it is still pending"** (James, round 331: "relax the guard and fix the
+    /// pending-post bug"). A confirmation only ever arrives because Game Center accepted the
+    /// score, so it is ground truth and the record should agree with it however late it is.
+    ///
+    /// The guard used to be `record.isPending`, and pending is precisely what `settlingMisses`
+    /// takes away the moment the day rolls over - so the one case this exists to handle, a
+    /// confirmation that outlived its window, was the one case it refused. The score was on the
+    /// board, the app said it never posted, and §7's running total left that day out for ever.
+    ///
+    /// A record already posted returns nil rather than itself: the caller resubmits the overall
+    /// total on a change, and there is nothing to resubmit it for twice.
+    static func confirming(_ record: DailyChallengeRecord) -> DailyChallengeRecord? {
+        guard record.posted == false else { return nil }
+        var confirmed = record
+        confirmed.posted = true
+        confirmed.pendingPost = false
+        return confirmed
+    }
+
     /// Marks a day's post as landed, in the store itself.
     ///
     /// The confirmation arrives from Game Center after the scene that posted has gone,
@@ -1181,14 +1216,27 @@ enum DailyChallengePosting {
     /// and submits the overall total, which the day has only now joined.
     static func confirmPosted(dateKey: String) {
         guard let stats = loadStats() else { return }
-        guard var record = stats.dailyRecord(forKey: dateKey), record.isPending else {
-            return
-        }
-        record.posted = true
-        record.pendingPost = false
-        stats.upsertDailyRecord(record)
+        guard let record = stats.dailyRecord(forKey: dateKey),
+              let confirmed = confirming(record) else { return }
+        stats.upsertDailyRecord(confirmed)
         save(stats)
         GameCenterHandler().submitDailyTotal(stats.dailyTotalPostedScore)
+    }
+
+    /// The closed day whose post can still be checked with Game Center, if there is one.
+    ///
+    /// **Only ever yesterday.** The daily board recurs every day and `loadPreviousOccurrence`
+    /// returns the window that ended last, so a pending record from three days ago has nothing
+    /// left to ask: its occurrence is gone from the API as surely as its window is gone from
+    /// the calendar. Those stay misses, which is what they have always been.
+    ///
+    /// Pure, and separate from the asking, because what is worth testing here is *which* day is
+    /// eligible - the timing of the answer is Game Center's business.
+    static func dayToVerify(in records: [DailyChallengeRecord], today: String) -> String? {
+        guard let yesterday = DailyDay.dayBefore(today) else { return nil }
+        guard let record = records.first(where: { $0.dateKey == yesterday }),
+              record.isPending, record.posted == false else { return nil }
+        return yesterday
     }
 
     /// Carries anything still waiting: misses settled, today's pending post retried.
@@ -1199,6 +1247,23 @@ enum DailyChallengePosting {
     static func retryPendingPosts() {
         guard let stats = loadStats() else { return }
         let today = DailyChallengeSession.shared.todayKey
+
+        if let yesterday = dayToVerify(in: stats.dailyRecords, today: today) {
+            GameCenterHandler().dailyScoreLanded(on: yesterday) { landed in
+                if landed { confirmPosted(dateKey: yesterday) }
+            }
+        }
+        // **Asked before it is written off, and answered afterwards if need be.** The app can
+        // be killed in the second between submitting a score and recording that it landed, and
+        // the record is then pending with the score already on the board. While the day is open
+        // the retry below heals that by resubmitting; once the day has rolled over resubmitting
+        // is the wrong thing to do - the daily board is *recurring*, so yesterday's score would
+        // land in today's window against today's field. So the board is asked instead.
+        //
+        // The settle below still runs, and still writes the day off immediately: the answer is
+        // a network round trip and the screens should not wait on one. If it comes back yes,
+        // `confirmPosted` puts the day right, which it can do now that it no longer insists the
+        // record is still pending.
 
         let settled = settlingMisses(in: stats.dailyRecords, today: today)
         if settled.changed {

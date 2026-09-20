@@ -121,6 +121,51 @@ final class GameCenterHandler: NSObject {
         }
     }
 
+    /// Whether a closed day's score is actually on the daily board.
+    ///
+    /// **Round 331, for the pending post that outlived its window** (James: "relax the guard
+    /// and fix the pending-post bug"). The app can be killed between submitting a score and
+    /// recording that it landed, and after midnight there is no safe way to *resubmit* - the
+    /// daily board recurs, so yesterday's score would go into today's window. Asking is the
+    /// honest alternative: if the player holds an entry on the occurrence that has just closed,
+    /// the submission landed, whatever the phone wrote down.
+    ///
+    /// `loadPreviousOccurrence` is why this only works for yesterday. A recurring leaderboard
+    /// hands back exactly one closed occurrence, the one that ended last, and the caller
+    /// (`DailyChallengePosting.dayToVerify`) knows it.
+    ///
+    /// Answers false for every ordinary reason it cannot know - signed out, offline, no such
+    /// board, no entry - because the record is already written off as a miss by then and false
+    /// simply leaves it there. Only a yes changes anything.
+    func dailyScoreLanded(on dateKey: String, completion: @escaping (Bool) -> Void) {
+        guard GKLocalPlayer.local.isAuthenticated else { completion(false); return }
+        GKLeaderboard.loadLeaderboards(IDs: [DailyChallengeBoards.daily]) { boards, _ in
+            guard let board = boards?.first else {
+                DispatchQueue.main.async { completion(false) }
+                return
+            }
+            board.loadPreviousOccurrence { previous, _ in
+                guard let previous else {
+                    DispatchQueue.main.async { completion(false) }
+                    return
+                }
+                previous.loadEntries(for: [GKLocalPlayer.local],
+                                     timeScope: .allTime) { localEntry, _, _ in
+                    let landed = localEntry != nil
+                    Log.gameCenter.notice("""
+                        DAILY \(dateKey, privacy: .public) on the closed board: \
+                        \(landed ? "found" : "not found", privacy: .public)
+                        """)
+                    DispatchQueue.main.async { completion(landed) }
+                    // An entry at all is the answer, not a score comparison. The only thing
+                    // this app ever submits to the daily board is that day's attempt, so an
+                    // entry on that occurrence *is* the attempt - and a score posted from the
+                    // player's other device is just as landed as one posted from this one
+                }
+            }
+        }
+    }
+
     /// The overall board's running total (§7), submitted whole after a day's post is
     /// confirmed. Always the whole total, so it is safe to resubmit and self-heals: a
     /// day that lands late still reaches it.

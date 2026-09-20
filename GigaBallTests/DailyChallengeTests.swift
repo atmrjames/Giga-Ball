@@ -675,6 +675,92 @@ final class DailyChallengeTests: XCTestCase {
         XCTAssertFalse(unchanged.changed, "settling twice writes nothing new")
     }
 
+    /// **A score that landed but was never confirmed** (James, round 331: "relax the guard and
+    /// fix the pending-post bug").
+    ///
+    /// The app can be killed in the second between submitting a day's score and writing down
+    /// that it landed. While the day is open the retry heals it; once the day rolls over,
+    /// `settlingMisses` writes the day off - and the score is on the board all the same. Before
+    /// this, a confirmation arriving after that moment was dropped, because the guard asked
+    /// whether the record was still pending and settling is what takes pending away.
+    func testAConfirmationIsHonouredAfterTheDayHasBeenWrittenOff() {
+        var missed = DailyChallengeRecord(dateKey: "2026-08-01")
+        missed.firstAttemptScore = 40
+        missed.postedNormalisedScore = 4000
+        missed.pendingPost = false
+        // Settled as a miss, which is the state the old guard refused to act on
+        XCTAssertFalse(missed.isPending)
+
+        guard let confirmed = DailyChallengePosting.confirming(missed) else {
+            return XCTFail("the confirmation was refused, which is the bug itself")
+        }
+        XCTAssertTrue(confirmed.posted, "the board has it, so the record should say so")
+        XCTAssertFalse(confirmed.isPending, "and there is nothing left to carry")
+        XCTAssertEqual(confirmed.postedNormalisedScore, 4000,
+                       "the figure it posted with is the figure the total counts")
+    }
+
+    /// And the point of honouring it: §7's running total picks the day back up.
+    func testALateConfirmationPutsTheDayBackIntoTheOverallTotal() {
+        let stats = TotalStats()
+        var missed = DailyChallengeRecord(dateKey: "2026-08-01")
+        missed.firstAttemptScore = 40
+        missed.postedNormalisedScore = 4000
+        stats.upsertDailyRecord(missed)
+        XCTAssertEqual(stats.dailyTotalPostedScore, 0,
+                       "written off, so the total leaves it out - which was for ever")
+
+        guard let confirmed = DailyChallengePosting.confirming(missed) else {
+            return XCTFail("the confirmation was refused")
+        }
+        stats.upsertDailyRecord(confirmed)
+        XCTAssertEqual(stats.dailyTotalPostedScore, 4000,
+                       "the day counts again, and the total is resubmitted whole")
+    }
+
+    func testAConfirmationForADayAlreadyPostedChangesNothing() {
+        var posted = DailyChallengeRecord(dateKey: "2026-08-01")
+        posted.posted = true
+        XCTAssertNil(DailyChallengePosting.confirming(posted),
+                     "nothing to write, and nothing to resubmit the overall total for")
+    }
+
+    /// Only yesterday can be asked about, because only yesterday's occurrence still exists.
+    func testTheOnlyClosedDayWorthAskingAboutIsYesterday() {
+        var yesterday = DailyChallengeRecord(dateKey: "2026-08-07")
+        yesterday.pendingPost = true
+        var older = DailyChallengeRecord(dateKey: "2026-08-01")
+        older.pendingPost = true
+        var today = DailyChallengeRecord(dateKey: "2026-08-08")
+        today.pendingPost = true
+
+        XCTAssertEqual(DailyChallengePosting.dayToVerify(in: [older, yesterday, today],
+                                                         today: "2026-08-08"),
+                       "2026-08-07")
+        XCTAssertNil(DailyChallengePosting.dayToVerify(in: [older, today], today: "2026-08-08"),
+                     "a recurring board hands back one closed occurrence, not a week of them")
+
+        var landed = yesterday
+        landed.posted = true
+        landed.pendingPost = false
+        XCTAssertNil(DailyChallengePosting.dayToVerify(in: [landed], today: "2026-08-08"),
+                     "a day that posted has nothing to ask about")
+
+        var nothingToPost = DailyChallengeRecord(dateKey: "2026-08-07")
+        nothingToPost.pendingPost = false
+        XCTAssertNil(DailyChallengePosting.dayToVerify(in: [nothingToPost], today: "2026-08-08"),
+                     "and neither has a day that was never waiting on a post")
+    }
+
+    /// The day before, across the two boundaries a date walk gets wrong.
+    func testTheDayBeforeCrossesMonthsAndYears() {
+        XCTAssertEqual(DailyDay.dayBefore("2026-08-08"), "2026-08-07")
+        XCTAssertEqual(DailyDay.dayBefore("2026-09-01"), "2026-08-31")
+        XCTAssertEqual(DailyDay.dayBefore("2026-01-01"), "2025-12-31")
+        XCTAssertEqual(DailyDay.dayBefore("2024-03-01"), "2024-02-29", "a leap year")
+        XCTAssertNil(DailyDay.dayBefore("not a day"))
+    }
+
     func testTheMergeCarriesAPendingPostButNeverPastAConfirmation() {
         var pendingHere = DailyChallengeRecord(dateKey: "d")
         pendingHere.pendingPost = true
