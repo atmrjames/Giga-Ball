@@ -259,17 +259,24 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
         titleLabel.applyGigaBallGlow(radius: GigaBallGlow.headingRadius)
         // PAUSED / GAME OVER / COMPLETE glow like the wordmark does
 
+        let logoTop = logo.topAnchor.constraint(
+            equalTo: containterView.safeAreaLayoutGuide.topAnchor,
+            constant: UIViewController.inGameLogoTopInset)
+        let logoHeight = logo.heightAnchor.constraint(
+            equalToConstant: UIViewController.inGameLogoHeight)
+        header.logoTop = logoTop
+        header.logoHeight = logoHeight
+        pauseLogoView = logo
         NSLayoutConstraint.activate([
-            logo.topAnchor.constraint(equalTo: containterView.safeAreaLayoutGuide.topAnchor,
-                                      constant: UIViewController.inGameLogoTopInset),
+            logoTop,
             logo.centerXAnchor.constraint(equalTo: containterView.centerXAnchor),
-            logo.heightAnchor.constraint(equalToConstant: UIViewController.inGameLogoHeight),
+            logoHeight,
             logo.leadingAnchor.constraint(greaterThanOrEqualTo: containterView.leadingAnchor,
-                                          constant: 60),
+                                          constant: UIViewController.inGameLogoSideInset),
 
             modeIcon.centerXAnchor.constraint(equalTo: containterView.centerXAnchor),
-            modeIcon.widthAnchor.constraint(equalToConstant: UIViewController.inGameModeIconSize),
-            modeIcon.heightAnchor.constraint(equalToConstant: UIViewController.inGameModeIconSize),
+            // Its size and its top belong to `layOutTheInGameHeader`, with the wordmark's,
+            // because the whole band is measured from the screen's height
             // Its bottom is pinned in `layoutSubviews` instead, by `pinModeIcon`: above the
             // *pack* line where there is one, because in Classic and the daily there is a
             // label above the one naming the mode and anchoring to the lower of the two put
@@ -279,9 +286,47 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
         ])
     }
 
+    /// Lets go of the storyboard's centre tie, so the block can hang from the wordmark.
+    ///
+    /// **James, round 338: "many of the screens have the game mode logo and title too low -
+    /// they should sit just below the Giga-Ball logo near the top of the views."**
+    ///
+    /// Everything on this screen from the pack's name down to the last score is one view, and
+    /// the storyboard hangs that view on the content box's vertical *centre*, fifty points up.
+    /// So where the mode's badge lands has never been a decision anyone made: it is whatever
+    /// is left over once the block has been centred, which on a tall phone is a third of the
+    /// way down the screen and on a 320 by 568 one is on top of the wordmark. Round 338's
+    /// gallery render of the game-over card reads "GIG(badge)ALL".
+    ///
+    /// Cut loose here, the block is positioned by `pinTheInGameHeader` instead - badge at a
+    /// fixed drop under the wordmark, title lines under the badge - which is the same header
+    /// the level intro and the between-levels card now wear.
+    private func hangTheTitleBlockFromTheWordmark() {
+        guard let block = packNameLabel.superview, titleBlockCentreTie == nil else { return }
+        for constraint in (block.superview?.constraints ?? [])
+        where constraint.firstItem === block && constraint.firstAttribute == .centerY {
+            constraint.isActive = false
+            titleBlockCentreTie = constraint
+        }
+        // And the same air under the run's name that the level intro and the between-levels
+        // card keep, for the same reason: PAUSED and the level's name both carry a halo, and
+        // the storyboard's fifteen points let the two lights run together.
+        let scale = UIViewController.inGameHeaderScale(forHeight: containterView.bounds.height)
+        for tie in [levelNameLabelNormalConstraint, levelTitleLowerConstraint].compactMap({ $0 })
+        where tie.constant == 15 {
+            tie.constant = (UIViewController.inGameHeaderToResultGap*scale).rounded()
+        }
+    }
+
+    /// Held so a second layout pass knows the tie has already been dealt with.
+    private var titleBlockCentreTie: NSLayoutConstraint?
+
+    /// The wordmark, held so the header can shrink the band together on a short screen.
+    private weak var pauseLogoView: UIImageView?
+
     /// The mode icon, and its bottom, kept against whichever title line is showing.
     private weak var modeIconView: UIImageView?
-    private var modeIconBottom: NSLayoutConstraint?
+    private var header = UIViewController.InGameHeader()
 
     /// Which mode this screen belongs to. The daily is a menu identity rather than a scene
     /// one, so it is asked of the session first and the remembered mode second.
@@ -391,8 +436,10 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
         limitMenuContentSize()
         collectionViewLayout()
         if let modeIconView {
-            pinModeIcon(modeIconView, above: packNameLabel, or: levelNumberLabel,
-                        keeping: &modeIconBottom)
+            hangTheTitleBlockFromTheWordmark()
+            layOutTheInGameHeader(&header, logo: pauseLogoView, icon: modeIconView,
+                                  above: packNameLabel, or: levelNumberLabel,
+                                  in: containterView)
         }
         // Which of the two title lines the icon sits on depends on what they say, and what
         // they say is written after the icon is built (round 332)

@@ -214,15 +214,131 @@ extension UIViewController {
     ///
     /// Asked every layout pass rather than decided once: the labels are written after the icon
     /// is built on both screens, and a daily changes which of them carries the mode's name.
-    func pinModeIcon(_ icon: UIView, above pack: UILabel, or level: UILabel,
-                     keeping constraint: inout NSLayoutConstraint?) {
+    /// Where the mode's badge sits, measured down from the top of every in-game screen.
+    ///
+    /// The wordmark's own inset, plus its height, plus the air under it. Written as a sum of
+    /// the three numbers it is made of rather than as a fourth number, so moving the wordmark
+    /// moves the badge with it.
+    static var inGameHeaderIconDrop: CGFloat {
+        inGameLogoTopInset + inGameLogoHeight + inGameLogoToIconGap
+    }
+
+    /// How far in from each edge the wordmark may reach on an in-game screen.
+    ///
+    /// **Round 338, from the gallery.** Sixty, until now - and the Home button sits in the
+    /// pause screen's top-left corner at an inset of 25 and a diameter of 50, so it ends at 75
+    /// and the wordmark was allowed to start at 60. On a 402-point phone the wordmark is not
+    /// wide enough to reach its own limit and nothing happened; on a 320-point one it is, and
+    /// the G of GIGA-BALL was drawn behind the Home button.
+    ///
+    /// Eighty-six clears the button with air to spare, and the wordmark is scale-to-fit inside
+    /// its box, so on the screens where this now bites it draws a little smaller rather than
+    /// being cropped. One number for every in-game screen, including the two with no Home
+    /// button on them, because the wordmark is meant to be in the same place on all of them.
+    static let inGameLogoSideInset: CGFloat = 86
+
+    /// The constraints that make up an in-game screen's header band.
+    ///
+    /// Held by the screen rather than rebuilt, because the band is re-measured on every layout
+    /// pass - a rotation, a Slide Over resize, an iPad window dragged narrower - and creating
+    /// constraints in a layout pass that then asks for another one is how a screen ends up
+    /// walking down itself a pass at a time (round 337 did exactly that).
+    struct InGameHeader {
+        var logoTop: NSLayoutConstraint?
+        var logoHeight: NSLayoutConstraint?
+        var iconTop: NSLayoutConstraint?
+        var iconWidth: NSLayoutConstraint?
+        var iconHeight: NSLayoutConstraint?
+        var titleTop: NSLayoutConstraint?
+        weak var pinnedTo: UILabel?
+    }
+
+    /// How much the in-game header shrinks on a screen too short to wear it at full size.
+    ///
+    /// **Round 338.** The header is a fixed 188 points before the first word of content: the
+    /// wordmark's inset, the wordmark, the air under it, the badge, and the air under that. On
+    /// a 402 by 874 phone that is a fifth of the screen and looks like a title. On a 320 by 568
+    /// one it is a third, and the between-levels card ran its total score straight through the
+    /// tap line - the gallery render has "Total Score" printed over "2 lives left".
+    ///
+    /// So the header is measured in points on a screen with room and in *proportion* on one
+    /// without. The turn is at 700 points, which is above every phone that needs this and below
+    /// every phone that does not: the 320 by 568 phone comes out at 0.75 and gives back about
+    /// fifty points, which is what the card was short. The floor stops a Slide Over pane or a
+    /// very small window shrinking the badge into a bullet point.
+    static func inGameHeaderScale(forHeight height: CGFloat) -> CGFloat {
+        guard height > 0, height < 700 else { return 1 }
+        return max(0.72, (height/700*100).rounded()/100)
+    }
+
+    /// The air between the block naming the run and the block reporting it.
+    ///
+    /// The storyboards had fifteen on both screens, which was a line's gap inside one column
+    /// of text. Now that the two are separate bands - the name hanging from the wordmark, the
+    /// result below it - it is a gap between blocks, and fifteen reads as a crowding: both
+    /// sides of it carry a halo, so the light from PAUSED runs into the level's name before
+    /// there is any space between them.
+    static let inGameHeaderToResultGap: CGFloat = 30
+
+    /// Hangs the mode's badge and the run's name from the wordmark, at the top of the screen.
+    ///
+    /// **James, round 338: "many of the screens have the game mode logo and title too low -
+    /// they should sit just below the Giga-Ball logo near the top of the views."**
+    ///
+    /// This used to run the other way round, and that was the whole fault. The badge was
+    /// pinned *above* whichever title line was showing, and where that line sat was each
+    /// storyboard's own business: a tie to the content's vertical centre on the level intro
+    /// and the between-levels card, a tie to the content box's centre on the pause and
+    /// game-over screens. So the badge landed wherever the text happened to fall, which on a
+    /// tall phone was a third of the way down the screen, and on a 320 by 568 one was
+    /// **straight through the middle of the wordmark** - round 338's first gallery render of
+    /// the game-over card reads "GIG(badge)ALL".
+    ///
+    /// Anchored to the top, the badge is the same distance under the wordmark on every screen
+    /// and every device, and the lines naming the run hang under it. What each screen does
+    /// below that is its own business, which is where they should differ.
+    ///
+    /// The title line is still chosen rather than fixed: in Classic and the daily there is a
+    /// pack line above the line naming the mode, and an endless run leaves it empty - and an
+    /// empty label still holds a line's height, which is the gap round 332 asked to close.
+    ///
+    /// Everything in the band is sized from `inGameHeaderScale`, so a short screen wears a
+    /// smaller version of the same header rather than a header that does not fit.
+    func layOutTheInGameHeader(_ header: inout InGameHeader, logo: UIView?, icon: UIView,
+                               above pack: UILabel, or level: UILabel, in container: UIView) {
+        let scale = UIViewController.inGameHeaderScale(forHeight: container.bounds.height)
         let target: UILabel = (pack.text?.isEmpty == false) ? pack : level
-        if let constraint, constraint.isActive, constraint.secondItem === target { return }
-        constraint?.isActive = false
-        let made = icon.bottomAnchor.constraint(equalTo: target.topAnchor,
-                                                constant: -UIViewController.inGameModeIconGap)
-        made.isActive = true
-        constraint = made
+
+        if header.iconTop == nil {
+            let top = icon.topAnchor.constraint(
+                equalTo: container.safeAreaLayoutGuide.topAnchor, constant: 0)
+            let width = icon.widthAnchor.constraint(equalToConstant: 0)
+            let height = icon.heightAnchor.constraint(equalToConstant: 0)
+            NSLayoutConstraint.activate([top, width, height])
+            header.iconTop = top
+            header.iconWidth = width
+            header.iconHeight = height
+        }
+        if header.titleTop == nil || header.pinnedTo !== target {
+            header.titleTop?.isActive = false
+            let under = target.topAnchor.constraint(equalTo: icon.bottomAnchor, constant: 0)
+            under.isActive = true
+            // The title line's *top* against the badge's bottom, rather than the badge's
+            // bottom against the title's top. Same distance, opposite owner: the badge is
+            // placed and the text follows it, which is what "just below the Giga-Ball logo"
+            // means.
+            header.titleTop = under
+            header.pinnedTo = target
+        }
+
+        header.logoTop?.constant = (UIViewController.inGameLogoTopInset*scale).rounded()
+        header.logoHeight?.constant = (UIViewController.inGameLogoHeight*scale).rounded()
+        header.iconTop?.constant = (UIViewController.inGameHeaderIconDrop*scale).rounded()
+        let badge = (UIViewController.inGameModeIconSize*scale).rounded()
+        header.iconWidth?.constant = badge
+        header.iconHeight?.constant = badge
+        header.titleTop?.constant = (UIViewController.inGameModeIconGap*scale).rounded()
+        logo?.setNeedsLayout()
     }
 
     /// What that logo shrinks to when a list scrolls up under it.

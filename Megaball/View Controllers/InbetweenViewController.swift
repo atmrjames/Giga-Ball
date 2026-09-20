@@ -182,7 +182,9 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
         
         packAndLevelConstriant.isActive = false
         completeLabelConstraint.isActive = true
+        layOutTheThreeBands()
         showTheLivesLeft()
+        keepTheScoresOffTheTapLine()
         
         NotificationCenter.default.addObserver(self, selector: #selector(self.refreshViewForSyncNotificationKeyReceived), name: .refreshViewForSync, object: nil)
         // Sets up an observer to watch for changes to the NSUbiquitousKeyValueStore pushed by the main menu screen
@@ -403,9 +405,15 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
         label.textColor = tapLabel.textColor
         label.translatesAutoresizingMaskIntoConstraints = false
         label.text = livesRemaining == 1 ? "1 life left" : "\(livesRemaining) lives left"
-        label.isHidden = levelNumber == 0
+        label.isHidden = levelNumber == 0 || firstLevel
         // An endless run has one ball and no rack, and saying "0 lives left" on the one screen
-        // it never reaches would be wrong twice over
+        // it never reaches would be wrong twice over.
+        //
+        // **And not on the level intro either** (James, round 338: "some of the intro splash
+        // screens now have too much information"). The rack belongs to the card that reports a
+        // finished level: it is what you have left *after* it. The intro is the same scene with
+        // its numbers rubbed out, so it inherited the line - and inherited it reading nought,
+        // because the run has not started and nothing has counted the balls yet
         host.addSubview(label)
         NSLayoutConstraint.activate([
             label.centerXAnchor.constraint(equalTo: tapLabel.centerXAnchor),
@@ -423,9 +431,19 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
     /// and a player's thumb learns one place rather than two.
     private func moveTheTapLineDown() {
         guard let host = tapLabel.superview else { return }
+        let scale = UIViewController.inGameHeaderScale(forHeight: view.bounds.height)
         for constraint in host.constraints
-        where constraint.secondItem === tapLabel && constraint.firstAttribute == .bottom {
-            constraint.constant = UIViewController.inGameBottomRowInset
+        where constraint.firstItem === host && constraint.secondItem === tapLabel
+            && constraint.firstAttribute == .bottom {
+            // **The host's bottom against the tap line's, and nothing else.** Without naming
+            // the first item this also matches "the rack's bottom against the tap line's top",
+            // which is a constraint this screen makes a few lines further down - and round 338
+            // spent a while on a rack drawn 85 points below where its own constraint said it
+            // was, because this loop had quietly rewritten that constraint to the bottom
+            // inset. It was harmless only while this ran once, before the rack existed.
+            constraint.constant = (UIViewController.inGameBottomRowInset*scale).rounded()
+            // Scaled with the header, so a short screen gives back room at both ends rather
+            // than holding a tall phone's margin under a card that does not fit
         }
     }
 
@@ -626,8 +644,8 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
         view.addSubview(icon)
         NSLayoutConstraint.activate([
             icon.centerXAnchor.constraint(equalTo: packNameLabel.centerXAnchor),
-            icon.widthAnchor.constraint(equalToConstant: UIViewController.inGameModeIconSize),
-            icon.heightAnchor.constraint(equalToConstant: UIViewController.inGameModeIconSize),
+            // Its size and its top are `layOutTheInGameHeader`'s, because both are measured
+            // from the screen's height and have to be re-measured when that changes
             // Close under the icon (play-test round 12: "nearer the title"), at the gap the
             // pause menu uses - the two screens are seconds apart and were six and four. The
             // bottom is pinned in `viewDidLayoutSubviews` by `pinModeIcon`, which puts it above
@@ -675,65 +693,162 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
         logo.applyGigaBallGlow()
         logo.alpha = view.alpha
         host.addSubview(logo)
+        let logoTop = logo.topAnchor.constraint(
+            equalTo: host.safeAreaLayoutGuide.topAnchor,
+            constant: UIViewController.inGameLogoTopInset)
+        let logoHeight = logo.heightAnchor.constraint(
+            equalToConstant: UIViewController.inGameLogoHeight)
         NSLayoutConstraint.activate([
-            logo.topAnchor.constraint(equalTo: host.safeAreaLayoutGuide.topAnchor,
-                                      constant: UIViewController.inGameLogoTopInset),
+            logoTop,
             logo.centerXAnchor.constraint(equalTo: host.centerXAnchor),
-            logo.heightAnchor.constraint(equalToConstant: UIViewController.inGameLogoHeight),
+            logoHeight,
             logo.leadingAnchor.constraint(greaterThanOrEqualTo: host.leadingAnchor,
-                                          constant: 60),
+                                          constant: UIViewController.inGameLogoSideInset),
             logo.trailingAnchor.constraint(lessThanOrEqualTo: host.trailingAnchor,
-                                           constant: -60),
+                                           constant: -UIViewController.inGameLogoSideInset),
         ])
+        header.logoTop = logoTop
+        header.logoHeight = logoHeight
+        // Held so the header can shrink the whole band together on a short screen
         introLogoView = logo
     }
 
-    /// The storyboard constant each of those two ties started at, so a screen that is laid
-    /// out many times cannot walk its labels down the screen one pass at a time.
-    private var introBlockBaseConstant: [ObjectIdentifier: CGFloat] = [:]
-
-    /// Moves the intro's text block down until the mode icon clears the wordmark.
+    /// Cuts this screen into the three bands every in-game view now shares.
     ///
-    /// **James, round 332's layout notes: "move all labels down to prevent clipping with
-    /// giga-ball logo", and "add more space between giga-ball logo and game mode logo".**
+    /// **James, round 338**, on the family of screens the game shows between one level and the
+    /// next: "many of the screens have the game mode logo and title too low - they should sit
+    /// just below the Giga-Ball logo near the top of the views. It looks like there's still
+    /// lots of continuity between the different views that can happen too."
     ///
-    /// Nothing in this screen's layout can express that as a constraint: the wordmark is a
-    /// subview of the intro's *host*, added in `showIntroLogo`, so the two are in different
-    /// subtrees and the icon is pinned upwards from the first line of text rather than
-    /// downwards from anything. So it is measured instead. The tie that positions the block
-    /// reads `container.centerY == label.bottom + constant`, which means the constant counts
-    /// *upwards* - the block moves down when it shrinks, which is why round 332's first
-    /// attempt at this drove the icon to -397 rather than on to the screen.
-    private func keepTheModeIconClearOfTheWordmark() {
-        guard let icon = modeIconView, let logo = introLogoView,
-              let host = logo.superview, icon.window != nil || icon.superview != nil else { return }
+    /// Everything on this screen used to be one rigid chain - pack name, level, level name,
+    /// COMPLETE, the three scores, all pinned one under the next - and the chain hung off the
+    /// content's vertical *centre*. That is a sound way to lay out a card and a poor way to lay
+    /// out a family of cards, because where the top of it lands depends on how tall the rest of
+    /// it is: a level with a speed bonus put the mode's name lower than one without, and the
+    /// daily, whose twists can run to three lines, pushed it lower still.
+    ///
+    /// So the chain is cut in two. The header - badge, pack, level, name - hangs from the
+    /// wordmark at the top, where `pinTheInGameHeader` puts it and where the pause and
+    /// game-over screens put theirs. The result band - COMPLETE and the scores - keeps its
+    /// centre tie, so it still sits in the middle of what is left. The tap line was already
+    /// pinned to the bottom. Three bands, each anchored to the thing it belongs to.
+    ///
+    /// The join between them becomes a *minimum* rather than a fixed distance: the result band
+    /// may sit lower than the header's bottom and may never ride up into it, which is what was
+    /// happening on a 320 by 568 phone - round 338's gallery render has "Total Score" printed
+    /// through the rack of lives.
+    /// Takes the result band's type down with the header on a short screen.
+    ///
+    /// The header shrinking is not enough on its own: the band under it is PASSED, two score
+    /// rows and a total, and at a 320 by 568 phone's full size that is two hundred points of
+    /// type under a header that has only just been made to fit. Both ends are scaled by the
+    /// same number, so the card reads as the same card drawn smaller rather than as a
+    /// different arrangement.
+    ///
+    /// Scaled from whatever the storyboard set, and only once, for the same reason
+    /// `raiseTheTotal` is: a hard-coded size here would be a second opinion about the first,
+    /// and a second pass would shrink what the first pass had already shrunk.
+    private func shrinkTheResultBandOnAShortScreen() {
+        let scale = UIViewController.inGameHeaderScale(forHeight: view.bounds.height)
+        guard scale != resultBandScale else { return }
+        resultBandScale = scale
 
-        let mark = logo.convert(logo.bounds, to: host).maxY + UIViewController.inGameLogoToIconGap
-        let badge = icon.convert(icon.bounds, to: host).minY
-        let shortfall = mark - badge
-        guard shortfall > 0.5 else { return }
+        for label in [completeLabel, levelScoreTitle, levelScoreLabel,
+                      speedBonusTitle, speedBonusLabel,
+                      totalScoreTitle, totalScoreLabel] {
+            guard let label, let font = label.font else { continue }
+            let key = ObjectIdentifier(label)
+            let base = resultBandBaseSize[key] ?? font.pointSize
+            resultBandBaseSize[key] = base
+            label.font = font.withSize((base*scale).rounded())
 
-        for constraint in [completeLabelConstraint, packAndLevelConstriant].compactMap({ $0 })
-        where constraint.isActive {
-            let key = ObjectIdentifier(constraint)
-            let base = introBlockBaseConstant[key] ?? constraint.constant
-            introBlockBaseConstant[key] = base
-            // Never further than the block's own height from where the storyboard put it: a
-            // clamp is cheaper than trusting that every future screen shape converges.
-            constraint.constant = max(base - 160, constraint.constant - shortfall)
+            for constraint in label.constraints where constraint.firstAttribute == .height {
+                let tie = ObjectIdentifier(constraint)
+                let baseHeight = resultBandBaseHeight[tie] ?? constraint.constant
+                resultBandBaseHeight[tie] = baseHeight
+                constraint.constant = (baseHeight*scale).rounded()
+            }
+            // The heights come with the fonts: every one of these labels is given a fixed one
+            // in the storyboard, and type inside a box that did not shrink with it is how the
+            // twists came to be drawn outside their own label in round 333.
+            //
+            // Measured from what the storyboard set rather than from what is there now, so a
+            // screen laid out many times - a rotation, an iPad window dragged narrower - lands
+            // on the same size each pass rather than shrinking what it shrank last time.
         }
-        host.layoutIfNeeded()
+        view.setNeedsLayout()
+    }
+
+    /// The scale the band is currently drawn at, and what it was before any of this.
+    private var resultBandScale: CGFloat = 1
+    private var resultBandBaseSize: [ObjectIdentifier: CGFloat] = [:]
+    private var resultBandBaseHeight: [ObjectIdentifier: CGFloat] = [:]
+
+    /// The floor of the result band: it may never reach the furniture at the bottom.
+    ///
+    /// **Round 338, from the gallery.** On a 320 by 568 phone the total score was drawn
+    /// straight through the rack of lives and the tap line - "Total Score" and "2 lives left"
+    /// printed over one another, with the number below them running off the screen. The
+    /// result band is positioned from the *top* by the air under the header and from the
+    /// middle by its own centre tie, and neither of those knows the screen has a bottom.
+    ///
+    /// Required, and the air under the header is not: on a screen too short for both, the
+    /// header's air is what gives way. A crowded header still reads; two blocks of text in
+    /// the same place do not.
+    private func keepTheScoresOffTheTapLine() {
+        let floor = livesLine?.isHidden == false ? livesLine! : tapLabel!
+        totalScoreLabel.bottomAnchor.constraint(
+            lessThanOrEqualTo: floor.topAnchor,
+            constant: -InbetweenViewController.resultToBottomGap).isActive = true
+    }
+
+    /// The air between the last number and whatever sits under it.
+    static let resultToBottomGap: CGFloat = 14
+
+    private var headerToResultGap: NSLayoutConstraint?
+
+    private func layOutTheThreeBands() {
+        guard let contentView else { return }
+
+        for constraint in contentView.constraints
+        where constraint.firstItem === completeLabel
+            && constraint.firstAttribute == .top
+            && constraint.secondItem === levelNameLabel {
+            constraint.isActive = false
+        }
+        let gap = completeLabel.topAnchor.constraint(
+            greaterThanOrEqualTo: levelNameLabel.bottomAnchor,
+            constant: UIViewController.inGameHeaderToResultGap)
+        gap.priority = UILayoutPriority(751)
+        // Above the centre tie below, so the result band sits under the header rather than
+        // through it - and below the tap line's own floor, so on a screen too short for both
+        // it is the air under the header that gives way rather than the two blocks colliding
+        gap.isActive = true
+        headerToResultGap = gap
+
+        // Below the two centre ties, so on a screen with room the result band centres and on
+        // one without it the minimum above wins rather than the layout breaking.
+        completeLabelConstraint.priority = .defaultHigh
+        packAndLevelConstriant.priority = .defaultHigh
     }
 
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
+        shrinkTheResultBandOnAShortScreen()
+        moveTheTapLineDown()
+        // Both measured from the screen's height, which `viewDidLoad` does not know: the view
+        // still has the storyboard's 414 by 896 when it runs, so everything asked there came
+        // out at a tall phone's size on every phone
         giveTheTwistsTheRoomTheyNeed()
-        if let modeIconView {
-            pinModeIcon(modeIconView, above: packNameLabel, or: levelNumberLabel,
-                        keeping: &modeIconBottom)
-        }
+        giveTheTitleTheLinesItNeeds()
         showIntroLogo()
-        keepTheModeIconClearOfTheWordmark()
+        if let modeIconView {
+            layOutTheInGameHeader(&header, logo: introLogoView, icon: modeIconView,
+                                  above: packNameLabel, or: levelNumberLabel, in: view)
+            headerToResultGap?.constant =
+                (UIViewController.inGameHeaderToResultGap
+                 * UIViewController.inGameHeaderScale(forHeight: view.bounds.height)).rounded()
+        }
         // **The first moment the right host is known.** `viewDidLoad` calls `showAnimate`, and
         // `updateLabels` builds the mode icon and the wordmark beside it - all of that runs
         // when `GameViewController` first touches `.view`, which is the line *before* the one
@@ -759,11 +874,13 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
     /// The run-kind label hangs off this label's bottom edge, so it follows on its own - which
     /// is the rest of what he asked for.
     /// The mode icon's bottom, kept against whichever title line is showing.
-    private var modeIconBottom: NSLayoutConstraint?
+    private var header = UIViewController.InGameHeader()
 
     private func giveTheTwistsTheRoomTheyNeed() {
         guard let label = levelNameLabel, label.attributedText != nil,
               label.bounds.width > 0 else { return }
+
+        lineTheTwistsUpWithEachOther()
 
         let needed = ceil(label.textRect(
             forBounds: CGRect(x: 0, y: 0, width: label.bounds.width,
@@ -777,6 +894,86 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
             // Changed only when it is actually wrong, or a layout pass that agrees with itself
             // would ask for another one for ever
         }
+    }
+
+    /// Grows the pack line to the number of lines it is actually set to show.
+    ///
+    /// **James, round 338: "some of the intro splash screens now have too much information."**
+    /// The daily's pack line is two: "Daily Challenge" and the day it is, put on separate lines
+    /// in round 333 so a long date could not clip on a small screen. It clipped anyway, worse -
+    /// the storyboard gives this label a fixed one-line height, so the second line had nowhere
+    /// to go and the *first* came out as "Daily Challenge..." with the day lost altogether. A
+    /// screen that names the challenge you are about to play and then does not say which day it
+    /// is has too much furniture and too little information at the same time.
+    ///
+    /// Measured rather than multiplied out: `textRect` knows what this label's own font does
+    /// with this label's own width, which a line count times a line height does not.
+    private func giveTheTitleTheLinesItNeeds() {
+        guard let label = packNameLabel, label.numberOfLines != 1,
+              (label.text ?? "").isEmpty == false, label.bounds.width > 0 else { return }
+
+        let needed = ceil(label.textRect(
+            forBounds: CGRect(x: 0, y: 0, width: label.bounds.width,
+                              height: .greatestFiniteMagnitude),
+            limitedToNumberOfLines: label.numberOfLines).height)
+
+        for constraint in label.constraints where constraint.firstAttribute == .height {
+            guard abs(constraint.constant - needed) > 0.5 else { continue }
+            constraint.constant = needed
+            view.setNeedsLayout()
+        }
+    }
+
+    /// Starts every twist on the same left edge, with the block as a whole still centred.
+    ///
+    /// **James, round 338: "looks like well laid out, logical, beautiful and functional."** The
+    /// twists are one attributed string with a badge at the head of each line, centred - so
+    /// three lines of different lengths put their badges in three different places and the
+    /// column zig-zags. A list of rules should read as a list.
+    ///
+    /// Done with an indent rather than by left-aligning the label, because the label runs the
+    /// full width of the screen: aligning it left would push the whole block against the edge.
+    /// The widest line is measured, the slack either side of it is halved, and every line is
+    /// indented by that - which centres the *block* and left-aligns the lines inside it.
+    private func lineTheTwistsUpWithEachOther() {
+        guard DailyChallengeSession.shared.active != nil else { return }
+        // **Only when there are twists to line up.** `UILabel.attributedText` is never nil -
+        // it returns an attributed version of whatever `text` holds - so a guard on it being
+        // non-nil is no guard at all, and this ran on every screen: round 338 left the word
+        // "Tunnel" indented off-centre on the between-levels card for exactly that reason.
+        guard let label = levelNameLabel, let text = label.attributedText,
+              label.bounds.width > 0 else { return }
+
+        let full = NSRange(location: 0, length: text.length)
+        var widest: CGFloat = 0
+        text.enumerateAttribute(.paragraphStyle, in: full) { _, _, _ in }
+        for line in text.string.components(separatedBy: "\n") {
+            guard let range = text.string.range(of: line) else { continue }
+            let piece = text.attributedSubstring(
+                from: NSRange(range, in: text.string))
+            widest = max(widest, ceil(piece.size().width))
+        }
+        guard widest > 0, widest < label.bounds.width else { return }
+
+        let indent = ((label.bounds.width - widest)/2).rounded(.down)
+        let paragraph = NSMutableParagraphStyle()
+        paragraph.alignment = .left
+        paragraph.paragraphSpacing = 2
+        paragraph.firstLineHeadIndent = indent
+        paragraph.headIndent = indent
+        // `headIndent` as well as the first line's, so a twist whose name wraps keeps its
+        // second line under the first rather than under the badge
+
+        let existing = text.attribute(.paragraphStyle, at: 0, effectiveRange: nil)
+            as? NSParagraphStyle
+        guard existing?.firstLineHeadIndent != indent
+                || existing?.alignment != .left else { return }
+        // Only when it changes, for the same reason the height above is: a layout pass that
+        // rewrites the label asks for another one
+
+        let lined = NSMutableAttributedString(attributedString: text)
+        lined.addAttribute(.paragraphStyle, value: paragraph, range: full)
+        label.attributedText = lined
     }
 
     /// Fades the wordmark with the screen it belongs to, since it is no longer inside it.

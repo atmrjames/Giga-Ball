@@ -27,6 +27,43 @@ private func resumeCardStore() -> UserDefaults {
     UserDefaults(suiteName: resumeCardSuite) ?? .standard
 }
 
+    /// The bottom of the header band: the mode's badge where there is one, the wordmark where
+/// there is not.
+///
+/// **Round 338 moved the header.** The wordmark used to sit near the middle of this screen
+/// and the card hung a measured distance below it; now the wordmark is at the top of the
+/// screen with the mode's badge under it, the same as the four screens the resume hands
+/// over to. The relationship this caps is still the one round 313 named - how far the card
+/// may drift from the furniture above it - so what changes here is where that furniture is,
+/// not what is being asserted.
+private func headerBottom(_ splash: SplashViewController) -> CGFloat {
+    let root = splash.view!
+    let badge = splash.view.subviews
+        .flatMap { [$0] + $0.subviews }
+        .compactMap { $0 as? UIImageView }
+        .first { $0.bounds.width == $0.bounds.height && $0.bounds.width > 30 }
+    if let badge { return badge.convert(badge.bounds, to: root).maxY }
+    return wordmark(splash).maxY
+}
+
+/// The wordmark the resume card actually draws.
+///
+/// Not `splashScreenLogo1`: that is one of the six frames of the launch animation, and a
+/// resume stands all six of them down and draws the game's own mark instead (round 338),
+/// so asking the hidden frame where the wordmark is gives the launch's answer.
+private func wordmark(_ splash: SplashViewController) -> CGRect {
+    let root = splash.view!
+    let drawn = root.subviews
+        .flatMap { [$0] + $0.subviews }
+        .compactMap { $0 as? UIImageView }
+        .filter { $0.isHidden == false && $0.bounds.width > $0.bounds.height*2 }
+        .max { $0.bounds.width < $1.bounds.width }
+    guard let drawn else {
+        return splash.splashScreenLogo1.convert(splash.splashScreenLogo1.bounds, to: root)
+    }
+    return drawn.convert(drawn.bounds, to: root)
+}
+
 final class ResumeCardRenderTests: XCTestCase {
 
     private let screen = CGRect(x: 0, y: 0, width: 393, height: 852)
@@ -128,16 +165,26 @@ final class ResumeCardRenderTests: XCTestCase {
     // MARK: - Everything at the bottom
 
     /// "With everything grouped towards the bottom."
-    func testTheWholeCardSitsInTheBottomThirdOfTheScreen() {
+    /// The card hangs from the header, at the gap every in-game screen uses.
+    ///
+    /// **This asserted the opposite until round 338**, and the change is James's: "many of the
+    /// screens have the game mode logo and title too low - they should sit just below the
+    /// Giga-Ball logo near the top of the views." On this screen the title is RESUMING.
+    ///
+    /// Round 310's "everything grouped towards the bottom" was decided when the wordmark sat
+    /// in the middle of the screen and the card was grouped under *it* - the group was the
+    /// card and the mark together. With the wordmark at the top of the screen, keeping the
+    /// card at the bottom split that group in two and left a third of a screen of nothing
+    /// between them. The button it is pressed with is still at the bottom, which is the half
+    /// of round 310 that was about where a thumb goes.
+    func testTheCardHangsFromTheHeader() {
         let splash = laidOut(base())
         let top = card(splash).filter { $0.isHidden == false }
             .map { $0.convert($0.bounds, to: splash.view).minY }.min()!
-        XCTAssertGreaterThan(top, screen.height * 0.55,
-                             "the heading starts in the bottom half, so the logo above it has "
-                             + "the room it has always had")
-        // 0.55 rather than 0.6 since round 311 gave the card its four groups of air: the block
-        // is taller by design now, and the assertion is about it being *grouped at the bottom*
-        // rather than about a line it must not cross
+        let header = headerBottom(splash)
+        XCTAssertEqual(top - header, UIViewController.inGameHeaderToResultGap, accuracy: 1,
+                       "the card should sit the same distance under the badge that PAUSED "
+                       + "sits under the level's name on the pause screen")
     }
 
     /// "Move the Resuming... label to just above the cancel button" - the card reads downwards
@@ -381,10 +428,11 @@ final class ResumeCardOnATallScreenTests: XCTestCase {
     /// How far the top of the card sits below the bottom of the wordmark.
     private func drop(_ splash: SplashViewController) -> CGFloat {
         let root = splash.view!
-        let logo = splash.splashScreenLogo1.convert(splash.splashScreenLogo1.bounds, to: root)
         let card = splash.resumingLabel.convert(splash.resumingLabel.bounds, to: root)
-        return card.minY - logo.maxY
+        return card.minY - headerBottom(splash)
     }
+
+
 
     /// The wordmark is six stacked frames, and the resume screen lifts it.
     ///
@@ -408,30 +456,91 @@ final class ResumeCardOnATallScreenTests: XCTestCase {
         }
     }
 
-    func testAPhoneIsExactlyWhereItWas() {
-        let splash = laidOut(in: phone)
-        XCTAssertLessThan(drop(splash), SplashViewController.resumeCardMaximumDrop,
-                          "the cap must not bind on a phone, or round 310's arrangement has "
-                          + "quietly moved on every device that ships")
+    /// The lines the card is made of, found rather than named: three of the five labels are
+    /// private to the screen, and what this test is about is the shape of the block.
+    private func cardLines(_ splash: SplashViewController) -> [UILabel] {
+        guard let stack = splash.resumingLabel.superview as? UIStackView else {
+            return [splash.resumingLabel]
+        }
+        return stack.arrangedSubviews.compactMap { $0 as? UILabel }
+    }
+
+    /// Every line of the card is on the screen, with the button clear of it.
+    func testTheWholeCardFitsUnderItsHeader() {
+        for size in [phone, CGSize(width: 320, height: 568), iPadPortrait] {
+            let splash = laidOut(in: size)
+            let root = splash.view!
+            let lines = cardLines(splash).filter { $0.isHidden == false }
+                .map { $0.convert($0.bounds, to: root) }
+            guard let lowest = lines.map({ $0.maxY }).max() else { continue }
+            XCTAssertLessThan(lowest, size.height,
+                              "\(size): the card runs off the bottom of the screen")
+
+            guard let button = root.subviews.flatMap({ [$0] + $0.subviews })
+                .compactMap({ $0 as? UIButton }).first(where: { $0.isHidden == false })
+            else { continue }
+            let place = button.convert(button.bounds, to: root)
+            XCTAssertLessThanOrEqual(lowest, place.minY + 0.5,
+                                     "\(size): the last line of the card is drawn into the "
+                                     + "button - round 338's render has \"3 balls left\" "
+                                     + "half behind the disc on a 320 by 568 phone")
+        }
     }
 
     func testTheCardStaysWithTheLogoOnAnIPad() {
         for size in [iPadPortrait, iPadLandscape] {
             let splash = laidOut(in: size)
-            XCTAssertLessThanOrEqual(drop(splash),
-                                     SplashViewController.resumeCardMaximumDrop + 1,
+            let card = splash.resumingLabel.convert(splash.resumingLabel.bounds, to: splash.view)
+            XCTAssertLessThanOrEqual(card.minY,
+                                     size.height/2 + SplashViewController.resumeCardMaximumDrop + 1,
                                      "\(size): four lines and a button a third of a screen "
-                                     + "below the logo read as two screens, not one card")
+                                     + "below everything else read as two screens, not one card")
         }
     }
 
+    /// And the mode's badge is on this screen at all, which until round 338 it was not.
+    ///
+    /// The resume card is the screen immediately before the game, and it was the only one of
+    /// the five that named the mode in words alone: a Mayhem run was resumed from a card with
+    /// no badge into a countdown and then a pause screen wearing one.
+    func testTheResumeCardWearsTheModesBadgeUnderTheWordmark() {
+        let splash = laidOut(in: phone)
+        let root = splash.view!
+        let badge = splash.view.subviews
+            .flatMap { [$0] + $0.subviews }
+            .compactMap { $0 as? UIImageView }
+            .first { $0.bounds.width == $0.bounds.height && $0.bounds.width > 30 }
+        let disc = try? XCTUnwrap(badge, "the resume card has no mode badge")
+        guard let disc else { return }
+
+        let place = disc.convert(disc.bounds, to: root)
+        let mark = wordmark(splash)
+        XCTAssertGreaterThanOrEqual(place.minY, mark.maxY - 0.5,
+                                    "the badge is drawn into the wordmark")
+        XCTAssertLessThan(place.minY, phone.height*0.35,
+                          "the badge belongs in the header at the top, with the four screens "
+                          + "this one hands over to")
+    }
+
     /// It still sits low rather than centred, which is the arrangement James asked for.
-    func testItIsStillGroupedTowardsTheBottom() {
+    /// And the button is still at the bottom, where a thumb expects it.
+    ///
+    /// The other half of round 310's "everything grouped towards the bottom": the card moved
+    /// up to its header in round 338, the button did not move at all.
+    func testTheButtonIsStillAtTheBottom() {
         let splash = laidOut(in: iPadPortrait)
         let root = splash.view!
+        guard let button = root.subviews.flatMap({ [$0] + $0.subviews })
+            .compactMap({ $0 as? UIButton }).first(where: { $0.isHidden == false }) else {
+            return XCTFail("the resume card has no button")
+        }
+        let place = button.convert(button.bounds, to: root)
+        XCTAssertGreaterThan(place.minY, root.bounds.height*0.75,
+                             "the close button has come up off the bottom of the screen")
+
         let card = splash.resumingLabel.convert(splash.resumingLabel.bounds, to: root)
-        XCTAssertGreaterThan(card.minY, root.bounds.height/2,
-                             "\"everything grouped towards the bottom\" - round 310")
+        XCTAssertLessThan(card.maxY, place.minY,
+                          "the card is drawn into the button")
     }
 
     /// And the lines do not run the full width of a 13-inch iPad.

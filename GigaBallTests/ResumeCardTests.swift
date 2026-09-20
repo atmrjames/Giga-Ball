@@ -312,13 +312,28 @@ final class ResumeCardMatchesTheInGameScreensTests: XCTestCase {
                        "two sizes, the title's and the number's")
     }
 
-    /// And the wordmark has moved up to make room for it.
-    func testTheWordmarkLiftsForTheCard() throws {
+    /// And the wordmark is at the top of the screen, where the game's own screens keep it.
+    ///
+    /// Round 336 lifted the storyboard's centred wordmark forty points to make room for the
+    /// card. **Round 338 took it all the way up**, to the inset the level intro, the
+    /// between-levels card, the pause screen and the game-over card all use, and stood the
+    /// launch animation's six frames down in favour of the same artwork those four draw - so
+    /// the assertion is no longer "higher than the middle" but "where the other four put it".
+    func testTheWordmarkIsWhereTheInGameScreensKeepIt() throws {
         let splash = try XCTUnwrap(self.splash())
-        let logo = splash.splashScreenLogo1.convert(splash.splashScreenLogo1.bounds,
-                                                    to: splash.view)
-        XCTAssertLessThanOrEqual(logo.maxY, splash.view.bounds.midY - 1,
-                                 "the storyboard hangs it on the middle; a card this tall needs "
-                                 + "it higher than that")
+        let drawn = splash.view.subviews
+            .flatMap { [$0] + $0.subviews }
+            .compactMap { $0 as? UIImageView }
+            .filter { $0.isHidden == false && $0.bounds.width > $0.bounds.height*2 }
+            .max { $0.bounds.width < $1.bounds.width }
+        let logo = try XCTUnwrap(drawn, "the resume card draws no wordmark")
+        let place = logo.convert(logo.bounds, to: splash.view)
+
+        XCTAssertEqual(place.minY, UIViewController.inGameLogoTopInset, accuracy: 1,
+                       "the wordmark is at \(place.minY) and the four screens this one hands "
+                       + "over to put theirs at \(UIViewController.inGameLogoTopInset)")
+        XCTAssertTrue(splash.splashScreenLogo1.isHidden,
+                      "the launch animation's frames are stood down for a resume, or the "
+                      + "screen draws two wordmarks")
     }
 }
