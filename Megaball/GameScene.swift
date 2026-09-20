@@ -879,6 +879,48 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	/// A sixth bigger keeps the order of the three lines and stops the total shouting.
 	static let betweenLevelsTotalScale: CGFloat = 1.15
 
+	/// Whether collecting this power-up plays a recording of its own.
+	///
+	/// **James, round 334: "don't play normal power-up sound for power-ups that have other
+	/// sounds when activated."** Six of Mayhem's say something as they land - the extra ball
+	/// arriving, the cull, the infill, the beams, the safety bar, the mirror - and the generic
+	/// chime was playing underneath every one of them, so the two arrived together as one
+	/// muddled noise.
+	///
+	/// Asked of the *bundle* rather than of a list of names: a sound that has not been recorded
+	/// yet cannot stand in for the chime, so until one lands the power-up keeps the chime and
+	/// the moment it lands the chime stands down. That is the same rule `playMayhemSound`
+	/// already follows, read the other way round.
+	///
+	/// The events that fire later - a portal jump, the halo eating a brick, the aura, a
+	/// wrap-around - are not here: they are not the sound of *collecting* anything, and a
+	/// collection with nothing to say should still say the usual thing.
+	func endlessIIHasItsOwnVoice(_ texture: SKTexture?) -> Bool {
+		guard gameMode == .endlessII, let texture,
+			  let index = powerUpTextureArray.firstIndex(of: texture),
+			  let name = GameScene.endlessIICollectionSounds[index] else { return false }
+		return GameScene.mayhemSound(name) != nil
+	}
+
+	/// The six, by power-up index, read off the names rather than typed.
+	static let endlessIICollectionSounds: [Int: String] = {
+		let names = LevelPackSetup().powerUpNameArray
+		let byName: [String: String] = [
+			"Multi-Ball": "multiBall",
+			"Brick Cull": "cull",
+			"Brick Infill": "infill",
+			"Laser Beam": "laserBeam",
+			"Safety Paddle": "safetyPaddle",
+			"Mirror Paddle": "mirrorPaddle",
+		]
+		var found: [Int: String] = [:]
+		for (power, sound) in byName {
+			guard let index = names.firstIndex(of: power) else { continue }
+			found[index] = sound
+		}
+		return found
+	}()
+
 	/// Wipe's place in every power-up array, read off the names rather than typed (round 327).
 	static let wipePowerUpIndex: Int = LevelPackSetup().powerUpNameArray.firstIndex(of: "Wipe") ?? 50
 
@@ -1456,6 +1498,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 
 	private static var mayhemSounds: [String: SKAction?] = [:]
 
+	/// When each Mayhem sound was last started, for the throttle in `playOnce`. Per scene
+	/// rather than static: a new run starts with nothing to remember.
+	private var mayhemSoundLastPlayed: [String: TimeInterval] = [:]
+
 	/// What a delivered sound may be, in the order the bundle is asked (round 327b).
 	///
 	/// `.m4a` because that is what arrived - "portalJump.m4a in File Sharing is a sound effect
@@ -1473,12 +1519,36 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	func playMayhemSound(_ name: String, or shared: String? = nil) {
 		guard soundsSetting else { return }
 		if let action = GameScene.mayhemSound(name) {
-			run(action)
+			playOnce(action, as: name)
 			return
 		}
 		guard let shared, let action = GameScene.mayhemSound(shared) else { return }
+		playOnce(action, as: shared)
+	}
+
+	/// Plays a sound at most once every `mayhemSoundGap` seconds, whatever asks for it.
+	///
+	/// **James, round 334: "shrill noise happens seemingly at random."** Every one of these
+	/// events can arrive several times in the same frame and some arrive dozens of times: a
+	/// chain of Exploding bricks, a Spawner refilling a row, a Cull taking half the field, a
+	/// paddle held against a wall wrapping again and again. Identical copies of one short
+	/// recording started a few milliseconds apart do not sound like that recording - they comb
+	/// filter, which is heard as a thin metallic whistle, and it lands at random because it
+	/// depends on how many of them happened to coincide.
+	///
+	/// A twelfth of a second is longer than any frame and shorter than any of these sounds, so
+	/// one event still speaks and a pile-up speaks once. Kept per name rather than globally: two
+	/// different sounds at once is a game, the same one twice is an artefact.
+	private func playOnce(_ action: SKAction, as name: String) {
+		let now = CACurrentMediaTime()
+		if let last = mayhemSoundLastPlayed[name], now - last < GameScene.mayhemSoundGap {
+			return
+		}
+		mayhemSoundLastPlayed[name] = now
 		run(action)
 	}
+
+	static let mayhemSoundGap: TimeInterval = 1.0/12
 	// Sounds defined - pre-loaded to prevent game lag
     
     var lightHaptic = UIImpactFeedbackGenerator(style: .light) // use for ball hitting bricks and paddle
@@ -4520,6 +4590,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		if endlessIIWreckingHit(struckBy: struckBy, laser: laserNode != nil) {
 			stopLaser()
 			if hapticsSetting { heavyHaptic.impactOccurred() }
+			if soundsSetting { self.run(brickHitNormalSound) }
+			// **And a sound** (James, round 334: "wrecking ball doesn't make sound when hitting
+			// bricks - fix"). This branch returns before the type switch, which is where every
+			// other hit plays one, so a Wrecking Ball went through the field in silence - the
+			// same shape of gap round 37 found in the haptic on the line above. The ordinary
+			// brick sound rather than one of its own: what changes is what the hit *does*, and
+			// §8.5's list has no recording for this one
 			// The heavy one, not the light tap every other brick gets. This branch returns
 			// before the type switch, so a Wrecking Ball hit was reaching *no* haptic at all
 			// (play-test round 37) - and of every hit in the game this is the one that should
@@ -5725,10 +5802,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			rigidHaptic.impactOccurred()
 		}
 		
-		if soundsSetting && silently == false {
+		if soundsSetting && silently == false, endlessIIHasItsOwnVoice(sprite.texture) == false {
 			self.run(powerUpSound)
 		}
-		// Power-up applied sound
+		// Power-up applied sound - unless this one says something of its own as it lands
+		// (James, round 334: "don't play normal power-up sound for power-ups that have other
+		// sounds when activated"), which is asked below
 		
 		if silently == false {
 			powerUpsOnScreen-=1

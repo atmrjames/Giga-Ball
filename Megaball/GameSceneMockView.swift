@@ -322,11 +322,27 @@ extension GameBackgroundView {
         // A phone, because the frame is drawn as one. The thumbnail is letterboxed into
         // whatever it is given, and these two shapes are near enough the same
 
-        return UIGraphicsImageRenderer(size: size).image { _ in
-            let picture = UIGraphicsImageRenderer(size: screen.size).image { _ in
+        return UIGraphicsImageRenderer(size: size).image { context in
+            let model = view.modelledSize
+            let fill = max(screen.width/model.width, screen.height/model.height)
+            let drawn = CGSize(width: model.width*fill, height: model.height*fill)
+            let picture = UIGraphicsImageRenderer(size: drawn).image { _ in
+                view.frame = CGRect(origin: .zero, size: drawn)
                 view.draw(view.bounds)
             }
-            picture.draw(in: screen)
+            context.cgContext.saveGState()
+            context.cgContext.clip(to: screen)
+            picture.draw(in: CGRect(x: screen.midX - drawn.width/2,
+                                    y: screen.midY - drawn.height/2,
+                                    width: drawn.width, height: drawn.height))
+            context.cgContext.restoreGState()
+            // **Filled, not fitted** (James, round 334, with a screenshot: "the background
+            // image doesn't fill the icon properly"). `GameBackgroundView` letterboxes its
+            // model into whatever bounds it is given, which is right for the picker's card and
+            // wrong inside a phone frame: the frame's screen is narrower in proportion than a
+            // phone is, so a fitted picture left a bar at the top and the bottom. Scaled to
+            // cover and clipped to the frame instead, which is what a picture of a screen
+            // inside a picture of a phone should do
             if let tint {
                 frame.withRenderingMode(.alwaysTemplate).withTintColor(tint, renderingMode: .alwaysOriginal)
                     .draw(in: CGRect(origin: .zero, size: size))

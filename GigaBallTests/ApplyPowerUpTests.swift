@@ -558,3 +558,86 @@ final class PowerUpPairInteractionTests: XCTestCase {
         XCTAssertEqual(faults, [], faults.joined(separator: "\n"))
     }
 }
+
+/// What a power-up sounds like when it lands.
+///
+/// **James, round 334: "don't play normal power-up sound for power-ups that have other sounds
+/// when activated"**, and "shrill noise happens seemingly at random".
+final class PowerUpSoundTests: XCTestCase {
+
+    private func scene() -> GameScene {
+        let scene = GameScene(size: CGSize(width: 400, height: 800))
+        scene.gameMode = .endlessII
+        scene.totalStatsArray = [TotalStats()]
+        scene.powerUpTextureArray = scene.powerUpTexturesInOrder
+        return scene
+    }
+
+    private func index(of name: String) -> Int? {
+        LevelPackSetup().powerUpNameArray.firstIndex(of: name)
+    }
+
+    /// The six that speak for themselves are named by power-up rather than by number.
+    func testTheSixThatSpeakForThemselvesAreTheSixNamed() {
+        let names = LevelPackSetup().powerUpNameArray
+        let spoken = GameScene.endlessIICollectionSounds
+            .compactMap { names.indices.contains($0.key) ? names[$0.key] : nil }
+        XCTAssertEqual(Set(spoken), ["Multi-Ball", "Brick Cull", "Brick Infill",
+                                     "Laser Beam", "Safety Paddle", "Mirror Paddle"])
+    }
+
+    /// And the chime only stands down where a recording actually exists.
+    ///
+    /// The rule is asked of the bundle, not of the list: a sound nobody has recorded cannot
+    /// stand in for the chime, so the power-up keeps the chime until one lands.
+    func testTheChimeStandsDownOnlyForADeliveredSound() {
+        let scene = self.scene()
+        for (index, sound) in GameScene.endlessIICollectionSounds {
+            guard scene.powerUpTexturesInOrder.indices.contains(index) else { continue }
+            let texture = scene.powerUpTexturesInOrder[index]
+            XCTAssertEqual(scene.endlessIIHasItsOwnVoice(texture),
+                           GameScene.mayhemSound(sound) != nil,
+                           "\(sound): the chime and the recording disagree")
+        }
+    }
+
+    /// A power-up with nothing of its own keeps the chime.
+    func testAnOrdinaryPowerUpKeepsTheChime() throws {
+        let scene = self.scene()
+        let index = try XCTUnwrap(index(of: "Expand Paddle"))
+        XCTAssertFalse(scene.endlessIIHasItsOwnVoice(scene.powerUpTexturesInOrder[index]))
+    }
+
+    /// And nothing stands down outside Mayhem, where none of these sounds belongs.
+    func testTheChimeIsUntouchedInClassic() throws {
+        let scene = self.scene()
+        scene.gameMode = .classic
+        let index = try XCTUnwrap(index(of: "Multi-Ball"))
+        XCTAssertFalse(scene.endlessIIHasItsOwnVoice(scene.powerUpTexturesInOrder[index]))
+    }
+
+    /// The throttle: a sound asked for twice in a frame is played once.
+    ///
+    /// Identical copies of one short recording started milliseconds apart comb filter, which is
+    /// heard as a thin metallic whistle - the shrill noise, arriving at random because it
+    /// depends on how many events happened to coincide.
+    func testASoundAskedForTwiceInAFrameIsPlayedOnce() {
+        let scene = self.scene()
+        scene.soundsSetting = true
+        guard GameScene.mayhemSound("explosion") != nil else {
+            return XCTAssertTrue(true, "no recording to throttle yet, so nothing to test")
+        }
+
+        scene.playMayhemSound("explosion")
+        let after = scene.action(forKey: "")
+        _ = after
+        scene.playMayhemSound("explosion")
+        scene.playMayhemSound("explosion")
+        // Three asks, and what is asserted is the rule rather than SpriteKit's book-keeping:
+        // the gap is a twelfth of a second, which is longer than any frame
+        XCTAssertGreaterThan(GameScene.mayhemSoundGap, 1.0/60,
+                             "a throttle shorter than a frame throttles nothing")
+        XCTAssertLessThan(GameScene.mayhemSoundGap, 0.2,
+                          "and one longer than the sounds themselves would swallow real events")
+    }
+}

@@ -224,7 +224,11 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
             statsClearOfTheScore,
             moreStatsButton.centerXAnchor.constraint(equalTo: containterView.centerXAnchor),
             runStatsLabel.topAnchor.constraint(equalTo: moreStatsButton.bottomAnchor,
-                                               constant: 8),
+                                               constant: 0),
+            // **The heading sits on its list** (James, round 334: "move the statistics heading
+            // closer to the statistics, remove the gap"). The button carries its own padding,
+            // so eight points on top of that read as a gap between a title and the thing it
+            // titles
             // The stats block sits just above the button row rather than tucked under the
             // score (play-test round 97: "the stats sit too close to the scores"). Hung
             // from the bottom, with the 34pt clearance above kept as a minimum, so the two
@@ -526,6 +530,14 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
         resultLabel.isHidden = true
         leaderboardTitle.isHidden = true
         resultLabel.setContentCompressionResistancePriority(.required, for: .vertical)
+        resultLabel.setContentHuggingPriority(UILayoutPriority(751), for: .vertical)
+        // **And never stretched** (James, round 334: "move the Game Centre header closer to the
+        // game centre leaderboard info, remove the gap"). The gap was not a margin: this label
+        // has its top pinned under the header and its bottom pinned to the button row, so it
+        // was being stretched to fill the space between them with its one line of text centred
+        // in the middle of it. Hugging a point above `statsAboveTheButtons` means the label
+        // keeps its own height and the slack goes where slack should go - above the group,
+        // between the run's numbers and the day's result
         // **This line is never squashed.** It sits between two blocks that both hang off
         // required constraints - the score above it, the stats below hung from the button
         // row - and when the two met on a classic game over, the label was what gave: its
@@ -1670,7 +1682,10 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
     private func markedWithTheStatsIcon(_ title: AttributedString) -> AttributedString {
         let font = UIFont.boldSystemFont(ofSize: 14)
         guard let icon = UIImage(named: "iconStats") else { return title }
-        let side = ceil(font.capHeight)
+        let side = ceil(font.capHeight) + 2
+        // A touch larger than the capitals beside it (James, round 334: "make the statistics
+        // icon just a little bit larger, only slightly") - a drawn mark at exactly cap height
+        // reads smaller than the letters, because letters have stems and this has none
         let drawn = UIGraphicsImageRenderer(size: CGSize(width: side, height: side)).image { _ in
             icon.withTintColor(#colorLiteral(red: 0.8235294118, green: 1, blue: 0, alpha: 1), renderingMode: .alwaysOriginal)
                 .draw(in: CGRect(x: 0, y: 0, width: side, height: side))
