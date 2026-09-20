@@ -880,7 +880,7 @@ Convex and Concave keep the old fill until they are drawn, because a fill that i
 approximately right beats a dome that is not drawn at all. That is one more reason their art
 is the next batch worth having.
 
-### Shaped brick faces — the first batch, and what is still to draw
+### Shaped brick faces — complete in both themes
 
 James delivered twenty-eight on 16 August 2026: a Rounded and a Wedge texture for every
 brick type that has one, in both the classic and the retro theme. They are in the catalogue
@@ -1140,7 +1140,7 @@ square versions of the other brick shapes yet." The lookup asks the catalogue fo
 name and falls back, so a picture arriving later needs no code at all - and until one does, a
 Square brick simply cannot take those faces, which `suits(_ size:)` says.
 
-### Wrecking ball textures — three still to draw
+### Wrecking ball textures — all thirty-six drawn
 
 James delivered thirty-six on 16 August 2026 (thirty-three, then glass): a spiked ball for each of
 the twelve ball themes, in each of the three ball colours (normal, Giga-Ball,
@@ -1179,7 +1179,7 @@ The version it replaced had no arrow - a ball resting on a pink sticky band - an
 the set is 250pt, and a low-resolution icon among sharp ones is a different complaint. This is a
 redraw: a Sticky Paddle that says "the ball stops here" without saying "and you may aim it".
 
-### Power-up icons — two drawn placeholders left
+### Power-up icons — all drawn
 
 Every one is a `static let` in `PowerUpIcon.swift`, drawn at 120×120 into the standard
 rounded-square badge, green for beneficial and red for harmful. To replace one: add the
@@ -2068,7 +2068,17 @@ brick fading into its own place.
 - **Classic's menu icon is the app icon, round-masked**, drawn from the icon preview art at
   runtime so it cannot fall out of step with the icon itself.
 
-**Open, in rough priority order**
+**The work, newest first**
+
+This table was the open queue and has become the record of what was built: every row in it is
+done, and the newest are at the top. **Round 330 is where that stopped being a matter of
+reading carefully** - a heading that says "open" over three hundred rows of finished work sends
+the next person hunting for items that are not there.
+
+What is genuinely still open lives in three places, none of them here: **§11** holds the two
+design questions the mode has left, **§8.5** holds the art and audio decisions, and
+**DAILY-CHALLENGE-SPECIFICATION §13** holds the daily's. Anything waiting on James - the store,
+the TestFlight route, a recording - is in §13 of SPECIFICATION.md.
 
 | Item | Notes |
 |---|---|

@@ -719,16 +719,13 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
                 // Kill ball
                     showWarning(.resetBall)
                 }
-//            case 11:
-//            // Restore purchases
-//                showPurchaseScreen()
-//                GigaBallProducts.store.restorePurchases()
-//            case 12:
-//            // Unlock all
-//                unlockAllItems()
-//            case 13:
-//            // Re-lock all
-//                relockAllItems()
+            // **Rows 11 to 13 are gone with the shop** (round 330c). Restore Purchases
+            // belonged to the monetisation architecture that came out before 1.3, and Unlock
+            // All and Re-Lock All were the two developer rows beside it. Nothing reached any
+            // of the three - the rows themselves had been commented out for rounds - and
+            // `relockAllItems` was a second, worse copy of `resetData` below, which is the
+            // live path and the one the Reset Data pop-up runs. Recoverable from git if a
+            // development cheat is ever wanted again
             default:
                 break
             }
@@ -821,48 +818,6 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
             self.backgroundView.transform = CGAffineTransform(scaleX: 0.85, y: 0.85)
             self.backgroundView.alpha = 0.0
         })
-    }
-    
-    func unlockAllItems() {
-        totalStatsArray[0].levelPackUnlockedArray = totalStatsArray[0].levelPackUnlockedArray.map { _ in true }
-        totalStatsArray[0].themeUnlockedArray = totalStatsArray[0].themeUnlockedArray.map { _ in true }
-        totalStatsArray[0].appIconUnlockedArray = totalStatsArray[0].appIconUnlockedArray.map { _ in true }
-        totalStatsArray[0].levelUnlockedArray = totalStatsArray[0].levelUnlockedArray.map { _ in true }
-        totalStatsArray[0].powerUpUnlockedArray = totalStatsArray[0].powerUpUnlockedArray.map { _ in true }
-        totalStatsArray[0].achievementsUnlockedArray = totalStatsArray[0].achievementsUnlockedArray.map { _ in true }
-        totalStatsArray[0].dateSaved = Date()
-        do {
-            let data = try encoder.encode(self.totalStatsArray)
-            try data.write(to: totalStatsStore!)
-        } catch {
-            Log.data.error("Error encoding total stats, \(String(describing: error), privacy: .public)")
-        }
-        CloudKitHandler().saveToiCloud()
-    }
-    
-    func relockAllItems() {
-        ballSetting = 0
-        defaults.set(ballSetting, forKey: "ballSetting")
-        paddleSetting = 0
-        defaults.set(paddleSetting, forKey: "paddleSetting")
-        brickSetting = 0
-        defaults.set(brickSetting, forKey: "brickSetting")
-        if appIconSetting != 0 {
-            appIconSetting = 0
-            defaults.set(appIconSetting, forKey: "appIconSetting")
-            changeIcon(to: LevelPackSetup().appIconNameArray[0])
-        }
-        
-        totalStatsArray[0] = TotalStats()
-        totalStatsArray[0].dateSaved = Date()
-        do {
-            let data = try encoder.encode(self.totalStatsArray)
-            try data.write(to: totalStatsStore!)
-        } catch {
-            Log.data.error("Error encoding total stats, \(String(describing: error), privacy: .public)")
-        }
-        CloudKitHandler().saveDataReset()
-        // Save to iCloud
     }
     
     func tableView(_ tableView: UITableView, didHighlightRowAt indexPath: IndexPath) {

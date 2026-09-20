@@ -354,8 +354,11 @@ Flipped Angle means.
   **total of posted daily scores**, submitted by the app after each posting run. Because
   Classic scores (thousands) and Endless heights (tens) differ by orders of magnitude, the
   total uses a **normalised challenge score** so no one mode dominates: Classic posts
-  `levelScore`, Endless modes post `height × 100`. The exact factor is a §13 question, but
-  the daily board is immune either way. A local tally backs the submitted total; Game
+  `levelScore`, Endless modes post `height × 10`. **Ten is James's number, round 329** - the
+  factor was a first guess of a hundred, which made one good Mayhem run worth more than a week
+  of Classic days. `DailyChallengeBoards.endlessHeightToPoints` is where it lives, and the
+  posted figure is stored with the record, so a day already posted keeps the number it was
+  posted with. The daily board itself is immune to the factor either way. A local tally backs the submitted total; Game
   Center keeps the best (highest) submission, so the total only ever grows.
 - **Streaks** are tracked locally (§10) and surfaced on the challenge screen. A streak
   achievement set ships in phase 5.
@@ -729,7 +732,11 @@ must be *posted* inside the window, not merely earned in it. As shipped:
   shared experience. Revisit if the leaderboard feels luck-dominated.*
   **Decided, round 300**: James took the recommendation. Live-random it is, and the twist set
   carries the shared experience. Nothing to build - this closes as written.
-- **The overall board's normalisation factor** (§7): height × 100 is a first guess.
+- ~~**The overall board's normalisation factor** (§7): height × 100 is a first guess.~~
+  **Answered, round 329.** James: "for the daily challenge cumulative leaderboard, multiply
+  endless mode and mayhem runs by 10, not 100." Built as `endlessHeightToPoints`, and the
+  normalised figure each day posted with is kept on its own record rather than recomputed, so
+  changing the factor again cannot rewrite history.
 - **The "newer version exists" flag** (§2.1): App Store lookup API, or piggyback on iCloud
   KVS from newer clients, or accept silent divergence for the 14-day window?
 - **Abandoned first attempts** (§7): does quitting post the partial score or burn the
