@@ -187,6 +187,28 @@ extension UIViewController {
     static let inGameLogoHeight: CGFloat = 36
     static let inGameModeIconGap: CGFloat = 4
 
+    /// Keeps the mode icon above whichever of the two title lines is actually showing.
+    ///
+    /// **James, round 332: "move endless mode label closer to icon", and the same note again
+    /// for Endless Mayhem.** The icon is anchored above the *pack* line, because in Classic and
+    /// the daily there is a label above the one naming the mode and anchoring to the lower of
+    /// the two put the icon straight through it (play-test round 14). An endless run leaves the
+    /// pack line empty - and an empty label still holds its height, so the mode's name sat a
+    /// whole line below an icon that was supposed to be sitting on top of it.
+    ///
+    /// Asked every layout pass rather than decided once: the labels are written after the icon
+    /// is built on both screens, and a daily changes which of them carries the mode's name.
+    func pinModeIcon(_ icon: UIView, above pack: UILabel, or level: UILabel,
+                     keeping constraint: inout NSLayoutConstraint?) {
+        let target: UILabel = (pack.text?.isEmpty == false) ? pack : level
+        if let constraint, constraint.isActive, constraint.secondItem === target { return }
+        constraint?.isActive = false
+        let made = icon.bottomAnchor.constraint(equalTo: target.topAnchor,
+                                                constant: -UIViewController.inGameModeIconGap)
+        made.isActive = true
+        constraint = made
+    }
+
     /// What that logo shrinks to when a list scrolls up under it.
     ///
     /// The pack grid is what the screen is for, and at rest the logo takes a third of it.

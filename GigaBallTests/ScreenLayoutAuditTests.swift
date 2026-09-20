@@ -303,3 +303,80 @@ final class ScreenLayoutAuditTests: XCTestCase {
         }
     }
 }
+
+/// The level intro with a day that has three twists.
+///
+/// **James, round 332: "daily challenge has 3 twists but level intro splash screen only has
+/// room to show 2"**, and in the layout notes: "make space for more twists if there are more to
+/// be shown, just expand section and move free play / competition run label down as needed."
+///
+/// The label grows a line per twist and the run-kind label hangs off its bottom, so on paper
+/// this works at any number. This measures it instead, at the smallest screen the app supports,
+/// which is where a third line has nowhere to go.
+final class DailyIntroTwistRoomTests: XCTestCase {
+
+    private var screens: [UIViewController] = []
+
+    override func tearDown() {
+        DailyChallengeSession.shared.active = nil
+        screens.removeAll()
+        super.tearDown()
+    }
+
+    private func intro(twists: [DailyTwist], size: CGSize) -> InbetweenViewController? {
+        DailyChallengeSession.shared.active = DailyChallenge(
+            dateKey: DailyChallengeSession.shared.todayKey, mode: .classic,
+            classicLevel: 1, twists: twists)
+        let board = UIStoryboard(name: "Main", bundle: Bundle(for: InbetweenViewController.self))
+        guard let screen = board.instantiateViewController(withIdentifier: "inbetweenView")
+                as? InbetweenViewController else { return nil }
+        screen.levelNumber = 1
+        screens.append(screen)
+        screen.loadViewIfNeeded()
+        screen.view.frame = CGRect(origin: .zero, size: size)
+        for _ in 0..<3 {
+            screen.view.setNeedsLayout()
+            screen.view.layoutIfNeeded()
+        }
+        return screen
+    }
+
+    /// Every twist the day carries is on the screen, and the label is tall enough to draw them.
+    func testThreeTwistsAllFitOnTheSmallestScreen() throws {
+        let twists: [DailyTwist] = [.fogOfWar, .oneLife, .noPowerUps]
+        let screen = try XCTUnwrap(intro(twists: twists, size: CGSize(width: 320, height: 568)),
+                                   "the storyboard no longer has an inbetweenView")
+
+        let label = screen.levelNameLabel!
+        let lines = (label.attributedText?.string ?? "").components(separatedBy: "\n")
+        XCTAssertEqual(lines.count, twists.count, "one line per twist: \(lines)")
+
+        let needed = label.textRect(forBounds: CGRect(origin: .zero,
+                                                      size: CGSize(width: label.bounds.width,
+                                                                   height: .greatestFiniteMagnitude)),
+                                    limitedToNumberOfLines: 0).height
+        XCTAssertGreaterThanOrEqual(label.bounds.height + 0.5, needed,
+                                    "the box is \(label.bounds.height)pt and the twists need "
+                                    + "\(needed)pt, so the third one is drawn outside it")
+    }
+
+    /// And the kind of run still sits under them, on the screen.
+    func testTheRunKindFollowsTheTwistsDown() throws {
+        let screen = try XCTUnwrap(intro(twists: [.fogOfWar, .oneLife, .noPowerUps],
+                                         size: CGSize(width: 320, height: 568)))
+        let label = screen.levelNameLabel!
+        let kind = try XCTUnwrap(
+            screen.view.subviews.compactMap { $0 as? UILabel }
+                .first { ($0.text ?? "").contains("RUN") || ($0.text ?? "").contains("FREE") }
+                ?? label.superview?.subviews.compactMap { $0 as? UILabel }
+                    .first { ($0.text ?? "").contains("RUN") || ($0.text ?? "").contains("FREE") },
+            "the competition run / free play line is missing")
+
+        let twists = label.convert(label.bounds, to: screen.view)
+        let below = kind.convert(kind.bounds, to: screen.view)
+        XCTAssertGreaterThanOrEqual(below.minY, twists.maxY - 0.5,
+                                    "the run kind is sitting on top of the twists")
+        XCTAssertLessThanOrEqual(below.maxY, screen.view.bounds.height + 0.5,
+                                 "and it has been pushed off the bottom of the screen")
+    }
+}

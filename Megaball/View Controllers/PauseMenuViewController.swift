@@ -240,6 +240,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
         modeIcon.contentMode = .scaleAspectFit
         modeIcon.translatesAutoresizingMaskIntoConstraints = false
         containterView.addSubview(modeIcon)
+        modeIconView = modeIcon
         // The mode's icon above its name, the same order the level intro splash uses
         // (play-test round 13): icon, then which mode, then what happened
 
@@ -255,17 +256,20 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
                                           constant: 60),
 
             modeIcon.centerXAnchor.constraint(equalTo: containterView.centerXAnchor),
-            modeIcon.bottomAnchor.constraint(equalTo: packNameLabel.topAnchor,
-                                             constant: -UIViewController.inGameModeIconGap),
             modeIcon.widthAnchor.constraint(equalToConstant: UIViewController.inGameModeIconSize),
             modeIcon.heightAnchor.constraint(equalToConstant: UIViewController.inGameModeIconSize),
-            // Above the *pack* line, not the level line: in Classic and the daily there
-            // is a label above the one naming the mode, and anchoring to the lower of
-            // the two put the icon straight through it (play-test round 14's screenshots).
-            // Endless leaves the pack line empty, so the icon simply sits a little higher
-            // there rather than needing a rule of its own
+            // Its bottom is pinned in `layoutSubviews` instead, by `pinModeIcon`: above the
+            // *pack* line where there is one, because in Classic and the daily there is a
+            // label above the one naming the mode and anchoring to the lower of the two put
+            // the icon straight through it (play-test round 14's screenshots) - and above the
+            // mode's own line in the endless modes, where the pack line is empty and was
+            // holding a blank line's height between the icon and the name (round 332)
         ])
     }
+
+    /// The mode icon, and its bottom, kept against whichever title line is showing.
+    private weak var modeIconView: UIImageView?
+    private var modeIconBottom: NSLayoutConstraint?
 
     /// Which mode this screen belongs to. The daily is a menu identity rather than a scene
     /// one, so it is asked of the session first and the remembered mode second.
@@ -374,6 +378,12 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
         super.viewDidLayoutSubviews()
         limitMenuContentSize()
         collectionViewLayout()
+        if let modeIconView {
+            pinModeIcon(modeIconView, above: packNameLabel, or: levelNumberLabel,
+                        keeping: &modeIconBottom)
+        }
+        // Which of the two title lines the icon sits on depends on what they say, and what
+        // they say is written after the icon is built (round 332)
         // The row's spacing is worked out from the container's width, so it has to be worked
         // out *again* whenever that width changes - which it now can, where before the
         // container was a fixed 414 box and one pass at load time was the whole story

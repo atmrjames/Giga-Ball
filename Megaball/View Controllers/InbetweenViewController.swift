@@ -501,12 +501,14 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
         view.addSubview(icon)
         NSLayoutConstraint.activate([
             icon.centerXAnchor.constraint(equalTo: packNameLabel.centerXAnchor),
-            icon.bottomAnchor.constraint(equalTo: packNameLabel.topAnchor,
-                                         constant: -UIViewController.inGameModeIconGap),
-            // Close under the icon (play-test round 12: "nearer the title"), at the gap the
-            // pause menu uses - the two screens are seconds apart and were six and four
             icon.widthAnchor.constraint(equalToConstant: UIViewController.inGameModeIconSize),
             icon.heightAnchor.constraint(equalToConstant: UIViewController.inGameModeIconSize),
+            // Close under the icon (play-test round 12: "nearer the title"), at the gap the
+            // pause menu uses - the two screens are seconds apart and were six and four. The
+            // bottom is pinned in `viewDidLayoutSubviews` by `pinModeIcon`, which puts it above
+            // the pack line where there is one and above the mode's own name where there is
+            // not: an endless run leaves the pack line empty and an empty label still holds a
+            // line's height, which is the gap James asked to close (round 332)
         ])
         modeIconView = icon
         showIntroLogo()
@@ -563,6 +565,11 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
 
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
+        giveTheTwistsTheRoomTheyNeed()
+        if let modeIconView {
+            pinModeIcon(modeIconView, above: packNameLabel, or: levelNumberLabel,
+                        keeping: &modeIconBottom)
+        }
         showIntroLogo()
         // **The first moment the right host is known.** `viewDidLoad` calls `showAnimate`, and
         // `updateLabels` builds the mode icon and the wordmark beside it - all of that runs
@@ -570,6 +577,43 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
         // that adds it to anything. There is no superview to host the wordmark in yet, so it
         // lands inside the intro; this is where it moves out. Idempotent, so every later
         // layout pass costs a pointer comparison.
+    }
+
+    /// Sizes the twist box to the twists that are actually in it.
+    ///
+    /// **James, round 332: "daily challenge has 3 twists but level intro splash screen only has
+    /// room to show 2"**, and in his layout notes: "make space for more twists if there are more
+    /// to be shown, just expand section and move free play / competition run label down as
+    /// needed."
+    ///
+    /// The box did grow a line per twist, and the estimate it grew by was the *font's* line
+    /// height - which is not what a twist line is. Every line leads with the twist's badge, and
+    /// an image attachment is taller than the type beside it: three twists needed 72 points and
+    /// were given 67, so the third was drawn outside its own label. Measured here instead of
+    /// estimated, because this is the first moment the label knows how wide it is, and the
+    /// width is what decides whether a long twist name takes one line or two.
+    ///
+    /// The run-kind label hangs off this label's bottom edge, so it follows on its own - which
+    /// is the rest of what he asked for.
+    /// The mode icon's bottom, kept against whichever title line is showing.
+    private var modeIconBottom: NSLayoutConstraint?
+
+    private func giveTheTwistsTheRoomTheyNeed() {
+        guard let label = levelNameLabel, label.attributedText != nil,
+              label.bounds.width > 0 else { return }
+
+        let needed = ceil(label.textRect(
+            forBounds: CGRect(x: 0, y: 0, width: label.bounds.width,
+                              height: .greatestFiniteMagnitude),
+            limitedToNumberOfLines: 0).height)
+
+        for constraint in label.constraints where constraint.firstAttribute == .height {
+            guard abs(constraint.constant - needed) > 0.5 else { continue }
+            constraint.constant = needed
+            view.setNeedsLayout()
+            // Changed only when it is actually wrong, or a layout pass that agrees with itself
+            // would ask for another one for ever
+        }
     }
 
     /// Fades the wordmark with the screen it belongs to, since it is no longer inside it.
