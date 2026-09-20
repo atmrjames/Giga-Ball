@@ -54,7 +54,7 @@ extension GameScene {
         SavedGame.SavedBrick(
             texture: texture,
             colour: colour,
-            x: Double(sprite.position.x),
+            x: Double(endlessIICanonicalRestingX(of: sprite)),
             y: Double(restingY),
             width: Double(endlessIIFieldSize(of: sprite).width),
             height: Double(endlessIIFieldSize(of: sprite).height),

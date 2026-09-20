@@ -399,3 +399,105 @@ final class EndlessIIMilestoneMarkerTests: XCTestCase {
         }
     }
 }
+
+/// What a save records about where a brick is across the field.
+///
+/// **James, round 334, with a screenshot: "on returning to a game from Resume, some bricks are
+/// not aligned with the main brick grid."**
+final class ResumedBrickAlignmentTests: XCTestCase {
+
+    private func scene() -> GameScene {
+        let scene = GameScene(size: CGSize(width: 400, height: 800))
+        scene.gameMode = .endlessII
+        scene.gameWidth = 360
+        scene.brickWidth = 40
+        scene.brickHeight = 20
+        scene.totalStatsArray = [TotalStats()]
+        return scene
+    }
+
+    private func brick(_ scene: GameScene, at x: CGFloat) -> SKSpriteNode {
+        let brick = SKSpriteNode(texture: scene.brickNormalTexture,
+                                 size: CGSize(width: scene.brickWidth, height: scene.brickHeight))
+        brick.name = BrickCategoryName
+        brick.position = CGPoint(x: x, y: 0)
+        scene.addChild(brick)
+        return brick
+    }
+
+    /// A field standing still is saved exactly where it stands.
+    func testABrickAtRestIsSavedWhereItIs() {
+        let scene = self.scene()
+        let column = scene.endlessIIColumnCentre(nearest: 37)
+        let subject = brick(scene, at: column)
+
+        let record = scene.savedBrick(for: subject, texture: 0, colour: 0, restingY: 0)
+        XCTAssertEqual(record.x, Double(column), accuracy: 0.001)
+    }
+
+    /// A brick caught part-way through a drift step is saved at the column it left.
+    ///
+    /// The step takes a twentieth of a second and nothing finishes it on the way back in, so a
+    /// save written during one used to bring the whole field back a fraction of a column out -
+    /// and leave it there until the drift ended.
+    func testABrickMidDriftIsSavedAtTheColumnItLeft() {
+        let scene = self.scene()
+        let column = scene.endlessIIColumnCentre(nearest: 37)
+        let subject = brick(scene, at: column)
+
+        scene.endlessIIDriftDirection = 1
+        scene.endlessIIDriftMoved = scene.brickWidth/3
+        subject.position.x = column + scene.brickWidth/3
+
+        let record = scene.savedBrick(for: subject, texture: 0, colour: 0, restingY: 0)
+        XCTAssertEqual(record.x, Double(column), accuracy: 0.001,
+                       "a third of a column out is where it was, not where it belongs")
+    }
+
+    /// The same going the other way.
+    func testADriftToTheLeftIsUndoneToo() {
+        let scene = self.scene()
+        let column = scene.endlessIIColumnCentre(nearest: -75)
+        let subject = brick(scene, at: column)
+
+        scene.endlessIIDriftDirection = -1
+        scene.endlessIIDriftMoved = scene.brickWidth*0.8
+        subject.position.x = column - scene.brickWidth*0.8
+
+        let record = scene.savedBrick(for: subject, texture: 0, colour: 0, restingY: 0)
+        XCTAssertEqual(record.x, Double(column), accuracy: 0.001)
+    }
+
+    /// A brick that went round the side during the step comes back round it.
+    ///
+    /// Defensive rather than everyday: the tick only wraps a brick once it is *entirely* past
+    /// the wall, so a partial step rarely crosses that line. When it does, undoing the step
+    /// without undoing the wrap would put the brick outside the field altogether.
+    func testABrickThatWrappedMidStepIsUnwrapped() {
+        let scene = self.scene()
+        let subject = brick(scene, at: -175)
+        // Just inside the left wall, having come round it during this step
+
+        scene.endlessIIDriftDirection = 1
+        scene.endlessIIDriftMoved = 30
+
+        let record = scene.savedBrick(for: subject, texture: 0, colour: 0, restingY: 0)
+        XCTAssertEqual(record.x, Double(-175 - 30 + scene.gameWidth), accuracy: 0.001,
+                       "un-stepped to -205, which is outside the field, so it belongs at the "
+                       + "other wall")
+    }
+
+    /// An anchored brick is left alone, because the drift leaves it alone.
+    func testAnAnchoredBrickIsSavedWhereItStands() {
+        let scene = self.scene()
+        let subject = brick(scene, at: 13)
+        subject.endlessIIIsAnchored = true
+
+        scene.endlessIIDriftDirection = 1
+        scene.endlessIIDriftMoved = scene.brickWidth/3
+
+        let record = scene.savedBrick(for: subject, texture: 0, colour: 0, restingY: 0)
+        XCTAssertEqual(record.x, 13, accuracy: 0.001,
+                       "a Fixed brick's whole meaning is that it stopped where it was struck")
+    }
+}

@@ -170,6 +170,36 @@ extension GameScene {
         // did not (§8.6's own warning, in the other axis)
     }
 
+    /// Where a brick belongs across the field: where it was when the current step began.
+    ///
+    /// **James, round 334, with a screenshot: "on returning to a game from Resume, some bricks
+    /// are not aligned with the main brick grid."** A Drift moves the field a column at a time
+    /// and the field is exactly on its columns between steps - but the step itself takes a
+    /// twentieth of a second, spread over frames, and a save written during one records every
+    /// brick part of the way across. Nothing finishes that move on the way back in: the restore
+    /// puts each brick where the record says and the progress it was part of is gone, so the
+    /// whole field comes back a fraction of a column out and stays there until the drift ends.
+    ///
+    /// This is the same answer `restingY` gives in the other axis - where the brick belongs
+    /// rather than where it is - and it is the step's *own* progress that is subtracted rather
+    /// than a snap to the nearest column: a Tiny brick sits at a quarter of a cell and a Big
+    /// one hangs off its top-left, so snapping would move the very bricks that are allowed to
+    /// be between columns. A brick that wrapped round the side during this step is wrapped
+    /// back, by the width the tick shifted it.
+    ///
+    /// Anchored bricks are left alone, because the drift already leaves them alone.
+    func endlessIICanonicalRestingX(of sprite: SKSpriteNode) -> CGFloat {
+        let x = sprite.position.x
+        guard gameMode == .endlessII, endlessIIDriftDirection != 0, endlessIIDriftMoved > 0,
+              endlessIIStaysPut(sprite) == false, gameWidth > 0 else { return x }
+
+        var back = x - CGFloat(endlessIIDriftDirection)*endlessIIDriftMoved
+        let half = sprite.size.width/2
+        if back - half > gameWidth/2 { back -= gameWidth }
+        if back + half < -gameWidth/2 { back += gameWidth }
+        return back
+    }
+
     /// The centre of the column nearest a given x, which is where every brick belongs.
     func endlessIIColumnCentre(nearest x: CGFloat) -> CGFloat {
         guard brickWidth > 0 else { return x }
