@@ -830,7 +830,7 @@ final class DailyEndScreenLayoutTests: XCTestCase {
         return pause
     }
 
-    /// Level Score and Time Bonus share a line, and the total is under both.
+    /// Level Score and Speed Bonus share a line, and the total is under both.
     func testTheBreakdownIsTwoLinesRatherThanThree() throws {
         let pause = try XCTUnwrap(dailyCompleteScreen(),
                                   "the storyboard no longer has a pauseMenuVC")
@@ -844,7 +844,7 @@ final class DailyEndScreenLayoutTests: XCTestCase {
         let levelFrame = level.convert(level.bounds, to: pause.view)
         let bonusFrame = bonus.convert(bonus.bounds, to: pause.view)
         XCTAssertEqual(levelFrame.midY, bonusFrame.midY, accuracy: 1,
-                       "Level Score and Time Bonus should be on the same line")
+                       "Level Score and Speed Bonus should be on the same line")
         XCTAssertLessThan(levelFrame.maxX, bonusFrame.minX,
                           "and side by side, with the level score on the left")
 
@@ -877,7 +877,8 @@ final class DailyEndScreenLayoutTests: XCTestCase {
     func testTheTallyWritesIntoTheColumns() throws {
         let pause = try XCTUnwrap(dailyCompleteScreen())
         XCTAssertEqual(pause.dailyLevelTitle.text, "Level Score")
-        XCTAssertEqual(pause.dailyBonusTitle.text, "Time Bonus")
+        XCTAssertEqual(pause.dailyBonusTitle.text, "Speed Bonus")
+        // James, round 332: "time bonus should be speed bonus"
         XCTAssertEqual(pause.dailyTotalTitle.text, "Total Score")
         XCTAssertFalse(pause.dailyLevelLabel.text?.isEmpty ?? true,
                        "the tally should have written a figure by now")
@@ -892,8 +893,10 @@ final class DailyEndScreenLayoutTests: XCTestCase {
         DailyChallengeSession.shared.lastRunPosted = false
         let pause = try XCTUnwrap(dailyCompleteScreen())
 
-        XCTAssertTrue(pause.packNameLabel.text?.hasPrefix("Daily Challenge, ") ?? false,
+        XCTAssertTrue(pause.packNameLabel.text?.hasPrefix("Daily Challenge\n") ?? false,
                       "the day is named, as the intro names it: \(pause.packNameLabel.text ?? "")")
+        // On its own line since round 332, on both screens: "put the date on the line below
+        // Daily Challenge to avoid any clipping on smaller devices"
         let lines = (pause.dailySummaryLabel.attributedText?.string ?? "")
             .components(separatedBy: "\n")
         XCTAssertEqual(lines.last, "FREE PLAY", "the kind of run comes after the twists")
@@ -923,7 +926,7 @@ final class DailyEndScreenLayoutTests: XCTestCase {
         XCTAssertTrue(lines.first?.hasSuffix("Vanilla") ?? false,
                       "a no-twist day's badge first, as the intro has it: \(lines)")
         // A suffix, because the line leads with the badge's image attachment
-        XCTAssertTrue(pause.packNameLabel.text?.hasPrefix("Daily Challenge, ") ?? false)
+        XCTAssertTrue(pause.packNameLabel.text?.hasPrefix("Daily Challenge\n") ?? false)
     }
 
     /// A daily says its numbers under the button rather than on the screen.

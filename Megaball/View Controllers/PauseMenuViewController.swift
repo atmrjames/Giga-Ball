@@ -908,8 +908,13 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
                 UITapGestureRecognizer(target: self, action: #selector(dailyTwistsTapped)))
         }
 
-        packNameLabel.text = "Daily Challenge, "
+        packNameLabel.numberOfLines = 2
+        packNameLabel.text = "Daily Challenge\n"
             + DailyChallengeSession.shared.displayName(forKey: challenge.dateKey).capitalized
+        // **The date goes on its own line** (James, round 332's layout notes, written against
+        // five of the seven screens: "put the date on the line below Daily Challenge to avoid
+        // any clipping on smaller devices"). "Daily Challenge, Yesterday" is a long line for a
+        // label sized for "Classic Pack", and an iPhone SE has fifty points less to put it in
         // **The day, named where the level intro names it** (James, round 320: "on the pause
         // menu view, this info is arranged differently with no date info and the twist and
         // challenge or free play info swapped. Please arrange it in the same way as the level
@@ -1305,7 +1310,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
                 let heightBest = runs.max() ?? 0
                 if height > heightBest {
                     scoreLabelTitle.text = "New Hi-Score"
-                    highscoreLabelTitle.text = "Previous"
+                    highscoreLabelTitle.text = "Previous Hi-Score"
                 }
                 highscoreLabel.text = String(heightBest) + "m"
             } else {
@@ -1313,7 +1318,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
                 highscoreLabel.text = String(heightBest) + "m"
                 if runs.count <= 1 {
                     scoreLabelTitle.text = "New Hi-Score"
-                    highscoreLabelTitle.text = "Previous"
+                    highscoreLabelTitle.text = "Previous Hi-Score"
                     highscoreLabel.text = "0m"
                 } else {
                     var heightsArray = runs
@@ -1321,7 +1326,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
                     let previousBestHeight = heightsArray[1]
                     if height > previousBestHeight {
                         scoreLabelTitle.text = "New Hi-Score"
-                        highscoreLabelTitle.text = "Previous"
+                        highscoreLabelTitle.text = "Previous Hi-Score"
                         highscoreLabel.text = String(previousBestHeight) + "m"
                     }
                 }
@@ -1358,7 +1363,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
                 dailyTotalTitle.text = "Total Score"
 
                 dailyLevelTitle.text = "Level Score"
-                dailyBonusTitle.text = "Time Bonus"
+                dailyBonusTitle.text = "Speed Bonus"
                 for label in [dailyLevelTitle, dailyLevelLabel,
                               dailyBonusTitle, dailyBonusLabel] {
                     label.isHidden = false
@@ -1409,7 +1414,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
             // level summary between levels
 
             if showsDailyBreakdown {
-                highscoreLabelTitle.text = "Time Bonus"
+                highscoreLabelTitle.text = "Speed Bonus"
                 // The row a daily leaves empty is exactly the row the breakdown needs, and it
                 // is already sitting under the score where the second line belongs
             } else if isDailyChallenge {
@@ -1424,7 +1429,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
                 highscoreLabel.text = String(previousHighscore)
                 if score > previousHighscore {
                     scoreLabelTitle.text = "New Hi-Score"
-                    highscoreLabelTitle.text = "Previous"
+                    highscoreLabelTitle.text = "Previous Hi-Score"
                 }
             }
         }

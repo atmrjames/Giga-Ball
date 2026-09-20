@@ -29,7 +29,7 @@ enum ResumeCard {
     struct Lines: Equatable {
 
         /// The heading, in the face and colour a menu gives its own title.
-        var heading = "RESUMING…"
+        var heading = "RESUMING"
 
         /// Which mode is being resumed.
         var mode = ""

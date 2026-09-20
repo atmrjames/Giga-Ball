@@ -143,9 +143,10 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
     /// sizes these labels actually are. A title at 13 points goes to 18 at 1.35 and to 20 at
     /// 1.5, and the second is the one that looks deliberate rather than like a rounding.
     private func raiseTheTotal() {
+        totalScoreTitle.text = "Total Score"
         for label in [totalScoreTitle, totalScoreLabel] {
             guard let label, let font = label.font else { continue }
-            label.font = font.withSize((font.pointSize*1.5).rounded())
+            label.font = font.withSize((font.pointSize*GameScene.betweenLevelsTotalScale).rounded())
         }
     }
 
@@ -403,9 +404,15 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
         }
 
         if let challenge = DailyChallengeSession.shared.active {
-            packNameLabel.text = "Daily Challenge, "
+            packNameLabel.numberOfLines = 2
+            packNameLabel.text = "Daily Challenge\n"
                 + DailyChallengeSession.shared.displayName(forKey: challenge.dateKey)
                     .capitalized
+            // **The date goes on its own line** (James, round 332's layout notes, written
+            // against five of the seven screens: "put the date on the line below Daily
+            // Challenge to avoid any clipping on smaller devices"). "Daily Challenge,
+            // Yesterday" is a long line for a label sized for "Classic Pack", and an iPhone SE
+            // has fifty points less to put it in
             levelNumberLabel.text = challenge.mode == .classic
                 ? LevelPackSetup().levelNameArray[levelNumber]
                 : challenge.mode.name

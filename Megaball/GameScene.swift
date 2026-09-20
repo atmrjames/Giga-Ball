@@ -869,6 +869,16 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 
 	static let paddleSizeScaleKey = "paddleSizeScale"
 
+	/// How much bigger the between-levels total is than the two lines above it.
+	///
+	/// **James, round 332, in his layout notes: "make total label say total score and make it
+	/// smaller. It should still be bigger than the level and speed bonus score labels, but not
+	/// that big."** It was one and a half times, set in round 319 when the complaint was the
+	/// opposite one - that 1.35 did not read as a hierarchy - and a 20 point title at one and a
+	/// half is 30, which is the size of the headline on a screen whose headline is elsewhere.
+	/// A sixth bigger keeps the order of the three lines and stops the total shouting.
+	static let betweenLevelsTotalScale: CGFloat = 1.15
+
 	/// Wipe's place in every power-up array, read off the names rather than typed (round 327).
 	static let wipePowerUpIndex: Int = LevelPackSetup().powerUpNameArray.firstIndex(of: "Wipe") ?? 50
 
