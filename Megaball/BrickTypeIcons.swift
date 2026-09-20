@@ -214,19 +214,30 @@ enum BrickTypeIcons {
             // info pages with the new textures"). It is a silhouette already - transparent
             // where the shape is not - so it needs no clipping, and the highlight sits where
             // it was drawn to sit rather than where a stretched rectangle happens to put it
-            artwork(shapedArtwork("BrickNormal", .wedge))?.tinted(tint).draw(in: frame)
+            (drawnFace(for: style) ?? artwork(shapedArtwork("BrickNormal", .wedge)))?
+                .tinted(tint).draw(in: frame)
             return
 
         case .convex, .concave, .diamond:
-            // No drawn art for these three yet (§8.5), so they keep the approximation: an
-            // ordinary brick clipped to the very path the game builds the body and the outline
-            // from, so the picture cannot drift from the shape. `EndlessIIFaceGeometry` draws
-            // in scene coordinates (y up) about the shape's own centre, which is what the
-            // transform below undoes.
-            //
-            // The day that art lands, these join the case above and this branch goes.
-            // Diamond needs it least: its silhouette is four straight edges, so the clipped
-            // approximation is the shape rather than a flat-sided guess at a curve
+            // **The drawn face where one exists, in whichever theme is on** (James, round 329d:
+            // "brick shapes with retro mode use clipped versions of normal brick, not custom
+            // designed bricks"). It was true when this was written that none of the three had
+            // art; all three have had it in the classic theme since round 262 and in Retro
+            // since round 297, and the page went on clipping a rectangle because the names it
+            // asked for were the plain ones and the delivered pictures carry an orientation
+            // suffix - `retroBrickNormalConvex0` rather than `retroBrickNormalConvex`. Asked
+            // the way the game asks now, through `drawnFace`, which tries the suffixed name
+            // first exactly as `endlessIIShapedArt` does
+            if let drawn = drawnFace(for: style) {
+                drawn.tinted(tint).draw(in: frame)
+                return
+            }
+
+            // And the approximation for a shape whose picture has not landed: an ordinary
+            // brick clipped to the very path the game builds the body and the outline from, so
+            // the picture cannot drift from the shape. `EndlessIIFaceGeometry` draws in scene
+            // coordinates (y up) about the shape's own centre, which is what the transform
+            // below undoes
             guard let face = style.face else { return }
             context.saveGState()
             context.translateBy(x: frame.midX, y: frame.midY)
@@ -240,7 +251,8 @@ enum BrickTypeIcons {
             return
 
         case .rounded:
-            artwork(shapedArtwork("BrickNormal", .rounded))?.tinted(tint).draw(in: frame)
+            (drawnFace(for: style) ?? artwork(shapedArtwork("BrickNormal", .rounded)))?
+                .tinted(tint).draw(in: frame)
             return
 
         case .spinning:
@@ -545,6 +557,25 @@ enum BrickTypeIcons {
         (retroName(for: base) ?? base) + shape.rawValue
     }
 
+    /// The drawn picture of a shaped brick, in the theme the player is wearing, or nil where
+    /// that shape still has none.
+    ///
+    /// **The suffixed name first, the plain one after**, which is the order `endlessIIShapedArt`
+    /// asks in and the reason this page was drawing clipped rectangles over real artwork: the
+    /// shapes that are lit differently the two ways up are delivered as `...Convex0` and
+    /// `...Convex180`, and a page asking only for `...Convex` found nothing in the Retro theme
+    /// and fell through to the approximation. Right way up here, always - a still picture on a
+    /// reference page is not upside down.
+    static func drawnFace(for style: EndlessIIStyle,
+                          settings: KeyValueStore = UserDefaults.standard) -> UIImage? {
+        guard let shape = GameScene.ShapedBrickArt.allCases.first(where: { $0.style == style })
+        else { return nil }
+        let base = (retroName(for: "BrickNormal", settings: settings) ?? "BrickNormal")
+            + shape.rawValue
+        let upright = GameScene.orientationSuffix(shape, mirrored: false, flipped: false)
+        return UIImage(named: base + upright) ?? UIImage(named: base)
+    }
+
     /// What the Retro theme calls a brick, if it has its own.
     static func retroName(for named: String,
                           settings: KeyValueStore = UserDefaults.standard) -> String? {
@@ -606,9 +637,64 @@ extension BrickTypeIcons {
     static func animate(_ view: UIView, as art: BrickTypeArt) {
         view.layer.setValue(NSValue(cgSize: view.bounds.size), forKey: sizeKey)
         view.layer.removeAnimation(forKey: motionKey)
+        (view.layer.sublayers ?? [])
+            .filter { $0.name == partnerKey }
+            .forEach { $0.removeFromSuperlayer() }
+        // Before the guard below, so a cell reused for a brick that does not turn does not
+        // keep the last one's second picture
+
         guard case .style(let style) = art,
               let motion = motion(for: style, size: view.bounds.size) else { return }
+        if style == .spinning { addSpinningPartner(to: view) }
         view.layer.add(motion, forKey: motionKey)
+    }
+
+    /// The second picture a turning brick wears, so its lighting stays where the light is.
+    ///
+    /// **James, round 329d: "for the spinning brick with retro or indestructible graphic, fade
+    /// in and out the same way it does in the game so the brick lighting looks right regardless
+    /// of the way up of the brick - and make sure it doesn't end up semi-transparent in
+    /// between."**
+    ///
+    /// The game has done this since round 312 for shaped faces: a second sprite carrying the
+    /// half-turn picture, cross-faded by `spinningFaceBlend`, with the one underneath left
+    /// solid so two half-opaque layers never composite to a see-through brick. The page turned
+    /// one picture instead, so a brick with a highlight along its top edge spent half of every
+    /// revolution lit from below - which is exactly what the artwork's orientation sets exist
+    /// to prevent.
+    ///
+    /// No second asset is needed here and that is the point: the partner is *this* picture
+    /// turned half a circle, so its silhouette lands on the brick's own at every angle and
+    /// what shows through is the lighting for the far end of the turn. The same trick the
+    /// scene plays, done with one image rather than two, which means it is right for whichever
+    /// theme the player is wearing - retro included - rather than only where a 0 and a 180
+    /// have been drawn.
+    private static func addSpinningPartner(to view: UIView) {
+        guard let picture = (view as? UIImageView)?.image?.cgImage else { return }
+
+        let partner = CALayer()
+        partner.name = partnerKey
+        partner.frame = view.bounds
+        partner.contents = picture
+        partner.contentsGravity = .resizeAspect
+        partner.transform = CATransform3DMakeRotation(.pi, 0, 0, 1)
+        partner.opacity = 0
+        view.layer.addSublayer(partner)
+
+        let steps = 36
+        let fade = CAKeyframeAnimation(keyPath: "opacity")
+        fade.values = (0...steps).map { step in
+            let turn = CGFloat(step)/CGFloat(steps)*2*CGFloat.pi
+            return NSNumber(value: Float(GameScene.spinningFaceBlend(zRotation: turn)))
+        }
+        fade.duration = spinDuration
+        fade.calculationMode = .linear
+        fade.repeatCount = .infinity
+        partner.add(fade, forKey: partnerKey)
+        // Sampled from the scene's own curve rather than approximated with an ease: the two
+        // pictures have to be equal at the quarter turns, where the brick is on its side and
+        // neither lighting is the right one, and a timing function that merely looks similar
+        // would put that crossing somewhere else
     }
 
     /// Puts the motion back at the size the view has actually been given.
@@ -628,6 +714,11 @@ extension BrickTypeIcons {
 
     private static let motionKey = "brickMotion"
     private static let sizeKey = "brickMotionSize"
+    private static let partnerKey = "brickSpinPartner"
+
+    /// How long one revolution takes on the page. Shared by the turn and the cross-fade over
+    /// it, which have to agree or the lighting drifts around the brick.
+    private static let spinDuration: CFTimeInterval = 2.6
 
     private static func motion(for style: EndlessIIStyle, size: CGSize) -> CAAnimation? {
         switch style {
@@ -635,7 +726,7 @@ extension BrickTypeIcons {
             let turn = CABasicAnimation(keyPath: "transform.rotation.z")
             turn.fromValue = 0
             turn.toValue = Double.pi*2
-            turn.duration = 2.6
+            turn.duration = spinDuration
             turn.repeatCount = .infinity
             turn.timingFunction = CAMediaTimingFunction(name: .linear)
             return turn

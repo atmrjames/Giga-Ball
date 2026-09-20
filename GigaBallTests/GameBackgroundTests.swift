@@ -39,9 +39,33 @@ final class GameBackgroundTests: XCTestCase {
 
     func testTheSettingsRowListsExactlyWhatThePickerOffers() {
         // Two lists of backgrounds that could disagree is the thing this was refactored to
-        // stop happening
+        // stop happening. In the picker's order since round 329d, which is the order a player
+        // sees rather than the order the artwork was drawn in
         XCTAssertEqual(LevelPackSetup().backgroundNameArray,
-                       GameBackground.allCases.map(\.name))
+                       GameBackground.inDisplayOrder.map(\.name))
+    }
+
+    /// The picker's order holds every background exactly once.
+    ///
+    /// **A second list of the same things is the trap this whole type exists to avoid**, and
+    /// `inDisplayOrder` is one - it has to be, because `rawValue` is a stored setting and
+    /// cannot be renumbered. So the one thing a second list can get wrong is asserted here: a
+    /// background left out of it would simply never be offered, which from the outside looks
+    /// exactly like a background that was removed.
+    func testThePickersOrderHoldsEveryBackgroundOnce() {
+        XCTAssertEqual(Set(GameBackground.inDisplayOrder), Set(GameBackground.allCases))
+        XCTAssertEqual(GameBackground.inDisplayOrder.count, GameBackground.allCases.count)
+        for background in GameBackground.allCases {
+            XCTAssertEqual(GameBackground.inDisplayOrder[background.displayIndex], background,
+                           "\(background) does not sit where it says it sits")
+        }
+    }
+
+    /// James's order, round 329d, written out as he wrote it.
+    func testTheOrderIsTheOneJamesAskedFor() {
+        XCTAssertEqual(GameBackground.inDisplayOrder.map(\.name),
+                       ["Classic", "Solid", "Black", "Deep Purple", "Deep Blue", "Deep Green",
+                        "Starry Sky", "Glow", "Clouds", "Prism"])
     }
 
     func testOnlyClassicWearsTheScenesOwnArtwork() {

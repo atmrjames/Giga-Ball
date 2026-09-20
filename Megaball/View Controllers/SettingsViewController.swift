@@ -301,8 +301,8 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
                 cell.settingDescription.text = "Game Background"
                 cell.centreLabel.text = ""
                 cell.setIcon(UIImage(named:"iconBackground.png")!, recolour: true)
-                cell.settingState.text = GameBackground.stored(backgroundSetting).name
                 cell.setStateColour(#colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1))
+                showSelectionArrow(in: cell)
             case 6:
             // Parallax
                 cell.settingDescription.text = "Perspective Zoom"
@@ -462,6 +462,34 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
     /// card - so that one row's card was shorter than every other row's and the arrow floated
     /// in the margin beside it. Inside the card, beside the name, is where this app puts a
     /// door, and it only took looking at it to see that.
+    /// The right-hand side of a row that opens a screen: an arrow in a circle rather than the
+    /// name of whatever is chosen.
+    ///
+    /// **James, round 329d, with a screenshot of a row reading "Deep Pu...": "game background
+    /// selection on cell is truncated. Maybe don't bother showing the selection here - just use
+    /// the arrow in a circle on the right side of the cell to show there's a selection
+    /// screen."** The names are as long as "Starry Sky" and the state label is sized for "on",
+    /// so the longer half of the list could not fit however the row was laid out.
+    ///
+    /// Drawn into the state label rather than added as another subview, so it inherits the
+    /// place, the alignment and the colour every other row's answer already has - and a reused
+    /// cell that becomes an ordinary row writes plain text over it in the usual way.
+    func showSelectionArrow(in cell: SettingsTableViewCell) {
+        let colour = cell.isGlass
+            ? SettingsTableViewCell.glassForeground.withAlphaComponent(0.7)
+            : #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1).withAlphaComponent(0.6)
+        guard let arrow = UIImage(systemName: "chevron.forward.circle",
+                                  withConfiguration: UIImage.SymbolConfiguration(
+                                      pointSize: 18, weight: .regular))?
+            .withTintColor(colour, renderingMode: .alwaysOriginal) else {
+            cell.settingState.text = ""
+            return
+        }
+        let attachment = NSTextAttachment(image: arrow)
+        cell.settingState.attributedText = NSAttributedString(attachment: attachment)
+        cell.settingState.accessibilityLabel = "Opens a selection screen"
+    }
+
     func addRowChevron(to cell: SettingsTableViewCell, action: Selector) {
         let chevron = UIButton(type: .system)
         chevron.tag = Self.swipeInfoTag

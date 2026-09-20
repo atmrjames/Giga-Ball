@@ -74,7 +74,7 @@ class BackgroundSelectViewController: UIViewController, UICollectionViewDelegate
                                           forCellWithReuseIdentifier: "iconCell")
         // Collection view setup
 
-        pageControl.numberOfPages = GameBackground.allCases.count
+        pageControl.numberOfPages = GameBackground.inDisplayOrder.count
         pageControl.isUserInteractionEnabled = false
         // The dots say which of the four is showing, and that there are four. The picture
         // itself is how you move between them
@@ -148,8 +148,8 @@ class BackgroundSelectViewController: UIViewController, UICollectionViewDelegate
         // lands on a copy of what is at the other, and the strip is silently moved to the real
         // one while it is standing still - so the row has no ends to run into and the wrap is
         // never seen happening
-        let strip = [GameBackground.allCases.last!] + GameBackground.allCases
-            + [GameBackground.allCases.first!]
+        let strip = [GameBackground.inDisplayOrder.last!] + GameBackground.inDisplayOrder
+            + [GameBackground.inDisplayOrder.first!]
 
         for option in strip {
             let layer = GameBackgroundView()
@@ -263,7 +263,9 @@ class BackgroundSelectViewController: UIViewController, UICollectionViewDelegate
     /// Where a background sits in the strip, which is one along from its own index because of
     /// the copy at the front.
     private func page(of background: GameBackground) -> Int {
-        background.rawValue + 1
+        background.displayIndex + 1
+        // The picker's order, not the stored one (round 329d). These were the same number
+        // until James asked for the list to be arranged the way a player would look for it
     }
 
     /// Which page of the strip is showing, copies included.
@@ -274,9 +276,9 @@ class BackgroundSelectViewController: UIViewController, UICollectionViewDelegate
 
     /// Which background a page of the strip is, reading the copies as what they are copies of.
     private func background(atPage page: Int) -> GameBackground {
-        let count = GameBackground.allCases.count
+        let count = GameBackground.inDisplayOrder.count
         let index = ((page - 1) % count + count) % count
-        return GameBackground.allCases[index]
+        return GameBackground.inDisplayOrder[index]
     }
 
     /// Takes whichever background the strip came to rest on.

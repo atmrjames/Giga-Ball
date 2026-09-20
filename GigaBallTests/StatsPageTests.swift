@@ -544,11 +544,47 @@ final class PerModeTimeTests: XCTestCase {
     /// listed under nothing is invisible on that page however correct its data is.
     func testEveryAchievementIsFiledUnderAtLeastOneTab() {
         let count = LevelPackSetup().achievementsNameArray.count
+        let all = AchievementCatalogue.indices(for: nil, count: count)
         for index in 0..<count {
-            let listed = AchievementCatalogue.modes(for: index).isEmpty == false
-                || AchievementCatalogue.dailyOnly.contains(index)
-            XCTAssertTrue(listed, "achievement \(index) "
+            XCTAssertTrue(all.contains(index), "achievement \(index) "
                           + "\"\(LevelPackSetup().achievementsNameArray[index])\" is on no tab")
+        }
+    }
+
+    /// **A mode's tab lists what only that mode gives you** (James, round 329d: "in those
+    /// categories, just show the [achievements] only available in those game modes... right
+    /// now, for example, Pokey shows up in all the categories. I think it's better for it to
+    /// end up in the All category only").
+    ///
+    /// Pokey is "slow the ball to its minimum speed", which is a thing any mode can do - and
+    /// the default used to be all three play modes, so most of the page was repeated under
+    /// Classic, Endless and Mayhem and each tab was a slightly shorter copy of All.
+    func testAnAchievementEarnableAnywhereIsUnderAllAlone() {
+        guard let pokey = LevelPackSetup().achievementsNameArray.firstIndex(of: "Pokey") else {
+            return XCTFail("Pokey has left the catalogue")
+        }
+        for mode in [GameMode.classic, .endless, .endlessII, .daily] {
+            XCTAssertFalse(AchievementCatalogue.belongs(pokey, to: mode),
+                           "Pokey is earnable anywhere, so it is nobody's own - \(mode)")
+        }
+        let count = LevelPackSetup().achievementsNameArray.count
+        XCTAssertTrue(AchievementCatalogue.indices(for: nil, count: count).contains(pokey),
+                      "and All is where it still is")
+    }
+
+    /// The Daily tab is the daily's own ten, not the nineteen a daily run may earn.
+    ///
+    /// `earnableInDaily` answers a different question - what a day is allowed to award - and
+    /// almost everything in it is earnable in an ordinary run too, which is exactly why it made
+    /// a poor tab.
+    func testTheDailyTabIsTheDailysOwnRatherThanEverythingADayCanEarn() {
+        let shared = AchievementCatalogue.earnableInDaily
+            .subtracting(AchievementCatalogue.dailyOnly)
+        XCTAssertFalse(shared.isEmpty, "this test is about the difference between the two sets")
+        for index in shared {
+            XCTAssertFalse(AchievementCatalogue.belongs(index, to: .daily),
+                           "achievement \(index) can be earned in an ordinary run, so the "
+                           + "Daily tab is not where a player should find it")
         }
     }
 

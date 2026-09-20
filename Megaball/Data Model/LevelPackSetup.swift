@@ -177,7 +177,7 @@ class LevelPackSetup {
     /// Read off `GameBackground` rather than written out again here. What a background is,
     /// what it is called and how it is painted are one fact, and the selection screen, the
     /// settings row and the scene all have to agree on it.
-    let backgroundNameArray: [String] = GameBackground.allCases.map(\.name)
+    let backgroundNameArray: [String] = GameBackground.inDisplayOrder.map(\.name)
 
     let appIconNameArray: [String] = [
         "Purple",
@@ -656,7 +656,21 @@ class LevelPackSetup {
     // a placeholder that matches the set is worth more during design than a slot with the
     // wrong picture in it - see PowerUpIcon
     
-    let powerUpCorrectOrderArray = [0,1,2,3,4,5,8,9,14,15,16,17,18,19,6,7,10,11,12,13,20,21,22,23,26,27,25,24,28,29,30,31,32,33,34,35,36,37,38,39,40,41,42,43,44,45,46,47,48,49,50,51,52,53,54,63,55,56,64,65,57,58,59,60,61,62]
+    /// The order the reference pages list power-ups in.
+    ///
+    /// **The Mayhem half is grouped by what a power-up does to the game** (James, round 329d:
+    /// "put new power-ups in more logical order", with the groups written out). The field
+    /// first - the ones that add, take away or move bricks; then what the ball becomes; then
+    /// the aids that show where it is going; the two that reach up the screen; the paddle, its
+    /// shapes and everything that changes how it bounces; the three that take control away;
+    /// and the lock, the key and the wipe last, because those three are about the others.
+    ///
+    /// The original set keeps the order it has always had. Both halves together are still a
+    /// complete permutation of every index, which a test insists on: an order that quietly
+    /// dropped one would hide a power-up, and from the outside that looks exactly like a
+    /// power-up that does not exist. 58 (Jagged) is retired and sits on the end for that
+    /// reason alone - `referenceOrder` filters it out before anything is shown.
+    let powerUpCorrectOrderArray = [0,1,2,3,4,5,8,9,14,15,16,17,18,19,6,7,10,11,12,13,20,21,22,23,26,27,25,24,39,44,40,63,54,45,43,42,28,61,52,29,30,35,46,41,34,32,33,47,31,62,53,55,56,64,65,57,59,60,38,36,37,51,48,49,50,58]
 
     /// The order the reference page lists power-ups in, with the retired ones left out.
     ///
@@ -699,11 +713,6 @@ class LevelPackSetup {
         let retired = LevelPackSetup.retiredIndices
         return setup.powerUpCorrectOrderArray.filter { retired.contains($0) == false }
     }()
-    // 64 and 65 (the wedges) display beside 55, 56 and 57 (the other shaped faces), so the
-    // reference page shows the five shapes together. 58 (Jagged) stays in the list because
-    // this is a permutation of every index - retired is not removed (round 213)
-    // 63 (Drift Left) displays beside 54 (Drift Right): the reference page should show the
-    // pair as a pair
     let powerUpPackOrderArray = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,2,2,3,3,4,4,5,5,6,6,7,7,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
     // Multi-Ball is last in the list and belongs to no pack. It is not unlocked by finishing
     // one - it exists only in Endless 2.0, which every player already has

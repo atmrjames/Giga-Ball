@@ -155,8 +155,14 @@ enum AchievementCatalogue {
         if bothEndlessModes.contains(index) { return [.endless, .endlessII] }
         if endlessOnly.contains(index) { return [.endless] }
         if classicOnly.contains(index) { return [.classic] }
-        return [.classic, .endless, .endlessII]
+        return []
     }
+    // **An achievement earnable anywhere belongs to no tab but All** (James, round 329d, with
+    // Pokey as his example: slow the ball to its minimum speed, which every mode can do). The
+    // default used to be all three play modes, so two thirds of the page was repeated under
+    // Classic, Endless and Mayhem and a player looking for "what does Mayhem have" was reading
+    // mostly the same list they had just read under Classic. An empty set is the honest
+    // answer to "which mode is this one's own", and All is where everything still is
     // **Two faults James found by reading the page** (round 318: "remove the endless mode
     // achievements from showing up in the endless mayhem section - check the other sections to
     // make sure they only show achievements available in those game modes").
@@ -200,8 +206,16 @@ enum AchievementCatalogue {
     /// for everything, and the note under the empty tab explained why; the daily has its own set
     /// now, so the tab has something to show.
     static func belongs(_ index: Int, to mode: GameMode) -> Bool {
-        mode == .daily ? earnableInDaily.contains(index) : modes(for: index).contains(mode)
+        mode == .daily ? dailyOnly.contains(index) : modes(for: index).contains(mode)
     }
+    // **The daily's tab lists the daily's own, not everything a daily can earn** (James, round
+    // 329d: "in those categories, just show the [achievements] only available in those game
+    // modes... Pokey shows up in all the categories. I think it's better for it to end up in
+    // the All category only"). `earnableInDaily` is nineteen of round 310's additions, and
+    // almost all of them are earnable in an ordinary run too - so listing them here put the
+    // same achievement under four tabs and made every tab a slightly shorter copy of All.
+    // What a tab is for is what only that mode gives you. `earnableInDaily` still decides what
+    // a daily run may *award*, which is a different question and unchanged
 
     /// The indices shown under a mode, in the order the arrays hold them.
     static func indices(for mode: GameMode?, count: Int) -> [Int] {

@@ -37,6 +37,27 @@ enum GameBackground: Int, CaseIterable {
     /// sibling of, so it fits any screen without an asset per device.
     case deepGreen = 9
 
+    /// The order the picker offers them in.
+    ///
+    /// **Separate from `allCases`, and it has to be** (James, round 329d: "put game backgrounds
+    /// in a more logical order"). `allCases` is in `rawValue` order, the raw value is what
+    /// `backgroundSetting` stores, and a stored setting can never be renumbered - so the list
+    /// had grown in the order the artwork was drawn rather than in any order a player would
+    /// look for it in: Deep Purple before Black, Deep Green last of all because it was newest.
+    ///
+    /// His order, and the reasoning is visible in it: the three plain grounds first, then the
+    /// three deep colours together, then the pictures.
+    static let inDisplayOrder: [GameBackground] = [
+        .classic, .solid, .black,
+        .gradient, .deepBlue, .deepGreen,
+        .starrySky, .glow, .clouds, .prism,
+    ]
+
+    /// Where this one sits in the picker.
+    var displayIndex: Int {
+        GameBackground.inDisplayOrder.firstIndex(of: self) ?? rawValue
+    }
+
     /// The setting as it is stored, falling back to Classic for a value that no longer names
     /// anything - which is what an older build's setting looks like after a background is
     /// removed, and what a corrupted default looks like at any time.

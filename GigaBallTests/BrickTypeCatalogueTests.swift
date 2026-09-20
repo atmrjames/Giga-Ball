@@ -388,3 +388,98 @@ final class BrickInfoPageRenderTests: XCTestCase {
         print("\n  Every picture on the brick information page: \(file.path)\n")
     }
 }
+
+/// The shaped bricks on the reference page, and the turning one.
+///
+/// **James, round 329d, with a screenshot of the page in the Retro theme: "brick shapes with
+/// retro mode use clipped versions of normal brick, not custom designed bricks."** The page has
+/// had a fallback since the shapes were first drawn - an ordinary brick clipped to the shape's
+/// own path - for shapes whose artwork had not landed. It had landed, twice over, and the page
+/// went on clipping because the name it asked for was the plain one while the delivered
+/// pictures carry an orientation suffix.
+final class BrickPageShapeArtTests: XCTestCase {
+
+    private func store(retro: Bool) -> InMemoryKeyValueStore {
+        let defaults = InMemoryKeyValueStore()
+        defaults.set(retro ? 1 : 0, forKey: "brickSetting")
+        return defaults
+    }
+
+    /// Every shape has a drawn picture in both themes, so none of them is clipped any more.
+    func testEveryShapeHasItsOwnArtworkInBothThemes() {
+        for style in [EndlessIIStyle.rounded, .convex, .concave, .diamond, .wedge] {
+            for retro in [false, true] {
+                XCTAssertNotNil(BrickTypeIcons.drawnFace(for: style, settings: store(retro: retro)),
+                                "\(style) has no drawn face in the \(retro ? "Retro" : "classic") "
+                                + "theme, so the page is still clipping a rectangle to its shape")
+            }
+        }
+    }
+
+    /// And the two themes are different pictures, which is the point of asking the theme.
+    func testTheRetroThemeGetsItsOwnShapes() {
+        for style in [EndlessIIStyle.rounded, .convex, .concave, .diamond, .wedge] {
+            let classic = BrickTypeIcons.drawnFace(for: style, settings: store(retro: false))
+            let retro = BrickTypeIcons.drawnFace(for: style, settings: store(retro: true))
+            XCTAssertNotEqual(classic?.pngData(), retro?.pngData(),
+                              "\(style) draws the same picture in both themes")
+        }
+    }
+}
+
+/// The turning brick keeps its lighting where the light is.
+///
+/// **James, round 329d: "for the spinning brick with retro or indestructible graphic, fade in
+/// and out the same way it does in the game so the brick lighting looks right regardless of the
+/// way up of the brick - and make sure it doesn't end up semi-transparent in between."**
+///
+/// The scene has done this since round 312 and the page turned one picture instead, so a brick
+/// lit along its top edge spent half of every revolution lit from below.
+final class BrickPageSpinningFadeTests: XCTestCase {
+
+    private func icon(for art: BrickTypeArt) -> UIImageView {
+        let view = UIImageView(image: BrickTypeIcons.image(for: art))
+        view.frame = CGRect(x: 0, y: 0, width: 60, height: 40)
+        BrickTypeIcons.animate(view, as: art)
+        return view
+    }
+
+    private func partner(of view: UIImageView) -> CALayer? {
+        (view.layer.sublayers ?? []).first { $0.name == "brickSpinPartner" }
+    }
+
+    func testTheTurningBrickCarriesASecondPicture() throws {
+        let view = icon(for: .style(.spinning))
+        let partner = try XCTUnwrap(partner(of: view),
+                                    "nothing is cross-fading, so the lighting turns with the brick")
+        XCTAssertNotNil(partner.contents, "the second picture is empty")
+        XCTAssertNotNil(partner.animation(forKey: "brickSpinPartner"),
+                        "the second picture never fades")
+    }
+
+    /// The one underneath stays solid: two half-opaque layers do not make a whole one.
+    func testTheBrickIsNeverSeeThrough() throws {
+        let view = icon(for: .style(.spinning))
+        XCTAssertNil(view.layer.animation(forKey: "brickMotion").flatMap {
+            ($0 as? CABasicAnimation)?.keyPath == "opacity" ? $0 : nil
+        }, "the picture underneath is fading as well, which is what makes a brick go see-through")
+
+        let fade = try XCTUnwrap(partner(of: view)?
+            .animation(forKey: "brickSpinPartner") as? CAKeyframeAnimation)
+        let values = try XCTUnwrap(fade.values as? [NSNumber]).map { CGFloat($0.floatValue) }
+        XCTAssertEqual(values.first ?? -1, 0, accuracy: 0.001,
+                       "at no rotation the brick is its own picture")
+        XCTAssertEqual(values.max() ?? -1, 1, accuracy: 0.01,
+                       "at half a turn it is entirely the other one")
+        XCTAssertEqual(values[values.count/4], 0.5, accuracy: 0.05,
+                       "and the two are equal on its side, where neither lighting is right")
+    }
+
+    /// A brick that does not turn carries no second picture, including one in a reused cell.
+    func testACellReusedForAStillBrickDropsTheSecondPicture() {
+        let view = icon(for: .style(.spinning))
+        XCTAssertNotNil(partner(of: view))
+        BrickTypeIcons.animate(view, as: .style(.flashing))
+        XCTAssertNil(partner(of: view), "the turning brick's second picture outlived it")
+    }
+}
