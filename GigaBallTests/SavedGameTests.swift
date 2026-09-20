@@ -1304,7 +1304,7 @@ final class ResumeTransitionTests: XCTestCase {
         func showConfirm(_ confirm: GigaBallConfirm) {}
         func showInbetweenView(levelNumber: Int, score: Int, packNumber: Int,
                                levelTimerBonus: Int, firstLevel: Bool, numberOfLevels: Int,
-                               levelScore: Int) {}
+                               levelScore: Int, livesRemaining: Int) {}
     }
 
     private let suiteName = "GigaBallTests.ResumeTransitionTests"

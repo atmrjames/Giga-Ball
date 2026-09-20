@@ -60,8 +60,18 @@ final class ScreenLayoutAuditTests: XCTestCase {
 
     private var screens: [UIViewController] = []
 
+    override func setUp() {
+        super.setUp()
+        DailyChallengeSession.shared.closedDayNeedsAnnouncing = false
+        // **Cleared, or the screen under audit is wearing a pop-up.** A daily resumed after its
+        // day has closed says so over the pause screen, which is right in the game and is not
+        // what this measures - and the flag is one shot on a shared session, so whichever test
+        // ran before this one decides whether it is set
+    }
+
     override func tearDown() {
         DailyChallengeSession.shared.active = nil
+        DailyChallengeSession.shared.closedDayNeedsAnnouncing = false
         screens.removeAll()
         super.tearDown()
     }
@@ -378,5 +388,95 @@ final class DailyIntroTwistRoomTests: XCTestCase {
                                     "the run kind is sitting on top of the twists")
         XCTAssertLessThanOrEqual(below.maxY, screen.view.bounds.height + 0.5,
                                  "and it has been pushed off the bottom of the screen")
+    }
+}
+
+/// The between-levels screen's score block.
+///
+/// **James, round 332's layout notes: "put level score and speed bonus on the same line next to
+/// one another"**, and the total under both.
+final class BetweenLevelsScoreBlockTests: XCTestCase {
+
+    private var screens: [UIViewController] = []
+
+    override func tearDown() {
+        screens.removeAll()
+        super.tearDown()
+    }
+
+    private func screen(bonus: Int, size: CGSize = CGSize(width: 402, height: 874))
+        -> InbetweenViewController? {
+        let board = UIStoryboard(name: "Main", bundle: Bundle(for: InbetweenViewController.self))
+        guard let screen = board.instantiateViewController(withIdentifier: "inbetweenView")
+                as? InbetweenViewController else { return nil }
+        screen.levelNumber = 1
+        screen.packNumber = 2
+        screen.levelScore = 1200
+        screen.levelScoreBonus = bonus
+        screen.totalScore = 4200
+        screens.append(screen)
+        screen.loadViewIfNeeded()
+        screen.view.frame = CGRect(origin: .zero, size: size)
+        for _ in 0..<3 {
+            screen.view.setNeedsLayout()
+            screen.view.layoutIfNeeded()
+        }
+        return screen
+    }
+
+    func testTheScoreAndTheBonusShareALine() throws {
+        let screen = try XCTUnwrap(self.screen(bonus: 300),
+                                   "the storyboard no longer has an inbetweenView")
+        let score = screen.levelScoreTitle.convert(screen.levelScoreTitle.bounds, to: screen.view)
+        let bonus = screen.speedBonusTitle.convert(screen.speedBonusTitle.bounds, to: screen.view)
+
+        XCTAssertEqual(score.midY, bonus.midY, accuracy: 1,
+                       "they are a pair, and a pair reads as one line")
+        XCTAssertLessThanOrEqual(score.maxX, bonus.minX,
+                                 "the score is the left column and the bonus the right")
+        XCTAssertLessThan(score.maxX, screen.view.bounds.midX + 0.5)
+        XCTAssertGreaterThan(bonus.minX, screen.view.bounds.midX - 0.5)
+    }
+
+    /// The total is under both of them, and is the one that says what it is.
+    func testTheTotalSitsUnderThePair() throws {
+        let screen = try XCTUnwrap(self.screen(bonus: 300))
+        let bonus = screen.speedBonusLabel.convert(screen.speedBonusLabel.bounds, to: screen.view)
+        let total = screen.totalScoreTitle.convert(screen.totalScoreTitle.bounds, to: screen.view)
+
+        XCTAssertGreaterThanOrEqual(total.minY, bonus.maxY - 0.5)
+        XCTAssertEqual(screen.totalScoreTitle.text, "Total Score")
+        XCTAssertGreaterThan(screen.totalScoreTitle.font.pointSize,
+                             screen.levelScoreTitle.font.pointSize,
+                             "bigger than the two above it, and no more than that")
+    }
+
+    /// The rack is said at the bottom, above the tap line, which sits where a play button would.
+    func testTheLivesAreSaidAboveTheTapLine() throws {
+        let screen = try XCTUnwrap(self.screen(bonus: 300))
+        screen.livesRemaining = 2
+        let lives = try XCTUnwrap(
+            screen.view.subviews.first?.subviews.compactMap { $0 as? UILabel }
+                .first { ($0.text ?? "").contains("lives left") || ($0.text ?? "") == "1 life left" }
+                ?? screen.tapLabel.superview?.subviews.compactMap { $0 as? UILabel }
+                    .first { ($0.text ?? "").contains("lives left") || ($0.text ?? "") == "1 life left" },
+            "the between-levels screen never says how many balls are left")
+
+        let rack = lives.convert(lives.bounds, to: screen.view)
+        let tap = screen.tapLabel.convert(screen.tapLabel.bounds, to: screen.view)
+        XCTAssertLessThanOrEqual(rack.maxY, tap.minY + 0.5, "the rack sits above the tap line")
+        XCTAssertLessThanOrEqual(tap.maxY, screen.view.bounds.height - 0.5)
+        XCTAssertGreaterThan(tap.maxY, screen.view.bounds.height - 120,
+                             "and the tap line is down where a play button would be")
+    }
+
+    /// A level with no speed bonus keeps the stack: a lone column against an empty half reads
+    /// worse than the arrangement it replaced.
+    func testALevelWithNoBonusIsUnchanged() throws {
+        let screen = try XCTUnwrap(self.screen(bonus: 0))
+        XCTAssertTrue(screen.speedBonusTitle.isHidden)
+        let score = screen.levelScoreTitle.convert(screen.levelScoreTitle.bounds, to: screen.view)
+        XCTAssertEqual(score.midX, screen.view.bounds.midX, accuracy: 1,
+                       "still centred, because there is nothing beside it")
     }
 }

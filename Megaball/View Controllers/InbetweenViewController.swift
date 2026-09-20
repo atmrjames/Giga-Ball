@@ -65,6 +65,9 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
     @IBOutlet var totalScoreLabel: UILabel!
     
     @IBOutlet var tapLabel: UILabel!
+
+    /// How many balls are left, handed over with the rest of the run's numbers.
+    var livesRemaining: Int = 0
     
     
     @IBOutlet var totalScoreNoSpeedBonus: NSLayoutConstraint!
@@ -174,10 +177,12 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
             speedBonusLabel.isHidden = false
             totalScoreNoSpeedBonus.isActive = false
             totalScoreSpeedBonus.isActive = true
+            putTheScoreAndBonusOnOneLine()
         }
         
         packAndLevelConstriant.isActive = false
         completeLabelConstraint.isActive = true
+        showTheLivesLeft()
         
         NotificationCenter.default.addObserver(self, selector: #selector(self.refreshViewForSyncNotificationKeyReceived), name: .refreshViewForSync, object: nil)
         // Sets up an observer to watch for changes to the NSUbiquitousKeyValueStore pushed by the main menu screen
@@ -377,6 +382,110 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
     }
     
     
+    /// The rack, said where the eye already is.
+    ///
+    /// **James, round 332's layout notes: "show the lives left at the bottom near the tap to
+    /// continue - move the tap to continue down, near where the play button would be on other
+    /// views."** Between levels is the one screen in the run that never said how many balls
+    /// were left, and it is the screen a player is on when they are deciding whether the next
+    /// level is worth starting now.
+    ///
+    /// Built here rather than in the storyboard for the reason the pause card's own lives line
+    /// is: a label added in code has no fixed height to run out of, and this one is hidden
+    /// outright in the modes that have no rack.
+    private func showTheLivesLeft() {
+        guard livesLine == nil, let host = tapLabel.superview else { return }
+        moveTheTapLineDown()
+
+        let label = UILabel()
+        label.textAlignment = .center
+        label.font = tapLabel.font
+        label.textColor = tapLabel.textColor
+        label.translatesAutoresizingMaskIntoConstraints = false
+        label.text = livesRemaining == 1 ? "1 life left" : "\(livesRemaining) lives left"
+        label.isHidden = levelNumber == 0
+        // An endless run has one ball and no rack, and saying "0 lives left" on the one screen
+        // it never reaches would be wrong twice over
+        host.addSubview(label)
+        NSLayoutConstraint.activate([
+            label.centerXAnchor.constraint(equalTo: tapLabel.centerXAnchor),
+            label.bottomAnchor.constraint(equalTo: tapLabel.topAnchor, constant: -10),
+        ])
+        livesLine = label
+    }
+
+    private weak var livesLine: UILabel?
+
+    /// Puts the tap line where the play button sits on every other screen.
+    ///
+    /// The storyboard holds it 134 points off the bottom, which was the right place when it was
+    /// the only thing down there. The pause and game-over screens put their button row at 92,
+    /// and a player's thumb learns one place rather than two.
+    private func moveTheTapLineDown() {
+        guard let host = tapLabel.superview else { return }
+        for constraint in host.constraints
+        where constraint.secondItem === tapLabel && constraint.firstAttribute == .bottom {
+            constraint.constant = UIViewController.inGameBottomRowInset
+        }
+    }
+
+    private var sideBySideScores = false
+
+    /// Puts the level score and the speed bonus beside each other rather than one under the
+    /// other.
+    ///
+    /// **James, round 332's layout notes: "put level score and speed bonus on the same line
+    /// next to one another."** Two numbers stacked read as a list; side by side they read as a
+    /// pair, which is what they are - and the total underneath then has something to be the
+    /// total *of*. The daily's breakdown on the pause card has been arranged this way since
+    /// round 160 and this is the same arrangement, so the two screens agree.
+    ///
+    /// The storyboard gives all four labels the container's full width and centres them, which
+    /// is what has to go: each pair takes half the width instead, with fourteen points either
+    /// side of the middle. Found by walking the host's constraints rather than by outlets,
+    /// because a constraint between siblings belongs to the view above them and there are four
+    /// of these that nothing in code has ever needed a name for.
+    ///
+    /// Once per screen, and only where there is a bonus to show: a level with no speed bonus
+    /// hides those two labels, and a lone column against an empty half reads worse than the
+    /// stack it replaced.
+    private func putTheScoreAndBonusOnOneLine() {
+        guard sideBySideScores == false, levelScoreBonus > 0,
+              let host = levelScoreTitle.superview else { return }
+        sideBySideScores = true
+
+        let left: [UILabel] = [levelScoreTitle, levelScoreLabel]
+        let right: [UILabel] = [speedBonusTitle, speedBonusLabel]
+
+        for constraint in host.constraints {
+            guard let first = constraint.firstItem as? UILabel else { continue }
+            if left.contains(first), constraint.firstAttribute == .centerX {
+                constraint.isActive = false
+            }
+            if right.contains(first),
+               constraint.firstAttribute == .centerX || constraint.firstAttribute == .leading {
+                constraint.isActive = false
+            }
+            if first === speedBonusTitle, constraint.firstAttribute == .top,
+               constraint.secondItem === levelScoreLabel {
+                constraint.isActive = false
+                // The link that put the bonus under the score. Everything below still hangs
+                // off the bonus's own label, which is now beside the score rather than under it
+            }
+        }
+
+        NSLayoutConstraint.activate([
+            levelScoreTitle.trailingAnchor.constraint(equalTo: host.centerXAnchor, constant: -14),
+            levelScoreLabel.trailingAnchor.constraint(equalTo: host.centerXAnchor, constant: -14),
+            levelScoreLabel.leadingAnchor.constraint(equalTo: levelScoreTitle.leadingAnchor),
+            speedBonusTitle.leadingAnchor.constraint(equalTo: host.centerXAnchor, constant: 14),
+            speedBonusTitle.trailingAnchor.constraint(equalTo: host.trailingAnchor, constant: -10),
+            speedBonusLabel.leadingAnchor.constraint(equalTo: speedBonusTitle.leadingAnchor),
+            speedBonusLabel.trailingAnchor.constraint(equalTo: speedBonusTitle.trailingAnchor),
+            speedBonusTitle.topAnchor.constraint(equalTo: levelScoreTitle.topAnchor),
+        ])
+    }
+
     private var levelEmphasisSwapped = false
 
     private func swapTheLevelEmphasis() {

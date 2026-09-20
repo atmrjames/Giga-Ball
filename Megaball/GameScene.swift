@@ -48,7 +48,7 @@ protocol GameViewControllerDelegate: AnyObject {
 	func moveToMainMenu()
 	func showPauseMenu(levelNumber: Int, numberOfLevels: Int, score: Int, packNumber: Int, height: Int, sender: String, gameoverBool: Bool, newItemsBool: Bool, previousHighscore: Int, livesRemaining: Int, levelScore: Int, levelTimerBonus: Int)
 	func showConfirm(_ confirm: GigaBallConfirm)
-	func showInbetweenView(levelNumber: Int, score: Int, packNumber: Int, levelTimerBonus: Int, firstLevel: Bool, numberOfLevels: Int, levelScore: Int)
+	func showInbetweenView(levelNumber: Int, score: Int, packNumber: Int, levelTimerBonus: Int, firstLevel: Bool, numberOfLevels: Int, levelScore: Int, livesRemaining: Int)
 	var selectedLevel: Int? { get set }
 	var numberOfLevels: Int? { get set }
 	var levelSender: String? { get set }
@@ -8039,7 +8039,7 @@ laserTimer?.invalidate()
     }
 	
 	func showInbetweenView() {
-		gameViewControllerDelegate?.showInbetweenView(levelNumber: levelNumber, score: totalScore, packNumber: packNumber, levelTimerBonus: levelTimerBonus, firstLevel: firstLevel, numberOfLevels: numberOfLevels, levelScore: levelScore)
+		gameViewControllerDelegate?.showInbetweenView(levelNumber: levelNumber, score: totalScore, packNumber: packNumber, levelTimerBonus: levelTimerBonus, firstLevel: firstLevel, numberOfLevels: numberOfLevels, levelScore: levelScore, livesRemaining: numberOfLives)
 		// Pass over data to inbetween view
 	}
 

@@ -187,6 +187,13 @@ extension UIViewController {
     static let inGameLogoHeight: CGFloat = 36
     static let inGameModeIconGap: CGFloat = 4
 
+    /// How far the bottom row of buttons sits above the bottom of an in-game screen.
+    ///
+    /// The pause and game-over screens put their button row here, and round 332's layout notes
+    /// asked the between-levels screen's "tap to continue" to land in the same place: "move the
+    /// tap to continue down, near where the play button would be on other views".
+    static let inGameBottomRowInset: CGFloat = 92
+
     /// Keeps the mode icon above whichever of the two title lines is actually showing.
     ///
     /// **James, round 332: "move endless mode label closer to icon", and the same note again
