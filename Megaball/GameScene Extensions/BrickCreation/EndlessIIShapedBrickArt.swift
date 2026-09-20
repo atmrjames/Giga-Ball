@@ -428,8 +428,32 @@ extension GameScene {
         if sprite.texture != shown { sprite.texture = shown }
         if sprite.size != cell { sprite.size = cell }
         if sprite.position != centre { sprite.position = centre }
-        sprite.color = brick.color
-        sprite.colorBlendFactor = brick.colorBlendFactor
+
+        if brick.colorBlendFactor < 1 || brick.color.cgColor.alpha > 0 {
+            sprite.color = brick.color
+            sprite.colorBlendFactor = brick.colorBlendFactor
+            brick.color = .clear
+            brick.colorBlendFactor = 1
+        }
+        // **The tint moves to the face and the sprite underneath stops drawing** (James, round
+        // 332: "some brick shapes when flashing have another brick shape underneath them that
+        // is revealed when they are semi-transparent - is there anyway around this?").
+        //
+        // There is, and round 299 wrote down why the obvious ways are not it. Flashing fades
+        // the brick *node*; a node's alpha is inherited by its children; so the face and the
+        // sprite hiding behind it fade together, and where they overlap two translucent layers
+        // composite denser than either - which is the rectangle he can see inside a fading
+        // Diamond. `brick.size = .zero` does stop the sprite drawing and breaks resume, because
+        // a shaped brick's offset is recovered from `(0.5 - anchorPoint) * size`.
+        //
+        // What the sprite is actually *for* is its texture: every brick in the game is
+        // identified by comparing `brick.texture`, and the row scans, the hit path and the
+        // save all read it. None of them reads its colour. So the colour goes to the face,
+        // which is the thing the player sees, and the sprite keeps the texture it is known by
+        // while drawing nothing at all: `colorBlendFactor` of one against a clear colour.
+        //
+        // Self-healing rather than remembered: anything that re-tints the brick later leaves a
+        // colour with alpha in it, this sees that on the next refresh, and hands it on
 
         sprite.xScale = oriented && mirrored ? -1 : 1
         sprite.yScale = oriented && flipped ? -1 : 1

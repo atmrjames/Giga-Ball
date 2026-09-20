@@ -609,6 +609,53 @@ final class EndlessIIFaceArtTests: XCTestCase {
                      "and the shape stops painting, or the crop is drawn underneath")
     }
 
+    /// **The rectangle that shows through a fading brick** (James, round 332: "some brick
+    /// shapes when flashing have another brick shape underneath them that is revealed when they
+    /// are semi-transparent").
+    ///
+    /// Flashing fades the brick node, a node's alpha is inherited by its children, and the
+    /// sprite hiding behind the face fades with it - so where the two overlap, two translucent
+    /// layers composite denser than either. The sprite is there for its *texture*, which is how
+    /// every brick in the game is identified; nothing reads its colour. So the colour goes to
+    /// the face and the sprite draws nothing.
+    func testTheSpriteBehindADrawnFaceDrawsNothing() {
+        let scene = retro()
+        let subject = brick(scene)
+        subject.color = .red
+        subject.colorBlendFactor = 1
+        scene.makeFace(.wedge, on: subject)
+
+        guard let shape = subject.childNode(withName: GameScene.brickFaceName) as? SKShapeNode,
+              let art = shape.childNode(withName: GameScene.faceArtName) as? SKSpriteNode
+        else { return XCTFail("no drawn art") }
+
+        XCTAssertEqual(art.color, .red, "the face wears the tint now")
+        XCTAssertEqual(art.colorBlendFactor, 1, accuracy: 0.001)
+        XCTAssertEqual(subject.color.cgColor.alpha, 0, accuracy: 0.001,
+                       "and the sprite underneath has nothing left to show through")
+        XCTAssertEqual(subject.colorBlendFactor, 1, accuracy: 0.001)
+        XCTAssertNotNil(subject.texture,
+                        "it keeps the texture it is identified by, which is what it is for")
+    }
+
+    /// And a brick re-tinted later hands the new colour on rather than keeping it hidden.
+    func testANewTintReachesTheFace() {
+        let scene = retro()
+        let subject = brick(scene)
+        scene.makeFace(.convex, on: subject)
+
+        subject.color = .green
+        subject.colorBlendFactor = 1
+        scene.resizeEndlessIIFace(subject, to: CGSize(width: 40, height: 20))
+
+        guard let shape = subject.childNode(withName: GameScene.brickFaceName) as? SKShapeNode,
+              let art = shape.childNode(withName: GameScene.faceArtName) as? SKSpriteNode
+        else { return XCTFail("no drawn art") }
+        XCTAssertEqual(art.color, .green, "a multi-hit step changes the colour, and it shows")
+        XCTAssertEqual(subject.color.cgColor.alpha, 0, accuracy: 0.001,
+                       "and the sprite is cleared again")
+    }
+
     func testATextureOfAnySizeLandsTheSame() {
         // The property that makes the fix a fix: the drawn size comes from the cell, so a
         // texture redrawn at twice the resolution is the same picture in the same place
