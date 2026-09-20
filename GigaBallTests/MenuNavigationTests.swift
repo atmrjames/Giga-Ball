@@ -1398,6 +1398,41 @@ final class SceneTeardownTests: XCTestCase {
                      "a cancelled action runs no completion, which is the whole of the fix")
     }
 
+    /// **The crash James could reproduce every time** (round 332: "app keeps crashing when
+    /// exiting one game mode and starting another - this is a reliable and easily repeatable
+    /// crash, it happens every time").
+    ///
+    /// A Mayhem run ends, Home takes the menus back, Classic starts - and the new run's level
+    /// intro posts `continueToNextLevel` as it clears, which the *old* run's `InbetweenLevels`
+    /// was still registered for. Its handler's first line reads `scene`, held `unowned`, and
+    /// the old scene has gone. A state's `deinit` cannot be the answer: `GKStateMachine` holds
+    /// its states and each state holds its machine back, so the pair outlives the scene that
+    /// made them. Leaving the run has to take them off the notification centre.
+    func testAStateStopsListeningWhenTheRunIsLeft() {
+        let scene = self.scene()
+        scene.gameState.enter(InbetweenLevels.self)
+        XCTAssertTrue(scene.gameState.currentState is InbetweenLevels,
+                      "the state the game-over card is shown from")
+
+        scene.endEverythingInFlight()
+        NotificationCenter.default.post(name: .continueToNextLevel, object: nil)
+
+        XCTAssertTrue(scene.gameState.currentState is InbetweenLevels,
+                      "a left run answered the next run's intro, which is the crash")
+    }
+
+    /// And the scene's own eight registrations go the same way.
+    func testTheSceneStopsListeningWhenTheRunIsLeft() {
+        let scene = self.scene()
+        scene.gameState.enter(Playing.self)
+        scene.endEverythingInFlight()
+
+        NotificationCenter.default.post(name: .restartGameNotificiation, object: nil)
+
+        XCTAssertFalse(scene.gameState.currentState is PreGame,
+                       "a left run restarted itself from a notification meant for the next one")
+    }
+
     func testLeavingCancelsWhatTheChildrenAreDoing() {
         let scene = self.scene()
         scene.addChild(scene.ball)

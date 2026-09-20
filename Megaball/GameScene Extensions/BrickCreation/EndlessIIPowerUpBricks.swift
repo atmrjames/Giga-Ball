@@ -118,14 +118,16 @@ extension GameScene {
         // most of the field for as long as they take to descend - and a second one arriving
         // while the first is still in the way turns a decision into a siege
         guard let index = endlessIIPowerUpForBrick() else { return nil }
-        guard index != GameScene.wipePowerUpIndex || endlessIIWipeMayDrop else { return nil }
-        // **Asked again here** (James, round 327: "Wipe power up should only show when a
-        // power up is active"). `applyEndlessRowPowerUpWeights` zeroes Wipe's weight while
-        // there is nothing to end, and it runs once per row - so a Wipe chosen for a brick
-        // in a row built while something *was* running still arrives wearing its icon, and
-        // sits in the field long after the thing it would have ended ran out. The weight
-        // answers "may a Wipe be drawn now"; this answers "is this Wipe worth showing", which
-        // is the question a brick that is about to be looked at for the next ten seconds asks
+        guard endlessIIConditionalPowerUpIsStillWorthIt(index) else { return nil }
+        // **Asked again here** (James, round 327 for the Wipe, round 332 for the Lock: "it
+        // should only show up if there are power-ups currently active with enough time left for
+        // it to be collected, otherwise it does nothing and is confusing").
+        // `applyEndlessRowPowerUpWeights` zeroes these weights while there is nothing for them
+        // to act on, and it runs once per row - so one chosen for a brick in a row built while
+        // something *was* running still arrives wearing its icon, and sits in the field long
+        // after the thing it would have acted on ran out. The weight answers "may one be drawn
+        // now"; this answers "is this one worth showing", which is the question a brick that is
+        // about to be looked at for the next ten seconds asks
         guard totalStatsArray.first?.powerUpUnlockedArray.indices.contains(index) == true,
               totalStatsArray[0].powerUpUnlockedArray[index] else { return nil }
         // A power-up the player has not unlocked yet is one they would not recognise, and

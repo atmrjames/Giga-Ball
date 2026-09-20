@@ -872,6 +872,40 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	/// Wipe's place in every power-up array, read off the names rather than typed (round 327).
 	static let wipePowerUpIndex: Int = LevelPackSetup().powerUpNameArray.firstIndex(of: "Wipe") ?? 50
 
+	/// The Lock's and the Key's, the same way (round 332).
+	static let lockPowerUpIndex: Int = LevelPackSetup().powerUpNameArray.firstIndex(of: "Lock") ?? 48
+	static let keyPowerUpIndex: Int = LevelPackSetup().powerUpNameArray.firstIndex(of: "Key") ?? 49
+
+	/// The three power-ups whose worth depends on what the run is doing right now.
+	///
+	/// **James, round 332: "Lock power-up showed up with no active power-ups - it should only
+	/// show up if there are power-ups currently active with enough time left for it to be
+	/// collected, otherwise it does nothing and is confusing."**
+	///
+	/// Each of the three already has a rule - `endlessIIWipeMayDrop`, `endlessIILockMayDrop`,
+	/// `endlessIIKeyMayDrop` - and each rule was asked in one place: `applyEndlessRowPowerUpWeights`,
+	/// which runs **once per row**. That is the whole fault, and round 327 found it for the Wipe
+	/// first: a row built while something was running can still be sitting there a minute later
+	/// with everything long over, and the drop or the brick it chose arrives wearing an icon for
+	/// a power-up that now does nothing. The Lock and the Key were left with the same hole
+	/// because only the Wipe had been reported.
+	///
+	/// So the question is asked again at the two moments something is actually shown - as a
+	/// drop is chosen, and as a power-up brick is built - and asked for all three, through one
+	/// list, so the next conditional power-up cannot be added to only two of the three places.
+	func endlessIIConditionalPowerUpIsStillWorthIt(_ index: Int) -> Bool {
+		switch index {
+		case GameScene.wipePowerUpIndex: return endlessIIWipeMayDrop
+		case GameScene.lockPowerUpIndex: return endlessIILockMayDrop
+		case GameScene.keyPowerUpIndex: return endlessIIKeyMayDrop
+		default: return true
+		}
+	}
+
+	/// The three, for the caller that has to zero weights rather than ask about one index.
+	static let endlessIIConditionalPowerUpIndices: [Int] =
+		[wipePowerUpIndex, lockPowerUpIndex, keyPowerUpIndex]
+
 	/// The size the ball is heading for, which is what Grow Ball, Shrink Ball and the save ask.
 	///
 	/// **The paddle's round 322 fix, given to the ball** (James: "give Ball Size the same target
@@ -2169,6 +2203,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		
 		loadGameData()
 		
+		NotificationCenter.default.addObserver(self, selector: #selector(self.leavingTheRunNotificationKeyReceived), name: .returnFromGameNotification, object: nil)
+		// **Every way out of a run posts this**, and until round 332 nothing in the scene
+		// listened for it. `GameViewController.moveToMainMenu` ends the scene properly, and the
+		// pause menu and the game-over card have a `moveToMainMenu` of their own that does not -
+		// they post the return notifications and leave the scene to whoever holds it. So the
+		// scene listens for the one message all three send and ends itself
         NotificationCenter.default.addObserver(self, selector: #selector(self.pauseNotificationKeyReceived), name: Notification.Name.pauseNotificationKey, object: nil)
         // Sets up an observer to watch for notifications from AppDelegate to check if the app has quit
 		
@@ -2253,11 +2293,34 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	/// work it has removed - so this closes both. Called from `willMove(from:)`, which covers a
 	/// scene being replaced, and directly by `GameViewController` on the way back to the menus,
 	/// which is the path that removes the view without replacing the scene.
+	deinit {
+		NotificationCenter.default.removeObserver(self)
+		// **Eight registrations, and nothing ever took them off** (round 332). A scene observes
+		// the pause key, the restart key, the sync, the level intro's four moments and the
+		// background setting, all through `addObserver(self, selector:)` - which keeps an
+		// unowned, unsafe pointer. Every abandoned run therefore left the notification centre
+		// holding a dangling observer, and the next post of any of those names called into
+		// freed memory. The states do the same for their own in their own `deinit`s
+	}
+
 	func endEverythingInFlight() {
 		laserTimer?.invalidate()
 		laserTimer = nil
 		removeAllActions()
 		enumerateChildNodes(withName: "//*") { node, _ in node.removeAllActions() }
+		gameState.state(forClass: Paused.self)?.stopObserving()
+		gameState.state(forClass: InbetweenLevels.self)?.stopObserving()
+		NotificationCenter.default.removeObserver(self)
+		// **The two states that listen stop listening** (round 332, from James's reliably
+		// repeatable crash: "app keeps crashing when exiting one game mode and starting
+		// another"). A state holds its scene `unowned` and registers for notifications when it
+		// is entered; a scene abandoned while one of them is the current state never exits it,
+		// so the registration outlives the scene. The game-over card's dismissal posts
+		// `continueToNextLevel` from an animation completion, which reached the old run's
+		// `InbetweenLevels` long after its scene had gone - and the first line of that handler
+		// reads `scene`. Cancelling actions was round 329's answer to the same family of fault;
+		// this is the other half, because a notification is not an action and nothing here
+		// could have cancelled one
 	}
 
 	override func willMove(from view: SKView) {
@@ -5512,16 +5575,21 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		}
 		// Put all textures from current on-screen power-ups in an array
 		
-		if gameMode == .endlessII, endlessIIWipeMayDrop == false {
-			powerUpProbArray[GameScene.wipePowerUpIndex] = 0
+		if gameMode == .endlessII {
+			for index in GameScene.endlessIIConditionalPowerUpIndices
+			where endlessIIConditionalPowerUpIsStillWorthIt(index) == false {
+				powerUpProbArray[index] = 0
+			}
 		}
-		// **Live at the drop, not once a row** (James, round 327: "Wipe power up should only
-		// show when a power up is active"). The row's weights are set as the row is built, and
-		// the brick that carries this drop may be broken a minute later with everything that
-		// was running long over. A Wipe with nothing to end is the gift the row's own comment
-		// refuses, so the question is asked again at the moment something is actually chosen.
-		// Only zeroed here: `applyEndlessRowPowerUpWeights` puts the weight back on the next
-		// row, which is where every other weight is decided
+		// **Live at the drop, not once a row** (James, round 327 for the Wipe: "Wipe power up
+		// should only show when a power up is active"; round 332 for the Lock: "it should only
+		// show up if there are power-ups currently active with enough time left for it to be
+		// collected"). The row's weights are set as the row is built, and the brick that carries
+		// this drop may be broken a minute later with everything that was running long over. A
+		// Wipe with nothing to end is a gift and a Lock with nothing to freeze is a dud, so the
+		// question is asked again at the moment something is actually chosen. Only zeroed here:
+		// `applyEndlessRowPowerUpWeights` puts the weights back on the next row, which is where
+		// every other one is decided
 
 		powerUpProbSum = powerUpProbArray.reduce(0, +)
 
@@ -8543,6 +8611,24 @@ laserTimer?.invalidate()
     }
     // Pause the game if a notifcation from AppDelegate is received that the game will quit
 	
+	/// The run is over and the menus are coming back: stop everything, whoever asked.
+	///
+	/// **James, round 332: "app keeps crashing when exiting one game mode and starting another -
+	/// this is a reliable and easily repeatable crash, it happens every time."** And it was: a
+	/// Mayhem run ended, Home took the menus back, Classic started, and the new run's level
+	/// intro posted `continueToNextLevel` as it cleared - which the *old* run's
+	/// `InbetweenLevels` was still registered for. The handler's first line reads `scene`, held
+	/// `unowned`, and the old scene had gone: `swift_abortRetainUnowned`, every time.
+	///
+	/// A state's own `deinit` cannot be relied on to unregister it, because the state outlives
+	/// its scene: `GKStateMachine` holds its states and a state holds its machine back, so the
+	/// pair survives the scene that made them. Which leaves the deterministic answer - the
+	/// moment the run ends, the scene takes its states off the notification centre and takes
+	/// itself off too.
+	@objc func leavingTheRunNotificationKeyReceived() {
+		endEverythingInFlight()
+	}
+
 	@objc func restartGameNotificiationKeyReceived() {
 				
 		if numberOfLevels > 1 {

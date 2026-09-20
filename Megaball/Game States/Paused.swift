@@ -119,16 +119,32 @@ class Paused: GKState {
     /// be two unpauses for one resume. A restart wants none of that: the run it was saving is
     /// over, and `scene.liftThePauseForARestart` clears the board instead of restoring it.
     override func willExit(to nextState: GKState) {
-        NotificationCenter.default.removeObserver(self, name: .killBallNotification, object: nil)
-        NotificationCenter.default.removeObserver(self, name: .unpause, object: nil)
-        // **Added on the way in, so they have to come off on the way out.** A state is made
-        // once and entered many times, and `NotificationCenter` keeps duplicate registrations
-        // of the same observer and selector rather than collapsing them - so before this, a
-        // player on their fourth pause had four observers and every unpause ran four times.
-
+        stopObserving()
         guard nextState is PreGame else { return }
         scene.liftThePauseForARestart()
     }
+
+    /// Both observers, taken off.
+    ///
+    /// **Added on the way in, so they have to come off on the way out.** A state is made once
+    /// and entered many times, and `NotificationCenter` keeps duplicate registrations of the
+    /// same observer and selector rather than collapsing them - so before this, a player on
+    /// their fourth pause had four observers and every unpause ran four times.
+    ///
+    /// **Leaving a scene calls this too** (`GameScene.endEverythingInFlight`, round 332), and
+    /// that is the half `willExit` cannot cover: a player who pauses and then goes Home never
+    /// leaves this state at all, so its observers would outlive the scene and the next
+    /// `unpause` would reach a state whose `unowned` scene has gone.
+    func stopObserving() {
+        NotificationCenter.default.removeObserver(self, name: .killBallNotification, object: nil)
+        NotificationCenter.default.removeObserver(self, name: .unpause, object: nil)
+    }
+
+    deinit { stopObserving() }
+    // **The one that catches every route.** `addObserver(_:selector:name:object:)` keeps an
+    // unowned, unsafe pointer to its observer, so a state that is freed without removing itself
+    // leaves the notification centre holding freed memory - and a later post calls into it. The
+    // hooks above are earlier and more deliberate; this is the one that cannot be routed around
 }
 
 extension Notification.Name {

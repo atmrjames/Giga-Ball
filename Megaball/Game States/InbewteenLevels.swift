@@ -814,8 +814,38 @@ class InbetweenLevels: GKState {
     // Call the function...
     
     override func willExit(to nextState: GKState) {
+        stopObserving()
     }
     // This function runs when this state is exited.
+
+    /// Both observers, taken off.
+    ///
+    /// **This state is entered once per level, and registered twice every time it was**
+    /// (round 332). `NotificationCenter` keeps duplicate registrations of the same observer and
+    /// selector rather than collapsing them, so by the tenth level of a pack one press of
+    /// Continue was entering `Playing` ten times.
+    ///
+    /// **And the crash James could reproduce every time.** "App keeps crashing when exiting one
+    /// game mode and starting another - this is a reliable and easily repeatable crash, it
+    /// happens every time." A run ends, the game-over card goes up from this state, Home leaves
+    /// for the menu, and another mode starts - and the card's own dismissal animation posts
+    /// `continueToNextLevel` from its completion block *after* all that. A state holds its scene
+    /// `unowned`, the scene has gone, and `notificationToContinueReceived` reads it: the same
+    /// `swift_abortRetainUnowned` as round 329, arriving by a door round 329 did not close.
+    /// Leaving a scene now calls this (`GameScene.endEverythingInFlight`), so the post lands on
+    /// nobody.
+    func stopObserving() {
+        NotificationCenter.default.removeObserver(self, name: .continueToNextLevel, object: nil)
+        NotificationCenter.default.removeObserver(self, name: .restart, object: nil)
+    }
+
+    deinit { stopObserving() }
+    // **And the one that catches every route** (round 332). `endEverythingInFlight` is not on
+    // every way out of a run: the pause menu and the game-over card have a `moveToMainMenu` of
+    // their own, which posts the return notifications and leaves the scene to be freed by
+    // whoever holds it. A state freed without removing itself leaves the notification centre
+    // pointing at freed memory, and the next `continueToNextLevel` - posted by the *new* run's
+    // level intro as it clears - called straight into it
     
     override func isValidNextState(_ stateClass: AnyClass) -> Bool {
         switch stateClass {
