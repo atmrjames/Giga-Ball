@@ -249,3 +249,76 @@ final class ResumeCardTests: XCTestCase {
                        "the day's own mode or level leads, got: \(lines.detail)")
     }
 }
+
+/// The resume card reads like the screens it hands over to.
+///
+/// **James, round 332's layout notes: "use the same label layout, font size and style as the
+/// level intro, pause, game over screens for game mode, game detail, score, score number, balls
+/// left. Move giga-ball glowing animation logo up to allow for more space."**
+final class ResumeCardMatchesTheInGameScreensTests: XCTestCase {
+
+    private let suite = "GigaBallTests.ResumeCardMatches"
+
+    override func tearDown() {
+        UserDefaults().removePersistentDomain(forName: suite)
+        super.tearDown()
+    }
+
+    private func store() -> UserDefaults {
+        UserDefaults(suiteName: suite) ?? .standard
+    }
+
+    private func splash() -> SplashViewController? {
+        let game = SavedGame(
+            levelNumber: LevelPackSetup().startLevelNumber[2] + 3, endLevelNumber: 10,
+            packNumber: 2, levelScore: 120, totalScore: 34_210, numberOfLives: 2,
+            endlessHeight: 0, numberOfLevels: 10,
+            levelTimerValue: 45, packTimerValue: 300,
+            deathsPerLevel: 1, deathsPerPack: 3,
+            powerUpsGeneratedPerLevel: 4, powerUpsCollectedPerLevel: 2,
+            powerUpsGeneratedPerPack: 20, powerUpsCollectedPerPack: 11,
+            paddleHitsPerLevel: 33, multiplier: 1.4,
+            brickTextures: [], brickColours: [], brickXPositions: [], brickYPositions: [],
+            ballProperties: [], fallingPowerUpXPositions: [], fallingPowerUpYPositions: [],
+            fallingPowerUps: [], activePowerUps: [], activePowerUpDurations: [],
+            activePowerUpTimers: [], activePowerUpMagnitudes: [])
+        game.save(to: store())
+        store().set(true, forKey: SavedGame.resumeFlagKey)
+
+        let board = UIStoryboard(name: "Main", bundle: Bundle(for: SplashViewController.self))
+        guard let splash = board.instantiateViewController(withIdentifier: "splashView")
+                as? SplashViewController else { return nil }
+        splash.defaults = store()
+        splash.gameToResume = true
+        splash.view.frame = CGRect(x: 0, y: 0, width: 402, height: 874)
+        splash.view.layoutIfNeeded()
+        return splash
+    }
+
+    /// The score is a title with the number under it, not a word beside it.
+    func testTheScoreIsATitleOverANumber() throws {
+        let splash = try XCTUnwrap(self.splash(), "the storyboard no longer has a splashView")
+        let text = splash.scoreLabel.attributedText?.string ?? ""
+        XCTAssertTrue(text.contains("\n"),
+                      "the in-game screens put the word above the number: \(text)")
+
+        var faces: [UIFont] = []
+        splash.scoreLabel.attributedText?.enumerateAttribute(
+            .font, in: NSRange(location: 0, length: splash.scoreLabel.attributedText!.length)) {
+                value, _, _ in
+                if let font = value as? UIFont { faces.append(font) }
+            }
+        XCTAssertEqual(Set(faces.map(\.pointSize)).count, 2,
+                       "two sizes, the title's and the number's")
+    }
+
+    /// And the wordmark has moved up to make room for it.
+    func testTheWordmarkLiftsForTheCard() throws {
+        let splash = try XCTUnwrap(self.splash())
+        let logo = splash.splashScreenLogo1.convert(splash.splashScreenLogo1.bounds,
+                                                    to: splash.view)
+        XCTAssertLessThanOrEqual(logo.maxY, splash.view.bounds.midY - 1,
+                                 "the storyboard hangs it on the middle; a card this tall needs "
+                                 + "it higher than that")
+    }
+}

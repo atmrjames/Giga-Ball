@@ -362,6 +362,7 @@ class SplashViewController: UIViewController {
         guard let container = resumingLabel.superview else { return }
 
         cancelResumeButton.removeFromSuperview()
+        liftTheWordmark()
 
         resumingLabel.font = UIViewController.menuTitleFont
         resumingLabel.textColor = GigaBallGlow.colour
@@ -540,6 +541,30 @@ class SplashViewController: UIViewController {
         // never binds and the wanted one holds - the card is exactly where it was, to the point
     }
 
+    /// Moves the wordmark up, to leave the card the room it needs.
+    ///
+    /// **James, round 332's layout notes: "move giga-ball glowing animation logo up to allow
+    /// for more space."** The storyboard hangs the logo's bottom on the screen's middle, which
+    /// is right for a splash with nothing under it and tight for one carrying four lines, a
+    /// score and a button.
+    ///
+    /// Found by walking the container's constraints rather than by an outlet: the tie is the
+    /// storyboard's, it has never needed a name, and giving it one in the nib would mean the
+    /// plain splash and the resuming one could drift apart.
+    private func liftTheWordmark() {
+        guard let container = splashScreenLogo1.superview else { return }
+        for constraint in container.constraints
+        where constraint.firstItem === splashScreenLogo1
+            && constraint.firstAttribute == .bottom
+            && constraint.secondAttribute == .centerY {
+            constraint.constant = -SplashViewController.resumeLogoLift
+        }
+    }
+
+    /// How far up. Enough to be felt under a card this tall and not so far that the wordmark
+    /// stops looking like the middle of the screen.
+    static let resumeLogoLift: CGFloat = 40
+
     /// How far below the wordmark the resuming card may sit before it stops following the
     /// bottom of the screen.
     ///
@@ -614,19 +639,18 @@ class SplashViewController: UIViewController {
 
         let number = SplashViewController.scoreFace
         let word = SplashViewController.scoreTitleFace
-        let lift = (number.capHeight - word.capHeight)/2
-        // **Centred on the number, not sat on its baseline** (James, round 311: "can we also
-        // align the score label so it's vertically centred with the score"). Two faces on one
-        // line share a baseline unless told otherwise, which puts the small word level with the
-        // big number's *feet*. Raising it by half the difference in cap heights puts the middle
-        // of the word level with the middle of the digits - measured off the fonts rather than
-        // nudged by eye, so it stays right if either size changes
+        // **The title above the number, which is how every in-game screen has it** (James,
+        // round 332's layout notes: "use the same label layout, font size and style as the
+        // level intro, pause, game over screens for game mode, game detail, score, score
+        // number, balls left"). It was one line - the word beside the digits, raised by half
+        // the difference in cap heights so the two read as centred on each other - which was
+        // a good answer to round 311's question and a different arrangement from the four
+        // screens this one hands over to seconds later.
 
         let line = NSMutableAttributedString(
-            string: title + "  ",
+            string: title + "\n",
             attributes: [.font: word,
                          .foregroundColor: UIColor(white: 0.667, alpha: 1),
-                         .baselineOffset: lift,
                          .paragraphStyle: paragraph])
         line.append(NSAttributedString(
             string: value,
