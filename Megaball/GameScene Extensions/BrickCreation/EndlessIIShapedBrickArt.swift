@@ -274,8 +274,24 @@ extension GameScene {
     /// brick is on its side and neither lighting is the right one. Zero at no rotation and at
     /// a full turn, one at half.
     static func spinningFaceBlend(zRotation: CGFloat) -> CGFloat {
-        (1 - cos(zRotation))/2
+        let turn = (1 - cos(zRotation))/2
+        let sharp = endlessIISpinBlendSharpness
+        let near = pow(turn, sharp), far = pow(1 - turn, sharp)
+        guard near + far > 0 else { return turn }
+        return near/(near + far)
     }
+
+    /// How quickly the two pictures change places.
+    ///
+    /// **James, round 332: "make the fade for the spinning brick happen more quickly."** The
+    /// cosine on its own spends the whole revolution mixing - the two are within a tenth of
+    /// each other for a third of every turn - which reads as a brick that is permanently
+    /// half-lit rather than one whose light stays put. Pushing it through this S curve keeps
+    /// everything that matters about the cosine and hurries the middle: still nothing at no
+    /// rotation, still entirely the other picture at half a turn, still exactly even at the
+    /// quarters, where the brick is on its side and neither lighting is the right one. One is
+    /// the cosine itself; higher is quicker.
+    static let endlessIISpinBlendSharpness: CGFloat = 3
 
     /// Cross-fades a spinning brick's face between its own picture and its half-turn partner.
     ///

@@ -1460,8 +1460,15 @@ final class DailyChallengeSession {
         }
         active = DailyChallengeGenerator.challenge(forKey: key)
         resumedAfterDeadline = key != todayKey
-        closedDayNeedsAnnouncing = resumedAfterDeadline
-        isScoringAttempt = (save.dailyWasScoringAttempt ?? false) && resumedAfterDeadline == false
+        let wasPlayingForScore = save.dailyWasScoringAttempt ?? false
+        closedDayNeedsAnnouncing = resumedAfterDeadline && wasPlayingForScore
+        // **Only a run that had something to lose is told it lost it** (James, round 332: "when
+        // resuming a daily challenge game, only show the challenge closed pop-up if it was a
+        // competition run previously that is now expired. If it was a free play run, there's no
+        // need to show this pop-up"). A free-play run was already practice when it was saved,
+        // so a day closing over it changes nothing about it - and a pop-up that stops the game
+        // to announce no change is the kind of thing a player learns to tap through
+        isScoringAttempt = wasPlayingForScore && resumedAfterDeadline == false
         // A run resumed on a later day is practice from here, whatever it set out to be.
         // The window is the day, and the day has gone
     }

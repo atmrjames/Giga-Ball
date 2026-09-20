@@ -282,6 +282,61 @@ extension UIImage {
 /// Its own view so the backgrounds can be a strip that slides behind a scene that stays put.
 /// Everything about where the painted area sits comes from `GameSceneLayout`, exactly as it
 /// does for the layer in front, or the two would drift apart the moment either changed.
+extension GameBackgroundView {
+
+    /// Where the phone frame's screen is, as fractions of the picture.
+    ///
+    /// **Measured off `iconBackground` rather than guessed**: the alpha of its centre row and
+    /// centre column give the four bars - opaque from 26 to 56 and 318 to 348 down, 99 to 129
+    /// and 245 to 275 across, in a 375-point square - so the screen is what is left between
+    /// them. If the artwork is ever redrawn these four numbers change with it, and
+    /// `BackgroundRowIconTests` measures the alpha again rather than trusting them.
+    static let settingsFrameScreen = CGRect(x: 130.0/375, y: 57.0/375,
+                                            width: 114.0/375, height: 260.0/375)
+
+    /// The Game Background row's icon: the phone frame with the chosen background inside it.
+    ///
+    /// **James, round 332: "can you add the current selected background into the frame icon on
+    /// the game background cell settings view, within the white frame?"** The row had said
+    /// which background was chosen in words, and the words were too long for the space (the
+    /// round before this one replaced them with an arrow) - so the row now shows the answer
+    /// instead of naming it, which is what a picture of a background is for.
+    ///
+    /// Composed rather than templated, and that is why the caller passes `recolour: false`: a
+    /// glass row tints its icon flat, and a flat tint over a picture of a background is a
+    /// rectangle. So the frame is tinted here, where the thumbnail can be left alone.
+    static func inTheSettingsFrame(_ background: GameBackground,
+                                   tinted tint: UIColor? = nil) -> UIImage? {
+        guard let frame = UIImage(named: "iconBackground") else { return nil }
+        let size = frame.size
+        guard size.width > 0, size.height > 0 else { return nil }
+
+        let screen = CGRect(x: settingsFrameScreen.minX*size.width,
+                            y: settingsFrameScreen.minY*size.height,
+                            width: settingsFrameScreen.width*size.width,
+                            height: settingsFrameScreen.height*size.height)
+
+        let view = GameBackgroundView(frame: CGRect(origin: .zero, size: screen.size))
+        view.background = background
+        view.screen = CGSize(width: 390, height: 844)
+        // A phone, because the frame is drawn as one. The thumbnail is letterboxed into
+        // whatever it is given, and these two shapes are near enough the same
+
+        return UIGraphicsImageRenderer(size: size).image { _ in
+            let picture = UIGraphicsImageRenderer(size: screen.size).image { _ in
+                view.draw(view.bounds)
+            }
+            picture.draw(in: screen)
+            if let tint {
+                frame.withRenderingMode(.alwaysTemplate).withTintColor(tint, renderingMode: .alwaysOriginal)
+                    .draw(in: CGRect(origin: .zero, size: size))
+            } else {
+                frame.draw(in: CGRect(origin: .zero, size: size))
+            }
+        }
+    }
+}
+
 final class GameBackgroundView: UIView {
 
     var background: GameBackground = .classic {

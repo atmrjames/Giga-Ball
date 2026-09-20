@@ -300,7 +300,13 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
             // Game background
                 cell.settingDescription.text = "Game Background"
                 cell.centreLabel.text = ""
-                cell.setIcon(UIImage(named:"iconBackground.png")!, recolour: true)
+                cell.setIcon(GameBackgroundView.inTheSettingsFrame(
+                    GameBackground.stored(backgroundSetting),
+                    tinted: cell.isGlass ? SettingsTableViewCell.glassForeground : nil),
+                             recolour: false)
+                // `recolour: false` because the picture inside the frame is the answer: a glass
+                // row's flat tint would turn the chosen background into a rectangle, so the
+                // frame is tinted where it is drawn instead
                 cell.setStateColour(#colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1))
                 showSelectionArrow(in: cell)
             case 6:
@@ -480,7 +486,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
             : #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1).withAlphaComponent(0.6)
         guard let arrow = UIImage(systemName: "chevron.forward.circle",
                                   withConfiguration: UIImage.SymbolConfiguration(
-                                      pointSize: 18, weight: .regular))?
+                                      pointSize: 20, weight: .regular))?
             .withTintColor(colour, renderingMode: .alwaysOriginal) else {
             cell.settingState.text = ""
             return

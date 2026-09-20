@@ -676,6 +676,47 @@ final class SavedGameTests: XCTestCase {
         XCTAssertFalse(DailyChallengeSession.shared.resumedAfterDeadline)
     }
 
+    /// **A free-play run is not told the day closed** (James, round 332: "when resuming a daily
+    /// challenge game, only show the challenge closed pop-up if it was a competition run
+    /// previously that is now expired. If it was a free play run, there's no need to show this
+    /// pop-up").
+    ///
+    /// The run was already practice when it was saved, so the day closing over it takes nothing
+    /// away - and a pop-up that stops the game to announce no change is one a player learns to
+    /// tap through, which is how the ones that matter get tapped through too.
+    func testAFreePlayDailyResumedLaterIsNotToldTheDayClosed() {
+        var game = sampleGame()
+        game.dailyDateKey = "2020-01-01"
+        game.dailyWasScoringAttempt = false
+
+        DailyChallengeSession.shared.restore(from: game)
+        defer {
+            DailyChallengeSession.shared.active = nil
+            DailyChallengeSession.shared.closedDayNeedsAnnouncing = false
+        }
+
+        XCTAssertTrue(DailyChallengeSession.shared.resumedAfterDeadline,
+                      "the day has still closed - that is what makes this the interesting case")
+        XCTAssertFalse(DailyChallengeSession.shared.closedDayNeedsAnnouncing,
+                       "there was nothing to post, so there is nothing to announce")
+    }
+
+    /// And a scoring run resumed after its day still is.
+    func testAScoringDailyResumedLaterIsStillToldTheDayClosed() {
+        var game = sampleGame()
+        game.dailyDateKey = "2020-01-01"
+        game.dailyWasScoringAttempt = true
+
+        DailyChallengeSession.shared.restore(from: game)
+        defer {
+            DailyChallengeSession.shared.active = nil
+            DailyChallengeSession.shared.closedDayNeedsAnnouncing = false
+        }
+
+        XCTAssertTrue(DailyChallengeSession.shared.closedDayNeedsAnnouncing,
+                      "this run set out to post a score and now cannot, which is worth saying")
+    }
+
     func testADailyResumedAfterItsDeadlineBecomesPractice() {
         // "We need a method of dealing with paused or incomplete games that resume after
         // the deadline" - the run continues, the score does not post (spec §12.5).
