@@ -656,6 +656,62 @@ final class EndlessIIFaceArtTests: XCTestCase {
                        "and the sprite is cleared again")
     }
 
+    /// **A plain brick's light stays put while it turns** (James, round 332: "ensure the fade
+    /// animation for rotating retro and/or indestructible bricks is happening in game").
+    ///
+    /// The shaped bricks have had this since round 312, on their face node; a plain rectangle
+    /// has no face node and so had no fade at all - a bevelled retro brick turned its highlight
+    /// underneath itself twice a revolution.
+    func testAPlainSpinningBrickCarriesASecondPicture() {
+        let scene = retro()
+        let subject = brick(scene)
+        subject.zRotation = .pi/2
+
+        scene.refreshEndlessIIPlainSpinnerLight(subject)
+
+        guard let partner = subject.childNode(withName: GameScene.plainSpinPartnerName)
+                as? SKSpriteNode else {
+            return XCTFail("nothing is cross-fading, so the lighting turns with the brick")
+        }
+        XCTAssertEqual(partner.zRotation, .pi, accuracy: 0.001,
+                       "the same picture, half a circle round, so its outline still lands")
+        XCTAssertEqual(partner.alpha, 0.5, accuracy: 0.01,
+                       "on its side the two are even, where neither lighting is right")
+        XCTAssertEqual(subject.alpha, 1, accuracy: 0.001,
+                       "and the one underneath stays solid - two half-opaque layers do not "
+                       + "make a whole one")
+    }
+
+    /// At no rotation there is nothing to correct, and at half a turn it is all the partner.
+    func testThePlainSpinnersSecondPictureComesAndGoes() {
+        let scene = retro()
+        let subject = brick(scene)
+
+        subject.zRotation = 0
+        scene.refreshEndlessIIPlainSpinnerLight(subject)
+        XCTAssertNil(subject.childNode(withName: GameScene.plainSpinPartnerName),
+                     "a brick standing square wears its own picture and nothing else")
+
+        subject.zRotation = .pi
+        scene.refreshEndlessIIPlainSpinnerLight(subject)
+        let partner = subject.childNode(withName: GameScene.plainSpinPartnerName)
+        XCTAssertEqual(partner?.alpha ?? 0, 1, accuracy: 0.01,
+                       "upside down, the picture drawn for upside down is the one showing")
+    }
+
+    /// And a shaped brick is left to the cross-fade it already has.
+    func testAShapedSpinnerIsLeftToItsOwnCrossFade() {
+        let scene = retro()
+        let subject = brick(scene)
+        scene.makeFace(.wedge, on: subject)
+        subject.zRotation = .pi/2
+
+        scene.refreshEndlessIIPlainSpinnerLight(subject)
+
+        XCTAssertNil(subject.childNode(withName: GameScene.plainSpinPartnerName),
+                     "two cross-fades on one brick is one too many")
+    }
+
     func testATextureOfAnySizeLandsTheSame() {
         // The property that makes the fix a fix: the drawn size comes from the cell, so a
         // texture redrawn at twice the resolution is the same picture in the same place

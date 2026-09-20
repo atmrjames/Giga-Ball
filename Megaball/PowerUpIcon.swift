@@ -666,7 +666,12 @@ enum PowerUpIcon {
     /// icons for the right to left version"). Mirrored in code rather than drawn twice, so
     /// the two can never drift apart - and mirrored from whatever `drift` resolves to, so
     /// the real artwork gets the same treatment the placeholder does.
-    static let driftLeft: UIImage = mirrored(drift)
+    static let driftLeft: UIImage = UIImage(named: "PowerUpDriftLeft") ?? mirrored(drift)
+    // **Drawn rather than mirrored since round 332**: James delivered a left one of its own,
+    // with the yellow ground the neutral power-ups wear ("new icons for drift left and right
+    // power-ups... now yellow backgrounds to indicate that they are not good or bad"). The
+    // mirror stays as the fallback, which is what it was always for - a picture that does not
+    // exist yet should still face the right way
 
     /// An image flipped left-for-right, rendered out so SpriteKit sees real pixels.
     ///
@@ -1195,7 +1200,10 @@ enum PowerUpIcon {
         "QuicksandIcon": { hud("QuicksandIcon", UIImage(named: "PowerUpBricksDown") ?? clearAndRetreat) },
         "SafetyPaddleIcon": { hud("SafetyPaddleIcon", safetyPaddle) },
         "DriftIcon": { hud("DriftIcon", drift) },
-        "DriftLeftIcon": { hud("DriftLeftIcon", mirrored(hud("DriftIcon", drift))) },
+        "DriftLeftIcon": { hud("DriftLeftIcon", driftLeft) },
+        // Its own badge now, and `driftLeft` is the one place that decides whether that badge
+        // is drawn art or the mirror of Drift's - mirroring here as well would flip a picture
+        // that is already facing the right way
     ]
 
     /// A fixed ring picture, by name.

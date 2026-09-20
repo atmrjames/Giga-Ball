@@ -233,6 +233,7 @@ extension GameScene {
     }
 
     static let faceArtName = "endlessIIFaceArt"
+    static let plainSpinPartnerName = "endlessIIPlainSpinPartner"
 
     /// The cell a face was built for, read back off its own path.
     ///
@@ -292,6 +293,53 @@ extension GameScene {
     /// quarters, where the brick is on its side and neither lighting is the right one. One is
     /// the cosine itself; higher is quicker.
     static let endlessIISpinBlendSharpness: CGFloat = 3
+
+    /// The same cross-fade, for a spinning brick that has no shaped face.
+    ///
+    /// **James, round 332: "ensure the fade animation for rotating retro and/or indestructible
+    /// bricks is happening in game."** It was not, and only the shaped ones ever had it: the
+    /// version below lives on the face node, and a plain rectangle has no face node. So a retro
+    /// brick - bevelled, lit from above - turned its highlight underneath itself twice a
+    /// revolution, which is the thing the whole cross-fade exists to stop.
+    ///
+    /// No second picture is needed and that is the point. The partner is *this* brick's own
+    /// texture turned half a circle inside the node, so its outline lands on the brick's at
+    /// every angle and what shows through is the lighting for the far end of the turn. The one
+    /// underneath stays solid, which is round 312's lesson: two half-opaque layers do not make
+    /// a whole one.
+    ///
+    /// Driven from the spin tick like everything else that moves on a brick (§8.6) - an
+    /// `SKAction` on a brick stops the field descending for ever.
+    func refreshEndlessIIPlainSpinnerLight(_ brick: SKSpriteNode) {
+        let existing = brick.childNode(withName: GameScene.plainSpinPartnerName) as? SKSpriteNode
+
+        guard brick.childNode(withName: GameScene.brickFaceName) == nil,
+              let texture = brick.texture, brick.zRotation != 0 else {
+            existing?.removeFromParent()
+            return
+            // A shaped brick has its own cross-fade on its face, and a brick standing square
+            // has nothing to correct
+        }
+
+        let partner = existing ?? {
+            let node = SKSpriteNode(texture: texture, size: brick.size)
+            node.name = GameScene.plainSpinPartnerName
+            node.zPosition = 0.02
+            brick.addChild(node)
+            return node
+        }()
+
+        if partner.texture !== texture { partner.texture = texture }
+        if partner.size != brick.size { partner.size = brick.size }
+        partner.position = CGPoint(x: (0.5 - brick.anchorPoint.x)*brick.size.width,
+                                   y: (0.5 - brick.anchorPoint.y)*brick.size.height)
+        // Where the sprite is actually drawn, which is the node's own point only for a brick
+        // anchored in the middle - a Square brick hangs a cell below its node (§8.6)
+        partner.zRotation = .pi
+        partner.color = brick.color
+        partner.colorBlendFactor = brick.colorBlendFactor
+        partner.alpha = GameScene.spinningFaceBlend(zRotation: brick.zRotation)
+    }
 
     /// Cross-fades a spinning brick's face between its own picture and its half-turn partner.
     ///

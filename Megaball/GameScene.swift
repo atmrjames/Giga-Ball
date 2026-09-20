@@ -8524,11 +8524,20 @@ laserTimer?.invalidate()
 			}
 			// Alternate position of laser on paddle
 			
-			laser.physicsBody = SKPhysicsBody(rectangleOf: laser.frame.size)
-			laser.physicsBody!.allowsRotation = false
-			laser.physicsBody!.friction = 0.0
-			laser.physicsBody!.affectedByGravity = false
-			laser.physicsBody!.isDynamic = true
+			guard let body = SKPhysicsBody.rectangle(of: laser.frame.size) else {
+				laser.removeFromParent()
+				return
+			}
+			// **A laser with no body is not a laser** (round 332). `SKPhysicsBody(rectangleOf:)`
+			// hands back nothing for a size it cannot use and Swift is told it cannot - the
+			// trap §8.6 describes - and the force-unwrap on the next line then takes the app
+			// with it. The suite found it: a laser timer firing after its scene had been torn
+			// down built a shot with no texture and a frame of zero
+			laser.physicsBody = body
+			body.allowsRotation = false
+			body.friction = 0.0
+			body.affectedByGravity = false
+			body.isDynamic = true
 			laser.name = LaserCategoryName
 			laser.physicsBody!.categoryBitMask = CollisionTypes.laserCategory.rawValue
 			laser.physicsBody!.collisionBitMask = CollisionTypes.brickCategory.rawValue | CollisionTypes.screenBlockCategory.rawValue

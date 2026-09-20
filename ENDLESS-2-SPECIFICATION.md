@@ -1335,9 +1335,10 @@ orientation the way the wedge bricks themselves are (`Wedge0`, `Wedge90` and so 
 
 ### One pixel, and only if you are in the file anyway
 
-`PowerUpPortal` is **249x250** rather than 250x250, consistently at all three scales, so it
+`PowerUpWrap` is **250x249** rather than 250x250, consistently at all three scales, so it
 scales an honest 1:2:3 and round 271's check passed it. Every other power-up badge is square
-to the pixel. At the 30-odd points a badge is actually drawn at this is invisible, and it is
+to the pixel. (It was `PowerUpPortal` that was a pixel out until round 332, when James redrew
+both - the new Portal is square and the new Wrap-Around inherited the odd pixel.) At the 30-odd points a badge is actually drawn at this is invisible, and it is
 recorded here only because `testTheArtworkIsSquare` had to be loosened from an equality to a
 one-per-cent ratio to accommodate it (round 319a) - so if the file is ever open for another
 reason, one pixel of width would let that assertion go back to being exact.

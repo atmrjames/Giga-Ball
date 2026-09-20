@@ -1252,6 +1252,9 @@ extension GameScene {
         endlessIISpinners.removeAll { $0.brick.parent == nil }
         for spinner in endlessIISpinners {
             spinner.brick.zRotation += spinner.rate*CGFloat(delta)
+            refreshEndlessIIPlainSpinnerLight(spinner.brick)
+            // A shaped brick's face cross-fades on its own; this is the same trick for the
+            // plain ones, which had no fade at all (round 332)
         }
 
         endlessIIFlashers.removeAll { $0.brick.parent == nil }

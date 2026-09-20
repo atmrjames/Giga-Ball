@@ -65,10 +65,10 @@ final class ResumeCardTests: XCTestCase {
     /// "Give it the same font, style, glow as the game mode titles from their respective menu
     /// views" - and every one of those is uppercased.
     func testTheHeadingIsSetLikeAMenuTitle() {
-        XCTAssertEqual(ResumeCard.Lines().heading, "RESUMING…",
+        XCTAssertEqual(ResumeCard.Lines().heading, "RESUMING",
                        "upper case, and one ellipsis rather than three full stops")
         XCTAssertEqual(ResumeCard.lines(for: classicGame(), fallbackMode: .classic).heading,
-                       "RESUMING…",
+                       "RESUMING",
                        "the same words whatever is being resumed")
     }
 
