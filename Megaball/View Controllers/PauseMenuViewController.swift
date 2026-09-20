@@ -1397,6 +1397,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
                 if numberOfLevels > 1 {
                     packNameLabel.text = "\(LevelPackSetup().levelPackNameArray[packNumber])"
                     levelNumberLabel.text = "Level \(levelNumber-LevelPackSetup().startLevelNumber[packNumber]+1) of \(LevelPackSetup().numberOfLevels[packNumber])"
+                    swapTheLevelEmphasis()
                     levelNameLabel.text = "\(LevelPackSetup().levelNameArray[levelNumber])"
                 } else {
                     levelNameLabelNormalConstraint.isActive = false
@@ -1591,6 +1592,18 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
     /// like a second attempt and would not be one.
     var offersRestartInTheConfirm: Bool {
         self.sender == "Pause" && isDailyChallenge == false
+    }
+
+    private var levelEmphasisSwapped = false
+
+    private func swapTheLevelEmphasis() {
+        guard levelEmphasisSwapped == false else { return }
+        levelEmphasisSwapped = true
+        let number = (levelNumberLabel.font, levelNumberLabel.textColor)
+        levelNumberLabel.font = levelNameLabel.font
+        levelNumberLabel.textColor = levelNameLabel.textColor
+        levelNameLabel.font = number.0
+        levelNameLabel.textColor = number.1
     }
 
     @IBAction func homeButton(_ sender: Any) {
@@ -1981,5 +1994,19 @@ extension Notification.Name {
     /// Carried to the scene because the scene owns the score and the record-keeping.
     public static let postDailyPartialScore =
         Notification.Name(rawValue: "postDailyPartialScore")
+
+    /// The level's *name* is the thing worth reading; its number is only the position.
+    ///
+    /// **James, round 332's layout notes: "make Level 1 of 10 label less prominent, and level
+    /// name more prominent."** The storyboard has it the other way about - the count is bold 25
+    /// and the name semibold 17 - which was right when a pack's levels were numbered and
+    /// nothing else, and reads oddly now that every level has a name.
+    ///
+    /// The two swap their type rather than being given new numbers, so both screens still take
+    /// their sizes from the storyboard and cannot drift apart. Once per screen, because it is
+    /// called from a method that runs on every appearance.
+
+
+
 }
 // Notification setup for sending information from the pause menu popup to unpause the game

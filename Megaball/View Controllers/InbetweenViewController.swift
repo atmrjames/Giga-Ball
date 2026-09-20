@@ -377,6 +377,18 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
     }
     
     
+    private var levelEmphasisSwapped = false
+
+    private func swapTheLevelEmphasis() {
+        guard levelEmphasisSwapped == false else { return }
+        levelEmphasisSwapped = true
+        let number = (levelNumberLabel.font, levelNumberLabel.textColor)
+        levelNumberLabel.font = levelNameLabel.font
+        levelNumberLabel.textColor = levelNameLabel.textColor
+        levelNameLabel.font = number.0
+        levelNameLabel.textColor = number.1
+    }
+
     func updateLabels() {
         totalScoreLabel.text = String(totalScore)
         levelNumberCorrected = levelNumber-LevelPackSetup().startLevelNumber[packNumber]+1
@@ -400,6 +412,7 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
         if numberOfLevels > 1 {
             packNameLabel.text = "\(LevelPackSetup().levelPackNameArray[packNumber])"
             levelNumberLabel.text = "Level \(self.levelNumberCorrected) of \(self.numberOfPackLevels)"
+            swapTheLevelEmphasis()
             levelNameLabel.text = LevelPackSetup().levelNameArray[self.levelNumber]
         }
 
@@ -482,7 +495,10 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
         label.translatesAutoresizingMaskIntoConstraints = false
         levelNameLabel.superview?.addSubview(label)
         NSLayoutConstraint.activate([
-            label.topAnchor.constraint(equalTo: levelNameLabel.bottomAnchor, constant: 10),
+            label.topAnchor.constraint(equalTo: levelNameLabel.bottomAnchor, constant: 18),
+            // **Air under the twists** (James, round 332's layout notes: "add more space
+            // between twist section and free play / competition run label"). Ten points read
+            // as a fourth twist line on a day with three of them
             label.centerXAnchor.constraint(equalTo: levelNameLabel.centerXAnchor),
         ])
         runKindLabel = label
@@ -711,5 +727,19 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
         loadData()
     }
     // Runs when the NSUbiquitousKeyValueStore changes
+
+    /// The level's *name* is the thing worth reading; its number is only the position.
+    ///
+    /// **James, round 332's layout notes: "make Level 1 of 10 label less prominent, and level
+    /// name more prominent."** The storyboard has it the other way about - the count is bold 25
+    /// and the name semibold 17 - which was right when a pack's levels were numbered and
+    /// nothing else, and reads oddly now that every level has a name.
+    ///
+    /// The two swap their type rather than being given new numbers, so both screens still take
+    /// their sizes from the storyboard and cannot drift apart. Once per screen, because it is
+    /// called from a method that runs on every appearance.
+
+
+
 }
 
