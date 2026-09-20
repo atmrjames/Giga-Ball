@@ -386,6 +386,28 @@ final class ResumeCardOnATallScreenTests: XCTestCase {
         return card.minY - logo.maxY
     }
 
+    /// The wordmark is six stacked frames, and the resume screen lifts it.
+    ///
+    /// Found by looking at the simulator after round 336: the lift moved the frame it was
+    /// written against and left the other five behind, so the finished, lit word sat forty
+    /// points below a ghost of its own outline. Every frame is the same word in the same
+    /// place; nothing may move one of them alone.
+    func testEveryFrameOfTheWordmarkIsLiftedTogether() {
+        let splash = laidOut(in: phone)
+        let root = splash.view!
+        let frames = [splash.splashScreenLogo1, splash.splashScreenLogo2, splash.splashScreenLogo3,
+                      splash.splashScreenLogo4, splash.splashScreenLogo5, splash.splashScreenLogo6]
+            .compactMap { $0 }
+        XCTAssertEqual(frames.count, 6)
+        let first = frames[0].convert(frames[0].bounds, to: root)
+        for frame in frames.dropFirst() {
+            let here = frame.convert(frame.bounds, to: root)
+            XCTAssertEqual(here.minY, first.minY, accuracy: 0.5,
+                           "a frame of the wordmark has been left behind by the resume lift")
+            XCTAssertEqual(here.minX, first.minX, accuracy: 0.5)
+        }
+    }
+
     func testAPhoneIsExactlyWhereItWas() {
         let splash = laidOut(in: phone)
         XCTAssertLessThan(drop(splash), SplashViewController.resumeCardMaximumDrop,

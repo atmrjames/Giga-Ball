@@ -553,8 +553,16 @@ class SplashViewController: UIViewController {
     /// plain splash and the resuming one could drift apart.
     private func liftTheWordmark() {
         guard let container = splashScreenLogo1.superview else { return }
+        // **All six frames, not the first.** The wordmark is an animation: six images stacked
+        // exactly on top of one another, faded through in turn, and the resume screen shows
+        // the last of them lit. Lifting only the one this method was written against moved
+        // the unlit outline forty points up and left the lit word where it was, which on the
+        // simulator reads as the logo printed twice - a ghost above the real one. They are one
+        // object from every other point of view and have to move as one.
+        let wordmark = [splashScreenLogo1, splashScreenLogo2, splashScreenLogo3,
+                        splashScreenLogo4, splashScreenLogo5, splashScreenLogo6].compactMap { $0 }
         for constraint in container.constraints
-        where constraint.firstItem === splashScreenLogo1
+        where wordmark.contains(where: { $0 === (constraint.firstItem as AnyObject?) })
             && constraint.firstAttribute == .bottom
             && constraint.secondAttribute == .centerY {
             constraint.constant = -SplashViewController.resumeLogoLift

@@ -269,6 +269,38 @@ final class SunsetBackgroundTests: XCTestCase {
                           + "sky is the one thing here that has to be read at a glance")
     }
 
+    /// What the white ball costs at the horizon, written down on purpose.
+    ///
+    /// The paddle has a test of its own above: the glare never sits behind it. The ball has no
+    /// such guarantee - it goes wherever it is hit - so it crosses the palest band of the sky
+    /// several times a run, and for those moments a white ball is a white ball on light sand.
+    ///
+    /// That is why the haze is 214, 193, 160 rather than the white James named: pure white
+    /// would be a ratio of 1.00, which is not low contrast but no contrast. This pins the
+    /// number the compromise landed on, so the day somebody brightens the sunset they find out
+    /// here rather than in a play test.
+    func testTheHazeKeepsTheBallVisibleCrossingIt() {
+        func contrast(_ a: UIColor, _ b: UIColor) -> CGFloat {
+            func channel(_ c: CGFloat) -> CGFloat {
+                c <= 0.03928 ? c/12.92 : pow((c + 0.055)/1.055, 2.4)
+            }
+            func relative(_ colour: UIColor) -> CGFloat {
+                var r: CGFloat = 0, g: CGFloat = 0, bl: CGFloat = 0, al: CGFloat = 0
+                colour.getRed(&r, green: &g, blue: &bl, alpha: &al)
+                return 0.2126*channel(r) + 0.7152*channel(g) + 0.0722*channel(bl)
+            }
+            let one = relative(a), two = relative(b)
+            return (max(one, two) + 0.05) / (min(one, two) + 0.05)
+        }
+
+        let ratio = contrast(.white, GameBackground.sunsetHaze)
+        XCTAssertGreaterThan(ratio, 1.6,
+                             "the ball would be invisible crossing the horizon")
+        XCTAssertLessThan(ratio, 2.2,
+                          "if this has risen, the haze is no longer the warm glare James asked "
+                          + "for and the sunset has lost its sun")
+    }
+
     /// A short screen still gets a gradient rather than a black rectangle.
     func testAnUnusuallyShortScreenStillDraws() {
         for fraction in [0.0, 0.5, 0.9, 1.0] as [CGFloat] {
