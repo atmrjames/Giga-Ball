@@ -117,6 +117,15 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
     // means, not when they want to read about it
 
     let resultLabel = UILabel()
+
+    /// What the line under it is: the player's standing on a Game Center board.
+    ///
+    /// **James, round 332's layout notes: "move the global game centre leaderboards section
+    /// below the stats section, moving the stats section up. Add a header label to make it more
+    /// clear that it's game centre leaderboards."** The line says "7/102 on the Emoji Pack
+    /// board" and never said where that came from, sitting between the run's score and the
+    /// run's own numbers as though it were one of them.
+    let leaderboardTitle = UILabel()
     /// The rules sit with the level they are the rules of; the title makes room for them.
     private var rulesUnderTheLevel: NSLayoutConstraint!
     /// The same, for a day whose level name is blank - see where these are built.
@@ -165,7 +174,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
         var stats = AttributedString("Statistics")
         stats.font = .boldSystemFont(ofSize: 14)
         var moreStats = UIButton.Configuration.plain()
-        moreStats.attributedTitle = stats
+        moreStats.attributedTitle = markedWithTheStatsIcon(stats)
         moreStats.image = UIImage(systemName: "chevron.right",
                                   withConfiguration: UIImage.SymbolConfiguration(
                                     pointSize: 12, weight: .bold))
@@ -196,11 +205,11 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
         // The door to the run's detail, at the bottom of the stats list (play-test
         // round 11) - it replaces the rosette that sat unexplained in the button row
 
-        let statsClearOfTheScore = runStatsLabel.topAnchor.constraint(
+        let statsClearOfTheScore = moreStatsButton.topAnchor.constraint(
             greaterThanOrEqualTo: highscoreLabel.bottomAnchor, constant: 34)
-        let statsAboveTheButtons = moreStatsButton.bottomAnchor.constraint(
-            equalTo: buttonCollectionView.topAnchor, constant: -46)
-        statsAboveTheButtons.priority = .defaultHigh
+// `statsAboveTheButtons` is built with the result line, further down: it ties the
+        // *bottom* of this group to the button row, and since round 332 the bottom of the group
+        // is the Game Center line, which is not in the hierarchy yet at this point
         // Anchored to the button row, which the storyboard has already put in the hierarchy.
         // It cannot be anchored to `signedOutLabel` from here, however much that reads
         // better: this method runs from viewDidLoad before that label is added, and
@@ -214,9 +223,8 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
             runStatsLabel.centerXAnchor.constraint(equalTo: containterView.centerXAnchor),
             statsClearOfTheScore,
             moreStatsButton.centerXAnchor.constraint(equalTo: containterView.centerXAnchor),
-            moreStatsButton.topAnchor.constraint(equalTo: runStatsLabel.bottomAnchor,
-                                                 constant: 8),
-            statsAboveTheButtons,
+            runStatsLabel.topAnchor.constraint(equalTo: moreStatsButton.bottomAnchor,
+                                               constant: 8),
             // The stats block sits just above the button row rather than tucked under the
             // score (play-test round 97: "the stats sit too close to the scores"). Hung
             // from the bottom, with the 34pt clearance above kept as a minimum, so the two
@@ -516,6 +524,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
         resultLabel.font = .systemFont(ofSize: 12)
         resultLabel.textColor = UIColor(white: 1, alpha: 0.55)
         resultLabel.isHidden = true
+        leaderboardTitle.isHidden = true
         resultLabel.setContentCompressionResistancePriority(.required, for: .vertical)
         // **This line is never squashed.** It sits between two blocks that both hang off
         // required constraints - the score above it, the stats below hung from the button
@@ -524,6 +533,15 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
         // the middle (round 160's screenshot). A label with default resistance loses that
         // argument every time; the margins around it are what should bend, and below they do
         containterView.addSubview(resultLabel)
+
+        leaderboardTitle.translatesAutoresizingMaskIntoConstraints = false
+        leaderboardTitle.textAlignment = .center
+        leaderboardTitle.font = .boldSystemFont(ofSize: 11)
+        leaderboardTitle.textColor = UIColor(white: 1, alpha: 0.38)
+        leaderboardTitle.text = "GAME CENTER"
+        leaderboardTitle.isHidden = true
+        containterView.addSubview(leaderboardTitle)
+        // Shown and hidden with the line it heads - `updateResultLabel` owns both
 
         dailyTotalTitle.translatesAutoresizingMaskIntoConstraints = false
         dailyTotalTitle.textAlignment = .center
@@ -554,10 +572,18 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
         signedOutLabel.isHidden = true
         containterView.addSubview(signedOutLabel)
 
-        statsUnderTheResult = runStatsLabel.topAnchor.constraint(
-            greaterThanOrEqualTo: resultLabel.bottomAnchor, constant: 8)
-        statsWellUnderTheResult = runStatsLabel.topAnchor.constraint(
-            greaterThanOrEqualTo: resultLabel.bottomAnchor, constant: 20)
+        let statsAboveTheButtons = resultLabel.bottomAnchor.constraint(
+            equalTo: buttonCollectionView.topAnchor, constant: -46)
+        statsAboveTheButtons.priority = .defaultHigh
+        // The bottom of the lower group against the button row, at the gap round 112 settled
+        // on. High rather than required: on a short screen the clearances above win and the
+        // group simply sits where it fits, rather than the layout breaking a constraint it
+        // cannot honour
+
+        statsUnderTheResult = leaderboardTitle.topAnchor.constraint(
+            greaterThanOrEqualTo: runStatsLabel.bottomAnchor, constant: 8)
+        statsWellUnderTheResult = leaderboardTitle.topAnchor.constraint(
+            greaterThanOrEqualTo: runStatsLabel.bottomAnchor, constant: 20)
         statsWellUnderTheResult.priority = .defaultHigh
         // **Eight required, twenty wanted.** Twenty was required until round 160, and with
         // the 22 above the line that asked for 42pt of clearance inside the 34pt the layout
@@ -631,6 +657,15 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
             dailyTotalLabel.centerXAnchor.constraint(equalTo: containterView.centerXAnchor),
             dailyTotalLabel.topAnchor.constraint(equalTo: dailyTotalTitle.bottomAnchor),
 
+            statsAboveTheButtons,
+            leaderboardTitle.centerXAnchor.constraint(equalTo: containterView.centerXAnchor),
+            resultLabel.topAnchor.constraint(equalTo: leaderboardTitle.bottomAnchor,
+                                             constant: 2),
+            // Activated here rather than with the stats block above, which runs from
+            // `viewDidLoad` before this label is in the hierarchy: a constraint between two
+            // views with no common ancestor throws, which is the trap the note under
+            // `statsAboveTheButtons` already describes
+
             signedOutLabel.centerXAnchor.constraint(equalTo: containterView.centerXAnchor),
             signedOutLabel.topAnchor.constraint(greaterThanOrEqualTo:
                                                     resultLabel.bottomAnchor,
@@ -638,7 +673,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
             signedOutLabel.bottomAnchor.constraint(equalTo: buttonCollectionView.topAnchor,
                                                    constant: -12),
             signedOutLabel.topAnchor.constraint(greaterThanOrEqualTo:
-                                                    moreStatsButton.bottomAnchor,
+                                                    runStatsLabel.bottomAnchor,
                                                 constant: 6),
             // Pinned to the button row rather than floating under whatever happens to be
             // above it. Round 112 moved the stats block down to sit just above the buttons,
@@ -838,10 +873,15 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
     /// every other mode says nothing at all - there the line *is* the placing, and a line
     /// that appears empty and then fills reads as a glitch.
     func updateResultLine() {
-        guard sender != "Pause" else { resultLabel.isHidden = true; return }
+        guard sender != "Pause" else {
+            resultLabel.isHidden = true
+            leaderboardTitle.isHidden = true
+            return
+        }
 
         if isDailyChallenge {
             resultLabel.isHidden = false
+            leaderboardTitle.isHidden = false
             if DailyChallengeSession.shared.lastRunPosted {
                 resultLabel.text = standing.map { "\($0.text) on today's leaderboard" }
                 // **The placing is the line** (James, round 308: it "should read: 1/100 on
@@ -857,6 +897,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
                 // badge tells the truth of where it got to
             } else {
                 resultLabel.isHidden = true
+                leaderboardTitle.isHidden = true
                 // Nothing to place, and the kind of run is said under the twists now, which
                 // is where James asked for it (round 320) - see `updateDailySummary`
             }
@@ -865,6 +906,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
 
         guard let board = runBoard, let standing else {
             resultLabel.isHidden = true
+            leaderboardTitle.isHidden = true
             return
             // No board, or no answer from it: a run in Single Level Mode or the Tutorial,
             // a player signed out or offline, or Endless Mayhem, whose board James has yet
@@ -873,6 +915,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
             // already covers the one case a player can do something about
         }
         resultLabel.isHidden = false
+        leaderboardTitle.isHidden = false
         let suffix = GameMode.current(in: defaults).leaderboardUnit
         let best = standing.bestText(suffix: suffix).map { " · \($0)" } ?? ""
         resultLabel.text = "\(standing.text) on the \(board.name) board\(best)"
@@ -1598,6 +1641,34 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
             art.draw(in: CGRect(origin: .zero, size: size))
         }
         return drawn.withRenderingMode(.alwaysTemplate)
+    }
+
+    /// The app's statistics mark, drawn at the size of the words beside it.
+    ///
+    /// **James, round 332's layout notes: "add stats icon from info screen to sit just before
+    /// statistics label correctly sized."** The information screen's Statistics row has worn
+    /// `iconStats` since it existed and this button had only a chevron, so the one place a run's
+    /// numbers are offered looked like nothing else that offers them.
+    ///
+    /// "Correctly sized" is the whole difficulty, and round 308 has the scar: an SF Symbol
+    /// carries its point size with it and a `UIImage(named:)` does not - it arrives at whatever
+    /// the asset was drawn at, which here is an icon meant for a 44 point table row. So it is
+    /// redrawn to the line's own cap height before it is attached.
+    private func markedWithTheStatsIcon(_ title: AttributedString) -> AttributedString {
+        let font = UIFont.boldSystemFont(ofSize: 14)
+        guard let icon = UIImage(named: "iconStats") else { return title }
+        let side = ceil(font.capHeight)
+        let drawn = UIGraphicsImageRenderer(size: CGSize(width: side, height: side)).image { _ in
+            icon.withTintColor(#colorLiteral(red: 0.8235294118, green: 1, blue: 0, alpha: 1), renderingMode: .alwaysOriginal)
+                .draw(in: CGRect(x: 0, y: 0, width: side, height: side))
+        }
+        let attachment = NSTextAttachment(image: drawn)
+        attachment.bounds = CGRect(x: 0, y: 0, width: side, height: side)
+
+        let line = NSMutableAttributedString(attachment: attachment)
+        line.append(NSAttributedString(string: " "))
+        line.append(NSAttributedString(title))
+        return AttributedString(line)
     }
 
     @objc private func moreStatsTapped() {
