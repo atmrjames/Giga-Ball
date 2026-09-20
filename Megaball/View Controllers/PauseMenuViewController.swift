@@ -606,6 +606,8 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
         // Switched on with the stats themselves: the result line and the stats block are
         // both in the lower half now, and only a screen showing both needs them kept apart
 
+        buildTheLivesRow()
+
         livesUnderDailyTotal = livesLabel.topAnchor.constraint(
             equalTo: dailyTotalLabel.bottomAnchor, constant: 6)
         // A third place for the lives line to hang from, for the same reason there were two:
@@ -764,11 +766,106 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
     /// from its bottom, so hiding it left a whole blank line plus its margin between the score
     /// and the result - and round 306 *started* hiding it on endless dailies, which is when the
     /// gap appeared. Auto Layout keeps a hidden view's frame; only a zero height takes it away.
+    /// The balls left, drawn as balls, where the HUD draws them.
+    ///
+    /// **James, round 332's layout notes: "show number of balls remaining above 3 lives left
+    /// label - move lives left label and graphics to sit just above the play button with a
+    /// sensible gap."** The card counted the rack in words and the game draws it as a row of
+    /// balls on a translucent pill above the paddle; a player who has just been looking at that
+    /// row should find it in the same shape here.
+    ///
+    /// The player's own ball is used, not a generic one: `ballImageArray` is the same list the
+    /// scene picks `ballTexture` out of, indexed by the same setting, so the pause screen shows
+    /// the ball they have been playing with.
+    private func buildTheLivesRow() {
+        let row = UIView()
+        row.translatesAutoresizingMaskIntoConstraints = false
+        row.backgroundColor = UIColor(white: 1, alpha: 0.10)
+        row.layer.cornerRadius = PauseMenuViewController.livesRowHeight/2
+        row.isHidden = true
+        containterView.addSubview(row)
+
+        let balls = UIStackView()
+        balls.translatesAutoresizingMaskIntoConstraints = false
+        balls.axis = .horizontal
+        balls.alignment = .center
+        balls.spacing = PauseMenuViewController.livesBallSize*0.6
+        row.addSubview(balls)
+
+        let collapsed = row.heightAnchor.constraint(equalToConstant: 0)
+        NSLayoutConstraint.activate([
+            row.centerXAnchor.constraint(equalTo: containterView.centerXAnchor),
+            row.heightAnchor.constraint(equalToConstant: PauseMenuViewController.livesRowHeight),
+            balls.centerXAnchor.constraint(equalTo: row.centerXAnchor),
+            balls.centerYAnchor.constraint(equalTo: row.centerYAnchor),
+            row.leadingAnchor.constraint(equalTo: balls.leadingAnchor,
+                                         constant: -PauseMenuViewController.livesBallSize*0.55),
+            row.trailingAnchor.constraint(equalTo: balls.trailingAnchor,
+                                          constant: PauseMenuViewController.livesBallSize*0.55),
+            livesLabel.topAnchor.constraint(equalTo: row.bottomAnchor, constant: 6),
+        ])
+        livesRow = row
+        livesBalls = balls
+        livesRowCollapsed = collapsed
+
+        let aboveTheButtons = livesLabel.bottomAnchor.constraint(
+            equalTo: buttonCollectionView.topAnchor, constant: -20)
+        aboveTheButtons.priority = .defaultHigh
+        let clearOfTheScore = row.topAnchor.constraint(
+            greaterThanOrEqualTo: highscoreLabel.bottomAnchor, constant: 12)
+        NSLayoutConstraint.activate([aboveTheButtons, clearOfTheScore])
+        // Hung from the button row with a required clearance above, which is how everything
+        // else in the lower half of this card is held (round 97's arrangement). High rather
+        // than required, so a short screen moves the block up rather than breaking a layout
+    }
+
+    /// Fills the row with one ball per life left, up to what the HUD would show.
+    private func refreshTheLivesRow() {
+        guard let balls = livesBalls, livesRow?.isHidden == false else { return }
+        let shown = max(0, min(livesRemaining, PauseMenuViewController.livesBallsShown))
+        guard balls.arrangedSubviews.count != shown || balls.arrangedSubviews.isEmpty else {
+            return
+        }
+
+        balls.arrangedSubviews.forEach { $0.removeFromSuperview() }
+        let setup = LevelPackSetup()
+        let index = min(max(defaults.integer(forKey: "ballSetting"), 0),
+                        setup.ballImageArray.count - 1)
+        for _ in 0..<shown {
+            let ball = UIImageView(image: setup.ballImageArray[index])
+            ball.contentMode = .scaleAspectFit
+            ball.alpha = 0.775
+            // The HUD's own alpha for a life it still has (`GameScene.lifeIconAlpha`)
+            ball.translatesAutoresizingMaskIntoConstraints = false
+            NSLayoutConstraint.activate([
+                ball.widthAnchor.constraint(equalToConstant: PauseMenuViewController.livesBallSize),
+                ball.heightAnchor.constraint(equalToConstant: PauseMenuViewController.livesBallSize),
+            ])
+            balls.addArrangedSubview(ball)
+        }
+        livesRow?.isHidden = shown == 0
+        livesRowCollapsed?.isActive = shown == 0
+        // A rack of none is no pill at all rather than an empty one: the last ball is in play,
+        // and a row of nothing above "Last ball" says the opposite of what the words say
+    }
+
+    /// How many balls the row will draw, which is what the HUD shows.
+    static let livesBallsShown = 10
+    static let livesBallSize: CGFloat = 10
+    static let livesRowHeight: CGFloat = 22
+
+    private weak var livesRow: UIView?
+    private weak var livesBalls: UIStackView?
+    private var livesRowCollapsed: NSLayoutConstraint?
+
     private func collapseLivesLineWhileHidden() {
         if livesCollapsed == nil {
             livesCollapsed = livesLabel.heightAnchor.constraint(equalToConstant: 0)
         }
         livesCollapsed.isActive = livesLabel.isHidden
+        livesRow?.isHidden = livesLabel.isHidden
+        livesRowCollapsed?.isActive = livesLabel.isHidden
+        refreshTheLivesRow()
     }
 
     func updateLivesLabel() {
@@ -777,11 +874,16 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
         // rather than six that have to remember to
         // The daily leaves the high score blank, so the lives line follows the score
         // itself there and the "Best" block everywhere else
-        livesUnderDailyTotal.isActive = showsDailyBreakdown
-        livesUnderHighscore.isActive = !isDailyChallenge
-        livesUnderScore.isActive = isDailyChallenge && showsDailyBreakdown == false
-        // Three now: the breakdown fills the high-score row and adds a total under it, so on
-        // a finished daily the lives line hangs from the bottom of that instead
+        livesUnderDailyTotal.isActive = false
+        livesUnderHighscore.isActive = false
+        livesUnderScore.isActive = false
+        // **All three stand down as of round 332's layout notes**: "move lives left label and
+        // graphics to sit just above the play button with a sensible gap". They hung the line
+        // under whichever part of the score block was the last one showing - three of them,
+        // because a hidden label still holds its place - and the line lives at the bottom of
+        // the screen now, where the balls it counts are drawn. Kept rather than deleted: which
+        // of the three applied is the record of how that block is put together, and the day the
+        // line goes back up there this is what it goes back to
 
         guard sender == "Pause" else {
             livesLabel.isHidden = true
