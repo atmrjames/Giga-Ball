@@ -681,11 +681,22 @@ final class PerModeTimeTests: XCTestCase {
         XCTAssertFalse(AchievementCatalogue.belongs(6, to: .endlessII))
     }
 
-    func testAPowerUpAchievementCountsEverywhere() {
-        // "Now We're Talking" - a first power-up, wherever the paddle was
-        for mode in [GameMode.classic, .endless, .endlessII] {
-            XCTAssertTrue(AchievementCatalogue.belongs(24, to: mode), "\(mode)")
+    /// **An achievement earnable everywhere is listed under All and nowhere else** (James,
+    /// round 329d). This asserted the opposite and was right until he read the page: "in those
+    /// categories, just show the [achievements] only available in those game modes... Pokey
+    /// shows up in all the categories. I think it's better for it to end up in the All category
+    /// only."
+    ///
+    /// "Now We're Talking" is a first power-up, wherever the paddle was - so it says nothing
+    /// about Classic that it does not also say about Endless and Mayhem, and listing it three
+    /// times made each tab a slightly shorter copy of All.
+    func testAPowerUpAchievementIsUnderAllRatherThanEveryTab() {
+        for mode in [GameMode.classic, .endless, .endlessII, .daily] {
+            XCTAssertFalse(AchievementCatalogue.belongs(24, to: mode), "\(mode)")
         }
+        let count = LevelPackSetup().achievementsNameArray.count
+        XCTAssertTrue(AchievementCatalogue.indices(for: nil, count: count).contains(24),
+                      "and it is still on the page")
     }
 
     /// **The daily's tab has rows in it now** (round 310, from James's workbook).
@@ -695,13 +706,20 @@ final class PerModeTimeTests: XCTestCase {
     /// unlock what earning it would have (daily spec §9). That was right for the campaign's
     /// achievements and was only a blanket because the daily had nothing of its own.
     ///
-    /// The tab is `earnableInDaily`, which is the workbook's Daily Challenge column - and the
-    /// note stays, because a tab that lists nineteen of ninety-eight still owes the reader an
+    /// **The tab is `dailyOnly` as of round 329d**, which is the daily's own history: how many
+    /// days have posted, how long the streak is, where a day finished, whether every twist has
+    /// been met. It was `earnableInDaily` - what a day is *allowed* to award - and almost
+    /// everything in that set is earnable in an ordinary run too, so the tab was mostly a copy
+    /// of the others (James: "just show the [achievements] only available in those game
+    /// modes"). `earnableInDaily` still decides what a day may award, which is a different
+    /// question and is the one the tests below are about.
+    ///
+    /// The note stays, because a tab that lists ten of ninety-eight still owes the reader an
     /// explanation of what it is not listing.
-    func testTheDailyTabIsTheWorkbooksOwnColumn() {
+    func testTheDailyTabIsTheDailysOwnHistory() {
         let count = LevelPackSetup().achievementsNameArray.count
         let listed = Set(AchievementCatalogue.indices(for: .daily, count: count))
-        XCTAssertEqual(listed, AchievementCatalogue.earnableInDaily)
+        XCTAssertEqual(listed, AchievementCatalogue.dailyOnly)
         XCTAssertFalse(listed.isEmpty, "the daily has its own set as of round 310")
         XCTAssertTrue(AchievementCatalogue.emptyNote(for: .daily).isEmpty == false)
     }
