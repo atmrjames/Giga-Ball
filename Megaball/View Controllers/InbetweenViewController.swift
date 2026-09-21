@@ -431,7 +431,7 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
     /// and a player's thumb learns one place rather than two.
     private func moveTheTapLineDown() {
         guard let host = tapLabel.superview else { return }
-        let scale = UIViewController.inGameHeaderScale(forHeight: view.bounds.height)
+        let scale = UIViewController.inGameHeaderScale(for: view.bounds.size)
         for constraint in host.constraints
         where constraint.firstItem === host && constraint.secondItem === tapLabel
             && constraint.firstAttribute == .bottom {
@@ -737,23 +737,27 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
     /// may sit lower than the header's bottom and may never ride up into it, which is what was
     /// happening on a 320 by 568 phone - round 338's gallery render has "Total Score" printed
     /// through the rack of lives.
-    /// Takes the result band's type down with the header on a short screen.
+    /// Takes the result band's type with the header, down on a short screen and up on a tall.
     ///
-    /// The header shrinking is not enough on its own: the band under it is PASSED, two score
-    /// rows and a total, and at a 320 by 568 phone's full size that is two hundred points of
-    /// type under a header that has only just been made to fit. Both ends are scaled by the
-    /// same number, so the card reads as the same card drawn smaller rather than as a
-    /// different arrangement.
+    /// The header alone is not enough: the band under it is PASSED, two score rows and a
+    /// total, and at a 320 by 568 phone's full size that is two hundred points of type under a
+    /// header that has only just been made to fit. Both ends are scaled by the same number, so
+    /// the card reads as the same card drawn smaller - or larger, on an iPad, where a phone's
+    /// type in the middle of a 1032 by 1376 screen reads as a stretched phone app.
     ///
     /// Scaled from whatever the storyboard set, and only once, for the same reason
     /// `raiseTheTotal` is: a hard-coded size here would be a second opinion about the first,
     /// and a second pass would shrink what the first pass had already shrunk.
-    private func shrinkTheResultBandOnAShortScreen() {
-        let scale = UIViewController.inGameHeaderScale(forHeight: view.bounds.height)
+    private func sizeTheResultBandForTheScreen() {
+        // The three title lines as well as the result: they are the band the badge hangs over,
+        // and the pause screen scales its own. A header grown for an iPad over lines that
+        // stayed a phone's size is the render round 338 caught on the between-levels card
+        let scale = UIViewController.inGameHeaderScale(for: view.bounds.size)
         guard scale != resultBandScale else { return }
         resultBandScale = scale
 
-        for label in [completeLabel, levelScoreTitle, levelScoreLabel,
+        for label in [packNameLabel, levelNumberLabel, levelNameLabel,
+                      completeLabel, levelScoreTitle, levelScoreLabel,
                       speedBonusTitle, speedBonusLabel,
                       totalScoreTitle, totalScoreLabel] {
             guard let label, let font = label.font else { continue }
@@ -834,7 +838,7 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
 
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
-        shrinkTheResultBandOnAShortScreen()
+        sizeTheResultBandForTheScreen()
         moveTheTapLineDown()
         // Both measured from the screen's height, which `viewDidLoad` does not know: the view
         // still has the storyboard's 414 by 896 when it runs, so everything asked there came
@@ -847,7 +851,7 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
                                   above: packNameLabel, or: levelNumberLabel, in: view)
             headerToResultGap?.constant =
                 (UIViewController.inGameHeaderToResultGap
-                 * UIViewController.inGameHeaderScale(forHeight: view.bounds.height)).rounded()
+                 * UIViewController.inGameHeaderScale(for: view.bounds.size)).rounded()
         }
         // **The first moment the right host is known.** `viewDidLoad` calls `showAnimate`, and
         // `updateLabels` builds the mode icon and the wordmark beside it - all of that runs

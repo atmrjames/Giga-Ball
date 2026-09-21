@@ -253,22 +253,36 @@ extension UIViewController {
         weak var pinnedTo: UILabel?
     }
 
-    /// How much the in-game header shrinks on a screen too short to wear it at full size.
+    /// The shape the in-game header is drawn at full size for: a 402 by 874 phone.
     ///
-    /// **Round 338.** The header is a fixed 188 points before the first word of content: the
-    /// wordmark's inset, the wordmark, the air under it, the badge, and the air under that. On
-    /// a 402 by 874 phone that is a fifth of the screen and looks like a title. On a 320 by 568
-    /// one it is a third, and the between-levels card ran its total score straight through the
-    /// tap line - the gallery render has "Total Score" printed over "2 lives left".
+    /// Everything in the band - the wordmark's inset and height, the badge, the air under it,
+    /// the type below - is a number that was chosen against this screen, so this is the size at
+    /// which the scale below is exactly one.
+    static let inGameHeaderReference = CGSize(width: 402, height: 874)
+
+    /// How much the in-game header grows or shrinks to suit the screen it is on.
     ///
-    /// So the header is measured in points on a screen with room and in *proportion* on one
-    /// without. The turn is at 700 points, which is above every phone that needs this and below
-    /// every phone that does not: the 320 by 568 phone comes out at 0.75 and gives back about
-    /// fifty points, which is what the card was short. The floor stops a Slide Over pane or a
-    /// very small window shrinking the badge into a bullet point.
-    static func inGameHeaderScale(forHeight height: CGFloat) -> CGFloat {
-        guard height > 0, height < 700 else { return 1 }
-        return max(0.72, (height/700*100).rounded()/100)
+    /// **Round 338.** The band is 188 points before the first word of content: the wordmark's
+    /// inset, the wordmark, the air under it, the badge, and the air under that. On the phone
+    /// it was designed for that is a fifth of the screen and looks like a title. On a 320 by
+    /// 568 one it is a third, and the between-levels card ran its total score straight through
+    /// the tap line - the first gallery render has "Total Score" printed over "2 lives left".
+    /// On a 1032 by 1376 iPad it is a tenth, and the whole screen read as a phone app someone
+    /// had stretched.
+    ///
+    /// **The smaller of the two ratios**, because a screen can be generous in one direction and
+    /// mean in the other: a Slide Over pane is a phone's width at an iPad's height, and sizing
+    /// it by height alone gave it an iPad's badge over a wordmark that had to stay narrow
+    /// enough to clear the pane's edges.
+    ///
+    /// Clamped at both ends. The floor stops a very small window shrinking the badge into a
+    /// bullet point; the ceiling stops an iPad, nearly twice the reference height, printing a
+    /// poster.
+    static func inGameHeaderScale(for size: CGSize) -> CGFloat {
+        guard size.width > 0, size.height > 0 else { return 1 }
+        let ratio = min(size.height/inGameHeaderReference.height,
+                        size.width/inGameHeaderReference.width)
+        return min(1.4, max(0.72, (ratio*100).rounded()/100))
     }
 
     /// The air between the block naming the run and the block reporting it.
@@ -306,7 +320,7 @@ extension UIViewController {
     /// smaller version of the same header rather than a header that does not fit.
     func layOutTheInGameHeader(_ header: inout InGameHeader, logo: UIView?, icon: UIView,
                                above pack: UILabel, or level: UILabel, in container: UIView) {
-        let scale = UIViewController.inGameHeaderScale(forHeight: container.bounds.height)
+        let scale = UIViewController.inGameHeaderScale(for: container.bounds.size)
         let target: UILabel = (pack.text?.isEmpty == false) ? pack : level
 
         if header.iconTop == nil {

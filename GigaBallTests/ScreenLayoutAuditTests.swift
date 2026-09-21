@@ -597,7 +597,12 @@ final class InGameGalleryTests: XCTestCase {
     private static let shapes: [(String, CGSize)] = [
         ("se", CGSize(width: 320, height: 568)),
         ("16pro", CGSize(width: 402, height: 874)),
+        ("ipad", CGSize(width: 1032, height: 1376)),
+        ("slideover", CGSize(width: 320, height: 1024)),
     ]
+    // The two phones a note is usually written against, and the two shapes that catch what a
+    // phone cannot: an iPad, where there is more room than the layout knows what to do with,
+    // and a Slide Over pane, which is a phone's width at an iPad's height
 
     /// Everything on these screens arrives through a fade, and two of them leave through one
     /// as well, so a render taken straight after `viewDidLoad` catches an empty stage. The

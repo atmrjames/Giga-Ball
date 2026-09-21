@@ -311,12 +311,53 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
         // And the same air under the run's name that the level intro and the between-levels
         // card keep, for the same reason: PAUSED and the level's name both carry a halo, and
         // the storyboard's fifteen points let the two lights run together.
-        let scale = UIViewController.inGameHeaderScale(forHeight: containterView.bounds.height)
+        let scale = UIViewController.inGameHeaderScale(for: containterView.bounds.size)
         for tie in [levelNameLabelNormalConstraint, levelTitleLowerConstraint].compactMap({ $0 })
         where tie.constant == 15 {
             tie.constant = (UIViewController.inGameHeaderToResultGap*scale).rounded()
         }
     }
+
+    /// Takes the block under the badge with the header, down on a short screen and up on a tall.
+    ///
+    /// **Round 338, from the gallery's iPad renders.** The header grows on a 1032 by 1376
+    /// screen and the type under it did not, so the badge read as designed for the device and
+    /// the four lines beneath it as a phone's, in the middle of a lot of nothing. The level
+    /// intro and the between-levels card size their own band this way; this is the same for
+    /// the two screens at the other end of a run.
+    ///
+    /// Measured from what the storyboard set rather than from what is there now, so a screen
+    /// laid out many times - a rotation, an iPad window dragged narrower - lands on the same
+    /// size each pass rather than scaling what it scaled last time.
+    private func sizeTheTitleBlockForTheScreen() {
+        let scale = UIViewController.inGameHeaderScale(for: containterView.bounds.size)
+        guard scale != titleBlockScale else { return }
+        titleBlockScale = scale
+
+        for label in [packNameLabel, levelNumberLabel, levelNameLabel, titleLabel,
+                      scoreLabelTitle, scoreLabel, highscoreLabelTitle, highscoreLabel] {
+            guard let label, let font = label.font else { continue }
+            let key = ObjectIdentifier(label)
+            let base = titleBlockBaseSize[key] ?? font.pointSize
+            titleBlockBaseSize[key] = base
+            label.font = font.withSize((base*scale).rounded())
+
+            for constraint in label.constraints where constraint.firstAttribute == .height {
+                let tie = ObjectIdentifier(constraint)
+                let baseHeight = titleBlockBaseHeight[tie] ?? constraint.constant
+                titleBlockBaseHeight[tie] = baseHeight
+                constraint.constant = (baseHeight*scale).rounded()
+            }
+            // The boxes with the type. Every one of these labels carries a fixed height from
+            // the storyboard, and type grown inside a box that did not grow with it is how the
+            // iPad render came out with GAME OVER touching the line under it
+        }
+        containterView.setNeedsLayout()
+    }
+
+    private var titleBlockScale: CGFloat = 1
+    private var titleBlockBaseSize: [ObjectIdentifier: CGFloat] = [:]
+    private var titleBlockBaseHeight: [ObjectIdentifier: CGFloat] = [:]
 
     /// Held so a second layout pass knows the tie has already been dealt with.
     private var titleBlockCentreTie: NSLayoutConstraint?
@@ -440,6 +481,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
             layOutTheInGameHeader(&header, logo: pauseLogoView, icon: modeIconView,
                                   above: packNameLabel, or: levelNumberLabel,
                                   in: containterView)
+            sizeTheTitleBlockForTheScreen()
         }
         // Which of the two title lines the icon sits on depends on what they say, and what
         // they say is written after the icon is built (round 332)

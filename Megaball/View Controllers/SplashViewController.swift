@@ -679,7 +679,7 @@ class SplashViewController: UIViewController {
     /// the layout pass, where the answer is real.
     private func sizeTheResumeHeader() {
         guard let container = resumeWordmark?.superview else { return }
-        let scale = UIViewController.inGameHeaderScale(forHeight: container.bounds.height)
+        let scale = UIViewController.inGameHeaderScale(for: container.bounds.size)
         resumeHeader.logoTop?.constant =
             (UIViewController.inGameLogoTopInset*scale).rounded()
         resumeHeader.logoHeight?.constant =
