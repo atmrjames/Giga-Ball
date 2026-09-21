@@ -452,14 +452,18 @@ final class BetweenLevelsScoreBlockTests: XCTestCase {
     }
 
     /// The rack is said at the bottom, above the tap line, which sits where a play button would.
+    ///
+    /// **Balls, not lives** (James, round 339: "I noticed balls left and lives left on
+    /// different screens - let's use balls instead of lives everywhere"). The game has never
+    /// had lives in it.
     func testTheLivesAreSaidAboveTheTapLine() throws {
         let screen = try XCTUnwrap(self.screen(bonus: 300))
         screen.livesRemaining = 2
         let lives = try XCTUnwrap(
             screen.view.subviews.first?.subviews.compactMap { $0 as? UILabel }
-                .first { ($0.text ?? "").contains("lives left") || ($0.text ?? "") == "1 life left" }
+                .first { ($0.text ?? "").contains("ball") }
                 ?? screen.tapLabel.superview?.subviews.compactMap { $0 as? UILabel }
-                    .first { ($0.text ?? "").contains("lives left") || ($0.text ?? "") == "1 life left" },
+                    .first { ($0.text ?? "").contains("ball") },
             "the between-levels screen never says how many balls are left")
 
         let rack = lives.convert(lives.bounds, to: screen.view)
@@ -594,12 +598,53 @@ final class InGameGalleryTests: XCTestCase {
         super.tearDown()
     }
 
-    private static let shapes: [(String, CGSize)] = [
-        ("se", CGSize(width: 320, height: 568)),
-        ("16pro", CGSize(width: 402, height: 874)),
-        ("ipad", CGSize(width: 1032, height: 1376)),
-        ("slideover", CGSize(width: 320, height: 1024)),
+    private static let shapes: [(name: String, size: CGSize, regular: Bool)] = [
+        ("se", CGSize(width: 320, height: 568), false),
+        ("16pro", CGSize(width: 402, height: 874), false),
+        ("ipad", CGSize(width: 1032, height: 1376), true),
+        ("slideover", CGSize(width: 320, height: 1024), false),
     ]
+
+    /// Holds the screen so its width class can be overridden.
+    ///
+    /// **Without this the iPad renders are a lie.** A view controller built on its own and
+    /// dropped into a plain view reports a *compact* width whatever size that view is, and
+    /// `limitMenuContentSize` - which is what keeps an iPad's content off the edges of the
+    /// screen - returns early on compact. So the first iPad renders of round 338 showed the
+    /// button row spread into the far corners, which is not what an iPad does. It is the same
+    /// trap round 191 found in the app itself, from the other side.
+    private var parents: [UIViewController] = []
+
+    private func host(_ screen: UIViewController, size: CGSize, regular: Bool) -> UIView {
+        let parent = UIViewController()
+        parent.view.frame = CGRect(origin: .zero, size: size)
+        parent.view.backgroundColor = UIColor(red: 0.09, green: 0.03, blue: 0.12, alpha: 1)
+
+        let window = UIWindow(frame: CGRect(origin: .zero, size: size))
+        window.rootViewController = parent
+        window.isHidden = false
+        windows.append(window)
+        if regular, #available(iOS 17.0, *) {
+            window.traitOverrides.horizontalSizeClass = .regular
+        }
+        // **In a real window, and told what width class it is.** A view controller built on its
+        // own and dropped into a plain view reports a *compact* width whatever size that view
+        // is, and `limitMenuContentSize` - which is what holds an iPad's content to a 460-point
+        // column - returns early on compact. So round 338's first iPad renders showed the
+        // button row spread into the far corners of a 1032-point screen, which is not what an
+        // iPad does, and James reviewed a picture of something the app never draws.
+
+        parent.addChild(screen)
+        screen.view.frame = parent.view.bounds
+        parent.view.addSubview(screen.view)
+        screen.didMove(toParent: parent)
+        parents.append(parent)
+        hosts.append(parent.view)
+        screens.append(screen)
+        return parent.view
+    }
+
+    private var windows: [UIWindow] = []
     // The two phones a note is usually written against, and the two shapes that catch what a
     // phone cannot: an iPad, where there is more room than the layout knows what to do with,
     // and a Slide Over pane, which is a phone's width at an iPad's height
@@ -642,19 +687,15 @@ final class InGameGalleryTests: XCTestCase {
 
     // MARK: The level intro and the between-levels card
 
-    private func inbetween(size: CGSize, configure: (InbetweenViewController) -> Void) -> UIView? {
+    private func inbetween(size: CGSize, regular: Bool = false,
+                           configure: (InbetweenViewController) -> Void) -> UIView? {
         let board = UIStoryboard(name: "Main", bundle: Bundle(for: InbetweenViewController.self))
         guard let screen = board.instantiateViewController(withIdentifier: "inbetweenView")
                 as? InbetweenViewController else { return nil }
         configure(screen)
 
-        let host = UIView(frame: CGRect(origin: .zero, size: size))
-        host.backgroundColor = UIColor(red: 0.09, green: 0.03, blue: 0.12, alpha: 1)
         screen.loadViewIfNeeded()
-        screen.view.frame = host.bounds
-        host.addSubview(screen.view)
-        hosts.append(host)
-        screens.append(screen)
+        let host = self.host(screen, size: size, regular: regular)
         for _ in 0..<3 {
             host.setNeedsLayout()
             host.layoutIfNeeded()
@@ -669,6 +710,12 @@ final class InGameGalleryTests: XCTestCase {
         // name back in. That completion runs on the run loop, which a test does not spin, so a
         // render taken now would show a player the numbers they never see. Blanked here in the
         // same order, so the gallery shows the intro rather than the card behind it.
+        if screen.firstLevel == false {
+            screen.tapLabel.isHidden = false
+            // The tally reveals it when it finishes counting, and a test does not spin the run
+            // loop it counts on - so without this the render is missing the one line the card
+            // ends with, which is exactly what James asked about in round 339
+        }
         if screen.firstLevel {
             for label in [screen.completeLabel, screen.totalScoreTitle, screen.totalScoreLabel,
                           screen.levelScoreTitle, screen.levelScoreLabel,
@@ -685,20 +732,16 @@ final class InGameGalleryTests: XCTestCase {
         return host
     }
 
-    private func pause(size: CGSize, configure: (PauseMenuViewController) -> Void) -> UIView? {
+    private func pause(size: CGSize, regular: Bool = false,
+                       configure: (PauseMenuViewController) -> Void) -> UIView? {
         let board = UIStoryboard(name: "Main", bundle: Bundle(for: PauseMenuViewController.self))
         guard let screen = board.instantiateViewController(withIdentifier: "pauseMenuVC")
                 as? PauseMenuViewController else { return nil }
         screen.totalStatsArray = [TotalStats()]
         configure(screen)
 
-        let host = UIView(frame: CGRect(origin: .zero, size: size))
-        host.backgroundColor = UIColor(red: 0.09, green: 0.03, blue: 0.12, alpha: 1)
         screen.loadViewIfNeeded()
-        screen.view.frame = host.bounds
-        host.addSubview(screen.view)
-        hosts.append(host)
-        screens.append(screen)
+        let host = self.host(screen, size: size, regular: regular)
         screen.viewWillAppear(false)
         for _ in 0..<3 {
             host.setNeedsLayout()
@@ -776,7 +819,7 @@ final class InGameGalleryTests: XCTestCase {
     }
 
     /// The splash screen offering a saved run, which is where the family starts.
-    private func resumeCard(size: CGSize) -> UIView? {
+    private func resumeCard(size: CGSize, regular: Bool = false) -> UIView? {
         let store = UserDefaults(suiteName: "InGameGalleryTests.resume")!
         store.removePersistentDomain(forName: "InGameGalleryTests.resume")
         let game = SavedGame(
@@ -801,13 +844,8 @@ final class InGameGalleryTests: XCTestCase {
         splash.defaults = store
         splash.gameToResume = true
 
-        let host = UIView(frame: CGRect(origin: .zero, size: size))
-        host.backgroundColor = UIColor(red: 0.09, green: 0.03, blue: 0.12, alpha: 1)
         splash.loadViewIfNeeded()
-        splash.view.frame = host.bounds
-        host.addSubview(splash.view)
-        hosts.append(host)
-        screens.append(splash)
+        let host = self.host(splash, size: size, regular: regular)
         for _ in 0..<3 {
             host.setNeedsLayout()
             host.layoutIfNeeded()
@@ -816,20 +854,20 @@ final class InGameGalleryTests: XCTestCase {
     }
 
     func testWriteTheWholeFamilyOut() {
-        for (shape, size) in Self.shapes {
+        for (shape, size, regular) in Self.shapes {
 
             // The resume card, the screen the run is entered from
-            if let host = resumeCard(size: size) { write(host, "resume-classic-\(shape)") }
+            if let host = resumeCard(size: size, regular: regular) { write(host, "resume-classic-\(shape)") }
 
             // The level intro, the four runs it can introduce
-            if let host = inbetween(size: size, configure: {
+            if let host = inbetween(size: size, regular: regular, configure: {
                 $0.levelNumber = LevelPackSetup().startLevelNumber[2] + 2
                 $0.packNumber = 2
                 $0.numberOfLevels = 10
                 $0.firstLevel = true
             }) { write(host, "intro-classic-\(shape)") }
 
-            if let host = inbetween(size: size, configure: {
+            if let host = inbetween(size: size, regular: regular, configure: {
                 $0.levelNumber = 0
                 $0.packNumber = 1
                 $0.numberOfLevels = 1
@@ -842,7 +880,7 @@ final class InGameGalleryTests: XCTestCase {
                 DailyChallengeSession.shared.active = DailyChallenge(
                     dateKey: DailyChallengeSession.shared.todayKey, mode: .classic,
                     classicLevel: 0, twists: twists)
-                if let host = inbetween(size: size, configure: {
+                if let host = inbetween(size: size, regular: regular, configure: {
                     $0.levelNumber = 1
                     $0.packNumber = 2
                     $0.numberOfLevels = 1
@@ -852,7 +890,7 @@ final class InGameGalleryTests: XCTestCase {
             }
 
             // The between-levels card, with and without a speed bonus
-            if let host = inbetween(size: size, configure: {
+            if let host = inbetween(size: size, regular: regular, configure: {
                 $0.levelNumber = LevelPackSetup().startLevelNumber[2] + 2
                 $0.packNumber = 2
                 $0.numberOfLevels = 10
@@ -863,7 +901,7 @@ final class InGameGalleryTests: XCTestCase {
                 $0.livesRemaining = 2
             }) { write(host, "between-bonus-\(shape)") }
 
-            if let host = inbetween(size: size, configure: {
+            if let host = inbetween(size: size, regular: regular, configure: {
                 $0.levelNumber = LevelPackSetup().startLevelNumber[2] + 2
                 $0.packNumber = 2
                 $0.numberOfLevels = 10
@@ -875,13 +913,13 @@ final class InGameGalleryTests: XCTestCase {
             }) { write(host, "between-nobonus-\(shape)") }
 
             // Paused, in a pack and in an endless run
-            if let host = pause(size: size, configure: {
+            if let host = pause(size: size, regular: regular, configure: {
                 $0.sender = "Pause"
                 $0.levelNumber = LevelPackSetup().startLevelNumber[2] + 2
                 $0.score = 3200
             }) { write(host, "pause-classic-\(shape)") }
 
-            if let host = pause(size: size, configure: {
+            if let host = pause(size: size, regular: regular, configure: {
                 $0.sender = "Pause"
                 $0.levelNumber = 0
                 $0.endlessMode = true
@@ -893,7 +931,7 @@ final class InGameGalleryTests: XCTestCase {
                 height: 0, durationSeconds: 214, paddleHits: 132, bricksDestroyed: 410,
                 ballsLost: 3, powerUpsSeen: 14, powerUpsCollected: 9,
                 score: 15200, levelsCleared: 4, isEndless: false)
-            if let host = pause(size: size, configure: {
+            if let host = pause(size: size, regular: regular, configure: {
                 $0.sender = "Game Over"
                 $0.levelNumber = LevelPackSetup().startLevelNumber[2] + 3
                 $0.score = 15200
@@ -924,20 +962,49 @@ final class InGameHeaderSpineTests: XCTestCase {
         InGameRecents.shared.runSummary = nil
         hosts.removeAll()
         screens.removeAll()
+        windows.forEach { $0.isHidden = true }
+        windows.removeAll()
         super.tearDown()
     }
 
-    private let shapes: [(name: String, size: CGSize)] = [
-        ("iPhone SE", CGSize(width: 320, height: 568)),
-        ("iPhone 16 Pro", CGSize(width: 402, height: 874)),
-        ("iPhone 17 Pro Max", CGSize(width: 440, height: 956)),
-        ("iPad 13-inch", CGSize(width: 1032, height: 1376)),
-        ("Slide Over", CGSize(width: 320, height: 1024)),
+    private let shapes: [(name: String, size: CGSize, regular: Bool)] = [
+        ("iPhone SE", CGSize(width: 320, height: 568), false),
+        ("iPhone 16 Pro", CGSize(width: 402, height: 874), false),
+        ("iPhone 17 Pro Max", CGSize(width: 440, height: 956), false),
+        ("iPad 13-inch", CGSize(width: 1032, height: 1376), true),
+        ("Slide Over", CGSize(width: 320, height: 1024), false),
     ]
+
+    private var windows: [UIWindow] = []
+
+    /// A real window, told what width class it is.
+    ///
+    /// Without one an iPad-sized screen reports a *compact* width and `limitMenuContentSize`
+    /// stands down, so the content fills 1032 points instead of the 460-point column the app
+    /// actually draws - and every measurement taken here is of a screen the app never shows.
+    private func host(_ screen: UIViewController, size: CGSize, regular: Bool) -> UIView {
+        let parent = UIViewController()
+        parent.view.frame = CGRect(origin: .zero, size: size)
+        let window = UIWindow(frame: CGRect(origin: .zero, size: size))
+        window.rootViewController = parent
+        window.isHidden = false
+        windows.append(window)
+        if regular, #available(iOS 17.0, *) {
+            window.traitOverrides.horizontalSizeClass = .regular
+        }
+        parent.addChild(screen)
+        screen.view.frame = parent.view.bounds
+        parent.view.addSubview(screen.view)
+        screen.didMove(toParent: parent)
+        hosts.append(parent.view)
+        screens.append(screen)
+        return parent.view
+    }
 
     // MARK: Building the two screens
 
-    private func intro(size: CGSize, firstLevel: Bool) -> (UIView, InbetweenViewController)? {
+    private func intro(size: CGSize, regular: Bool = false,
+                       firstLevel: Bool) -> (UIView, InbetweenViewController)? {
         let board = UIStoryboard(name: "Main", bundle: Bundle(for: InbetweenViewController.self))
         guard let screen = board.instantiateViewController(withIdentifier: "inbetweenView")
                 as? InbetweenViewController else { return nil }
@@ -950,17 +1017,14 @@ final class InGameHeaderSpineTests: XCTestCase {
         screen.totalScore = 15200
         screen.livesRemaining = 2
 
-        let host = UIView(frame: CGRect(origin: .zero, size: size))
         screen.loadViewIfNeeded()
-        screen.view.frame = host.bounds
-        host.addSubview(screen.view)
-        hosts.append(host)
-        screens.append(screen)
+        let host = self.host(screen, size: size, regular: regular)
         settle(host)
         return (host, screen)
     }
 
-    private func pause(size: CGSize, sender: String) -> (UIView, PauseMenuViewController)? {
+    private func pause(size: CGSize, regular: Bool = false,
+                       sender: String) -> (UIView, PauseMenuViewController)? {
         let board = UIStoryboard(name: "Main", bundle: Bundle(for: PauseMenuViewController.self))
         guard let screen = board.instantiateViewController(withIdentifier: "pauseMenuVC")
                 as? PauseMenuViewController else { return nil }
@@ -969,12 +1033,8 @@ final class InGameHeaderSpineTests: XCTestCase {
         screen.score = 3200
         screen.totalStatsArray = [TotalStats()]
 
-        let host = UIView(frame: CGRect(origin: .zero, size: size))
         screen.loadViewIfNeeded()
-        screen.view.frame = host.bounds
-        host.addSubview(screen.view)
-        hosts.append(host)
-        screens.append(screen)
+        let host = self.host(screen, size: size, regular: regular)
         screen.viewWillAppear(false)
         settle(host)
         return (host, screen)
@@ -1021,9 +1081,9 @@ final class InGameHeaderSpineTests: XCTestCase {
 
     /// The badge hangs from the wordmark rather than from whatever text happens to be showing.
     func testTheBadgeSitsUnderTheWordmarkOnEveryScreen() throws {
-        for (name, size) in shapes {
+        for (name, size, regular) in shapes {
             var seen = 0
-            for (label, pair) in build(size) {
+            for (label, pair) in build(size, regular: regular) {
                 guard let logo = wordmark(pair.0, pair.1), let icon = badge(pair.1) else { continue }
                 seen += 1
                 let mark = logo.convert(logo.bounds, to: pair.0)
@@ -1044,9 +1104,9 @@ final class InGameHeaderSpineTests: XCTestCase {
 
     /// And every screen puts it in the *same* place, which is the continuity being asked for.
     func testTheBandIsInTheSamePlaceOnEveryScreen() throws {
-        for (name, size) in shapes {
+        for (name, size, regular) in shapes {
             var places: [String: CGRect] = [:]
-            for (label, pair) in build(size) {
+            for (label, pair) in build(size, regular: regular) {
                 guard let icon = badge(pair.1) else { continue }
                 places[label] = icon.convert(icon.bounds, to: pair.0)
             }
@@ -1064,8 +1124,8 @@ final class InGameHeaderSpineTests: XCTestCase {
 
     /// The wordmark clears the Home button in the pause screen's corner.
     func testTheWordmarkClearsTheHomeButton() throws {
-        for (name, size) in shapes {
-            guard let (host, screen) = pause(size: size, sender: "Pause"),
+        for (name, size, regular) in shapes {
+            guard let (host, screen) = pause(size: size, regular: regular, sender: "Pause"),
                   let logo = wordmark(host, screen), let home = screen.homeButton
             else { continue }
             XCTAssertFalse(home.isHidden, "\(name): the paused screen shows Home")
@@ -1077,18 +1137,18 @@ final class InGameHeaderSpineTests: XCTestCase {
         }
     }
 
-    private func build(_ size: CGSize) -> [(String, (UIView, UIViewController))] {
+    private func build(_ size: CGSize, regular: Bool) -> [(String, (UIView, UIViewController))] {
         var built: [(String, (UIView, UIViewController))] = []
-        if let pair = intro(size: size, firstLevel: true) {
+        if let pair = intro(size: size, regular: regular, firstLevel: true) {
             built.append(("the level intro", (pair.0, pair.1)))
         }
-        if let pair = intro(size: size, firstLevel: false) {
+        if let pair = intro(size: size, regular: regular, firstLevel: false) {
             built.append(("the between-levels card", (pair.0, pair.1)))
         }
-        if let pair = pause(size: size, sender: "Pause") {
+        if let pair = pause(size: size, regular: regular, sender: "Pause") {
             built.append(("the pause screen", (pair.0, pair.1)))
         }
-        if let pair = pause(size: size, sender: "Game Over") {
+        if let pair = pause(size: size, regular: regular, sender: "Game Over") {
             built.append(("the game-over card", (pair.0, pair.1)))
         }
         return built

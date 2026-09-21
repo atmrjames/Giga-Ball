@@ -165,26 +165,19 @@ final class ResumeCardRenderTests: XCTestCase {
     // MARK: - Everything at the bottom
 
     /// "With everything grouped towards the bottom."
-    /// The card hangs from the header, at the gap every in-game screen uses.
+    /// The card is built from the button up, and sits in the lower half of the screen.
     ///
-    /// **This asserted the opposite until round 338**, and the change is James's: "many of the
-    /// screens have the game mode logo and title too low - they should sit just below the
-    /// Giga-Ball logo near the top of the views." On this screen the title is RESUMING.
-    ///
-    /// Round 310's "everything grouped towards the bottom" was decided when the wordmark sat
-    /// in the middle of the screen and the card was grouped under *it* - the group was the
-    /// card and the mark together. With the wordmark at the top of the screen, keeping the
-    /// card at the bottom split that group in two and left a third of a screen of nothing
-    /// between them. The button it is pressed with is still at the bottom, which is the half
-    /// of round 310 that was about where a thumb goes.
-    func testTheCardHangsFromTheHeader() {
+    /// Round 310: "everything grouped towards the bottom". Round 338 hung it from the header
+    /// at the top instead, and round 339 put it back - **James: "start from the close button
+    /// and work up rather than the giga-ball logo and working down."** The wordmark floats
+    /// above whatever height the card turns out to need.
+    func testTheCardIsBuiltFromTheButtonUp() {
         let splash = laidOut(base())
         let top = card(splash).filter { $0.isHidden == false }
             .map { $0.convert($0.bounds, to: splash.view).minY }.min()!
-        let header = headerBottom(splash)
-        XCTAssertEqual(top - header, UIViewController.inGameHeaderToResultGap, accuracy: 1,
-                       "the card should sit the same distance under the badge that PAUSED "
-                       + "sits under the level's name on the pause screen")
+        XCTAssertGreaterThan(top, screen.height*0.40,
+                             "the card starts at \(top) of \(screen.height) - it is anchored "
+                             + "to the button at the bottom, not to the mark at the top")
     }
 
     /// "Move the Resuming... label to just above the cancel button" - the card reads downwards
@@ -328,14 +321,27 @@ final class ResumeCardRenderTests: XCTestCase {
     ///
     /// The bug this was written for: `setCustomSpacing(_:after:)` is skipped when the view it
     /// names is hidden, so hiding the detail line closed the gap above the score.
+    /// The bottom of whatever the stack draws immediately above the score.
+    private func lineAboveTheScore(_ splash: SplashViewController) -> CGFloat {
+        guard let stack = splash.scoreLabel.superview as? UIStackView,
+              let index = stack.arrangedSubviews.firstIndex(of: splash.scoreLabel) else {
+            return splash.scoreLabel.frame.minY
+        }
+        let above = stack.arrangedSubviews[..<index].last { $0.isHidden == false }
+        return above?.frame.maxY ?? splash.scoreLabel.frame.minY
+    }
+
     func testHidingTheDetailLineDoesNotCloseTheGapAboveTheScore() {
         let classic = laidOut(base())
-        let classicGap = classic.scoreLabel.frame.minY - classic.levelNumberLabel.frame.maxY
+        let classicGap = classic.scoreLabel.frame.minY - lineAboveTheScore(classic)
 
         let endless = laidOut(endlessGame())
         XCTAssertTrue(endless.levelNumberLabel.isHidden,
                       "an endless mode's name has nothing under it")
-        let endlessGap = endless.scoreLabel.frame.minY - endless.packNameLabel.frame.maxY
+        let endlessGap = endless.scoreLabel.frame.minY - lineAboveTheScore(endless)
+        // Measured from whatever is directly above the score in each case, which since round
+        // 339 is the detail line on a classic card and the badge's row on an endless one: the
+        // badge sits between the mode's name and the detail line now
 
         XCTAssertGreaterThan(endlessGap, SplashViewController.groupGap - 1,
                              "the height must not sit jammed under the mode's name")
@@ -498,28 +504,34 @@ final class ResumeCardOnATallScreenTests: XCTestCase {
         }
     }
 
-    /// And the mode's badge is on this screen at all, which until round 338 it was not.
+    /// The mode's badge is on this screen at all, and it sits under the mode's name.
     ///
-    /// The resume card is the screen immediately before the game, and it was the only one of
-    /// the five that named the mode in words alone: a Mayhem run was resumed from a card with
-    /// no badge into a countdown and then a pause screen wearing one.
-    func testTheResumeCardWearsTheModesBadgeUnderTheWordmark() {
+    /// Round 338 put it here for the first time: this was the only one of the five screens
+    /// that named the mode in words alone, so a Mayhem run was resumed from a card with no
+    /// badge into a countdown and then a pause screen wearing one.
+    ///
+    /// **Under the name rather than over it** (James, round 339: "put the game mode logo below
+    /// the game mode title"). On the four screens the game shows, the badge is the heading and
+    /// the words hang from it. Here the heading is RESUMING and the mode is a line of the card,
+    /// so the badge belongs with that line.
+    func testTheBadgeSitsUnderTheModesName() throws {
         let splash = laidOut(in: phone)
         let root = splash.view!
-        let badge = splash.view.subviews
-            .flatMap { [$0] + $0.subviews }
-            .compactMap { $0 as? UIImageView }
-            .first { $0.bounds.width == $0.bounds.height && $0.bounds.width > 30 }
-        let disc = try? XCTUnwrap(badge, "the resume card has no mode badge")
-        guard let disc else { return }
+        let discs = everyImageView(in: root)
+            .filter { $0.isHidden == false && $0.bounds.width == $0.bounds.height
+                        && $0.bounds.width > 30 }
+        let disc = try XCTUnwrap(discs.first, "the resume card has no mode badge")
 
         let place = disc.convert(disc.bounds, to: root)
-        let mark = wordmark(splash)
-        XCTAssertGreaterThanOrEqual(place.minY, mark.maxY - 0.5,
-                                    "the badge is drawn into the wordmark")
-        XCTAssertLessThan(place.minY, phone.height*0.35,
-                          "the badge belongs in the header at the top, with the four screens "
-                          + "this one hands over to")
+        let heading = splash.resumingLabel.convert(splash.resumingLabel.bounds, to: root)
+        XCTAssertGreaterThan(place.minY, heading.maxY,
+                             "the badge belongs inside the card, under the mode's name")
+        XCTAssertLessThan(place.minY, root.bounds.height,
+                          "and on the screen")
+    }
+
+    private func everyImageView(in view: UIView) -> [UIImageView] {
+        view.subviews.flatMap { [$0 as? UIImageView].compactMap { $0 } + everyImageView(in: $0) }
     }
 
     /// It still sits low rather than centred, which is the arrangement James asked for.

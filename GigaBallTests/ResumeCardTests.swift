@@ -312,14 +312,19 @@ final class ResumeCardMatchesTheInGameScreensTests: XCTestCase {
                        "two sizes, the title's and the number's")
     }
 
-    /// And the wordmark is at the top of the screen, where the game's own screens keep it.
+    /// The wordmark floats above the card, pulled towards the middle of the screen.
     ///
     /// Round 336 lifted the storyboard's centred wordmark forty points to make room for the
-    /// card. **Round 338 took it all the way up**, to the inset the level intro, the
-    /// between-levels card, the pause screen and the game-over card all use, and stood the
-    /// launch animation's six frames down in favour of the same artwork those four draw - so
-    /// the assertion is no longer "higher than the middle" but "where the other four put it".
-    func testTheWordmarkIsWhereTheInGameScreensKeepIt() throws {
+    /// card. Round 338 took it all the way to the top, where the four screens the game shows
+    /// keep theirs. **Round 339 settled it between the two** (James: "keep the Giga-Ball logo
+    /// more towards the centre of the screen where possible - it should always sit above",
+    /// and "start from the close button and work up rather than the giga-ball logo and working
+    /// down"). So it is neither at the top nor at the middle: it is pulled towards the middle
+    /// and pushed up by whatever the card needs.
+    ///
+    /// The launch animation's six frames stay stood down either way, which is the half of
+    /// round 338 that survives here.
+    func testTheWordmarkFloatsAboveTheCard() throws {
         let splash = try XCTUnwrap(self.splash())
         let drawn = splash.view.subviews
             .flatMap { [$0] + $0.subviews }
@@ -329,9 +334,12 @@ final class ResumeCardMatchesTheInGameScreensTests: XCTestCase {
         let logo = try XCTUnwrap(drawn, "the resume card draws no wordmark")
         let place = logo.convert(logo.bounds, to: splash.view)
 
-        XCTAssertEqual(place.minY, UIViewController.inGameLogoTopInset, accuracy: 1,
-                       "the wordmark is at \(place.minY) and the four screens this one hands "
-                       + "over to put theirs at \(UIViewController.inGameLogoTopInset)")
+        let card = splash.resumingLabel.convert(splash.resumingLabel.bounds, to: splash.view)
+        XCTAssertLessThanOrEqual(place.maxY, card.minY + 0.5,
+                                 "the wordmark must always sit above the card")
+        XCTAssertGreaterThan(place.minY, UIViewController.inGameLogoTopInset + 20,
+                             "the wordmark is at \(place.minY), back at the top of the screen "
+                             + "rather than towards the middle of it")
         XCTAssertTrue(splash.splashScreenLogo1.isHidden,
                       "the launch animation's frames are stood down for a resume, or the "
                       + "screen draws two wordmarks")

@@ -34,6 +34,12 @@ enum ResumeCard {
         /// Which mode is being resumed.
         var mode = ""
 
+        /// How many balls the run has, for the rack drawn above the line that says so.
+        ///
+        /// Beside the words rather than parsed back out of them, for the same reason the badge
+        /// is: two readings of one fact are one reading too many.
+        var balls = 0
+
         /// And which mode that is, for the badge that names it without words.
         ///
         /// Carried beside the name rather than worked out again from the save: the badge and
@@ -68,6 +74,12 @@ enum ResumeCard {
     /// The endless modes say nothing unless something granted them a rack, which is the rule
     /// the pause screen already follows: it is not news that an endless run has one ball, and
     /// it is news when a twist has given more.
+    /// The number behind `livesRow`'s words, so the rack and the line cannot disagree.
+    private static func ballsLeft(_ game: SavedGame, endless: Bool) -> Int {
+        if endless, game.numberOfLives <= 0 { return 0 }
+        return game.numberOfLives + 1
+    }
+
     private static func livesRow(_ game: SavedGame, endless: Bool) -> String {
         if endless, game.numberOfLives <= 0 { return "" }
         return livesLine(game.numberOfLives + 1)
@@ -102,6 +114,7 @@ enum ResumeCard {
             }
             lines.detail = detail.joined(separator: "\n")
             lines.lives = livesRow(game, endless: challenge.mode.isEndless)
+            lines.balls = ballsLeft(game, endless: challenge.mode.isEndless)
             // **The day's own word for what this run is** (James, round 310: "if it's a
             // competition run on a daily challenge say that in the details label"). It replaces
             // "Still your scoring attempt.", which said the same thing as a footnote under the
@@ -127,6 +140,7 @@ enum ResumeCard {
             lines.scoreTitle = "Height"
             lines.scoreValue = String(game.endlessHeight) + "m"
             lines.lives = livesRow(game, endless: true)
+            lines.balls = ballsLeft(game, endless: true)
             return lines
         }
 
@@ -149,6 +163,7 @@ enum ResumeCard {
         lines.scoreTitle = "Score"
         lines.scoreValue = String(game.totalScore)
         lines.lives = livesRow(game, endless: false)
+        lines.balls = ballsLeft(game, endless: false)
         return lines
     }
 }
@@ -314,8 +329,15 @@ class SplashViewController: UIViewController {
             modeLabel.text = lines.mode
             detailLabel.text = lines.detail
             detailLabel.isHidden = lines.detail.isEmpty
-            resumeStack?.setCustomSpacing(
-                lines.detail.isEmpty ? SplashViewController.groupGap : 0, after: modeLabel)
+            resumeStack?.setCustomSpacing(0, after: modeLabel)
+            if let badgeRow = resumeBadgeRow {
+                resumeStack?.setCustomSpacing(
+                    lines.detail.isEmpty ? SplashViewController.groupGap : 0, after: badgeRow)
+            }
+            // **The gap goes under the badge, not under the name** (round 339). The badge sits
+            // between the mode's name and the detail line now, so a run with no detail - an
+            // endless one - needs the group's air below the badge or the score is jammed under
+            // it. Nothing between the name and its badge either way: they are one thing.
             // **The air above the score has to move with the line that carries it.** A stack
             // skips the custom spacing after a hidden arranged view, so hiding the detail line
             // in the endless modes - where a mode's name has nothing under it to say - took the
@@ -324,6 +346,7 @@ class SplashViewController: UIViewController {
             scoreLabel.attributedText = resumeScoreLine(title: lines.scoreTitle,
                                                         value: lines.scoreValue)
             livesLabel.text = lines.lives
+            resumeBalls = lines.balls
             livesLabel.isHidden = lines.lives.isEmpty
             // Said before the resume, never discovered after it (§12.5) - the same rule the
             // briefing screen follows for whether an attempt posts
@@ -375,7 +398,6 @@ class SplashViewController: UIViewController {
         guard let container = resumingLabel.superview else { return }
 
         cancelResumeButton.removeFromSuperview()
-        liftTheWordmark()
 
         resumingLabel.font = UIViewController.menuTitleFont
         resumingLabel.textColor = GigaBallGlow.colour
@@ -464,8 +486,38 @@ class SplashViewController: UIViewController {
         // Cleared by identity rather than by outlet name, so a constraint the storyboard grows
         // later is retired too.
 
-        let stack = UIStackView(arrangedSubviews: [resumingLabel, modeLabel,
-                                                   detailLabel, scoreLabel, livesLabel])
+        let badgeRow = UIView()
+        badgeRow.translatesAutoresizingMaskIntoConstraints = false
+        resumeBadgeRow = badgeRow
+
+        let rack = BallRackView()
+        resumeRack = rack
+        let rackRow = UIView()
+        rackRow.translatesAutoresizingMaskIntoConstraints = false
+        rackRow.addSubview(rack)
+        NSLayoutConstraint.activate([
+            rack.centerXAnchor.constraint(equalTo: rackRow.centerXAnchor),
+            rack.topAnchor.constraint(equalTo: rackRow.topAnchor),
+            rack.bottomAnchor.constraint(equalTo: rackRow.bottomAnchor),
+        ])
+
+        let stack = UIStackView(arrangedSubviews: [resumingLabel, modeLabel, badgeRow,
+                                                   detailLabel, scoreLabel, rackRow, livesLabel])
+        stack.setCustomSpacing(4, after: rackRow)
+        // **Both the badge and the rack sit in rows of their own.** The stack is set to fill,
+        // so every arranged view is given the stack's width - and the rack's width is pinned to
+        // the balls inside it, which made the stack as narrow as the pill and wrapped RESUMING
+        // two letters to a line. A row with nothing of its own to say about width stretches,
+        // and the thing inside it stays the size it wants to be.
+        // **The badge under the mode's name, not above it** (James, round 339: "put the game
+        // mode logo below the game mode title"). On the four screens the game shows the badge
+        // is the heading and the words hang from it; here the heading is RESUMING and the mode
+        // is a line of the card, so the badge belongs with that line rather than over it.
+        //
+        // In a row of its own because a stack set to fill would stretch it to the card's width.
+        //
+        // **And the rack above the balls line**, which is the same pill the pause screen and
+        // the between-levels card draw, at the size the game draws its own.
         stack.axis = .vertical
         stack.alignment = .fill
         stack.spacing = 0
@@ -514,10 +566,12 @@ class SplashViewController: UIViewController {
         // Wanted, not required, so the cap below can lift the card off the bottom without the
         // two of them conflicting
 
-        let cardUnderTheHeader = stack.topAnchor.constraint(
-            equalTo: (resumeBadgeView ?? splashScreenLogo1).bottomAnchor,
-            constant: UIViewController.inGameHeaderToResultGap)
-        resumeCardTopGap = cardUnderTheHeader
+        liftTheWordmark()
+        // After the card, not before it: the badge lives in a row of the card now, so there
+        // has to be a card for it to live in
+        let wordmarkClearance = (resumeWordmark ?? splashScreenLogo1).bottomAnchor
+        // "It should always sit above" - the card may never be drawn into the wordmark,
+        // whatever the wordmark's own pull towards the middle of the screen would prefer
 
         NSLayoutConstraint.activate([
             stack.centerXAnchor.constraint(equalTo: container.centerXAnchor),
@@ -527,7 +581,7 @@ class SplashViewController: UIViewController {
                                             constant: -24),
             stack.widthAnchor.constraint(
                 lessThanOrEqualToConstant: SplashViewController.resumeCardMaximumWidth),
-            cancel.topAnchor.constraint(greaterThanOrEqualTo: stack.bottomAnchor, constant: 26),
+            cancel.topAnchor.constraint(equalTo: stack.bottomAnchor, constant: 26),
             cancel.centerXAnchor.constraint(equalTo: container.centerXAnchor),
             cancel.widthAnchor.constraint(equalToConstant: size),
             cancel.heightAnchor.constraint(equalToConstant: size),
@@ -535,9 +589,11 @@ class SplashViewController: UIViewController {
                 lessThanOrEqualTo: container.safeAreaLayoutGuide.bottomAnchor, constant: -26),
             sitsAtTheBottom,
             stack.topAnchor.constraint(
+                greaterThanOrEqualTo: wordmarkClearance,
+                constant: UIViewController.inGameHeaderToResultGap),
+            stack.topAnchor.constraint(
                 lessThanOrEqualTo: container.centerYAnchor,
                 constant: SplashViewController.resumeCardMaximumDrop),
-            cardUnderTheHeader,
         ])
         // **The card hangs from the header now, and the button still sits at the bottom**
         // (James, round 338: "many of the screens have the game mode logo and title too low -
@@ -605,26 +661,32 @@ class SplashViewController: UIViewController {
     ///
     /// Only for a resume. The launch splash is an animation of the wordmark and belongs in the
     /// middle of the screen, which is where it stays.
+    /// Draws the game's own wordmark above the card, and the mode's badge inside it.
+    ///
+    /// **James, round 339: "keep the Giga-Ball logo more towards the centre of the screen where
+    /// possible - it should always sit above", and "start from the close button and work up
+    /// rather than the giga-ball logo and working down."**
+    ///
+    /// Round 338 hung this card from the top of the screen, with every other in-game view. That
+    /// was the wrong half of the note it answered: the badge and the title do belong under the
+    /// wordmark on the four screens the *game* shows, and this one is the screen before the
+    /// game, built from the bottom up around the button you press. So the button is anchored,
+    /// the card grows upwards out of it, and the wordmark floats above the card - pulled
+    /// towards the middle of the screen where there is room and pushed up out of the way where
+    /// there is not.
+    ///
+    /// The launch animation's six wordmark frames and its credit are stood down either way.
+    /// Those frames are padded to a 3.25 aspect for the animation, where the mark the game's
+    /// screens wear is 5.5, so resizing them draws a *smaller* wordmark than the other four
+    /// screens - a near miss rather than continuity. The credit says who made the game, which
+    /// is not what somebody returning to a half-finished run is reading the screen for.
     private func raiseTheWordmarkToTheTop(in container: UIView) {
         let wordmark = [splashScreenLogo1, splashScreenLogo2, splashScreenLogo3,
                         splashScreenLogo4, splashScreenLogo5, splashScreenLogo6].compactMap { $0 }
         for frame in wordmark { frame.isHidden = true }
         creatorLabel?.isHidden = true
-        // **The animation's wordmark and its credit are stood down, not moved.**
-        //
-        // Those six frames are the launch animation - the same word drawn six times, faded
-        // through in turn - and the artwork is padded to a 3.25 aspect for that purpose, where
-        // the mark the game's own screens wear is 5.5. Resizing the animation's frames to the
-        // in-game height therefore draws a *smaller* wordmark than the other four screens,
-        // which is not continuity, it is a near miss. The credit is the launch's too: it says
-        // who made the game, which is not what somebody coming back to a half-finished run is
-        // reading the screen for (James, round 338: "too much information").
-        //
-        // So a resume builds the same wordmark, from the same artwork, at the same inset and
-        // height as the level intro, the between-levels card, the pause screen and the game
-        // over card. Five screens, one header.
 
-        guard resumeBadgeView == nil else { return }
+        guard resumeBadgeView == nil, let badgeRow = resumeBadgeRow else { return }
 
         let logo = UIImageView(image: UIImage(named: "Logo"))
         logo.contentMode = .scaleAspectFit
@@ -636,37 +698,58 @@ class SplashViewController: UIViewController {
         let badge = UIImageView(image: GameMode.menuIcon(for: resumeBadge))
         badge.contentMode = .scaleAspectFit
         badge.translatesAutoresizingMaskIntoConstraints = false
-        container.addSubview(badge)
+        badgeRow.addSubview(badge)
         resumeBadgeView = badge
 
         let logoTop = logo.topAnchor.constraint(
-            equalTo: container.safeAreaLayoutGuide.topAnchor, constant: 0)
+            greaterThanOrEqualTo: container.safeAreaLayoutGuide.topAnchor, constant: 0)
+        // A floor rather than a position. The mark is pulled towards the middle of the screen
+        // and pushed up by the card under it; this is only the line it may not go above, which
+        // is where the other four screens hold theirs.
         let logoHeight = logo.heightAnchor.constraint(equalToConstant: 0)
-        let badgeTop = badge.topAnchor.constraint(
-            equalTo: container.safeAreaLayoutGuide.topAnchor, constant: 0)
         let badgeWidth = badge.widthAnchor.constraint(equalToConstant: 0)
         let badgeHeight = badge.heightAnchor.constraint(equalToConstant: 0)
         resumeHeader = UIViewController.InGameHeader(
-            logoTop: logoTop, logoHeight: logoHeight, iconTop: badgeTop,
+            logoTop: logoTop, logoHeight: logoHeight, iconTop: nil,
             iconWidth: badgeWidth, iconHeight: badgeHeight, titleTop: nil, pinnedTo: nil)
 
+        let towardsTheMiddle = logo.centerYAnchor.constraint(
+            equalTo: container.centerYAnchor,
+            constant: -SplashViewController.wordmarkLiftFromTheMiddle)
+        towardsTheMiddle.priority = .defaultHigh
+        // Wanted, not required: the card decides how much room there is, and on a screen where
+        // it needs all of it the clearance below wins and the mark goes up
+
         NSLayoutConstraint.activate([
-            logoTop, logoHeight,
+            logoTop, logoHeight, towardsTheMiddle,
             logo.centerXAnchor.constraint(equalTo: container.centerXAnchor),
             logo.leadingAnchor.constraint(greaterThanOrEqualTo: container.leadingAnchor,
                                           constant: UIViewController.inGameLogoSideInset),
             logo.trailingAnchor.constraint(lessThanOrEqualTo: container.trailingAnchor,
                                            constant: -UIViewController.inGameLogoSideInset),
 
-            badge.centerXAnchor.constraint(equalTo: container.centerXAnchor),
-            badgeTop, badgeWidth, badgeHeight,
+            badge.centerXAnchor.constraint(equalTo: badgeRow.centerXAnchor),
+            badge.topAnchor.constraint(equalTo: badgeRow.topAnchor,
+                                       constant: SplashViewController.badgeRowInset),
+            badgeRow.bottomAnchor.constraint(equalTo: badge.bottomAnchor,
+                                             constant: SplashViewController.badgeRowInset),
+            badgeWidth, badgeHeight,
         ])
         sizeTheResumeHeader()
-        // The same numbers `layOutTheInGameHeader` uses, read from the same constants. Not that
-        // method itself, because this screen has no pack line and no level line for the badge
-        // to hang a title on - the card under it is a stack, and where that stack sits is the
-        // next few lines' business rather than the header's
     }
+
+    /// How far above the middle of the screen the wordmark settles when it has the room.
+    ///
+    /// Far enough that it reads as being above the card rather than on top of it, near enough
+    /// that it is not back at the top of the screen. The clearance below it is what actually
+    /// decides, on any screen short enough for the two to argue.
+    static let wordmarkLiftFromTheMiddle: CGFloat = 150
+
+    /// The air above and below the badge inside the card.
+    static let badgeRowInset: CGFloat = 8
+
+    private weak var resumeBadgeRow: UIView?
+    private weak var resumeRack: BallRackView?
 
     /// The wordmark this screen draws when it is offering a resume rather than launching.
     private weak var resumeWordmark: UIImageView?
@@ -679,27 +762,75 @@ class SplashViewController: UIViewController {
     /// the layout pass, where the answer is real.
     private func sizeTheResumeHeader() {
         guard let container = resumeWordmark?.superview else { return }
-        let scale = UIViewController.inGameHeaderScale(for: container.bounds.size)
+        let scale = UIViewController.inGameHeaderScale(inside: container)
         resumeHeader.logoTop?.constant =
             (UIViewController.inGameLogoTopInset*scale).rounded()
         resumeHeader.logoHeight?.constant =
             (UIViewController.inGameLogoHeight*scale).rounded()
-        resumeHeader.iconTop?.constant =
-            (UIViewController.inGameHeaderIconDrop*scale).rounded()
         let badge = (UIViewController.inGameModeIconSize*scale).rounded()
         resumeHeader.iconWidth?.constant = badge
         resumeHeader.iconHeight?.constant = badge
-        resumeCardTopGap?.constant =
-            (UIViewController.inGameHeaderToResultGap*scale).rounded()
-    }
 
-    /// The air between the badge and RESUMING, which shrinks with the band above it.
-    private var resumeCardTopGap: NSLayoutConstraint?
+        // **And the card's four groups of air go with it** (round 339, from the audit at 320 by
+        // 568: the detail line drawn eight points into the score). The card grew two rows this
+        // round - the badge and the rack - and a 568-point phone has no room for either at a
+        // tall phone's spacing, so the stack compressed and two lines landed on top of one
+        // another. Scaled, the same card is simply drawn smaller, which is what every other
+        // in-game screen does on that phone.
+        guard let stack = resumeStack else { return }
+
+        // **The card's type goes with the band too.** Four groups of air alone were not enough
+        // on a 320 by 568 phone once the badge and the rack joined the stack: the audit still
+        // caught the detail line drawn into the score. Every other in-game screen scales its
+        // own type for the screen it is on, and this is the same card drawn smaller rather
+        // than a different one.
+        for label in [resumingLabel, modeLabel, detailLabel, scoreLabel, livesLabel] {
+            guard let label, let font = label.font else { continue }
+            let key = ObjectIdentifier(label)
+            let base = resumeBaseSize[key] ?? font.pointSize
+            resumeBaseSize[key] = base
+            label.font = font.withSize((base*scale).rounded())
+        }
+        if let attributed = scoreLabel.attributedText, attributed.length > 0 {
+            let scaled = NSMutableAttributedString(attributedString: attributed)
+            scaled.enumerateAttribute(.font, in: NSRange(location: 0, length: scaled.length)) {
+                value, range, _ in
+                guard let font = value as? UIFont else { return }
+                let key = font.fontName + "\(range.location)"
+                let base = resumeBaseAttributed[key] ?? font.pointSize
+                resumeBaseAttributed[key] = base
+                scaled.addAttribute(.font, value: font.withSize((base*scale).rounded()),
+                                    range: range)
+            }
+            scoreLabel.attributedText = scaled
+        }
+        // The score is two faces on one line, set as an attributed string, so its sizes live in
+        // the attributes rather than on the label
+
+        let gap = (SplashViewController.groupGap*scale).rounded()
+        stack.setCustomSpacing(gap, after: resumingLabel)
+        stack.setCustomSpacing(gap, after: detailLabel)
+        stack.setCustomSpacing(gap, after: scoreLabel)
+        if let badgeRow = resumeBadgeRow, stack.customSpacing(after: badgeRow) > 0 {
+            stack.setCustomSpacing(gap, after: badgeRow)
+        }
+    }
 
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
+        limitMenuContentSize()
+        // The iPad's 460-point column, which the other four in-game screens use
         sizeTheResumeHeader()
+        resumeRack?.show(resumeBalls, on: view.bounds.size,
+                         ball: BallRackView.chosenBall(in: defaults))
     }
+
+    /// How many balls the run being resumed has, for the rack above the line that says so.
+    private var resumeBalls = 0
+
+    /// What the card's type was before any screen shrank it.
+    private var resumeBaseSize: [ObjectIdentifier: CGFloat] = [:]
+    private var resumeBaseAttributed: [String: CGFloat] = [:]
 
     /// The badge, and which mode it is drawing.
     private weak var resumeBadgeView: UIImageView?

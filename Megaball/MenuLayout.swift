@@ -187,14 +187,20 @@ extension UIViewController {
     static let inGameLogoHeight: CGFloat = 36
     static let inGameModeIconGap: CGFloat = 4
 
-    /// How much clear air the wordmark keeps below it on the level intro.
+    /// The air between the wordmark and the mode's badge, on every screen the game shows.
     ///
-    /// The mode icon is pinned *above* the first line of text, so it grows upwards out of a
-    /// block the storyboard centres - which on a 320 by 568 screen put its top at -59, off
-    /// the top of the phone entirely. The intro's own layout cannot see the wordmark (it is
-    /// hosted one level out, beside the screen rather than in it), so the clearance is
-    /// measured after a pass and the block moved down by whatever it is short.
-    static let inGameLogoToIconGap: CGFloat = 16
+    /// **James, round 339, against all five: "make the gap between the giga-ball logo and game
+    /// mode / level info larger", and on two of them "the giga-ball logo and game mode / level
+    /// info should sit more towards the centre of the screen".** Sixteen put the badge directly
+    /// under the wordmark with no daylight, so the two read as one lump of furniture rather
+    /// than as the game's name and then what you are playing. Thirty-four is enough air to
+    /// separate them, and because everything below hangs off the badge it takes the run's name
+    /// down the screen with it - which is the second half of the note.
+    ///
+    /// One number for all five screens. The wordmark stays where it is on each of them, so the
+    /// mark itself does not move between the resume card, the intro, the between-levels card,
+    /// the pause screen and the game-over card.
+    static let inGameLogoToIconGap: CGFloat = 34
 
     /// How far the bottom row of buttons sits above the bottom of an in-game screen.
     ///
@@ -278,6 +284,19 @@ extension UIViewController {
     /// Clamped at both ends. The floor stops a very small window shrinking the badge into a
     /// bullet point; the ceiling stops an iPad, nearly twice the reference height, printing a
     /// poster.
+    /// The scale for the box a screen actually lays its header out in.
+    ///
+    /// The *safe area's* frame rather than the view's bounds, because on an iPad every in-game
+    /// screen holds its content to a 460-point column and does it by inset (round 181's
+    /// `limitMenuContentSize`). Measured against the bounds instead, the level intro scaled
+    /// itself for a 1032-point screen and the pause screen for the 460-point column inside it -
+    /// so the same badge came out at 118 points on one and 96 on the next, 160 points apart
+    /// vertically, on two screens a player sees within a second of each other.
+    static func inGameHeaderScale(inside view: UIView) -> CGFloat {
+        let box = view.safeAreaLayoutGuide.layoutFrame
+        return inGameHeaderScale(for: box.isEmpty ? view.bounds.size : box.size)
+    }
+
     static func inGameHeaderScale(for size: CGSize) -> CGFloat {
         guard size.width > 0, size.height > 0 else { return 1 }
         let ratio = min(size.height/inGameHeaderReference.height,
@@ -320,7 +339,7 @@ extension UIViewController {
     /// smaller version of the same header rather than a header that does not fit.
     func layOutTheInGameHeader(_ header: inout InGameHeader, logo: UIView?, icon: UIView,
                                above pack: UILabel, or level: UILabel, in container: UIView) {
-        let scale = UIViewController.inGameHeaderScale(for: container.bounds.size)
+        let scale = UIViewController.inGameHeaderScale(inside: container)
         let target: UILabel = (pack.text?.isEmpty == false) ? pack : level
 
         if header.iconTop == nil {
@@ -352,7 +371,21 @@ extension UIViewController {
         header.iconWidth?.constant = badge
         header.iconHeight?.constant = badge
         header.titleTop?.constant = (UIViewController.inGameModeIconGap*scale).rounded()
-        logo?.setNeedsLayout()
+
+        // **Without an animation of its own** (James, round 339: "during the intro the game
+        // mode icon seems to have a little animation on its own before the main animation
+        // starts - remove that initial game mode icon only animation and have it do the same
+        // animation as the other elements"). The band is measured in `viewDidLayoutSubviews`,
+        // and on the level intro that pass happens *inside* the entrance animation - so the
+        // badge, having just been given its size and its place, travels from wherever it was
+        // to wherever it belongs while everything else is fading in. It is furniture, not an
+        // event: it arrives with the screen it is on, and nothing of its own happens first.
+        //
+        // The animations are taken off the badge rather than the layout being moved out of the
+        // pass: a `layoutIfNeeded` from inside `viewDidLayoutSubviews` is a layout pass inside
+        // a layout pass, and round 339 crashed the whole test bundle finding that out.
+        icon.layer.removeAllAnimations()
+        logo?.layer.removeAllAnimations()
     }
 
     /// What that logo shrinks to when a list scrolls up under it.
@@ -926,5 +959,109 @@ extension UIView {
     /// Reduce Motion off again.
     static var motionEffectsAreWelcome: Bool {
         UIAccessibility.isReduceMotionEnabled == false
+    }
+}
+
+/// The rack of balls a run has left, drawn the size the HUD draws it.
+///
+/// **James, round 332's layout notes: "show number of balls remaining above 3 lives left
+/// label"**, and round 339 across three screens at once: "add the balls graphic above the x
+/// balls remaining label", "I noticed balls left and lives left on different screens - let's
+/// use balls instead of lives everywhere", and "make ball graphics for lives the same size as
+/// they are in the game for the pause screens".
+///
+/// The pause screen grew one of these in round 335a and the resume card and the between-levels
+/// card did not, so a run that ended reported its rack three different ways: a pill of balls, a
+/// line saying lives, and a line saying balls. One view now, built once and asked for a number.
+///
+/// **The size is the game's, not a number of its own.** `GameSceneLayout` works the ball's size
+/// out from the screen it is given - `layoutUnit*0.67`, where the unit is a twenty-second of the
+/// play area's width - so asking it for the screen this rack is on gives exactly the ball the
+/// player was just looking at, on every device, without this file holding an opinion about it.
+final class BallRackView: UIView {
+
+    /// How many the HUD itself will draw, which is the most this should.
+    static let mostShown = GameScene.maxLivesShown
+
+    private let balls = UIStackView()
+    private var ballSize: CGFloat = 12
+    private var sizes: [NSLayoutConstraint] = []
+    private var shown = -1
+
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        translatesAutoresizingMaskIntoConstraints = false
+        backgroundColor = UIColor(white: 1, alpha: 0.10)
+        balls.translatesAutoresizingMaskIntoConstraints = false
+        balls.axis = .horizontal
+        balls.alignment = .center
+        addSubview(balls)
+        NSLayoutConstraint.activate([
+            balls.centerXAnchor.constraint(equalTo: centerXAnchor),
+            balls.centerYAnchor.constraint(equalTo: centerYAnchor),
+            leadingAnchor.constraint(equalTo: balls.leadingAnchor, constant: -padding),
+            trailingAnchor.constraint(equalTo: balls.trailingAnchor, constant: padding),
+            heightAnchor.constraint(equalTo: balls.heightAnchor, constant: padding*2),
+        ])
+        // The pill is the stack plus the HUD's own padding on all four sides, rather than a
+        // fixed height: a ball sized for an iPad needs a taller pill than one sized for a
+        // phone, and two numbers that have to agree are one number too many
+    }
+
+    required init?(coder: NSCoder) { nil }
+
+    /// The air the HUD leaves around its own row, in ball widths.
+    private var padding: CGFloat { ballSize*0.55 }
+
+    /// Draws `count` balls at the size the game would draw them on a screen this size.
+    ///
+    /// - Returns: whether there is anything to show. A rack of none is no pill at all rather
+    ///   than an empty one: the last ball is in play, and a row of nothing above "Last ball"
+    ///   says the opposite of what the words say.
+    @discardableResult
+    func show(_ count: Int, on screen: CGSize, ball image: UIImage?) -> Bool {
+        let wanted = max(0, min(count, BallRackView.mostShown))
+        let size = GameSceneLayout(screen: screen).ballSize
+        guard wanted != shown || abs(size - ballSize) > 0.5 else { return wanted > 0 }
+        shown = wanted
+        ballSize = size
+        balls.spacing = size*0.6
+        // `ballSize*1.6` centre to centre in the HUD, which is a gap of 0.6 between the edges
+
+        balls.arrangedSubviews.forEach { $0.removeFromSuperview() }
+        sizes.forEach { $0.isActive = false }
+        sizes = []
+        for _ in 0..<wanted {
+            let ball = UIImageView(image: image)
+            ball.contentMode = .scaleAspectFit
+            ball.alpha = GameScene.lifeIconAlpha
+            // The HUD's own alpha for a ball it still has
+            ball.translatesAutoresizingMaskIntoConstraints = false
+            let width = ball.widthAnchor.constraint(equalToConstant: size)
+            let height = ball.heightAnchor.constraint(equalToConstant: size)
+            NSLayoutConstraint.activate([width, height])
+            sizes += [width, height]
+            balls.addArrangedSubview(ball)
+        }
+        layer.cornerRadius = (size + padding*2)/2
+        isHidden = wanted == 0
+        return wanted > 0
+    }
+
+    /// The ball skin the player has chosen, which the rack wears like the HUD does.
+    static func chosenBall(in defaults: UserDefaults) -> UIImage? {
+        let setup = LevelPackSetup()
+        let index = min(max(defaults.integer(forKey: "ballSetting"), 0),
+                        setup.ballImageArray.count - 1)
+        return setup.ballImageArray[index]
+    }
+
+    /// What every screen calls the rack now.
+    ///
+    /// **James, round 339: "I noticed balls left and lives left on different screens - let's
+    /// use balls instead of lives everywhere."** The game has never had lives in it. It has
+    /// balls, and one of them is in play.
+    static func line(for balls: Int) -> String {
+        balls == 1 ? "1 ball left" : "\(balls) balls left"
     }
 }

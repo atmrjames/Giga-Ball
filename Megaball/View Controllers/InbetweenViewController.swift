@@ -404,7 +404,7 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
         label.font = tapLabel.font
         label.textColor = tapLabel.textColor
         label.translatesAutoresizingMaskIntoConstraints = false
-        label.text = livesRemaining == 1 ? "1 life left" : "\(livesRemaining) lives left"
+        label.text = BallRackView.line(for: livesRemaining)
         label.isHidden = levelNumber == 0 || firstLevel
         // An endless run has one ball and no rack, and saying "0 lives left" on the one screen
         // it never reaches would be wrong twice over.
@@ -420,6 +420,28 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
             label.bottomAnchor.constraint(equalTo: tapLabel.topAnchor, constant: -10),
         ])
         livesLine = label
+
+        // **And the balls above the words** (James, round 339: "add the balls graphic above the
+        // x lives left remaining label"). The pause screen has drawn its rack since round 335a
+        // and this card, which is the one that has just told you a ball was lost, said it in
+        // words alone.
+        let rack = BallRackView()
+        rack.isHidden = label.isHidden
+        host.addSubview(rack)
+        NSLayoutConstraint.activate([
+            rack.centerXAnchor.constraint(equalTo: label.centerXAnchor),
+            rack.bottomAnchor.constraint(equalTo: label.topAnchor, constant: -6),
+        ])
+        livesRack = rack
+    }
+
+    private weak var livesRack: BallRackView?
+
+    /// Fills the rack, at the size the game draws its own.
+    private func refreshTheLivesRack() {
+        guard let rack = livesRack, livesLine?.isHidden == false else { return }
+        rack.show(livesRemaining, on: view.bounds.size,
+                  ball: BallRackView.chosenBall(in: defaults))
     }
 
     private weak var livesLine: UILabel?
@@ -431,7 +453,7 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
     /// and a player's thumb learns one place rather than two.
     private func moveTheTapLineDown() {
         guard let host = tapLabel.superview else { return }
-        let scale = UIViewController.inGameHeaderScale(for: view.bounds.size)
+        let scale = UIViewController.inGameHeaderScale(inside: view)
         for constraint in host.constraints
         where constraint.firstItem === host && constraint.secondItem === tapLabel
             && constraint.firstAttribute == .bottom {
@@ -477,11 +499,13 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
 
         for constraint in host.constraints {
             guard let first = constraint.firstItem as? UILabel else { continue }
-            if left.contains(first), constraint.firstAttribute == .centerX {
+            if left.contains(first),
+               constraint.firstAttribute == .centerX || constraint.firstAttribute == .leading {
                 constraint.isActive = false
             }
             if right.contains(first),
-               constraint.firstAttribute == .centerX || constraint.firstAttribute == .leading {
+               constraint.firstAttribute == .centerX || constraint.firstAttribute == .leading
+                || constraint.firstAttribute == .trailing {
                 constraint.isActive = false
             }
             if first === speedBonusTitle, constraint.firstAttribute == .top,
@@ -492,17 +516,45 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
             }
         }
 
+        let half = InbetweenViewController.scoreAndBonusGap/2
+        for label in left + right {
+            label.setContentHuggingPriority(UILayoutPriority(751), for: .horizontal)
+            label.setContentCompressionResistancePriority(.required, for: .horizontal)
+        }
+        // Hugging wanted, resistance required. Required hugging makes both lines of a column
+        // demand their own width, and the two share edges - so "Level Score" and "0" pulled
+        // against each other and the title lost, truncating to "...". Resistance required and
+        // hugging merely high lets the wider of the two set the column and the other centre
+        // inside it, which is the arrangement, rather than a fight.
+        // **The labels hug their words** (James, round 339: "the level score and speed bonus are
+        // too far apart - bring them together so there's a constant gap between the labels in
+        // the centre, regardless of the screen's width"). Each of these was a full half of the
+        // screen with its text centred in it, so the gap between the two readings was a
+        // quarter of the screen at each side and grew with the device: close on a phone, an
+        // arm's length apart on an iPad. Hugging makes each column as wide as its own widest
+        // line, and the pair then sits a fixed distance either side of the middle.
+
         NSLayoutConstraint.activate([
-            levelScoreTitle.trailingAnchor.constraint(equalTo: host.centerXAnchor, constant: -14),
-            levelScoreLabel.trailingAnchor.constraint(equalTo: host.centerXAnchor, constant: -14),
+            levelScoreTitle.trailingAnchor.constraint(equalTo: host.centerXAnchor,
+                                                      constant: -half),
+            levelScoreLabel.trailingAnchor.constraint(equalTo: host.centerXAnchor,
+                                                      constant: -half),
             levelScoreLabel.leadingAnchor.constraint(equalTo: levelScoreTitle.leadingAnchor),
-            speedBonusTitle.leadingAnchor.constraint(equalTo: host.centerXAnchor, constant: 14),
-            speedBonusTitle.trailingAnchor.constraint(equalTo: host.trailingAnchor, constant: -10),
+            levelScoreTitle.leadingAnchor.constraint(greaterThanOrEqualTo: host.leadingAnchor,
+                                                     constant: 10),
+            speedBonusTitle.leadingAnchor.constraint(equalTo: host.centerXAnchor, constant: half),
             speedBonusLabel.leadingAnchor.constraint(equalTo: speedBonusTitle.leadingAnchor),
             speedBonusLabel.trailingAnchor.constraint(equalTo: speedBonusTitle.trailingAnchor),
+            speedBonusTitle.trailingAnchor.constraint(lessThanOrEqualTo: host.trailingAnchor,
+                                                      constant: -10),
             speedBonusTitle.topAnchor.constraint(equalTo: levelScoreTitle.topAnchor),
         ])
+        // The two columns share a leading edge with their own number, so whichever of the two
+        // lines is wider sets the column and the other centres inside it
     }
+
+    /// The air between the level score and the speed bonus, which is the same on every device.
+    static let scoreAndBonusGap: CGFloat = 34
 
     private var levelEmphasisSwapped = false
 
@@ -694,17 +746,23 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
         logo.alpha = view.alpha
         host.addSubview(logo)
         let logoTop = logo.topAnchor.constraint(
-            equalTo: host.safeAreaLayoutGuide.topAnchor,
+            equalTo: view.safeAreaLayoutGuide.topAnchor,
             constant: UIViewController.inGameLogoTopInset)
+        // **The intro's own safe area, not the host's.** The mark is a child of the host so the
+        // intro's entrance cannot drag it about (round 313), but it belongs to the intro's
+        // layout - and on an iPad the intro insets itself into a 460-point column while the
+        // host does not. Measured against the host, the wordmark stayed at the top of the
+        // screen while the badge moved down into the column: 236 points apart on a 13-inch
+        // iPad, on a band whose whole point is that the two are together.
         let logoHeight = logo.heightAnchor.constraint(
             equalToConstant: UIViewController.inGameLogoHeight)
         NSLayoutConstraint.activate([
             logoTop,
-            logo.centerXAnchor.constraint(equalTo: host.centerXAnchor),
+            logo.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             logoHeight,
-            logo.leadingAnchor.constraint(greaterThanOrEqualTo: host.leadingAnchor,
+            logo.leadingAnchor.constraint(greaterThanOrEqualTo: view.safeAreaLayoutGuide.leadingAnchor,
                                           constant: UIViewController.inGameLogoSideInset),
-            logo.trailingAnchor.constraint(lessThanOrEqualTo: host.trailingAnchor,
+            logo.trailingAnchor.constraint(lessThanOrEqualTo: view.safeAreaLayoutGuide.trailingAnchor,
                                            constant: -UIViewController.inGameLogoSideInset),
         ])
         header.logoTop = logoTop
@@ -752,7 +810,7 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
         // The three title lines as well as the result: they are the band the badge hangs over,
         // and the pause screen scales its own. A header grown for an iPad over lines that
         // stayed a phone's size is the render round 338 caught on the between-levels card
-        let scale = UIViewController.inGameHeaderScale(for: view.bounds.size)
+        let scale = UIViewController.inGameHeaderScale(inside: view)
         guard scale != resultBandScale else { return }
         resultBandScale = scale
 
@@ -838,7 +896,14 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
 
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
+        limitMenuContentSize()
+        // **The same column every other screen uses on an iPad** (round 339). The pause and
+        // game-over screens have held their content to 460 points since round 181; this card
+        // and the level intro spread across all 1032 of a 13-inch iPad, so the badge sat at
+        // 162 points on one screen and 320 on the next, at two different sizes. They are the
+        // same header, and a header is only the same if the box it is measured in is.
         sizeTheResultBandForTheScreen()
+        refreshTheLivesRack()
         moveTheTapLineDown()
         // Both measured from the screen's height, which `viewDidLoad` does not know: the view
         // still has the storyboard's 414 by 896 when it runs, so everything asked there came
@@ -851,7 +916,7 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
                                   above: packNameLabel, or: levelNumberLabel, in: view)
             headerToResultGap?.constant =
                 (UIViewController.inGameHeaderToResultGap
-                 * UIViewController.inGameHeaderScale(for: view.bounds.size)).rounded()
+                 * UIViewController.inGameHeaderScale(inside: view)).rounded()
         }
         // **The first moment the right host is known.** `viewDidLoad` calls `showAnimate`, and
         // `updateLabels` builds the mode icon and the wordmark beside it - all of that runs
@@ -885,6 +950,7 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
               label.bounds.width > 0 else { return }
 
         lineTheTwistsUpWithEachOther()
+        giveTheTwistsAirAboveThem()
 
         let needed = ceil(label.textRect(
             forBounds: CGRect(x: 0, y: 0, width: label.bounds.width,
@@ -927,6 +993,32 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
             view.setNeedsLayout()
         }
     }
+
+    /// Air between the run's name and the rules it is played under.
+    ///
+    /// **James, round 339, on the daily's level intro: "make the gap between the level name and
+    /// twists larger."** The storyboard chains this label straight onto the one above it with
+    /// nothing between, which is right when it holds a level's name and wrong when it holds a
+    /// list of rules: the two are different kinds of thing and were reading as one block.
+    ///
+    /// Only on a daily. Every other run has the level's name in this label, and a gap there
+    /// would pull the three title lines apart.
+    private func giveTheTwistsAirAboveThem() {
+        guard DailyChallengeSession.shared.active != nil,
+              let host = levelNameLabel.superview else { return }
+        let wanted = (InbetweenViewController.twistsClearance
+                      * UIViewController.inGameHeaderScale(inside: view)).rounded()
+        for constraint in host.constraints
+        where constraint.firstItem === levelNameLabel && constraint.firstAttribute == .top
+            && constraint.secondItem === levelNumberLabel {
+            guard abs(constraint.constant - wanted) > 0.5 else { continue }
+            constraint.constant = wanted
+            view.setNeedsLayout()
+        }
+    }
+
+    /// How much of it.
+    static let twistsClearance: CGFloat = 18
 
     /// Starts every twist on the same left edge, with the block as a whole still centred.
     ///

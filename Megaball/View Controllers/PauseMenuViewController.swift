@@ -127,6 +127,15 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
     /// run's own numbers as though it were one of them.
     let leaderboardTitle = UILabel()
     /// The rules sit with the level they are the rules of; the title makes room for them.
+    /// How far under the line above it the twists sit.
+    ///
+    /// Ten until round 339, which is a frame's worth of clearance and not quite an eye's:
+    /// every twist line leads with a badge, and an image attachment is taller than the type
+    /// beside it, so the badge on the first line reached about a point and a third up into the
+    /// mode's name. The audit measures the ink rather than the box for exactly this reason and
+    /// caught it at 320 by 568, where the type is scaled down and the overhang is not.
+    static let rulesClearance: CGFloat = 14
+
     private var rulesUnderTheLevel: NSLayoutConstraint!
     /// The same, for a day whose level name is blank - see where these are built.
     private var rulesUnderTheNumber: NSLayoutConstraint!
@@ -311,7 +320,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
         // And the same air under the run's name that the level intro and the between-levels
         // card keep, for the same reason: PAUSED and the level's name both carry a halo, and
         // the storyboard's fifteen points let the two lights run together.
-        let scale = UIViewController.inGameHeaderScale(for: containterView.bounds.size)
+        let scale = UIViewController.inGameHeaderScale(inside: containterView)
         for tie in [levelNameLabelNormalConstraint, levelTitleLowerConstraint].compactMap({ $0 })
         where tie.constant == 15 {
             tie.constant = (UIViewController.inGameHeaderToResultGap*scale).rounded()
@@ -330,7 +339,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
     /// laid out many times - a rotation, an iPad window dragged narrower - lands on the same
     /// size each pass rather than scaling what it scaled last time.
     private func sizeTheTitleBlockForTheScreen() {
-        let scale = UIViewController.inGameHeaderScale(for: containterView.bounds.size)
+        let scale = UIViewController.inGameHeaderScale(inside: containterView)
         guard scale != titleBlockScale else { return }
         titleBlockScale = scale
 
@@ -827,9 +836,11 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
         ])
 
         rulesUnderTheLevel = dailySummaryLabel.topAnchor.constraint(
-            equalTo: levelNameLabel.bottomAnchor, constant: 10)
+            equalTo: levelNameLabel.bottomAnchor,
+            constant: PauseMenuViewController.rulesClearance)
         rulesUnderTheNumber = dailySummaryLabel.topAnchor.constraint(
-            equalTo: levelNumberLabel.bottomAnchor, constant: 10)
+            equalTo: levelNumberLabel.bottomAnchor,
+            constant: PauseMenuViewController.rulesClearance)
         // **Whichever of the two actually says something** (James, round 308: "the twist detail
         // [is] too low. It should sit just under the game mode and level detail").
         //
@@ -838,6 +849,22 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
         // which the rules were then hung below. So the twists sat a blank line lower on exactly
         // the days that have no level name to sit under. Classic days are unaffected: their
         // level name is the last thing above the rules, as it was.
+        NSLayoutConstraint.activate([
+            dailySummaryLabel.topAnchor.constraint(
+                greaterThanOrEqualTo: levelNumberLabel.bottomAnchor,
+                constant: PauseMenuViewController.rulesClearance),
+            dailySummaryLabel.topAnchor.constraint(
+                greaterThanOrEqualTo: levelNameLabel.bottomAnchor,
+                constant: PauseMenuViewController.rulesClearance),
+        ])
+        // **Below both, whichever of the two the equality above is hung on** (round 339, from
+        // the audit at 320 by 568: 'Endless Mode' and the twists drawn on top of one another).
+        // The pair below choose which line the rules sit under, and only one of them is ever
+        // active - so on a day where the choice is wrong, or a screen where the block above has
+        // grown, nothing at all stops the rules being drawn through the line they belong under.
+        // Two minimums cannot conflict with each other, and the active equality satisfies the
+        // one it duplicates.
+
         titleUnderTheRules = titleLabel.topAnchor.constraint(
             equalTo: dailySummaryLabel.bottomAnchor, constant: 16)
         // Switched on with the summary itself, in `updateDailySummary`, because they
@@ -867,35 +894,20 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
     /// scene picks `ballTexture` out of, indexed by the same setting, so the pause screen shows
     /// the ball they have been playing with.
     private func buildTheLivesRow() {
-        let row = UIView()
-        row.translatesAutoresizingMaskIntoConstraints = false
-        row.backgroundColor = UIColor(white: 1, alpha: 0.10)
-        row.layer.cornerRadius = PauseMenuViewController.livesRowHeight/2
+        let row = BallRackView()
         row.isHidden = true
         containterView.addSubview(row)
-
-        let balls = UIStackView()
-        balls.translatesAutoresizingMaskIntoConstraints = false
-        balls.axis = .horizontal
-        balls.alignment = .center
-        balls.spacing = PauseMenuViewController.livesBallSize*0.6
-        row.addSubview(balls)
 
         let collapsed = row.heightAnchor.constraint(equalToConstant: 0)
         NSLayoutConstraint.activate([
             row.centerXAnchor.constraint(equalTo: containterView.centerXAnchor),
-            row.heightAnchor.constraint(equalToConstant: PauseMenuViewController.livesRowHeight),
-            balls.centerXAnchor.constraint(equalTo: row.centerXAnchor),
-            balls.centerYAnchor.constraint(equalTo: row.centerYAnchor),
-            row.leadingAnchor.constraint(equalTo: balls.leadingAnchor,
-                                         constant: -PauseMenuViewController.livesBallSize*0.55),
-            row.trailingAnchor.constraint(equalTo: balls.trailingAnchor,
-                                          constant: PauseMenuViewController.livesBallSize*0.55),
             livesLabel.topAnchor.constraint(equalTo: row.bottomAnchor, constant: 6),
         ])
         livesRow = row
-        livesBalls = balls
         livesRowCollapsed = collapsed
+        // The pill sizes itself from the balls in it now (`BallRackView`), so there is no
+        // standing height to fight the collapsed one - which is what twelve of the conflicts
+        // in James's round 339 device log were
 
         let aboveTheButtons = livesLabel.bottomAnchor.constraint(
             equalTo: buttonCollectionView.topAnchor, constant: -20)
@@ -908,43 +920,15 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
         // than required, so a short screen moves the block up rather than breaking a layout
     }
 
-    /// Fills the row with one ball per life left, up to what the HUD would show.
+    /// Fills the rack with one ball per ball left, at the size the game draws them.
     private func refreshTheLivesRow() {
-        guard let balls = livesBalls, livesRow?.isHidden == false else { return }
-        let shown = max(0, min(livesRemaining, PauseMenuViewController.livesBallsShown))
-        guard balls.arrangedSubviews.count != shown || balls.arrangedSubviews.isEmpty else {
-            return
-        }
-
-        balls.arrangedSubviews.forEach { $0.removeFromSuperview() }
-        let setup = LevelPackSetup()
-        let index = min(max(defaults.integer(forKey: "ballSetting"), 0),
-                        setup.ballImageArray.count - 1)
-        for _ in 0..<shown {
-            let ball = UIImageView(image: setup.ballImageArray[index])
-            ball.contentMode = .scaleAspectFit
-            ball.alpha = 0.775
-            // The HUD's own alpha for a life it still has (`GameScene.lifeIconAlpha`)
-            ball.translatesAutoresizingMaskIntoConstraints = false
-            NSLayoutConstraint.activate([
-                ball.widthAnchor.constraint(equalToConstant: PauseMenuViewController.livesBallSize),
-                ball.heightAnchor.constraint(equalToConstant: PauseMenuViewController.livesBallSize),
-            ])
-            balls.addArrangedSubview(ball)
-        }
-        livesRow?.isHidden = shown == 0
-        livesRowCollapsed?.isActive = shown == 0
-        // A rack of none is no pill at all rather than an empty one: the last ball is in play,
-        // and a row of nothing above "Last ball" says the opposite of what the words say
+        guard let row = livesRow else { return }
+        let showing = row.show(livesRemaining, on: containterView.bounds.size,
+                               ball: BallRackView.chosenBall(in: defaults))
+        livesRowCollapsed?.isActive = showing == false
     }
 
-    /// How many balls the row will draw, which is what the HUD shows.
-    static let livesBallsShown = 10
-    static let livesBallSize: CGFloat = 10
-    static let livesRowHeight: CGFloat = 22
-
-    private weak var livesRow: UIView?
-    private weak var livesBalls: UIStackView?
+    private weak var livesRow: BallRackView?
     private var livesRowCollapsed: NSLayoutConstraint?
 
     private func collapseLivesLineWhileHidden() {
@@ -1001,7 +985,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
             return
         }
         livesLabel.isHidden = false
-        livesLabel.text = livesRemaining == 1 ? "1 life left" : "\(livesRemaining) lives left"
+        livesLabel.text = BallRackView.line(for: livesRemaining)
     }
     // Only while paused mid-game. On game over the count is zero and saying so is just
     // rubbing it in, and endless mode has a single life and no counter anywhere else
