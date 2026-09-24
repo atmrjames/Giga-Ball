@@ -71,6 +71,22 @@ extension GameScene {
     /// retro theme has no sticky picture, which is why it is asked about rather than assumed.
     func showEndlessIIStickyFace() {
         paddleSticky.isHidden = endlessIIRetroHidesPaddleTop
+        if endlessIIRetroWearsAimedSticky { paddleRetroStickyTexture.isHidden = false }
+    }
+
+    /// Whether a retro paddle should be wearing its own sticky picture for Aimed Sticky.
+    ///
+    /// James, round 342: "Aimed sticky with retro paddle should still show the retro sticky
+    /// graphic, just like the other paddles show their sticky graphic for the aimed sticky
+    /// paddle." Every other theme wears the shared overlay for as long as the aim runs; retro
+    /// hides that overlay (its sticky picture is not in the others' style) and shows its own
+    /// layer instead - but only ever from `performStickyCatch`, which is the plain Sticky's
+    /// catch. The aim catches on contact and never goes through it, so a retro paddle running
+    /// Aimed Sticky wore nothing at all. Not while the grip is on: the grip takes the paddle's
+    /// top in every theme, retro included.
+    var endlessIIRetroWearsAimedSticky: Bool {
+        gameMode == .endlessII && paddleTexture == retroPaddle && endlessIIWearsGrip == false
+            && (endlessIIAimedStickyClock.isRunning || endlessIIAimHold || endlessIIAimOwedHold)
     }
 
     /// Whether anything on the paddle still wants the sticky face - or the grip, which is the
@@ -92,6 +108,13 @@ extension GameScene {
     /// moment.
     func refreshEndlessIIStickyFace() {
         guard gameMode == .endlessII else { return }
+
+        if endlessIIRetroWearsAimedSticky, paddleRetroStickyTexture.isHidden {
+            paddleRetroStickyTexture.isHidden = false
+        }
+        // Kept on from here rather than trusted to the collection alone: the plain Sticky's
+        // paths take retro's layer down whenever the paddle is holding nothing, which under a
+        // running aim is every moment between catches
 
         if endlessIIShapeOwnsTheBounce == false, endlessIIWantsStickyFace,
            paddleSticky.isHidden == false {

@@ -174,8 +174,8 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         selectedTab = chosen
         if hapticsSetting {
             interfaceHaptic.impactOccurred()
-            InterfaceSound.click()
         }
+        InterfaceSound.click()
         reloadRows()
     }
 
@@ -425,8 +425,8 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         gameCenterViewController.dismiss(animated: true, completion: nil)
         if hapticsSetting {
             interfaceHaptic.impactOccurred()
-            InterfaceSound.click()
         }
+        InterfaceSound.click()
     }
     // Remove game center view contoller once dismissed
     

@@ -333,8 +333,8 @@ class BrickTypesViewController: UIViewController, UITableViewDelegate, UITableVi
     func tableView(_ tableView: UITableView, didHighlightRowAt indexPath: IndexPath) {
         if hapticsSetting {
             interfaceHaptic.impactOccurred()
-            InterfaceSound.click()
         }
+        InterfaceSound.click()
         if let cell = self.itemsTableView.cellForRow(at: indexPath) as? SettingsTableViewCell {
             cell.setPressed(true, colour: #colorLiteral(red: 0.8335226774, green: 0.9983789325, blue: 0.5007104874, alpha: 1), duration: 0.1)
         }
@@ -401,8 +401,8 @@ class BrickTypesViewController: UIViewController, UITableViewDelegate, UITableVi
         }
         if hapticsSetting {
             interfaceHaptic.impactOccurred()
-            InterfaceSound.click()
         }
+        InterfaceSound.click()
         if let cell = self.backButtonCollectionView.cellForItem(at: indexPath) as? MainMenuCollectionViewCell {
             UIView.animate(withDuration: 0.1) {
                 cell.view.transform = .init(scaleX: 0.95, y: 0.95)

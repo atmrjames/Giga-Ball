@@ -249,8 +249,8 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
         if tableView == self.levelsTableView {
             if hapticsSetting {
                 interfaceHaptic.impactOccurred()
-                InterfaceSound.click()
             }
+            InterfaceSound.click()
             if let cell = self.levelsTableView.cellForRow(at: indexPath) as? LevelSelectorTableViewCell {
                 UIView.animate(withDuration: 0.1) {
                     cell.cellView3.transform = .init(scaleX: 0.98, y: 0.98)
@@ -644,8 +644,8 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
         gameCenterViewController.dismiss(animated: true, completion: nil)
         if hapticsSetting {
             interfaceHaptic.impactOccurred()
-            InterfaceSound.click()
         }
+        InterfaceSound.click()
     }
     // Remove game center view contoller once dismissed
     

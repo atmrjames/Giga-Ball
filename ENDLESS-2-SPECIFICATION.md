@@ -2484,12 +2484,37 @@ Open from round 340:
 - **Countdown beeps** (synthesised, `countdownTick` and `countdownGo`) for READY and GO!, and a
   **3, 2, 1** drawn in READY's style over the last three seconds of a Time Trial.
 
-Open from round 341:
+**Round 342, from James's answers to round 341.** Built:
 
-| Item | What is known |
-|---|---|
-| The game view on a resized iPad window | The scene is built once, at the window's size when the game opened, and `aspectFit` letterboxes it when the window changes shape afterwards - the black bands above and below. Filling a new shape means laying a *running* level out again: walls, rows, paddle and HUD all come from `computeLayoutMetrics`, once, in `didMove`. The two ways are a live re-layout, which touches every position the §8.6 traps are about, or saving and rebuilding the scene at the new size, which is what a resume already does. Either is a design decision for James rather than a night's fix |
-| Raising the window floor to 375 by 667 | Answered: it is the same number. `SceneDelegate.smallestWindow` is what iPadOS and macOS are told the window may not go below, so raising it would stop the app opening in Slide Over (320 wide) and stop a Mac window being dragged under 375 by 667. Left for James |
+- **The window floor is 375 by 667**, the smallest phone iOS 17 runs on, for iPad and Mac windows
+  as well. A 320-wide Slide Over panel can no longer hold the app, which James knew when he
+  chose it.
+- **The game view follows the window's shape.** His question: could the purple side bars adjust
+  as the window does, so the game fills the height without being clipped? Yes, because the play
+  zone already fills the height and everything either side of it is border. `fitTheWindow`
+  (WindowFit.swift), called from `GameViewController.viewDidLayoutSubviews`, reshapes the scene
+  to the window's shape, **changing its width and never its height**. No node or body moves:
+  the scene's anchor is its centre, so the play zone stays centred, and the walls keep the size
+  their bodies were built at. Past the walls the scene is painted the walls' purple, and the HUD's
+  backdrop and Mayhem's backdrop widen with it. The scene narrows no further than the play zone,
+  or the HUD where a compact layout hung it off the screen's edges. A window thinner than that is
+  the one shape that cannot fill without clipping, so it still gets bands above and below.
+  **Not seen on an iPad**: the iPadOS 26 simulators here still refuse to boot, so this is
+  arithmetic and tests until James drags a window.
+- **UI Sound is silent as it turns off and clicks as it turns on.** The row clicked on touch
+  down, before the setting flipped. The same pass found 28 clicks nested inside
+  `if hapticsSetting`, so with haptics off most of the app's buttons were silent whatever UI
+  Sound said. They are outside it now.
+- **Ball Spin's grip no longer flickers on retro.** The shared overlay and retro's paddle sprite
+  were both at z 4, and under `ignoresSiblingOrder` that is no order at all. Round 275 stopped
+  the overlay being hidden; this puts it on its own plane (`paddleTopPlane`, 4.1).
+- **The trajectory line is under the ball** (2.6 and 2.7, below the ball's 3).
+- **Exploding and Spawner bricks fire on every hit they survive**, not only the one that
+  destroys them. `firesOnHit` is true for any behaviour now, and `hitBrick` asks it for any brick
+  still carrying its name after the hit. Until now only the never-destroyed Indestructible fired
+  on contact.
+- **Aimed Sticky dresses a retro paddle** in retro's own sticky layer for as long as the aim
+  runs. Only plain Sticky's catch ever put that layer up, and the aim catches another way.
 
 **Backlogged**
 

@@ -46,6 +46,44 @@ final class EndlessIINeighbourTests: XCTestCase {
 
     // MARK: - Explosions
 
+    /// James, round 342: "Spawner bricks and exploding bricks should activate every time that
+    /// they are hit, not just when the brick is destroyed."
+    ///
+    /// A Multi-Hit Exploding brick, struck once: it survives the hit and still goes off. Before,
+    /// it only ever went off on the fourth.
+    func testAnExplodingBrickGoesOffOnAHitItSurvives() {
+        let scene = makeScene()
+        scene.gameMode = .endlessII
+        scene.totalStatsArray = [TotalStats()]
+        let centre = addBrick(scene, at: .zero, size: cell)
+        centre.texture = scene.brickMultiHit1Texture
+        scene.makeExploding(centre)
+        let neighbour = addBrick(scene, at: CGPoint(x: cell.width, y: 0), size: cell)
+        neighbour.texture = scene.brickNormalTexture
+
+        scene.hitBrick(node: centre, sprite: centre)
+
+        XCTAssertNotNil(centre.parent, "a Multi-Hit brick survives its first hit")
+        XCTAssertEqual(centre.texture, scene.brickMultiHit2Texture)
+        XCTAssertNil(neighbour.parent, "and the hit it survived still set it off")
+    }
+
+    /// And the one-hit kind is not set off twice: the hit that destroys it is the hit.
+    func testAnExplodingBrickThatIsDestroyedGoesOffOnce() {
+        let scene = makeScene()
+        scene.gameMode = .endlessII
+        scene.totalStatsArray = [TotalStats()]
+        let centre = addBrick(scene, at: .zero, size: cell)
+        centre.texture = scene.brickNormalTexture
+        scene.makeExploding(centre)
+
+        let before = scene.children.count
+        scene.hitBrick(node: centre, sprite: centre)
+        let rings = scene.children.filter { $0 is SKShapeNode }.count
+        XCTAssertEqual(rings, 1, "one blast ring, not one for the hit and one for the "
+                       + "destruction (\(before) children before)")
+    }
+
     func testAnOrdinaryExplosionReachesItsNeighboursAndTheRowBeyond() {
         // §4.9 asked for the eight neighbours; play-testing raised the vertical reach to two
         // rows each way. The eight are still the floor - and two rows is the new ceiling.

@@ -493,8 +493,8 @@ class PackSelectViewController: UIViewController, UICollectionViewDelegate, UICo
         gameCenterViewController.dismiss(animated: true, completion: nil)
         if hapticsSetting {
             interfaceHaptic.impactOccurred()
-            InterfaceSound.click()
         }
+        InterfaceSound.click()
     }
 
     func backButtonHighlighted(_ indexPath: IndexPath) {

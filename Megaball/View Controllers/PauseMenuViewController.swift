@@ -1880,8 +1880,8 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
     @IBAction func homeButton(_ sender: Any) {
         if hapticsSetting {
             interfaceHaptic.impactOccurred()
-            InterfaceSound.click()
         }
+        InterfaceSound.click()
         if self.sender == "Pause" {
             GigaBallConfirm.mainMenu.show(on: self, restart: offersRestartInTheConfirm
                                           ? { [weak self] in
@@ -1897,8 +1897,8 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
     func openInformation() {
         if hapticsSetting {
             interfaceHaptic.impactOccurred()
-            InterfaceSound.click()
         }
+        InterfaceSound.click()
         hideAnimate()
 
         let itemsView = self.storyboard?.instantiateViewController(withIdentifier: "itemsView") as! ItemsViewController
@@ -1969,8 +1969,8 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
     func openRunStats() {
         if hapticsSetting {
             interfaceHaptic.impactOccurred()
-            InterfaceSound.click()
         }
+        InterfaceSound.click()
         hideAnimate()
         let statsView = RunStatsViewController()
         self.addChild(statsView)
@@ -2030,8 +2030,8 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
         guard GKLocalPlayer.local.isAuthenticated else { return }
         if hapticsSetting {
             interfaceHaptic.impactOccurred()
-            InterfaceSound.click()
         }
+        InterfaceSound.click()
         let boards = GKGameCenterViewController(leaderboardID: DailyChallengeBoards.daily,
                                                 playerScope: .global, timeScope: .allTime)
         boards.gameCenterDelegate = self

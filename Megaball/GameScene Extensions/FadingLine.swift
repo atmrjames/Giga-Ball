@@ -233,7 +233,12 @@ enum FadingLine {
         node.blendMode = .add
         // Added rather than blended: these are light drawn over a dark field, so the glow and
         // the core sum into one bright line rather than the core hiding the glow
-        node.zPosition = glow ? 2.9 : 3
+        node.zPosition = glow ? 2.6 : 2.7
+        // **Below the ball's 3, not level with it** (James, round 342: "Ball trajectory line
+        // sits on top of the ball - it should sit behind the ball"). The core used to share the
+        // ball's plane, and with `ignoresSiblingOrder` two nodes on one plane are drawn in
+        // whatever order the renderer batches them - so the line's first segment, which starts
+        // at the ball's centre, could be laid over the ball. Still above the bricks' 1
         return node
     }
 }

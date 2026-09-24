@@ -268,8 +268,8 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
     func tableView(_ tableView: UITableView, didHighlightRowAt indexPath: IndexPath) {
         if hapticsSetting {
             interfaceHaptic.impactOccurred()
-            InterfaceSound.click()
         }
+        InterfaceSound.click()
         if let cell = self.itemsTableView.cellForRow(at: indexPath) as? SettingsTableViewCell {
             cell.setPressed(true, colour: #colorLiteral(red: 0.8335226774, green: 0.9983789325, blue: 0.5007104874, alpha: 1), duration: 0.1)
         }
@@ -579,8 +579,8 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         gameCenterViewController.dismiss(animated: true, completion: nil)
         if hapticsSetting {
             interfaceHaptic.impactOccurred()
-            InterfaceSound.click()
         }
+        InterfaceSound.click()
     }
     // Remove game center view contoller once dismissed
     

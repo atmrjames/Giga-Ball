@@ -162,6 +162,14 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	/// The paddle's far-side half while it straddles a wrapped edge - see EndlessIIWrapAround.
 	var endlessIIWrapGhostPaddle: SKSpriteNode?
 	var endlessIIBackdropTiles: [SKSpriteNode] = []
+	/// The size the scene was when the level was laid out - the height every node and body was
+	/// placed against, which `fitTheWindow` never changes (WindowFit.swift). Zero until then.
+	var laidOutSceneSize: CGSize = .zero
+
+	/// The paddle's top overlay (sticky, aimed sticky, grip) and retro's paddle dress. Distinct
+	/// planes, the overlay above - see where they are assigned in `didMove`.
+	static let paddleTopPlane: CGFloat = 4.1
+	static let retroDressPlane: CGFloat = 4
 	var endlessIIBackdropScroll: CGFloat = 0
 	var endlessIIAimDefaultAngles: [ObjectIdentifier: Double] = [:]
 	/// Where the aiming finger is, and whether it has moved yet - the aim is the finger's
@@ -2024,8 +2032,14 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		paddle.physicsBody!.collisionBitMask = CollisionTypes.paddleCategory.rawValue | CollisionTypes.boarderCategory.rawValue
         paddle.zPosition = 3
 		paddleLaser.zPosition = 2
-		paddleSticky.zPosition = 4
-		paddleRetroTexture.zPosition = 4
+		paddleSticky.zPosition = GameScene.paddleTopPlane
+		paddleRetroTexture.zPosition = GameScene.retroDressPlane
+		// **A hair above retro's dress, never level with it** (James, round 342: "Ball spin
+		// graphic is flashing on and off rapidly over the retro paddle"). Retro draws its paddle
+		// as a second sprite at 4, and since round 261 the grip wears the shared overlay even in
+		// retro - so two sprites sat on one plane, and with `ignoresSiblingOrder` SpriteKit is
+		// free to draw either first, frame by frame. Round 275's fix stopped the overlay being
+		// *hidden* and put back; this is the other half, the one no amount of isHidden could fix
 		paddleRetroLaserTexture.zPosition = 5
 		paddleRetroStickyTexture.zPosition = 2
 		paddle.physicsBody!.usesPreciseCollisionDetection = true
@@ -2195,6 +2209,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		}
 		// Anchor the HUD to the playfield edge rather than the screen edge where the side
 		// borders are wide, so it does not drift out into the border
+
+		laidOutSceneSize = size
+		// Everything above was placed against this size, and the window may change shape
+		// under it from here on - see WindowFit.swift
 
 		multiplierLabel.position.x = scoreLabel.position.x
 		multiplierLabel.position.y = scoreLabel.position.y - labelSpacing - fontSize/2
@@ -4772,8 +4790,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			removeBrick(node: node, sprite: sprite)
 		case brickIndestructible2Texture:
 			totalStatsArray[0].bricksHit[6]+=1
-			endlessIIBrickStruck(sprite)
-			// An Endless 2.0 brick that can never be destroyed fires its style here instead
 			countBricks()
         case brickInvisibleTexture:
 			totalStatsArray[0].bricksHit[7]+=1
@@ -4814,6 +4830,17 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				removeBrick(node: node, sprite: sprite)
 			}
         }
+		if node.parent != nil, node.name == BrickCategoryName {
+			endlessIIBrickStruck(sprite)
+		}
+		// **Every hit it survives fires an Exploding or Spawner brick** (James, round 342:
+		// "Spawner bricks and exploding bricks should activate every time that they are hit,
+		// not just when the brick is destroyed"). The hit that destroys it already fires it,
+		// through `removeBrick`, which renames the brick on its way out - so a brick still
+		// carrying its name here is one that took the hit and stayed: a Multi-Hit stepping down,
+		// an Indestructible, a hidden brick revealed. Until now only the never-destroyed kind
+		// fired on contact, because it was the one with no destruction to wait for.
+		// Before the sound, so a brick that voices itself does so first
 		playBrickHitUnlessVoiced()
 		// Brick hit sound - unless the brick has one of its own and has just played it
     }

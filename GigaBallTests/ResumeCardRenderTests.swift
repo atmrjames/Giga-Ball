@@ -602,7 +602,7 @@ final class ResumeScoreLineFacesTests: XCTestCase {
         ("iPhone SE", CGSize(width: 375, height: 667)),
         ("iPhone 16 Pro", CGSize(width: 402, height: 874)),
         ("iPad 13-inch", CGSize(width: 1032, height: 1376)),
-        ("smallest window", CGSize(width: 320, height: 568)),
+        ("smallest window", SceneDelegate.smallestWindow),
     ]
 
     override func setUp() {

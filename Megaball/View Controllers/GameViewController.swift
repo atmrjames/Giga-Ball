@@ -44,7 +44,13 @@ class GameViewController: UIViewController, GameViewControllerDelegate {
 
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
-        guard hasPresentedScene == false else { return }
+        if hasPresentedScene {
+            ((view as? SKView)?.scene as? GameScene)?.fitTheWindow(view.bounds.size)
+            return
+        }
+        // Every later layout is the window changing shape - an iPad or Mac window being
+        // dragged - and the scene follows it (WindowFit.swift), so the play zone keeps the
+        // window's height and the purple either side takes up the difference
         hasPresentedScene = true
         addLaunchCover()
         presentGameScene()

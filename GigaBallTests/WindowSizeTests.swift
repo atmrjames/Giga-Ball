@@ -242,15 +242,13 @@ final class WindowSizeTests: XCTestCase {
     /// which made it a guess rather than a rule - and a guess is what a window floor must not
     /// be, because it decides how small a player is allowed to make the game.
     func testTheWindowFloorIsTheSmallestPhoneTheAppSupports() {
-        XCTAssertEqual(SceneDelegate.smallestWindow, CGSize(width: 320, height: 568),
+        XCTAssertEqual(SceneDelegate.smallestWindow, CGSize(width: 375, height: 667),
                        "the floor a player may pull an iPad or Mac window down to")
-        // **Round 340: this number is no longer a phone, and it is still the right floor.** It
-        // was chosen as the original iPhone SE's screen, back when the app ran on iOS 15; the
-        // deployment target is iOS 17 now, which that phone cannot run, and the smallest phone
-        // that can is the SE 2nd and 3rd generation at 375x667. What keeps 320x568 here is the
-        // other thing it is: a window, on an iPad in Slide Over or a Mac, which a player can
-        // make this small whatever phone they own. Raising it would take that away from them,
-        // so it is James's call rather than a tidy-up.
+        // **Round 342: the smallest phone iOS 17 runs on, again.** Round 340 kept 320x568 as
+        // a window size after it had stopped being a phone - the original SE cannot run the
+        // deployment target - because it was also the narrowest a Slide Over panel could make
+        // the app. James: "Let's raise the smallest size to 375 by 667", knowing it applies to
+        // iPad and Mac windows as well.
     }
 
     /// **The play zone keeps its ratio and stays inside the window at every shape** (round 312).
@@ -418,5 +416,86 @@ final class ResizedWhileOpenTests: XCTestCase {
             if let found = pager(in: child) { return found }
         }
         return nil
+    }
+}
+
+/// The game view following the window after the level is built.
+///
+/// James, round 342: "iPad game view not filling the window - is it not possible to make those
+/// purple side bars dynamic so their width can adjust as the window adjusts, ensuring the game
+/// view fills the vertical space without being clipped."
+final class GameViewFollowsTheWindowTests: XCTestCase {
+
+    /// An iPad laid out at full screen: the play zone is height-bound, with wide purple borders.
+    private let laidOut = CGSize(width: 1024, height: 1366)
+    private let playWidth: CGFloat = 656
+
+    /// A narrower window keeps the height and loses border, so nothing is letterboxed.
+    func testANarrowerWindowKeepsTheHeightAndLosesBorder() {
+        let view = CGSize(width: 700, height: 1366)
+        let size = GameScene.sizeFilling(view, laidOut: laidOut, narrowest: playWidth)
+        XCTAssertEqual(size.height, laidOut.height, "the play zone keeps the window's height")
+        XCTAssertEqual(size.width/size.height, view.width/view.height, accuracy: 0.0001,
+                       "the scene is the window's shape, so aspectFit has nothing to band")
+    }
+
+    /// A wider or shorter window fills too - the border grows instead.
+    func testAWiderWindowGrowsTheBorder() {
+        for view in [CGSize(width: 1366, height: 1024), CGSize(width: 1280, height: 975),
+                     CGSize(width: 950, height: 975)] {
+            let size = GameScene.sizeFilling(view, laidOut: laidOut, narrowest: playWidth)
+            XCTAssertEqual(size.height, laidOut.height, "\(view)")
+            XCTAssertEqual(size.width/size.height, view.width/view.height, accuracy: 0.0001,
+                           "\(view): fills the window")
+            XCTAssertGreaterThanOrEqual(size.width, playWidth, "\(view): the field is all there")
+        }
+    }
+
+    /// Thinner than the game itself is the one shape that cannot be filled without clipping,
+    /// and James's own condition rules clipping out - so there the scene stops narrowing.
+    func testAWindowThinnerThanTheGameIsNeverClipped() {
+        let view = CGSize(width: 375, height: 1366)
+        let size = GameScene.sizeFilling(view, laidOut: laidOut, narrowest: playWidth)
+        XCTAssertEqual(size.width, playWidth, "the walls and the field stay on screen")
+        XCTAssertEqual(size.height, laidOut.height, "and the height every body was built at")
+    }
+
+    /// The scene itself: its size changes, its height and play zone never do.
+    func testTheSceneFollowsTheWindowAndBackAgain() {
+        let scene = GameScene(size: laidOut)
+        scene.gameWidth = playWidth
+        scene.laidOutSceneSize = laidOut
+
+        scene.fitTheWindow(CGSize(width: 700, height: 1366))
+        XCTAssertEqual(scene.size.width, 700, accuracy: 0.5)
+        XCTAssertEqual(scene.size.height, laidOut.height)
+        var painted: (CGFloat, CGFloat, CGFloat, CGFloat) = (0, 0, 0, 0)
+        var wall: (CGFloat, CGFloat, CGFloat, CGFloat) = (0, 0, 0, 0)
+        scene.backgroundColor.getRed(&painted.0, green: &painted.1, blue: &painted.2,
+                                     alpha: &painted.3)
+        GameScene.borderColour.getRed(&wall.0, green: &wall.1, blue: &wall.2, alpha: &wall.3)
+        for (a, b) in [(painted.0, wall.0), (painted.1, wall.1), (painted.2, wall.2)] {
+            XCTAssertEqual(a, b, accuracy: 0.002,
+                           "past the walls is the walls' purple, not the scene's grey")
+        }
+
+        scene.fitTheWindow(CGSize(width: 1024, height: 1366))
+        XCTAssertEqual(scene.size, laidOut, "dragged back, it is the scene it was built as")
+    }
+
+    /// The HUD sets the limit when it was hung off the screen's edges (a compact width).
+    func testTheHUDIsNeverCutOff() {
+        let scene = GameScene(size: CGSize(width: 402, height: 874))
+        scene.gameWidth = 380
+        scene.labelSpacing = 10
+        scene.laidOutSceneSize = scene.size
+        scene.pauseButton.size = CGSize(width: 30, height: 30)
+        scene.pauseButton.position.x = -201 + 20 + 15
+        scene.addChild(scene.pauseButton)
+
+        scene.fitTheWindow(CGSize(width: 300, height: 874))
+        XCTAssertGreaterThanOrEqual(scene.size.width/2, 201 - 20 + 20 - 0.5,
+                                    "the pause button keeps the margin it was built with")
+        XCTAssertLessThanOrEqual(scene.size.width, 402, "never wider than it was built")
     }
 }

@@ -79,8 +79,8 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
     @IBAction func tapGestureAction(_ sender: Any) {
         if hapticsSetting {
             interfaceHaptic.impactOccurred()
-            InterfaceSound.click()
         }
+        InterfaceSound.click()
         if finishScoreTallyIfRunning() { return }
         if skipIntroHoldIfRunning() { return }
         removeAnimate()
@@ -88,8 +88,8 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
     @IBAction func tapBackgroundGestureAction(_ sender: Any) {
         if hapticsSetting {
             interfaceHaptic.impactOccurred()
-            InterfaceSound.click()
         }
+        InterfaceSound.click()
         if finishScoreTallyIfRunning() { return }
         if skipIntroHoldIfRunning() { return }
         removeAnimate()

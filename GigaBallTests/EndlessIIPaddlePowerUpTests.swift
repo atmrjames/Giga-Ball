@@ -6223,3 +6223,60 @@ final class TurnBasedGoodbyeLengthTests: XCTestCase {
                        "after its goodbye and no longer")
     }
 }
+
+/// Retro's paddle top, round 342.
+final class RetroPaddleTopTests: XCTestCase {
+
+    private func retroMayhem() -> GameScene {
+        let scene = GameScene()
+        scene.gameMode = .endlessII
+        scene.totalStatsArray = [TotalStats()]
+        scene.addChild(scene.ball)
+        scene.ball.physicsBody = SKPhysicsBody(circleOfRadius: 5)
+        scene.addChild(scene.paddle)
+        scene.paddle.size = CGSize(width: 120, height: 12)
+        scene.paddleTexture = scene.retroPaddle
+        scene.paddleRetroTexture.texture = scene.retroPaddle
+        scene.paddleRetroStickyTexture.isHidden = true
+        scene.paddleSticky.isHidden = true
+        return scene
+    }
+
+    /// James: "Ball spin graphic is flashing on and off rapidly over the retro paddle."
+    ///
+    /// The grip wears the shared overlay in retro, over retro's own paddle sprite - and the two
+    /// were on the same plane, which under `ignoresSiblingOrder` is no order at all.
+    func testTheGripIsDrawnAboveRetrosPaddleNotLevelWithIt() {
+        XCTAssertGreaterThan(GameScene.paddleTopPlane, GameScene.retroDressPlane)
+    }
+
+    /// James: "Aimed sticky with retro paddle should still show the retro sticky graphic, just
+    /// like the other paddles show their sticky graphic for the aimed sticky paddle."
+    func testAimedStickyPutsRetrosStickyPictureOn() {
+        let scene = retroMayhem()
+        scene.endlessIICollectAimedSticky()
+        XCTAssertFalse(scene.paddleRetroStickyTexture.isHidden,
+                       "retro's own sticky layer, the one plain Sticky uses")
+        XCTAssertTrue(scene.paddleSticky.isHidden,
+                      "and not the shared overlay, whose sticky picture is not retro's style")
+    }
+
+    /// And it stays on between catches, as the other themes' face does.
+    func testItStaysOnWhileTheAimRuns() {
+        let scene = retroMayhem()
+        scene.endlessIICollectAimedSticky()
+        scene.endlessIIRefreshStickyPaddleLook()
+        scene.refreshEndlessIIStickyFace()
+        XCTAssertFalse(scene.paddleRetroStickyTexture.isHidden,
+                       "an empty paddle is not the aim ending")
+    }
+
+    /// And comes off when the aim does.
+    func testItComesOffWhenTheAimEnds() {
+        let scene = retroMayhem()
+        scene.endlessIICollectAimedSticky()
+        scene.endlessIIAimedStickyClock.reset()
+        scene.refreshEndlessIIStickyFace()
+        XCTAssertTrue(scene.paddleRetroStickyTexture.isHidden)
+    }
+}

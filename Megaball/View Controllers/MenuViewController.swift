@@ -407,8 +407,8 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
     func tableView(_ tableView: UITableView, didHighlightRowAt indexPath: IndexPath) {
         if hapticsSetting {
             interfaceHaptic.impactOccurred()
-            InterfaceSound.click()
         }
+        InterfaceSound.click()
         if let cell = self.modeSelectTableView.cellForRow(at: indexPath) as? ModeSelectTableViewCell {
             UIView.animate(withDuration: 0.1) {
                 cell.cellView1.transform = .init(scaleX: 0.95, y: 0.95)

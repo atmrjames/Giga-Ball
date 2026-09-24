@@ -289,7 +289,7 @@ extension GameScene {
     /// not refresh the look would leave the sticky overlay saying nothing had happened.
     func endlessIIRefreshStickyPaddleLook() {
         guard endlessIIHasHeldExtras == false, ballIsOnPaddle == false else { return }
-        if paddleTexture == retroPaddle {
+        if paddleTexture == retroPaddle, endlessIIRetroWearsAimedSticky == false {
             paddleRetroStickyTexture.isHidden = true
         }
     }

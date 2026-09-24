@@ -164,11 +164,14 @@ extension EndlessIIStyleTests {
         XCTAssertTrue(EndlessIIStyle.spawner.firesOnHit(with: .indestructibleAlways))
     }
 
-    func testEverywhereElseTheyStillFireOnDestruction() {
+    /// James, round 342: "Spawner bricks and exploding bricks should activate every time that
+    /// they are hit, not just when the brick is destroyed." Every behaviour, not only the one
+    /// that can never be destroyed - a Multi-Hit Exploding brick goes off on each hit.
+    func testTheyFireOnEveryHitWhateverTheBrickIs() {
         for behaviour in [EndlessIIBehaviour.standard, .multiHit,
-                          .indestructibleOnce, .invisible] {
-            XCTAssertFalse(EndlessIIStyle.exploding.firesOnHit(with: behaviour), "\(behaviour)")
-            XCTAssertFalse(EndlessIIStyle.spawner.firesOnHit(with: behaviour), "\(behaviour)")
+                          .indestructibleOnce, .invisible, .indestructibleAlways] {
+            XCTAssertTrue(EndlessIIStyle.exploding.firesOnHit(with: behaviour), "\(behaviour)")
+            XCTAssertTrue(EndlessIIStyle.spawner.firesOnHit(with: behaviour), "\(behaviour)")
         }
     }
 

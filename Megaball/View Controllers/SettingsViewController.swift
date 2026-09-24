@@ -702,7 +702,6 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
                 hapticsSetting = !hapticsSetting
                 defaults.set(hapticsSetting, forKey: "hapticsSetting")
                 if hapticsSetting { interfaceHaptic.impactOccurred() }
-        InterfaceSound.click()
                 // Switching haptics on answers with one tick - the demonstration.
                 // Switching them off answers with the silence it just bought
                 // (play-test round 12: the release path fired on the *old* value,
@@ -866,8 +865,16 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
     func tableView(_ tableView: UITableView, didHighlightRowAt indexPath: IndexPath) {
         if hapticsSetting {
             interfaceHaptic.impactOccurred()
+        }
+        if settingRow(for: indexPath) != SettingRow.interfaceSound.rawValue {
             InterfaceSound.click()
         }
+        // **Except the UI Sound row, which speaks for itself in didSelect** (James, round 342:
+        // "When turning the UI sound off via the settings screen it shouldn't make a UI sound
+        // button click. When turning it on, it should."). The row lights up on the touch, before
+        // the setting has flipped, so a click here was the old setting's - heard when turning it
+        // off, and doubled with didSelect's when turning it on.
+        //
         // With haptics off, every press is silent - including the haptics row itself
         // (play-test round 12: turning haptics *off* was firing one). The tick that
         // demonstrates the toggle lives in didSelect, after the setting has flipped
@@ -911,8 +918,8 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
     func collectionView(_ collectionView: UICollectionView, didHighlightItemAt indexPath: IndexPath) {
         if hapticsSetting {
             interfaceHaptic.impactOccurred()
-            InterfaceSound.click()
         }
+        InterfaceSound.click()
         if let cell = self.backButtonCollectionView.cellForItem(at: indexPath) as? MainMenuCollectionViewCell {
             UIView.animate(withDuration: 0.1) {
                 cell.view.transform = .init(scaleX: 0.95, y: 0.95)

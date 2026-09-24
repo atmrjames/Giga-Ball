@@ -80,7 +80,14 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     /// `sizeRestrictions` for an app that declares a single orientation, so the floor was
     /// entirely the system's and no number here was ever going to move it. The app declares all
     /// four orientations on iPad as of round 312, which is what makes this line mean anything.
-    static let smallestWindow = CGSize(width: 320, height: 568)
+    ///
+    /// **Round 342: raised to 375 by 667, the iPhone SE (2nd and 3rd generation).** The
+    /// deployment target is iOS 17, which the original 320-wide SE cannot run, so 320 had
+    /// stopped being a phone at all and was only ever a window. James, asked whether raising it
+    /// would limit iPad and Mac windows too (it does - this is the one floor for both, and a
+    /// 320-wide Slide Over panel can no longer hold the app): "Let's raise the smallest size to
+    /// 375 by 667." Every screen now only has to work at the smallest phone it really runs on.
+    static let smallestWindow = CGSize(width: 375, height: 667)
 
     func sceneWillResignActive(_ scene: UIScene) {
         NotificationCenter.default.post(name: .pauseNotificationKey, object: nil)

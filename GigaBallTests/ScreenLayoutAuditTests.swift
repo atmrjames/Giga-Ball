@@ -58,7 +58,7 @@ final class ScreenLayoutAuditTests: XCTestCase {
     /// iPad or Mac window down to it, so it stays in the list under its real name.
     private let sizes: [(name: String, size: CGSize)] = [
         ("iPhone SE", CGSize(width: 375, height: 667)),
-        ("smallest window", CGSize(width: 320, height: 568)),
+        ("smallest window", SceneDelegate.smallestWindow),
         ("iPhone 16 Pro", CGSize(width: 402, height: 874)),
         ("iPhone 17 Pro Max", CGSize(width: 440, height: 956)),
         ("iPad 13-inch", CGSize(width: 1032, height: 1376)),
@@ -511,7 +511,7 @@ final class LevelIntroFurnitureTests: XCTestCase {
 
     private let sizes: [(name: String, size: CGSize)] = [
         ("iPhone SE", CGSize(width: 375, height: 667)),
-        ("smallest window", CGSize(width: 320, height: 568)),
+        ("smallest window", SceneDelegate.smallestWindow),
         ("iPhone 16 Pro", CGSize(width: 402, height: 874)),
         ("iPhone 17 Pro Max", CGSize(width: 440, height: 956)),
         ("iPad 13-inch", CGSize(width: 1032, height: 1376)),
@@ -977,7 +977,7 @@ final class InGameHeaderSpineTests: XCTestCase {
 
     private let shapes: [(name: String, size: CGSize, regular: Bool)] = [
         ("iPhone SE", CGSize(width: 375, height: 667), false),
-        ("smallest window", CGSize(width: 320, height: 568), false),
+        ("smallest window", SceneDelegate.smallestWindow, false),
         ("iPhone 16 Pro", CGSize(width: 402, height: 874), false),
         ("iPhone 17 Pro Max", CGSize(width: 440, height: 956), false),
         ("iPad 13-inch", CGSize(width: 1032, height: 1376), true),
@@ -1522,7 +1522,7 @@ final class GameCentreLineOnEveryScreenTests: XCTestCase {
         ("iPhone 16 Pro", CGSize(width: 402, height: 874), false),
         ("iPhone 16 Pro Max", CGSize(width: 440, height: 956), false),
         ("iPad 13-inch", CGSize(width: 1032, height: 1376), true),
-        ("smallest window", CGSize(width: 320, height: 568), false),
+        ("smallest window", SceneDelegate.smallestWindow, false),
     ]
 
     private func gameOver(size: CGSize, regular: Bool) -> PauseMenuViewController? {

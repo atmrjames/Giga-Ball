@@ -166,13 +166,17 @@ enum EndlessIIStyle: String, CaseIterable, Codable {
         }
     }
 
-    /// Whether this style fires when the brick is hit rather than when it is destroyed.
+    /// Whether this style fires when the brick is hit and survives, as well as when it is
+    /// destroyed.
     ///
-    /// The same style, read differently depending on what it is attached to. A brick that
-    /// can never be destroyed would never fire an on-destruction effect at all, so it fires
-    /// on contact instead.
+    /// **Whatever the brick is, since round 342** (James: "Spawner bricks and exploding bricks
+    /// should activate every time that they are hit, not just when the brick is destroyed").
+    /// It used to be only the Indestructible kind, on the reasoning that a brick that can never
+    /// be destroyed would otherwise never fire at all. A Multi-Hit Exploding brick now goes off
+    /// on each of its hits, not just the last. The behaviour is still asked for, so the rule
+    /// stays a question about the brick and can grow an exception without a new signature.
     func firesOnHit(with behaviour: EndlessIIBehaviour) -> Bool {
-        (self == .exploding || self == .spawner) && behaviour == .indestructibleAlways
+        self == .exploding || self == .spawner
     }
 
     /// Whether two styles can share one brick.

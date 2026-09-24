@@ -749,8 +749,8 @@ class LevelStatsViewController: UIViewController, UICollectionViewDelegate, UICo
         gameCenterViewController.dismiss(animated: true, completion: nil)
         if hapticsSetting {
             interfaceHaptic.impactOccurred()
-            InterfaceSound.click()
         }
+        InterfaceSound.click()
     }
     // Remove game center view contoller once dismissed
     
