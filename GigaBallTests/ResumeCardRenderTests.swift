@@ -123,8 +123,10 @@ final class ResumeCardRenderTests: XCTestCase {
 
     /// The four labels, in the order they are on the screen.
     private func card(_ splash: SplashViewController) -> [UILabel] {
-        [splash.resumingLabel, splash.packNameLabel,
-         splash.levelNumberLabel, splash.scoreLabel]
+        [splash.packNameLabel, splash.levelNumberLabel,
+         splash.resumingLabel, splash.scoreLabel]
+        // Top to bottom, in the pause screen's order since round 341: what is being played and
+        // where in it, then RESUMING where the pause screen says PAUSED, then the score
     }
 
     private func disc(_ splash: SplashViewController) -> UIButton? {
@@ -180,16 +182,19 @@ final class ResumeCardRenderTests: XCTestCase {
                              + "to the button at the bottom, not to the mark at the top")
     }
 
-    /// "Move the Resuming... label to just above the cancel button" - the card reads downwards
-    /// in the order James listed it, and the button is under all of it.
-    func testTheOrderIsHeadingModeDetailScoreThenTheButton() {
+    /// The card reads downwards in the pause screen's order, and the button is under all of it.
+    ///
+    /// **James, round 341: "use the order of information from the pause screen and replicate
+    /// it on the resume screen to ensure continuity."** Mode and detail, then the headline,
+    /// then the score - which replaces round 310's heading-first order.
+    func testTheOrderIsModeDetailHeadingScoreThenTheButton() {
         let splash = laidOut(base())
         let shown = card(splash).filter { $0.isHidden == false }
         XCTAssertEqual(shown.count, 4, "a classic run says all four")
 
         let tops = shown.map { $0.convert($0.bounds, to: splash.view).minY }
         XCTAssertEqual(tops, tops.sorted(),
-                       "heading, mode, detail, score - top to bottom, got \(tops)")
+                       "mode, detail, heading, score - top to bottom, got \(tops)")
 
         let button = try! XCTUnwrap(disc(splash))
         let discFrame = button.convert(button.bounds, to: splash.view)
@@ -365,9 +370,15 @@ final class ResumeCardRenderTests: XCTestCase {
 
         XCTAssertEqual(discFrame.minY, plainDisc.minY, accuracy: 0.5,
                        "the button does not move when the detail gets longer")
-        XCTAssertGreaterThan(daily.levelNumberLabel.frame.height,
-                             plain.levelNumberLabel.frame.height,
-                             "the competition line is a second line, so the label is taller")
+        let kind = try! XCTUnwrap(
+            allLabels(in: daily.view).first { $0.text == "COMPETITION RUN" && !$0.isHidden },
+            "the competition line is on the card")
+        let kindFrame = kind.convert(kind.bounds, to: daily.view)
+        let heading = daily.resumingLabel.convert(daily.resumingLabel.bounds, to: daily.view)
+        XCTAssertLessThanOrEqual(kindFrame.maxY, heading.minY + 0.5,
+                                 "on its own line above RESUMING, where the pause screen puts it "
+                                 + "above PAUSED (round 341)")
+        XCTAssertGreaterThan(kindFrame.height, 0)
         XCTAssertGreaterThan(daily.resumingLabel.convert(daily.resumingLabel.bounds,
                                                          to: daily.view).minY, 0,
                              "and the heading is still on the screen")
@@ -493,10 +504,16 @@ final class ResumeCardOnATallScreenTests: XCTestCase {
         }
     }
 
-    func testTheCardStaysWithTheLogoOnAnIPad() {
+    func testTheCardStaysWithTheLogoOnAnIPad() throws {
         for size in [iPadPortrait, iPadLandscape] {
             let splash = laidOut(in: size)
-            let card = splash.resumingLabel.convert(splash.resumingLabel.bounds, to: splash.view)
+            let badge = try XCTUnwrap(everyImageView(in: splash.view)
+                .first { $0.isHidden == false && $0.bounds.width == $0.bounds.height
+                            && $0.bounds.width > 30 })
+            let card = badge.convert(badge.bounds, to: splash.view)
+                .insetBy(dx: 0, dy: -SplashViewController.badgeRowInset)
+            // The top of the card, which is its badge since round 341 put the card in the pause
+            // screen's order - RESUMING used to be the first line and is now under the title block
             XCTAssertLessThanOrEqual(card.minY,
                                      size.height/2 + SplashViewController.resumeCardMaximumDrop + 1,
                                      "\(size): four lines and a button a third of a screen "
@@ -504,17 +521,17 @@ final class ResumeCardOnATallScreenTests: XCTestCase {
         }
     }
 
-    /// The mode's badge is on this screen at all, and it sits under the mode's name.
+    /// The mode's badge is on this screen at all, and it heads the card.
     ///
     /// Round 338 put it here for the first time: this was the only one of the five screens
     /// that named the mode in words alone, so a Mayhem run was resumed from a card with no
     /// badge into a countdown and then a pause screen wearing one.
     ///
-    /// **Under the name rather than over it** (James, round 339: "put the game mode logo below
-    /// the game mode title"). On the four screens the game shows, the badge is the heading and
-    /// the words hang from it. Here the heading is RESUMING and the mode is a line of the card,
-    /// so the badge belongs with that line.
-    func testTheBadgeSitsUnderTheModesName() throws {
+    /// **Over the name, as the pause screen has it** (James, round 341: "use the order of
+    /// information from the pause screen and replicate it on the resume screen to ensure
+    /// continuity"). Round 339 had put it under the name, when RESUMING was the card's heading;
+    /// RESUMING now sits where PAUSED does, so the badge heads the card as it heads that screen.
+    func testTheBadgeHeadsTheCardAsOnThePauseScreen() throws {
         let splash = laidOut(in: phone)
         let root = splash.view!
         let discs = everyImageView(in: root)
@@ -523,9 +540,11 @@ final class ResumeCardOnATallScreenTests: XCTestCase {
         let disc = try XCTUnwrap(discs.first, "the resume card has no mode badge")
 
         let place = disc.convert(disc.bounds, to: root)
+        let name = splash.packNameLabel.convert(splash.packNameLabel.bounds, to: root)
         let heading = splash.resumingLabel.convert(splash.resumingLabel.bounds, to: root)
-        XCTAssertGreaterThan(place.minY, heading.maxY,
-                             "the badge belongs inside the card, under the mode's name")
+        XCTAssertLessThanOrEqual(place.maxY, name.minY + 0.5,
+                                 "the badge heads the card, over what is being played")
+        XCTAssertLessThan(place.maxY, heading.minY, "and over RESUMING")
         XCTAssertLessThan(place.minY, root.bounds.height,
                           "and on the screen")
     }
@@ -652,5 +671,12 @@ final class ResumeScoreLineFacesTests: XCTestCase {
                            + "proportion of \(heading/number) rather than \(wanted) - the sizes "
                            + "remembered for scaling came from a line other than this one")
         }
+    }
+}
+
+/// Every label under a view, however deep.
+private func allLabels(in view: UIView) -> [UILabel] {
+    view.subviews.flatMap { sub -> [UILabel] in
+        (sub as? UILabel).map { [$0] } ?? [] + allLabels(in: sub)
     }
 }

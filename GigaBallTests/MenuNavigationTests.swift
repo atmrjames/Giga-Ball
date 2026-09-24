@@ -1589,3 +1589,61 @@ final class MenuContentWidthTests: XCTestCase {
         }
     }
 }
+
+/// The main menu's own button row, dragged narrower after it has been laid out.
+///
+/// **James, round 341, from an iPad: "the settings icon on the main menu is still disappearing
+/// when the screen is narrow."** Round 339's `MenuButtonRowFitTests` checks the shared
+/// `layoutMenuButtonRow`, which every other screen uses - and the main menu does not. Its row
+/// has its own arithmetic, which ran once as the screen loaded, so the spacing between the
+/// cells was whatever the window's width was then. This drives the real screen through a
+/// resize, which is the thing James did.
+final class MainMenuButtonRowResizeTests: XCTestCase {
+
+    private var windows: [UIWindow] = []
+
+    override func tearDown() {
+        windows.forEach { $0.isHidden = true }
+        windows.removeAll()
+        super.tearDown()
+    }
+
+    func testEveryButtonIsStillInTheRowAfterTheWindowNarrows() throws {
+        let board = UIStoryboard(name: "Main", bundle: Bundle(for: MenuViewController.self))
+        let menu = try XCTUnwrap(board.instantiateViewController(withIdentifier: "menuView")
+                                    as? MenuViewController)
+        let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 820, height: 1000))
+        window.traitOverrides.horizontalSizeClass = .regular
+        window.rootViewController = menu
+        window.isHidden = false
+        windows.append(window)
+
+        func settle() {
+            for _ in 0..<4 {
+                window.setNeedsLayout()
+                window.layoutIfNeeded()
+                menu.iconCollectionView.layoutIfNeeded()
+            }
+        }
+        settle()
+
+        for width in [600, 480, 420, 380, 340] as [CGFloat] {
+            window.frame = CGRect(x: 0, y: 0, width: width, height: 1000)
+            settle()
+
+            let row = try XCTUnwrap(menu.iconCollectionView)
+            let placed = (0..<row.numberOfItems(inSection: 0)).compactMap {
+                row.collectionViewLayout.layoutAttributesForItem(at: IndexPath(item: $0, section: 0))
+            }
+            XCTAssertEqual(placed.count, 3, "\(Int(width))pt: the row lost a cell")
+            for cell in placed {
+                XCTAssertLessThanOrEqual(cell.frame.maxX, row.bounds.width + 0.5,
+                    "\(Int(width))pt: a button is laid out at \(Int(cell.frame.minX)) in a row "
+                    + "\(Int(row.bounds.width)) wide, which is off its end - the settings "
+                    + "button James watched disappear")
+                XCTAssertEqual(cell.frame.minY, placed[0].frame.minY, accuracy: 0.5,
+                    "\(Int(width))pt: a button has been pushed onto a second line")
+            }
+        }
+    }
+}

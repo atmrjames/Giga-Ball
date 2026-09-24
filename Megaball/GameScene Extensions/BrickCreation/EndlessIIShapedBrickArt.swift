@@ -44,6 +44,15 @@ extension GameScene {
         case concave = "Concave"
         case diamond = "Diamond"
 
+        /// Whether a half turn leaves the outline where it was, so the brick's own picture
+        /// turned 180 degrees can stand in for a drawing of the far end of a spin.
+        var looksTheSameHalfTurned: Bool {
+            switch self {
+            case .rounded, .diamond: return true
+            case .wedge, .convex, .concave: return false
+            }
+        }
+
         /// The style this shape is, which is what carries the rules about it - what sizes it
         /// fits, what it stacks with. `shapedArt(for:)` is the other direction, from a face to
         /// its picture; Rounded has no `EndlessIIFace` at all, which is why the pair does not
@@ -358,12 +367,28 @@ extension GameScene {
                                          mirrored: Bool, flipped: Bool, main: SKSpriteNode) {
         let partnerNode = shape.childNode(withName: GameScene.facePartnerName) as? SKSpriteNode
 
-        guard brick.zRotation != 0,
-              endlessIIArtIsOriented(for: brick.texture, art,
-                                     mirrored: !mirrored, flipped: !flipped),
-              let partnerArt = endlessIIShapedArt(for: brick.texture, art,
+        let drawnPartner = endlessIIArtIsOriented(for: brick.texture, art,
                                                   mirrored: !mirrored, flipped: !flipped)
-        else {
+            ? endlessIIShapedArt(for: brick.texture, art, mirrored: !mirrored, flipped: !flipped)
+            : nil
+        let partnerArt = drawnPartner
+            ?? (art.looksTheSameHalfTurned && GameScene.isLitBrickArt(named:
+                    endlessIIBrickTextureName(brick.texture)) ? main.texture : nil)
+        // **Every lit shape, not only the ones drawn four ways** (James, round 341: "spinning
+        // brick fade works with the regular shape indestructible brick, but should work with
+        // all shapes on any bricks that have lighting effects: indestructible 1 and 2, plus all
+        // bricks in retro mode"). Diamond and Rounded are drawn once each - no `Diamond180`,
+        // no `Rounded180` - because a half turn does not change their outline and there was
+        // nothing for a second picture to say about the shape. So the question "is there a
+        // partner picture" answered no, and they turned their highlight underneath themselves
+        // the way a plain brick did before round 332.
+        //
+        // Round 332's answer for the plain brick is the answer here: the brick's own picture,
+        // turned half a circle inside it, is the lighting for the far end of the turn. That is
+        // only true of an outline a half turn leaves alone - a wedge turned 180 is a different
+        // wedge, which is why the wedges need their four drawings - so it is asked of the
+        // shape rather than assumed
+        guard brick.zRotation != 0, let partnerArt else {
             partnerNode?.removeFromParent()
             if main.alpha != 1 { main.alpha = 1 }
             return
@@ -382,8 +407,16 @@ extension GameScene {
         if partner.position != main.position { partner.position = main.position }
         partner.color = brick.color
         partner.colorBlendFactor = brick.colorBlendFactor
-        partner.xScale = mirrored ? -1 : 1
-        partner.yScale = flipped ? -1 : 1
+        if drawnPartner != nil {
+            partner.xScale = mirrored ? -1 : 1
+            partner.yScale = flipped ? -1 : 1
+        } else {
+            partner.xScale = main.xScale
+            partner.yScale = main.yScale
+        }
+        // A drawn partner is un-reflected like any oriented picture. A borrowed one is the main
+        // picture itself, so it wears exactly what the main one wears and differs only by the
+        // half turn below - which is the whole of the stand-in
         partner.zRotation = .pi
         // **Turned half a circle inside the brick, which is the whole of why it works.**
         //
@@ -416,6 +449,14 @@ extension GameScene {
     }
 
     static let facePartnerName = "endlessIIFacePartner"
+
+    /// Whether a brick's pictures are drawn with light on them - the ones a spin should keep
+    /// lit from the same side (round 341): both Indestructibles, and every retro brick.
+    /// Classic's coloured bricks are flat, and turning one is turning a flat colour.
+    static func isLitBrickArt(named name: String?) -> Bool {
+        guard let name else { return false }
+        return name.hasPrefix("BrickIndestructible") || name.lowercased().hasPrefix("retro")
+    }
 
     /// Keeps a drawn face showing what the brick is, as a Multi-hit brick steps down through
     /// its four textures. Returns whether it took the job - a face with no art still has its

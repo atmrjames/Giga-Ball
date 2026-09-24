@@ -167,8 +167,12 @@ class Playing: GKState {
             let startingScale = SKAction.scale(to: 0.8, duration: 0)
             let startingScalePaddle = SKAction.scaleX(to: 0.0, duration: 0)
             let startingFade = SKAction.fadeOut(withDuration: 0)
-            let scaleUp = SKAction.scale(to: 1, duration: 0.2)
-            let scaleUpPaddle = SKAction.scaleX(to: 1, duration: 0.2)
+            let scaleUp = scene.settleBallToItsSize(duration: 0.2)
+            let scaleUpPaddle = scene.settlePaddleToItsSize(duration: 0.2)
+            // To the size each is meant to be when the animation gets there, not to 1 (James,
+            // round 341: an Always On Shrink Ball lit its tray bar and left the ball full size).
+            // The twist collects its power-up as play begins, which is inside this animation,
+            // and a size written down before that happened was the size that won
             let fadeIn = SKAction.fadeIn(withDuration: 0.2)
             let wait = SKAction.wait(forDuration: 0.3)
             let startingGroup = SKAction.group([startingScale, startingFade])

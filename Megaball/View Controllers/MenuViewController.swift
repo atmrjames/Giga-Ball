@@ -202,6 +202,11 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         capMenuContentSize()
+        if let row = iconCollectionView, row.bounds.width > 0,
+           abs(row.bounds.width - buttonRowLaidOutAt) > 0.5 {
+            collectionViewLayout()
+        }
+        // The button row follows the window (round 341) - see `buttonRowLaidOutAt`
         // **The main menu was the one screen that never asked for the column** (James, round
         // 339, from an iPad: "the cell views expand with the window until a point, then snap
         // back to a set width once the window is wide enough"). Every other menu holds its
@@ -442,12 +447,28 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         // trailing constraints are `menuButtonRowInset`, and this is the same arithmetic
         // read off the same constant, so the two cannot drift
 
-        let spacing = (rowWidth-(50*3))/2
+        let measured = iconCollectionView.bounds.width > 0 ? iconCollectionView.bounds.width
+                                                           : rowWidth
+        let spacing = max(0, (measured - 50*3)/2)
         layout.minimumInteritemSpacing = spacing
         layout.minimumLineSpacing = spacing
+        buttonRowLaidOutAt = measured
 
         iconCollectionView!.collectionViewLayout = layout
     }
+
+    /// The width the button row's spacing was last worked out for.
+    ///
+    /// **James, round 341, from an iPad with the window dragged narrow: "on iPad the settings
+    /// icon on the main menu is still disappearing when the screen is narrow."** Round 339 made
+    /// every *other* screen's row give way when it runs short (`layoutMenuButtonRow`); this one
+    /// has its own arithmetic and it ran once, from `viewDidLoad`. The spacing between the three
+    /// cells was fixed at whatever width the window had when the app opened, so dragging the
+    /// window narrower left a gap too wide for the row, and a flow layout does not shrink its
+    /// cells - it pushes the last one onto a line nobody can see. The settings button was the
+    /// last one. Worked out again whenever the row's width changes, from the row's own width
+    /// rather than the container's frame, which the storyboard's constraints overwrite.
+    private var buttonRowLaidOutAt: CGFloat = 0
     
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
         3

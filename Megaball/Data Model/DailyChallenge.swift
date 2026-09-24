@@ -606,6 +606,28 @@ enum DailyTwist: String, CaseIterable, Codable {
     /// Classic is excluded from the draw. It is the theme most players are already in, and a
     /// twist announcing "one theme, chosen for you" and then handing back the one on screen
     /// is a twist that did nothing - and it is Monochromatic's whole answer besides.
+    /// The theme a day puts the whole run in, or nil when the player's own settings stand.
+    ///
+    /// Monochromatic forces Classic, Theme draws one from the date. One question with one
+    /// answer, asked by the scene as it dresses the run and by every screen that draws a ball
+    /// outside it - the rack on the pause, between-levels and resume screens.
+    ///
+    /// **James, round 341: "for the monochromatic daily twist the balls on the pause screen are
+    /// showing as retro balls - the monochromatic theme should be applied on top of the classic
+    /// theme for the daily challenge, regardless of the user's theme setting."** The scene had
+    /// always forced its own ball; the rack read the player's `ballSetting` straight out of the
+    /// defaults, so the screen that pauses a Classic-and-grey run showed three orange retro
+    /// balls under it. The answer lived on `GameScene`, where a view controller cannot ask it.
+    static func forcedTheme(for challenge: DailyChallenge?) -> Int? {
+        guard let challenge else { return nil }
+        if challenge.twists.contains(.monochromatic) { return 0 }
+        if challenge.twists.contains(.dailyTheme) {
+            return dailyThemeIndex(forKey: challenge.dateKey,
+                                   themeCount: LevelPackSetup().themeNameArray.count)
+        }
+        return nil
+    }
+
     static func dailyThemeIndex(forKey key: String, themeCount: Int) -> Int {
         guard themeCount > 1 else { return 0 }
         var stream = DailySeededGenerator(seed: DailyDay.seed(forKey: key) &+ 0x7A11)

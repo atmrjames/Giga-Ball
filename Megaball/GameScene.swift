@@ -912,6 +912,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			"Laser Beam": "laserBeam",
 			"Safety Paddle": "safetyPaddle",
 			"Mirror Paddle": "mirrorPaddle",
+			"Cluster": "clusterRelease",
+			// **James, round 341: "Cluster played both the cluster sound and the power-up sound
+			// when collected."** The burst is released the moment it is caught, so its own
+			// recording lands on the same frame as the chime - and round 334's rule is that a
+			// power-up that says something of its own says only that
 		]
 		var found: [Int: String] = [:]
 		for (power, sound) in byName {
@@ -981,6 +986,53 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	}
 
 	static let ballSizeScaleKey = "ballSizeScale"
+
+	/// Brings the ball to the size it is meant to be, read when it gets there rather than when
+	/// the animation was built.
+	///
+	/// **James, round 341, on an Always On day standing on Shrink Ball: "the power-up HUD icon
+	/// lit up, but the power-up itself was not applied" - and then "it worked when I quit and
+	/// resumed mid-game, it then reset when I lost the ball."** Every animation that brings the
+	/// ball onto the paddle - the pop-in as a level starts, the return after a lost ball, the
+	/// snap when a launch interrupts either - ended at `scale(to: 1)`, written down when the
+	/// animation was built. Always On collects its power-up the moment play begins, which is
+	/// inside that window: the shrink ran, the pop-in finished after it at full size, and the
+	/// tray bar went on counting down a power-up the ball was no longer wearing. The twist's
+	/// tick asks whether the bar is lit, not what size the ball is, so it never put it back. A
+	/// resume restores the ball's scale directly and skips the pop-in, which is why that one
+	/// worked.
+	///
+	/// An ordinary catch never met this because the ball is in flight when it lands. A power-up
+	/// that is on before the ball is is the case the old animations had never been asked about.
+	///
+	/// Eases from wherever the ball actually is when the animation starts, so a ball already
+	/// shrinking under the power-up is carried on to its size rather than jumped back up first.
+	func settleBallToItsSize(duration: TimeInterval) -> SKAction {
+		var start: CGFloat?
+		return SKAction.customAction(withDuration: duration) { [weak self] node, elapsed in
+			guard let self else { return }
+			let from = start ?? node.xScale
+			start = from
+			let progress = duration > 0 ? min(1, elapsed/CGFloat(duration)) : 1
+			node.setScale(from + (self.ballSizeTarget - from)*progress)
+		}
+	}
+
+	/// The same, for the paddle's width and the pictures that dress it.
+	///
+	/// The level's pop-in grows the paddle from nothing to `scaleX(to: 1)`, and an Always On
+	/// Expand or Shrink Paddle collected as play begins was undone by it in exactly the way the
+	/// ball's size was.
+	func settlePaddleToItsSize(duration: TimeInterval) -> SKAction {
+		var start: CGFloat?
+		return SKAction.customAction(withDuration: duration) { [weak self] node, elapsed in
+			guard let self else { return }
+			let from = start ?? node.xScale
+			start = from
+			let progress = duration > 0 ? min(1, elapsed/CGFloat(duration)) : 1
+			node.xScale = from + (self.paddleSizeTarget - from)*progress
+		}
+	}
 
 	var backstopCatches: Int = 0
 	var backstopCatchesTotal: Int = 0
@@ -1302,6 +1354,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var dailyTimeTrialRemaining: Double = DailyTwist.timeTrialSeconds
 	/// The countdown in the HUD, built only on a Time Trial day.
 	var dailyClockLabel: SKLabelNode?
+	/// The Time Trial's closing three, two, one, and which of them was last shown.
+	var dailyCountdownNode: SKSpriteNode?
+	var dailyCountdownShown = -1
 	var dailyFogTaking: [SKSpriteNode] = []
 	// What the fog is mid-way through taking - scheduled or fading - so an early launch can
 	// finish the job at once (`snapDailyFogShut`)
@@ -1516,6 +1571,36 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	///   "to play when the ball goes through a portal, either portal brick, or portal paddle,
 	///   or wrap-around"), and naming the event first keeps that a default rather than a
 	///   decision: the day a `brickPortal` recording lands it is played without touching this.
+	/// Plays a brick's own recording, and notes that it has spoken for the hit.
+	///
+	/// **James, round 341: "for bricks that have unique on hit sound effects (spawner, exploding,
+	/// fixed) there's no need to play the default brick hit sound as well, just play that
+	/// brick's sound."** Round 334 made the same rule for power-ups; this is it for bricks.
+	func playBrickVoice(_ name: String) {
+		guard soundsSetting, GameScene.mayhemSound(name) != nil else { return }
+		brickVoicedAt = CACurrentMediaTime()
+		playMayhemSound(name)
+		// Only noted when there is a recording to play: a brick whose sound is missing keeps
+		// the ordinary knock rather than going silent
+	}
+
+	/// When a brick last said something of its own.
+	var brickVoicedAt: CFTimeInterval = 0
+
+	/// The ordinary knock, unless a brick has just said something of its own for this hit.
+	///
+	/// A time rather than a flag cleared at the end of the hit. The three voices are started
+	/// inside the hit's own call chain, and a flag would do - until one of them is ever moved
+	/// behind a delay, when a flag left standing would silence the *next* hit instead. Anything
+	/// within a twentieth of a second is the same hit as far as an ear is concerned.
+	func playBrickHitUnlessVoiced() {
+		guard soundsSetting,
+			  CACurrentMediaTime() - brickVoicedAt > GameScene.brickVoiceWindow else { return }
+		run(brickHitNormalSound)
+	}
+
+	static let brickVoiceWindow: CFTimeInterval = 0.05
+
 	func playMayhemSound(_ name: String, or shared: String? = nil) {
 		guard soundsSetting else { return }
 		if let action = GameScene.mayhemSound(name) {
@@ -3081,12 +3166,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             ball.removeAllActions()
             // Stop animation actions on ball
             let fadeIn = SKAction.fadeIn(withDuration: 0)
-            let scaleUp = SKAction.scale(to: 1, duration: 0)
-            let resetGroup = SKAction.group([fadeIn, scaleUp])
+            let resetGroup = SKAction.group([fadeIn, settleBallToItsSize(duration: 0)])
             ball.run(resetGroup, completion: {
                 self.ball.isHidden = false
             })
-            // Reset ball on paddle immediately
+            // Reset ball on paddle immediately - to the size it should be, not to 1: a launch
+            // that interrupts the pop-in would otherwise throw away a size power-up that is
+            // already on (see `settleBallToItsSize`)
         }
 		
 		brickBounceCounter = 0
@@ -4019,7 +4105,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             let scaleDownBall = SKAction.scale(to: 0, duration: 0)
             let waitTimeBall = SKAction.wait(forDuration: GameScene.ballReturnPause)
             let fadeInBall = SKAction.fadeIn(withDuration: 0.25)
-            let scaleUpBall = SKAction.scale(to: 1, duration: 0.25)
+            let scaleUpBall = settleBallToItsSize(duration: 0.25)
             let resetBallGroup = SKAction.group([fadeOutBall, scaleDownBall, waitTimeBall])
             let ballGroup = SKAction.group([fadeInBall, scaleUpBall])
             // Setup ball animation
@@ -4621,7 +4707,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		if endlessIIAnchorIfNeeded(sprite) {
 			stopLaser()
 			if hapticsSetting { lightHaptic.impactOccurred() }
-			if soundsSetting { self.run(brickHitNormalSound) }
+			playBrickHitUnlessVoiced()
 			return
 		}
 		// A Fixed brick spends its first hit anchoring itself. The second one destroys it
@@ -4728,10 +4814,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				removeBrick(node: node, sprite: sprite)
 			}
         }
-		if self.soundsSetting {
-			self.run(brickHitNormalSound)
-		}
-		// Brick hit sound
+		playBrickHitUnlessVoiced()
+		// Brick hit sound - unless the brick has one of its own and has just played it
     }
     
     func removeBrick(node: SKNode, sprite: SKSpriteNode, force: Bool = false) {
@@ -5785,14 +5869,24 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	/// on screen, and the little animation of the badge flying up. None of them is true of a
 	/// power-up that has simply not ended, and the statistics in particular would count one
 	/// collection every few seconds all day.
-	func applyPowerUp (node: SKNode, silently: Bool = false) {
+	/// - Parameter standing: the day's own power-up being put back by the Always On twist rather
+	///   than anything the player caught. It is not counted, and it may go on while the next
+	///   ball waits on the paddle (round 341) - see the two places it is read.
+	func applyPowerUp (node: SKNode, silently: Bool = false, standing: Bool = false) {
 
 		let sprite = node as! SKSpriteNode
 
-		if ballLostBool {
+		if ballLostBool && (standing == false || ballIsOnPaddle == false) {
 			return
 		}
-		// Don't apply the power up if the ball has been lost
+		// Don't apply the power up if the ball has been lost - **unless it is the day's own,
+		// and the next ball is already waiting on the paddle** (James, round 341: Always On
+		// "applied as the ball left the paddle"). `ballLostBool` stays true from the moment a
+		// ball is lost until the next one is launched, which is right for a power-up caught
+		// in that time and wrong for one the day says is always on: it went missing for the
+		// whole of every serve, and came back only once the ball was in flight. The ball
+		// falling away is still refused, because it is not on the paddle
+		let statsBefore = standing ? totalStatsArray[0].powerupsCollected : nil
 
 		if silently == false,
 		   let texture = sprite.texture,
@@ -7033,6 +7127,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             break
         }
         // Identify power up and perform action
+
+		if let statsBefore { totalStatsArray[0].powerupsCollected = statsBefore }
+		// **A standing power-up counts for nothing** (round 341). Every branch above adds one
+		// to its power-up's tally, and Always On collects through them - so the day's standing
+		// power-up was being counted each time it was put back, and, while the tick could not
+		// see it running, sixty times a second. Put back here, before the favourite-power-up
+		// achievement below reads the tallies
 		
 		
 		if totalStatsArray[0].achievementsUnlockedArray[27] == false {
@@ -8774,6 +8875,11 @@ laserTimer?.invalidate()
 
 	func pauseFromSwipe() {
 		clearSavedGame()
+		InterfaceSound.click()
+		// **The same click the pause button makes** (James, round 341: "play the UI button
+		// click sound when entering the pause menu via swipe up to pause action"). A swipe is
+		// the other way of pressing that button, and it was the one way into the pause menu that
+		// arrived in silence
 		gameState.enter(Paused.self)
 	}
 
@@ -10350,11 +10456,17 @@ laserTimer?.invalidate()
 		
 		readyCountdown.run(startGroup, completion: {
 			self.readyCountdown.isHidden = false
+			self.playMayhemSound("countdownTick")
 			self.readyCountdown.run(animationIn1, completion: {
 				self.readyCountdown.run(animationOut, completion: {
 					self.readyCountdown.isHidden = true
 					self.goCountdown.run(startGroup, completion: {
 						self.goCountdown.isHidden = false
+						self.playMayhemSound("countdownGo")
+						// **A beep for READY and a higher one for GO!** (James, round 341:
+						// "create a countdown sound to play for the ready, go when resuming a
+						// level ... just some simple timing beeps would do"). Two pips a
+						// fifth apart, the way a start light counts down
 						self.goCountdown.run(animationIn2, completion: {
 							self.gameState.enter(Playing.self)
 							// Restart playing

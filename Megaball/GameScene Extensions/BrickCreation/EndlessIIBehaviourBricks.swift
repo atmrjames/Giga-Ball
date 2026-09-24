@@ -781,7 +781,7 @@ extension GameScene {
         // are about to be removed and would take the animation with them
 
         if hapticsSetting { heavyHaptic.impactOccurred() }
-        playMayhemSound("explosion")
+        playBrickVoice("explosion")
     }
 
     /// Runs an explosion, and any it sets off.
@@ -984,7 +984,7 @@ extension GameScene {
 
         if made > 0 {
             countBricks()
-            playMayhemSound("spawner")
+            playBrickVoice("spawner")
             // James's `spawnerBrick` recording (round 327c), and only when something was
             // actually put back: a Spawner whose neighbours are all full has done nothing, and
             // a sound for nothing is the audible version of the dud power-up rule
@@ -1082,7 +1082,7 @@ extension GameScene {
         brick.run(.sequence([.scale(to: 1.15, duration: 0.06),
                              .scale(to: 1, duration: 0.1)]))
         if hapticsSetting { heavyHaptic.impactOccurred() }
-        playMayhemSound("fixedBrick")
+        playBrickVoice("fixedBrick")
         return true
     }
 

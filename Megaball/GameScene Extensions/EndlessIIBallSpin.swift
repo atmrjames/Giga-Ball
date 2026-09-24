@@ -80,85 +80,70 @@ enum EndlessIIBallSpin {
     /// ordinary flick is already under `gripThreshold`.
     static let gripMemoryPerSecond: CGFloat = 0.001
 
-    /// The turn a ball earns by *sliding* across a grippy surface that is not keeping up
-    /// with it, at the very shallowest arrival.
+    /// The turn every grip gives, however little the ball and paddle are slipping.
     ///
-    /// **James, round 313: "ball spin power still doesn't seem to be putting spin on the ball
-    /// unless the paddle is moving"** - the same note as round 305, after round 305's answer.
+    /// **James, round 341, the third time of asking: "the ball spin power-up should cause the
+    /// ball to spin even if the paddle is stationary when it hits it. The level of spin should
+    /// increase with the speed of the paddle depending on the ball and paddle's directions of
+    /// travel."** Rounds 305 and 313 both answered the first half and neither answered it
+    /// enough to be felt. Round 313's slide term was a third of the full turn scaled by how much
+    /// of the ball's speed was sideways - and most bounces are steep, so the ball that arrives
+    /// at sixty or seventy degrees, which is most of them, was sliding at a third of its speed
+    /// and got a third of a third: measured, two degrees in the quarter second off the paddle.
+    /// That is the curve James has now reported as missing three times.
     ///
-    /// That answer was the collision offset: dead centre gives nothing, the edge gives
-    /// `edgeTurn`. Measured, it delivers **nothing at all in the middle**, 5.4 degrees over a
-    /// whole flight a quarter of the way out, and 21.6 at the very edge - against 34.5 for a
-    /// 400 pt/s swipe and 54.8 for a brisk 600. And a player holding the paddle still is a
-    /// player who has put it under the ball, which is exactly where the term is zero. So the
-    /// power-up really did nothing unless the paddle moved, and the reason was that the
-    /// quantity chosen to stand for the slide does not measure the slide.
-    ///
-    /// What does is the ball's own horizontal speed. A ball arriving at 45 degrees is crossing
-    /// the surface at 0.7 of its speed whether it lands in the middle or the corner, and that
-    /// is the friction the note is about. Taken as a *fraction* of the ball's speed rather than
-    /// in points per second, so a Decrease Ball Speed does not quietly turn the grip off.
-    ///
-    /// A third of the flick's turn: a swipe is still the bigger half of the power-up, and this
-    /// reads as grip rather than as a second flick.
-    ///
-    /// **It replaces round 305's `edgeTurn` rather than joining it**, because the two are the
-    /// same claim about the same friction and they disagree about which way it acts. The edge
-    /// term curved the ball *towards* the side it landed on, and a ball travelling right lands
-    /// right - so it curved along the slide where friction acts against it. Measured with both
-    /// in place: at a 45-degree arrival the two nearly cancelled half way out, 15.3 degrees of
-    /// curve dead centre falling to 4.5 at the mid-point of the paddle, which is a power-up
-    /// that gets weaker the harder you cut the ball.
-    ///
-    /// Doubled with `strongestTurn` in round 322, so it stays the same share of the flick.
-    static let slideTurn: CGFloat = .pi/3
+    /// So a grip always gives this much, and the slip decides how much more. A quarter turn a
+    /// second puts about ten degrees on the steepest ordinary bounce off a still paddle, which
+    /// can be seen, and leaves most of the range for the paddle to earn.
+    static let restingTurn: CGFloat = .pi/4
 
-    /// The most the three together may ask for, so a fast flick into the corner stays playable.
-    /// Doubled with the two it caps, in round 322.
+    /// How much the two surfaces must be slipping, in points per second, before the slip says
+    /// which way the ball turns. Below it the direction comes from where the ball landed.
+    static let slipNoise: CGFloat = 20
+
+    /// Kept as the ceiling the tests hold the rate to. The rate cannot reach it any more - the
+    /// slip saturates at `strongestTurn` - but a ceiling that is still asserted is a ceiling
+    /// nobody raises by accident.
     static let steepestTurn: CGFloat = .pi*4/3
 
     /// The turn rate a paddle grips the ball with.
     ///
-    /// Signed: the ball curves the way the paddle was travelling, which is what "as if there
-    /// were friction between the two" means - and, since round 305, the way the ball was
-    /// already sliding when it met an off-centre surface.
+    /// **Relative slip, in one term** (round 341). What spins a ball on a grippy surface is the
+    /// two surfaces moving against each other - the paddle's travel less the ball's own
+    /// sideways travel - and that single quantity answers both halves of James's note at once.
+    /// A still paddle under a ball sliding right is slipping left against it. A paddle swept
+    /// *against* the ball's travel adds to that slip and spins it hardest; a paddle swept *with*
+    /// the ball takes slip away and spins it least. Rounds 305 and 313 kept the paddle's speed
+    /// and the ball's slide as two separate terms, which was the same friction counted twice
+    /// and never asked the question James is now asking, which is which way each was going.
     ///
-    /// `collision` is where the ball struck, from -1 at the left end through 0 at the middle
-    /// to 1 at the right, which is what `PaddleBounce.collision` already answers for the
-    /// bounce angle. Defaulted so the arithmetic can still be asked the old question.
-    /// - Parameter collision: where the ball struck, -1 to 1. **No longer part of the
-    ///   arithmetic** - see `slideTurn` for why the slide replaced it - but still taken,
-    ///   because every caller knows it, it is the natural thing to reach for here, and a
-    ///   parameter quietly removed is a parameter quietly re-added by the next person who
-    ///   wants a baseline. Its test says the surface's own grip is the same wherever a ball
-    ///   lands on it.
+    /// Signed as it always was: positive when the slip is to the right, so a paddle moving
+    /// right curves the ball the way it travelled ("as if there were friction between the
+    /// two") and a ball sliding right is dragged left, which steepens the bounce rather than
+    /// flattening it - the rest of the game's angle discipline exists to keep bounces from
+    /// going flat, and the grip works with it.
+    ///
+    /// - Parameter collision: where the ball struck, -1 to 1. Used only to say which way to
+    ///   turn when there is no slip to say it - a ball falling straight onto a still paddle.
+    ///   Dead centre as well, and there is nothing to go on at all, so nothing turns.
     static func turnRate(paddleSpeed: CGFloat, collision: CGFloat = 0,
                          arriving: CGVector = .zero) -> CGFloat {
-        let magnitude = abs(paddleSpeed)
-        var rate: CGFloat = 0
-        if magnitude > gripThreshold {
-            let span = max(1, fullGripSpeed - gripThreshold)
-            let strength = min(1, (magnitude - gripThreshold)/span)
-            rate += (paddleSpeed < 0 ? -1 : 1)*strength*strongestTurn
+        let slip = paddleSpeed - arriving.dx
+        let direction: CGFloat
+        if abs(slip) > slipNoise {
+            direction = slip < 0 ? -1 : 1
+        } else if collision != 0 {
+            direction = collision < 0 ? -1 : 1
+        } else {
+            return 0
         }
-        // The threshold still guards the *speed* term only: a paddle creeping along under a
-        // ball is noise, and that was always what the floor was for
-
-        let speed = hypot(arriving.dx, arriving.dy)
-        if speed > 0 {
-            rate -= (arriving.dx/speed)*slideTurn
-            // **Against the slide, which is what friction is.** The ball is crossing the
-            // surface to the right, so the surface drags its contact point to the left and the
-            // heading turns that way - which steepens the bounce rather than flattening it,
-            // and a steeper bounce is the one the rest of the game already wants
-            // (`minAngleDeg` exists to stop shallow ones). Curving it further along its own
-            // path would fight that discipline on every grip.
-            //
-            // No threshold: a ball with any horizontal travel at all is sliding, and the
-            // fraction is already near nothing for one falling nearly straight down
-        }
-
+        let strength = min(1, abs(slip)/fullGripSpeed)
+        let rate = direction*(restingTurn + (strongestTurn - restingTurn)*strength)
         return min(max(rate, -steepestTurn), steepestTurn)
+        // Scaled against `fullGripSpeed` in points a second rather than against the ball's own
+        // speed, because the floor now does what the fraction was for: round 313 took the slide
+        // as a fraction so that a slowed ball would not lose its grip, and a floor that every
+        // grip earns means no ball can lose it
     }
 
     /// What is left of a turn rate after this much flight.

@@ -2435,6 +2435,62 @@ Open from round 340:
 | Game Center missing on the paused screen | Could not be reproduced: a mid-run pause hides the leaderboard line on every device by design (`updateResultLine` stands down when `sender == "Pause"`), so if the screenshot was a pause rather than a game over, nothing is wrong. The block has been given a required ceiling against the button row regardless, since every other constraint placing it measured downwards and only a breakable one held it up |
 | The paddle-speed and background previews on an iPad | The preview is a one-to-one window onto the play area, so on an iPad it is 660 points wide while the screen's own furniture is in the 460-point column. That is the inconsistency behind both "slider and close too near the edges" and "preview clipping"; the fix is a decision about which of the two is right rather than a bug |
 
+**Round 341, from James's answers to round 340's questions and a new play-test list.** Built:
+
+- **Always On was undone by the serve.** Every animation that brings the ball onto the paddle -
+  the level's pop-in, the return after a lost ball, the snap when a launch interrupts either -
+  ended at `scale(to: 1)`, fixed when the animation was built. Always On collects its power-up
+  as play begins, inside that window, so a Shrink Ball ran, the pop-in finished after it at full
+  size, and the tray went on counting down a power-up the ball was not wearing; the twist's tick
+  asks whether the bar is lit, so it never put it back. A resume sets the scale directly, which
+  is why quitting and resuming "fixed" it until the next lost ball. The animations now ease to
+  `ballSizeTarget` and `paddleSizeTarget`, read when they arrive. The same trap waited for an
+  Always On Expand or Shrink Paddle.
+
+  **That was half of it, and only the simulator found the other half.** With a log in the tick
+  the day read `idx 27 ... active []` sixty times a second: the tick asked
+  `activeRecentPowerUpIndices`, which names a tray slot's power-up by looking it up among the
+  ones recently *caught*, and a silent collection is never caught - so for a slot holding two
+  power-ups the answer was "neither" and Shrink Ball was collected every frame, each time
+  adding one to the player's tally and able to hand out the smallest-ball achievement. It also
+  refused outright while the next ball waited on the paddle, because `ballLostBool` stays up
+  until the launch. Now: `dailyStandingPowerUpIsRunning` reads the slot's own bar (on an Always
+  On day nothing else can light it), `applyPowerUp(standing:)` goes on while the ball waits and
+  counts for nothing. Checked in play on the Peach day: the ball small on the paddle before the
+  first launch, small in flight, and small again on the paddle after a lost ball.
+- **Monochromatic dresses the rack in Classic, greyed.** `DailyTwist.forcedTheme(for:)` is the
+  one answer the scene and every in-game screen's ball rack now ask.
+- **The daily's date has its own line with room for it** on the pause and game-over screens,
+  through the level intro's measuring pass, now shared as `UILabel.fitFixedHeightToItsText`.
+- **The resume card reads in the pause screen's order and faces**: badge, pack or "Daily
+  Challenge" and the day in the small grey face, the level's name large, COMPETITION RUN or FREE
+  PLAY in the pause screen's small lime capitals, RESUMING where PAUSED sits, then the score and
+  the balls. Overrules round 339's badge-under-the-name.
+- **No rack on a finished run**, and the daily's total is a sixth larger than the rows it adds.
+- **UI Sound** is its own setting, on for every existing player; **Sounds** is **In-Game Sound**.
+  The swipe to pause clicks like the pause button.
+- **Cluster** and the three voiced bricks (Spawner, Exploding, Fixed) no longer play the generic
+  sound under their own.
+- **The turn-based goodbye is half a second.**
+- **Ball Spin is relative slip.** One term, paddle travel less the ball's sideways travel, over a
+  floor every grip earns - so a still paddle spins every ball, sweeping against the ball spins it
+  hardest and sweeping with it least. Rounds 305 and 313 kept the paddle and the slide as two
+  terms and gave a steep ball on a still paddle about two degrees; it is about ten now.
+- **Rounded and Diamond spinners fade their light** like the rest, borrowing their own picture
+  turned half a circle, since a half turn leaves their outline alone.
+- **The main menu's button row follows the window.** It had its own spacing, worked out once at
+  launch; dragged narrower, the flow layout pushed the settings button onto a line nobody could
+  see. Round 339's fix was to the shared row this screen never used.
+- **Countdown beeps** (synthesised, `countdownTick` and `countdownGo`) for READY and GO!, and a
+  **3, 2, 1** drawn in READY's style over the last three seconds of a Time Trial.
+
+Open from round 341:
+
+| Item | What is known |
+|---|---|
+| The game view on a resized iPad window | The scene is built once, at the window's size when the game opened, and `aspectFit` letterboxes it when the window changes shape afterwards - the black bands above and below. Filling a new shape means laying a *running* level out again: walls, rows, paddle and HUD all come from `computeLayoutMetrics`, once, in `didMove`. The two ways are a live re-layout, which touches every position the §8.6 traps are about, or saving and rebuilding the scene at the new size, which is what a resume already does. Either is a design decision for James rather than a night's fix |
+| Raising the window floor to 375 by 667 | Answered: it is the same number. `SceneDelegate.smallestWindow` is what iPadOS and macOS are told the window may not go below, so raising it would stop the app opening in Slide Over (320 wide) and stop a Mac window being dragged under 375 by 667. Left for James |
+
 **Backlogged**
 
 | Item | Blocked on |

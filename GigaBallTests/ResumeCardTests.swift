@@ -80,12 +80,13 @@ final class ResumeCardTests: XCTestCase {
         let packs = LevelPackSetup()
         let lines = ResumeCard.lines(for: classicGame(), fallbackMode: .classic)
 
-        XCTAssertEqual(lines.mode, GameMode.classic.name,
-                       "the mode leads, which is what the screen never used to say at all")
-        XCTAssertEqual(lines.detail, packs.levelPackNameArray[2] + " - Level 4 of "
-                       + String(packs.numberOfLevels[2])
-                       + "\n" + packs.levelNameArray[classicGame().levelNumber],
-                       "pack before level, then the level's own name on a line of its own")
+        XCTAssertEqual(lines.mode, packs.levelPackNameArray[2] + "\nLevel 4 of "
+                       + String(packs.numberOfLevels[2]),
+                       "**the pause screen's order** (James, round 341): the pack, then where "
+                       + "in it - the badge says Classic, as it does on the pause screen")
+        XCTAssertEqual(lines.detail, packs.levelNameArray[classicGame().levelNumber],
+                       "and the level's own name under them")
+        XCTAssertEqual(lines.badge, .classic)
         XCTAssertEqual(lines.scoreTitle, "Score")
         XCTAssertEqual(lines.scoreValue, "3400")
         XCTAssertEqual(lines.lives, "3 balls left",
@@ -97,9 +98,7 @@ final class ResumeCardTests: XCTestCase {
     func testAClassicRunNamesTheLevelItIsOn() {
         let lines = ResumeCard.lines(for: classicGame(), fallbackMode: .classic)
         let name = LevelPackSetup().levelNameArray[classicGame().levelNumber]
-        XCTAssertEqual(lines.detail.components(separatedBy: "\n").count, 2,
-                       "where in the pack, then what it is called")
-        XCTAssertEqual(lines.detail.components(separatedBy: "\n").last, name)
+        XCTAssertEqual(lines.detail, name, "what it is called, under where it is")
         XCTAssertFalse(name.isEmpty)
     }
 
@@ -185,15 +184,16 @@ final class ResumeCardTests: XCTestCase {
         game.dailyWasScoringAttempt = true
 
         let lines = ResumeCard.lines(for: game, fallbackMode: .classic)
-        XCTAssertEqual(lines.mode, GameMode.daily.name)
+        XCTAssertEqual(lines.mode, GameMode.daily.name + "\n"
+                       + DailyChallengeSession.shared.displayName(forKey: key).capitalized,
+                       "**\"Daily Challenge\" and the day, as the pause screen has them** "
+                       + "(James, round 341)")
 
-        let rows = lines.detail.components(separatedBy: "\n")
-        XCTAssertEqual(rows.count, 3, "what is being played, the day, and that it counts")
-        XCTAssertEqual(rows[1],
-                       DailyChallengeSession.shared.displayName(forKey: key).capitalized,
-                       "**the day sits under the mode and above the competition line** "
-                       + "(James, round 311), got: \(lines.detail)")
-        XCTAssertEqual(rows[2], "Competition run")
+        XCTAssertEqual(lines.detail.components(separatedBy: "\n").count, 1,
+                       "what is being played")
+        XCTAssertEqual(lines.runKind, "COMPETITION RUN",
+                       "and that it counts, on its own line in the pause screen's words "
+                       + "(round 341)")
     }
 
     /// Free play on today's challenge is not a competition run, and says nothing.
@@ -204,8 +204,9 @@ final class ResumeCardTests: XCTestCase {
 
         let lines = ResumeCard.lines(for: game, fallbackMode: .classic)
         XCTAssertFalse(lines.detail.contains("Competition"))
-        XCTAssertEqual(lines.detail.components(separatedBy: "\n").count, 2,
-                       "what is being played, and the day - and nothing else")
+        XCTAssertEqual(lines.detail.components(separatedBy: "\n").count, 1,
+                       "what is being played - and nothing else, the day being above it")
+        XCTAssertEqual(lines.runKind, "FREE PLAY", "the pause screen's words for it")
     }
 
     /// Neither is a run resumed after its day closed, however it started.
@@ -220,8 +221,9 @@ final class ResumeCardTests: XCTestCase {
         let lines = ResumeCard.lines(for: game, fallbackMode: .classic)
         XCTAssertFalse(lines.detail.contains("Competition"),
                        "the window is the day, and the day has gone")
-        XCTAssertEqual(lines.detail.components(separatedBy: "\n").count, 2,
-                       "what was played and which day it was, got: \(lines.detail)")
+        XCTAssertEqual(lines.runKind, "", "and a closed day says nothing about competing")
+        XCTAssertEqual(lines.detail.components(separatedBy: "\n").count, 1,
+                       "what was played, with the day above it, got: \(lines.detail)")
     }
 
     /// An endless daily reads its unit off the challenge, not off the save's level number -

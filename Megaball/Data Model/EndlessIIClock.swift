@@ -161,9 +161,15 @@ struct EndlessIIClock: Equatable {
 
     /// How long a spent turn-based power-up stays before it goes.
     ///
-    /// One second, which is James's own number. Long enough that a shape does not snap back in
-    /// the same frame the ball leaves it, short enough that nobody plays a bounce on it.
-    static let lingerSeconds: TimeInterval = 1
+    /// **Half a second** (James, round 341: "the paddle turn based power-ups don't end
+    /// immediately after the last turn, they wait a few seconds ... I think it is now too long
+    /// though. The delay could be half as long as it is. It should only be half a second or a
+    /// second, not multiple seconds"). Round 231's second was James's own number, and in play it
+    /// reads as longer than it is: the ball is already on its way back up, the paddle is still
+    /// wearing a shape it has finished with, and a second of that is long enough to wonder
+    /// whether the power-up has really ended. Half is still enough that a shape does not snap
+    /// back in the frame the ball leaves it, which is the whole of what the goodbye is for.
+    static let lingerSeconds: TimeInterval = 0.5
 
     /// Whether this clock is running out its goodbye rather than its turns.
     ///

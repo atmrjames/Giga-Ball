@@ -370,15 +370,8 @@ extension GameScene {
     }
 
     var dailyForcedTheme: Int? {
-        guard isDailyChallenge, let challenge = DailyChallengeSession.shared.active else {
-            return nil
-        }
-        if challenge.twists.contains(.monochromatic) { return 0 }
-        if challenge.twists.contains(.dailyTheme) {
-            return DailyTwist.dailyThemeIndex(forKey: challenge.dateKey,
-                                                  themeCount: LevelPackSetup().themeNameArray.count)
-        }
-        return nil
+        guard isDailyChallenge else { return nil }
+        return DailyTwist.forcedTheme(for: DailyChallengeSession.shared.active)
     }
 
     /// The power-up that is on all day, or nil on a day that is not an Always On day.
@@ -403,16 +396,44 @@ extension GameScene {
     func tickDailyAlwaysOn() {
         guard let index = dailyAlwaysOnPowerUp else { return }
         guard gameState.currentState is Playing, isPaused == false else { return }
-        guard activeRecentPowerUpIndices().contains(index) == false else { return }
+        guard dailyStandingPowerUpIsRunning(index) == false else { return }
         guard powerUpTextureArray.indices.contains(index) else { return }
 
         let carrier = SKSpriteNode(texture: powerUpTextureArray[index])
-        applyPowerUp(node: carrier, silently: true)
+        applyPowerUp(node: carrier, silently: true, standing: true)
         // Through a carrier sprite because the switch reads a texture, which is the identity
         // every collection in the game is decided by. Silently, because nothing here is a
         // catch: no sound, no haptic, no statistic, and nothing taken off the count of
         // power-ups on screen - the player caught this one once, this morning, by opening the
         // day
+    }
+
+    /// Whether the day's standing power-up is running now.
+    ///
+    /// **James, round 341: the Always On power-up "was failing to activate".** It was being
+    /// collected sixty times a second. This used to ask `activeRecentPowerUpIndices`, which
+    /// answers the pause screen's question - *which* of a tray slot's two power-ups was caught
+    /// - by looking the slot up in the list of power-ups recently caught. An Always On
+    /// collection is silent and is never in that list, so for a slot that holds two (Shrink
+    /// Ball shares one with Expand Ball) the answer was "neither", every frame, and the tick
+    /// collected it again every frame. Measured on the simulator: `active []` against a lit bar.
+    ///
+    /// The tray's own bar is the honest answer here, because on an Always On day the other
+    /// power-up in the slot cannot drop (`classicIndicesEnded(byCollecting:)`) - a lit bar in
+    /// the standing power-up's slot can only be the standing power-up. Mayhem's own power-ups
+    /// have exact clocks and are asked of them, as before.
+    func dailyStandingPowerUpIsRunning(_ index: Int) -> Bool {
+        if let slot = GameScene.trayPowerUpFamilies.firstIndex(where: { $0.contains(index) }),
+           iconTimerArray.indices.contains(slot) {
+            let bar = iconTimerArray[slot]
+            return bar.isHidden == false && (bar.xScale > 0.001 || bar.hasActions())
+            // **Or still growing.** A collection shows the bar at no width and grows it to full
+            // over a twentieth of a second before the countdown starts, and a bar at no width
+            // reads as not running - which on Shrink Ball meant a second collection in that
+            // twentieth, from three quarters of the size to half, and the smallest-ball
+            // achievement handed out by the twist
+        }
+        return activeRecentPowerUpIndices().contains(index)
     }
 
     /// How long a Landslide waits between rows.
@@ -680,9 +701,90 @@ extension GameScene {
         let seconds = Int(dailyTimeTrialRemaining.rounded(.up))
         clock.text = "\(seconds)s"
         clock.fontColor = seconds <= 10 ? .red : scoreLabel.fontColor
+        countDownTheLastSeconds(seconds)
         placeTheDailyClock()
         // Placed again on every tick, because the multiplier beside it changes width when it
         // climbs past x10 and the clock's own right edge is measured from it
+    }
+
+    /// Three, two, one, over the field, as the Time Trial's last seconds go.
+    ///
+    /// **James, round 341: "create a 3, 2, 1 graphic for the end of a time trial too that plays
+    /// in the final few seconds in the same style as the ready, go animation when resuming" -
+    /// with "simple timing beeps" under it.** The clock in the corner turns red for the last
+    /// ten, which is a thing to notice if you are looking at the corner, and nobody is: the
+    /// ball is in the middle of the screen. The whistle was arriving unannounced.
+    ///
+    /// Shown once per second rather than once per frame: `showDailyClock` runs on every tick,
+    /// and the number is only news the frame it changes.
+    func countDownTheLastSeconds(_ seconds: Int) {
+        guard dailyTimeTrial, seconds != dailyCountdownShown else { return }
+        dailyCountdownShown = seconds
+        guard (1...GameScene.dailyCountdownFrom).contains(seconds),
+              dailyTimeTrialRemaining < TimeInterval(GameScene.dailyCountdownFrom) + 0.99
+        else { return }
+        // The second clause keeps a fresh run at ninety from counting anything, and a resume
+        // that lands on three from announcing a second it has already half spent twice
+
+        let digit = dailyCountdownNode ?? {
+            let node = SKSpriteNode()
+            node.zPosition = readyCountdown.zPosition
+            node.position = readyCountdown.position
+            addChild(node)
+            dailyCountdownNode = node
+            return node
+        }()
+        let picture = GameScene.countdownDigit("\(seconds)", height: readyCountdown.size.height)
+        digit.texture = SKTexture(image: picture)
+        digit.size = picture.size
+        digit.removeAllActions()
+        digit.isHidden = false
+        digit.setScale(2)
+        digit.alpha = 0
+        digit.run(.sequence([
+            .group([.scale(to: 1, duration: 0.25), .fadeIn(withDuration: 0.25)]),
+            .wait(forDuration: 0.45),
+            .group([.scale(to: 0.5, duration: 0.25), .fadeOut(withDuration: 0.25)]),
+            .hide(),
+        ]))
+        // READY's own three steps - in from double size, a hold, out to half - over a second,
+        // so each number has gone before the next arrives
+        playMayhemSound("countdownTick")
+    }
+
+    /// How many of the last seconds are counted aloud.
+    static let dailyCountdownFrom = 3
+
+    /// A number drawn the way READY and GO! are drawn: pale lime, a lime edge, a lime glow,
+    /// in the face the game's own numbers wear.
+    ///
+    /// Drawn rather than delivered as three more pictures because the three pictures would be
+    /// this, and a drawing made here cannot fall out of step with a theme or a size the way a
+    /// set of files can. READY's letters are about three fifths of its picture's height, and
+    /// these numbers are set to match them, so a three standing where READY stood is the same
+    /// size of thing.
+    static func countdownDigit(_ text: String, height: CGFloat) -> UIImage {
+        let lime = UIColor(red: 0.8235, green: 1, blue: 0, alpha: 1)
+        let pale = UIColor(red: 0.96, green: 1, blue: 0.86, alpha: 1)
+        let font = UIViewController.gameScoreFont(ofSize: (height*0.62/0.72).rounded())
+        let glow = NSShadow()
+        glow.shadowColor = lime.withAlphaComponent(0.9)
+        glow.shadowBlurRadius = height*0.14
+        glow.shadowOffset = .zero
+
+        let drawn = NSAttributedString(string: text, attributes: [
+            .font: font, .foregroundColor: pale,
+            .strokeColor: lime, .strokeWidth: -6, .shadow: glow,
+        ])
+        let measured = drawn.size()
+        let canvas = CGSize(width: ceil(measured.width + height*0.5), height: height)
+        return UIGraphicsImageRenderer(size: canvas).image { _ in
+            let origin = CGPoint(x: (canvas.width - measured.width)/2,
+                                 y: (canvas.height - measured.height)/2)
+            drawn.draw(at: origin)
+            drawn.draw(at: origin)
+            // Twice, so the glow is as strong as READY's rather than a single soft pass
+        }
     }
 
     /// How much more often a brick takes a style on a Extra Mayhem day.

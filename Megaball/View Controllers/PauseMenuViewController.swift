@@ -371,6 +371,19 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
             // the storyboard, and type grown inside a box that did not grow with it is how the
             // iPad render came out with GAME OVER touching the line under it
         }
+
+        let row = max(scoreLabel.font.pointSize, highscoreLabel.font.pointSize)
+        dailyTotalLabel.font = UIViewController.gameScoreFont(
+            ofSize: (row*GameScene.betweenLevelsTotalScale).rounded())
+        dailyTotalTitle.font = highscoreLabelTitle.font
+        // **The total a size up from the two it adds together** (James, round 341, on the
+        // daily's Complete screen: "total score number is the same size as the other scores.
+        // It should be slightly bigger"). It copied the high-score row's face once, as the
+        // screen was built and before any of this sizing had happened - so it was that row's
+        // size exactly, and on a scaled screen not even that. The between-levels card has
+        // answered the same question since round 332, and this is its answer: the larger of
+        // the two rows, a sixth bigger. Here rather than where the label is built because this
+        // is the pass that knows what size the rows actually are
         containterView.setNeedsLayout()
     }
 
@@ -504,6 +517,10 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
                                   in: containterView)
             sizeTheTitleBlockForTheScreen()
         }
+        if packNameLabel?.fitFixedHeightToItsText() == true { containterView.setNeedsLayout() }
+        // **The day on its own line, with room for it** (James, round 341: "the date for the
+        // daily challenge on the pause screen is truncated"). After the sizing above, because
+        // that scales the storyboard's one-line box and this is what grows it to two
         // Which of the two title lines the icon sits on depends on what they say, and what
         // they say is written after the icon is built (round 332)
         // The row's spacing is worked out from the container's width, so it has to be worked
@@ -972,6 +989,18 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
     /// Fills the rack with one ball per ball left, at the size the game draws them.
     private func refreshTheLivesRow() {
         guard let row = livesRow else { return }
+        guard livesLabel.isHidden == false else {
+            row.isHidden = true
+            livesRowCollapsed?.isActive = true
+            return
+        }
+        // **No rack where there is no line** (James, round 341, with a screenshot of a finished
+        // daily: "complete screen for daily challenge has statistics button overlapping number
+        // of balls left - number of balls left shouldn't exist in this view anyway"). The line
+        // was already hidden on every screen but a pause; the rack beside it was hidden too and
+        // then shown again a moment later, because `show` decides its own visibility from the
+        // count and knows nothing about which screen it is on. Three balls sat on a run that
+        // was over, under the Statistics button, which had no reason to leave room for them
         let showing = row.show(livesRemaining, on: containterView.bounds.size,
                                ball: BallRackView.chosenBall(in: defaults))
         livesRowCollapsed?.isActive = showing == false

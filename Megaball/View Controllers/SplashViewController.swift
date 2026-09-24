@@ -34,6 +34,15 @@ enum ResumeCard {
         /// Which mode is being resumed.
         var mode = ""
 
+        /// What kind of daily run this is, in the pause screen's words - COMPETITION RUN or FREE
+        /// PLAY - or empty for anything that is not today's daily.
+        ///
+        /// **Its own line, in the pause screen's own face** (James, round 341: "use the order of
+        /// information from the pause screen and replicate it on the resume screen"). It was the
+        /// last line of the detail, which made it the level name's size and colour; on the pause
+        /// screen a player sees a second later it is small lime capitals under the day's rules.
+        var runKind = ""
+
         /// How many balls the run has, for the rack drawn above the line that says so.
         ///
         /// Beside the words rather than parsed back out of them, for the same reason the badge
@@ -98,19 +107,21 @@ enum ResumeCard {
         if let key = game.dailyDateKey {
             let session = DailyChallengeSession.shared
             let challenge = DailyChallengeGenerator.challenge(forKey: key)
-            lines.mode = GameMode.daily.name
+            lines.mode = GameMode.daily.name + "\n" + session.displayName(forKey: key).capitalized
             lines.badge = .daily
             var detail = [challenge.mode == .classic
                           ? packs.levelNameArray[game.levelNumber]
                           : challenge.mode.name]
-            detail.append(session.displayName(forKey: key).capitalized)
+            // **"Daily Challenge" and the day, then what is being played** (round 341), which
+            // is the pause screen's order: its pack line is those two, and the level's name
+            // is under them. The day was the detail's second line before, under the level
             // **The day on a line of its own, under what is being played** (James, round 311:
             // "for the Daily Challenge, put the date detail underneath the game mode and before
             // Competition run"). It used to share a line with the mode, joined by a comma, and
             // the two are different kinds of fact - one says what you are playing and the other
             // says which day's it is
-            if key == session.todayKey, game.dailyWasScoringAttempt == true {
-                detail.append("Competition run")
+            if key == session.todayKey {
+                lines.runKind = game.dailyWasScoringAttempt == true ? "COMPETITION RUN" : "FREE PLAY"
             }
             lines.detail = detail.joined(separator: "\n")
             lines.lives = livesRow(game, endless: challenge.mode.isEndless)
@@ -146,11 +157,13 @@ enum ResumeCard {
 
         if game.numberOfLevels > 1 {
             lines.badge = .classic
-            lines.mode = GameMode.classic.name
             let within = game.levelNumber - packs.startLevelNumber[game.packNumber] + 1
-            lines.detail = packs.levelPackNameArray[game.packNumber]
-                + " - Level \(within) of \(packs.numberOfLevels[game.packNumber])"
-                + "\n" + packs.levelNameArray[game.levelNumber]
+            lines.mode = packs.levelPackNameArray[game.packNumber]
+                + "\nLevel \(within) of \(packs.numberOfLevels[game.packNumber])"
+            lines.detail = packs.levelNameArray[game.levelNumber]
+            // **Pack, then where in it, then the level's name** (round 341), which is the pause
+            // screen's three lines in the pause screen's order - the badge says Classic, as it
+            // does there, so the mode's name is not written out a second time
             // Pack before level, the order James asked the daily's card for in the same round,
             // and **the level's own name under it** (James, round 311: "for the classic mode
             // level, can it also show the name of the level, maybe on another line
@@ -321,7 +334,11 @@ class SplashViewController: UIViewController {
             // loop this format was meant to end
             let lines = ResumeCard.lines(for: savedGame,
                                          fallbackMode: GameMode.current(in: defaults))
+            resumeDaily = savedGame.dailyDateKey.map { DailyChallengeGenerator.challenge(forKey: $0) }
+            // The day the save belongs to, for the rack's ball: the session is not active yet
+            // at this point, so the rack cannot ask it
             resumeBadge = lines.badge
+            resumeHasDetail = lines.detail.isEmpty == false
             layOutResumeCard()
             // The lines first, because the card's header now draws the mode's badge and has to
             // know which mode that is before it builds it
@@ -329,11 +346,12 @@ class SplashViewController: UIViewController {
             modeLabel.text = lines.mode
             detailLabel.text = lines.detail
             detailLabel.isHidden = lines.detail.isEmpty
-            resumeStack?.setCustomSpacing(0, after: modeLabel)
-            if let badgeRow = resumeBadgeRow {
-                resumeStack?.setCustomSpacing(
-                    lines.detail.isEmpty ? SplashViewController.groupGap : 0, after: badgeRow)
-            }
+            resumeStack?.setCustomSpacing(
+                lines.detail.isEmpty ? SplashViewController.groupGap : 0, after: modeLabel)
+            // **The gap goes under whatever ends the title block** (round 341). The block is
+            // the mode's name and the detail under it, and RESUMING follows it the way PAUSED
+            // follows the pause screen's; with no detail line - an endless run - the air has
+            // to sit under the name instead, since a stack drops the spacing after a hidden view
             // **The gap goes under the badge, not under the name** (round 339). The badge sits
             // between the mode's name and the detail line now, so a run with no detail - an
             // endless one - needs the group's air below the badge or the score is jammed under
@@ -356,6 +374,12 @@ class SplashViewController: UIViewController {
             // afterwards scales *that* instead of the seventeen this line actually asks for.
             // The cache is only ever right about the string it was taken from.
             livesLabel.text = lines.lives
+            runKindLabel.text = lines.runKind
+            runKindLabel.textColor = lines.runKind == "COMPETITION RUN"
+                ? #colorLiteral(red: 0.8235294118, green: 1, blue: 0, alpha: 1)
+                : UIColor(white: 1, alpha: 0.55)
+            runKindLabel.isHidden = lines.runKind.isEmpty
+            // The pause screen's two colours for the same two words
             resumeBalls = lines.balls
             livesLabel.isHidden = lines.lives.isEmpty
             // Said before the resume, never discovered after it (§12.5) - the same rule the
@@ -426,12 +450,24 @@ class SplashViewController: UIViewController {
         // almost nothing. The wordmark's radius is the one the logo uses for exactly that
         // reason: a word with space around it needs the light to travel
 
-        modeLabel.font = .systemFont(ofSize: 25, weight: .bold)
-        modeLabel.textColor = UIColor(white: 0.871, alpha: 1)
+        let lead = UIFont.systemFont(ofSize: 25, weight: .bold)
+        let leadColour = UIColor(white: 0.871, alpha: 1)
+        let small = UIFont.systemFont(ofSize: 17, weight: .semibold)
+        let smallColour = UIColor(white: 0.667, alpha: 1)
+        modeLabel.font = resumeHasDetail ? small : lead
+        modeLabel.textColor = resumeHasDetail ? smallColour : leadColour
         modeLabel.adjustsFontSizeToFitWidth = true
         modeLabel.minimumScaleFactor = 0.6
-        detailLabel.font = .systemFont(ofSize: 17, weight: .semibold)
-        detailLabel.textColor = UIColor(white: 0.667, alpha: 1)
+        detailLabel.font = lead
+        detailLabel.textColor = leadColour
+        // **The pause screen's two faces, the pause screen's way round** (James, round 341: "use
+        // the order of information from the pause screen and replicate it on the resume
+        // screen"). Where there are two lines the upper one is the small grey one - the pack,
+        // or "Daily Challenge" and its day - and the level's own name is the large one under
+        // it; an endless run has only its mode's name, and that is set large, as the pause
+        // screen sets it. Chosen here rather than after the text is written, because the
+        // card's sizing pass remembers each label's face as its natural size the first time
+        // it runs, which is inside this method
         for label in [resumingLabel, modeLabel, detailLabel, scoreLabel] {
             label!.textAlignment = .center
             label!.numberOfLines = 0
@@ -500,9 +536,23 @@ class SplashViewController: UIViewController {
             rack.bottomAnchor.constraint(equalTo: rackRow.bottomAnchor),
         ])
 
-        let stack = UIStackView(arrangedSubviews: [resumingLabel, modeLabel, badgeRow,
-                                                   detailLabel, scoreLabel, rackRow, livesLabel])
+        runKindLabel.font = .boldSystemFont(ofSize: 13)
+        runKindLabel.textAlignment = .center
+        runKindLabel.translatesAutoresizingMaskIntoConstraints = false
+        let stack = UIStackView(arrangedSubviews: [badgeRow, modeLabel, detailLabel, runKindLabel,
+                                                   resumingLabel, scoreLabel, rackRow, livesLabel])
+        stack.setCustomSpacing(4, after: detailLabel)
         stack.setCustomSpacing(4, after: rackRow)
+        // **The pause screen's order, top to bottom** (James, round 341: "the order of
+        // information on the resuming screen for a daily challenge differs from the other in
+        // game views. Use the order of information from the pause screen and replicate it on
+        // the resume screen to ensure continuity"). Badge, what is being played and where in
+        // it, then the headline - RESUMING where the pause screen says PAUSED - then the score
+        // and the balls. The resume screen is the one a player sees immediately before the
+        // pause screen's own layout comes back, so a different order was two screens a second
+        // apart arranging the same facts two ways. This overrules round 339's "game mode logo
+        // below the game mode title", which was asked before the pause screen's order was the
+        // thing being matched.
         // **Both the badge and the rack sit in rows of their own.** The stack is set to fill,
         // so every arranged view is given the stack's width - and the rack's width is pinned to
         // the balls inside it, which made the stack as narrow as the pill and wrapped RESUMING
@@ -521,8 +571,9 @@ class SplashViewController: UIViewController {
         stack.alignment = .fill
         stack.spacing = 0
         stack.translatesAutoresizingMaskIntoConstraints = false
-        stack.setCustomSpacing(SplashViewController.groupGap, after: resumingLabel)
         stack.setCustomSpacing(SplashViewController.groupGap, after: detailLabel)
+        stack.setCustomSpacing(SplashViewController.groupGap, after: runKindLabel)
+        stack.setCustomSpacing(SplashViewController.groupGap, after: resumingLabel)
         stack.setCustomSpacing(SplashViewController.groupGap, after: scoreLabel)
         resumeStack = stack
         // **Four groups rather than five lines** (James, round 311: "add a gap between the
@@ -783,7 +834,7 @@ class SplashViewController: UIViewController {
         // caught the detail line drawn into the score. Every other in-game screen scales its
         // own type for the screen it is on, and this is the same card drawn smaller rather
         // than a different one.
-        for label in [resumingLabel, modeLabel, detailLabel, livesLabel] {
+        for label in [resumingLabel, modeLabel, detailLabel, runKindLabel, livesLabel] {
             // **Not the score.** It is two faces on one line, set as an attributed string, and
             // assigning `font` to a label that has attributed text rewrites every run in it -
             // so scaling it here gave the title and the number one size, which is the hierarchy
@@ -818,12 +869,15 @@ class SplashViewController: UIViewController {
         // the attributes rather than on the label
 
         let gap = (SplashViewController.groupGap*scale).rounded()
+        stack.setCustomSpacing(runKindLabel.isHidden ? gap : (4*scale).rounded(),
+                               after: detailLabel)
+        stack.setCustomSpacing(gap, after: runKindLabel)
         stack.setCustomSpacing(gap, after: resumingLabel)
-        stack.setCustomSpacing(gap, after: detailLabel)
         stack.setCustomSpacing(gap, after: scoreLabel)
-        if let badgeRow = resumeBadgeRow, stack.customSpacing(after: badgeRow) > 0 {
-            stack.setCustomSpacing(gap, after: badgeRow)
+        if stack.customSpacing(after: modeLabel) > 0 {
+            stack.setCustomSpacing(gap, after: modeLabel)
         }
+        // The name carries the group's air only when there is no detail under it
     }
 
     /// Takes the storyboard's own ties to the card's labels out of the way of the stack's.
@@ -881,11 +935,17 @@ class SplashViewController: UIViewController {
         // The iPad's 460-point column, which the other four in-game screens use
         sizeTheResumeHeader()
         resumeRack?.show(resumeBalls, on: view.bounds.size,
-                         ball: BallRackView.chosenBall(in: defaults))
+                         ball: BallRackView.chosenBall(in: defaults, daily: resumeDaily))
     }
 
     /// How many balls the run being resumed has, for the rack above the line that says so.
     private var resumeBalls = 0
+
+    /// The daily the run being resumed belongs to, or nil for any other run.
+    private var resumeDaily: DailyChallenge?
+
+    /// Whether the card has a second title line, which decides which of the two is large.
+    private var resumeHasDetail = true
 
     /// What the card's type was before any screen shrank it.
     private var resumeBaseSize: [ObjectIdentifier: CGFloat] = [:]
@@ -934,6 +994,7 @@ class SplashViewController: UIViewController {
     /// fifth row costs one `arrangedSubviews` entry, where a fifth outlet would mean editing
     /// the scene's XML by hand and wiring a connection that only this screen uses.
     private let livesLabel = UILabel()
+    private let runKindLabel = UILabel()
 
     @objc private func cancelResumeTapped() {
         if hapticsSetting { interfaceHaptic.impactOccurred() }

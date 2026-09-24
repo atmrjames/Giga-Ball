@@ -1116,11 +1116,19 @@ final class BallRackView: UIView {
     }
 
     /// The ball skin the player has chosen, which the rack wears like the HUD does.
-    static func chosenBall(in defaults: UserDefaults) -> UIImage? {
+    static func chosenBall(in defaults: UserDefaults,
+                           daily: DailyChallenge? = DailyChallengeSession.shared.active)
+        -> UIImage? {
         let setup = LevelPackSetup()
-        let index = min(max(defaults.integer(forKey: "ballSetting"), 0),
-                        setup.ballImageArray.count - 1)
-        return setup.ballImageArray[index]
+        let wanted = DailyTwist.forcedTheme(for: daily) ?? defaults.integer(forKey: "ballSetting")
+        let index = min(max(wanted, 0), setup.ballImageArray.count - 1)
+        let ball = setup.ballImageArray[index]
+        guard daily?.twists.contains(.monochromatic) == true else { return ball }
+        return DailyTwist.drainedOfColour(ball) ?? ball
+        // **The day's ball, not the player's** (James, round 341: the pause screen showed
+        // retro balls on a Monochromatic day). The run is in the day's theme whatever the
+        // settings say, so the rack under it has to be too - and greyed, since it is the same
+        // ball the scene is drawing through its filter
     }
 
     /// What every screen calls the rack now.
@@ -1130,5 +1138,42 @@ final class BallRackView: UIView {
     /// balls, and one of them is in play.
     static func line(for balls: Int) -> String {
         balls == 1 ? "1 ball left" : "\(balls) balls left"
+    }
+}
+
+extension UILabel {
+
+    /// Sets any fixed height this label carries to what its own text needs at its own width.
+    ///
+    /// **James, round 341, with a screenshot of the paused daily: "the date for the daily
+    /// challenge on the pause screen is truncated. Maybe just have it on a separate line in all
+    /// in-game views."** It was on a separate line - "Daily Challenge" and the day, split in
+    /// round 333 - inside a box the storyboard sized for one, so the second line had nowhere to
+    /// go and the first came out as "Daily Challenge..." with the day lost. The level intro was
+    /// given this in round 338; the pause and game-over screens never were.
+    ///
+    /// Measured rather than multiplied out: `textRect` knows what this label's font does at this
+    /// label's width, which a line count times a line height does not.
+    ///
+    /// - Returns: whether anything changed, so a caller that runs this from a layout pass can
+    ///   ask for another one only when there is something for it to do.
+    @discardableResult
+    func fitFixedHeightToItsText() -> Bool {
+        guard numberOfLines != 1, (text ?? "").isEmpty == false, bounds.width > 0 else {
+            return false
+        }
+        let needed = ceil(textRect(forBounds: CGRect(x: 0, y: 0, width: bounds.width,
+                                                     height: .greatestFiniteMagnitude),
+                                   limitedToNumberOfLines: numberOfLines).height)
+        var changed = false
+        for constraint in constraints where constraint.firstAttribute == .height
+            && constraint.secondItem == nil && abs(constraint.constant - needed) > 0.5 {
+            constraint.constant = needed
+            changed = true
+        }
+        return changed
+        // Only this label's own fixed height, which is the storyboard's box. A content-size
+        // constraint UIKit adds is the label's own answer to the same question, and never
+        // needs telling
     }
 }

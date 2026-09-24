@@ -313,6 +313,63 @@ final class SpinningFaceCrossFadeTests: XCTestCase {
         XCTAssertEqual(art?.alpha ?? 0, 1, accuracy: 0.001)
     }
 
+    /// **Every lit shape spins with its light held still** (James, round 341: "spinning brick
+    /// fade works with the regular shape indestructible brick, but should work with all shapes
+    /// on any bricks that have lighting effects: indestructible 1 and 2, plus all bricks in
+    /// retro mode").
+    ///
+    /// Diamond and Rounded are drawn once each, because a half turn does not change their
+    /// outline, so there was no drawing to fade to and they were left alone. Their own picture
+    /// turned half a circle is the far end of the spin, as it is for a plain brick.
+    func testALitShapeDrawnOnceStillFadesToItsOwnPictureTurned() {
+        let scene = scene()
+        for texture in [scene.brickIndestructible1Texture, scene.brickIndestructible2Texture] {
+            for shape in [GameScene.ShapedBrickArt.diamond, .rounded] {
+                let brick = SKSpriteNode(texture: texture, size: CGSize(width: 56, height: 28))
+                brick.name = BrickCategoryName
+                brick.endlessIIFaceMirrored = false
+                brick.endlessIIFaceFlipped = false
+                scene.addChild(brick)
+                if shape == .diamond {
+                    scene.makeFace(.diamond, on: brick)
+                } else {
+                    scene.makeRounded(brick)
+                }
+                // Rounded is a style rather than a face, and is built the way the game builds it
+                brick.zRotation = .pi*0.75
+
+                scene.refreshEndlessIIShapedFaces()
+                scene.refreshEndlessIIRoundedFaces()
+                // Both sweeps, as the frame runs them: Rounded outlines have their own
+
+                let holder = (brick.childNode(withName: GameScene.brickFaceName)
+                    ?? brick.childNode(withName: GameScene.roundedBrickOutlineName))
+                let art = holder?.childNode(withName: GameScene.faceArtName) as? SKSpriteNode
+                let partner = holder?.childNode(withName: GameScene.facePartnerName)
+                    as? SKSpriteNode
+                XCTAssertNotNil(partner, "\(shape.rawValue): a lit brick turning with nothing "
+                                + "to fade to turns its highlight underneath itself")
+                XCTAssertEqual(partner?.texture, art?.texture,
+                               "\(shape.rawValue): its own picture stands in for the far end")
+                XCTAssertEqual(abs(partner?.zRotation ?? 0), .pi, accuracy: 0.0001,
+                               "\(shape.rawValue): turned half a circle onto the brick")
+                XCTAssertEqual(partner?.xScale, art?.xScale)
+                XCTAssertEqual(partner?.yScale, art?.yScale)
+                XCTAssertGreaterThan(partner?.alpha ?? 0, 0.5,
+                                     "\(shape.rawValue): three-eighths of a turn round, the "
+                                     + "far end's light is the stronger")
+                brick.removeFromParent()
+            }
+        }
+    }
+
+    /// A wedge is not a wedge turned upside down, so it never borrows its own picture.
+    func testAnAsymmetricShapeNeverBorrowsItsOwnPicture() {
+        XCTAssertFalse(GameScene.ShapedBrickArt.wedge.looksTheSameHalfTurned)
+        XCTAssertFalse(GameScene.ShapedBrickArt.convex.looksTheSameHalfTurned)
+        XCTAssertFalse(GameScene.ShapedBrickArt.concave.looksTheSameHalfTurned)
+    }
+
     /// And one whose type has no oriented art keeps its single turning picture.
     func testABrickWithOnlyOnePictureIsLeftAlone() {
         let scene = scene()

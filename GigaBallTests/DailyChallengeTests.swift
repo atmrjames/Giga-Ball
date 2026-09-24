@@ -1376,6 +1376,34 @@ final class DailyLayoutTwistTests: XCTestCase {
                        + "gain a digit")
     }
 
+    /// **"Create a 3, 2, 1 graphic for the end of a time trial too that plays in the final few
+    /// seconds in the same style as the ready, go animation"** (James, round 341). Shown for
+    /// three, two and one, once each, and for no other second.
+    func testTheLastThreeSecondsAreCountedOnceEach() {
+        let scene = timeTrialScene()
+        defer { DailyChallengeSession.shared.active = nil }
+        scene.readyCountdown.size = CGSize(width: 320, height: 85.56)
+        scene.dailyClockLabel = SKLabelNode()
+
+        var shown: [Int] = []
+        for tenths in stride(from: 60, through: 1, by: -1) {
+            scene.dailyTimeTrialRemaining = TimeInterval(tenths)/10
+            let before = scene.dailyCountdownNode?.texture
+            scene.showDailyClock()
+            if let now = scene.dailyCountdownNode?.texture, now !== before {
+                shown.append(Int(scene.dailyTimeTrialRemaining.rounded(.up)))
+            }
+        }
+        XCTAssertEqual(shown, [3, 2, 1], "three, two, one - each once, and nothing before three")
+    }
+
+    /// Drawn at READY's height, so the number is the same size of thing standing in its place.
+    func testTheCountdownNumberIsREADYsHeight() {
+        let picture = GameScene.countdownDigit("3", height: 85.56)
+        XCTAssertEqual(picture.size.height, 85.56, accuracy: 0.5)
+        XCTAssertGreaterThan(picture.size.width, 30, "and wide enough to hold a number")
+    }
+
     func testTheClockRidesInTheSaveAndComesBack() throws {
         // The one thing a Time Trial cannot give away is a fresh ninety seconds on resume
         var save = SavedGame(

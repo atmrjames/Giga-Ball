@@ -577,13 +577,16 @@ final class PowerUpSoundTests: XCTestCase {
         LevelPackSetup().powerUpNameArray.firstIndex(of: name)
     }
 
-    /// The six that speak for themselves are named by power-up rather than by number.
-    func testTheSixThatSpeakForThemselvesAreTheSixNamed() {
+    /// The ones that speak for themselves are named by power-up rather than by number.
+    ///
+    /// Seven since round 341, when Cluster joined them (James: "Cluster played both the
+    /// cluster sound and the power-up sound when collected").
+    func testTheOnesThatSpeakForThemselvesAreTheOnesNamed() {
         let names = LevelPackSetup().powerUpNameArray
         let spoken = GameScene.endlessIICollectionSounds
             .compactMap { names.indices.contains($0.key) ? names[$0.key] : nil }
         XCTAssertEqual(Set(spoken), ["Multi-Ball", "Brick Cull", "Brick Infill",
-                                     "Laser Beam", "Safety Paddle", "Mirror Paddle"])
+                                     "Laser Beam", "Safety Paddle", "Mirror Paddle", "Cluster"])
     }
 
     /// And the chime only stands down where a recording actually exists.
@@ -639,5 +642,99 @@ final class PowerUpSoundTests: XCTestCase {
                              "a throttle shorter than a frame throttles nothing")
         XCTAssertLessThan(GameScene.mayhemSoundGap, 0.2,
                           "and one longer than the sounds themselves would swallow real events")
+    }
+}
+
+/// The Always On twist's standing power-up, collected silently and kept on.
+///
+/// **James, round 341, on the Peach day standing on Shrink Ball: "Always on applied as the ball
+/// left the paddle - at least the power-up HUD icon lit up, but the power-up itself was not
+/// applied" - and "it worked when I quit and resumed mid-game, it then reset when I lost the
+/// ball."** Watched on the simulator with a log in the tick: the twist asked the pause screen's
+/// question of which power-up a tray slot is running, got "neither" every frame for a silent
+/// collection, and collected Shrink Ball again every frame - while refusing to at all whenever
+/// the ball was waiting on the paddle.
+final class DailyAlwaysOnKeepsItsPowerUpTests: XCTestCase {
+
+    private func scene() -> GameScene {
+        let scene = GameScene(size: CGSize(width: 400, height: 800))
+        scene.totalStatsArray = [TotalStats()]
+        scene.gameWidth = 360
+        scene.ballSize = 12
+        scene.paddleWidth = 90
+        scene.hapticsSetting = false
+        scene.soundsSetting = false
+        scene.ballLostBool = false
+        scene.powerUpTextureArray = scene.powerUpTexturesInOrder
+        scene.addChild(scene.ball)
+        scene.ball.physicsBody = SKPhysicsBody(circleOfRadius: 6)
+        scene.addChild(scene.paddle)
+        scene.iconTimerArray = (0..<8).map { _ in
+            let bar = SKSpriteNode()
+            bar.isHidden = true
+            bar.xScale = 0
+            return bar
+        }
+        return scene
+    }
+
+    private static let shrinkBall = LevelPackSetup().powerUpNameArray.firstIndex(of: "Shrink Ball")!
+
+    /// A lit bar in the standing power-up's own slot is that power-up running - and a bar that
+    /// has only just been lit, still growing to full width, counts too.
+    func testALitBarInItsSlotIsTheStandingPowerUpRunning() {
+        let scene = scene()
+        let index = Self.shrinkBall
+        XCTAssertFalse(scene.dailyStandingPowerUpIsRunning(index), "nothing lit, nothing running")
+
+        let slot = GameScene.trayPowerUpFamilies.firstIndex { $0.contains(index) }!
+        let bar = scene.iconTimerArray[slot]
+        bar.isHidden = false
+        bar.run(.scaleX(to: 1, duration: 0.05))
+        XCTAssertTrue(scene.dailyStandingPowerUpIsRunning(index),
+                      "a bar still growing is running: reading it as stopped collected Shrink "
+                      + "Ball a second time and took the ball to half size")
+
+        bar.removeAllActions()
+        bar.xScale = 0.6
+        XCTAssertTrue(scene.dailyStandingPowerUpIsRunning(index),
+                      "and a bar counting down is running, whether or not it is in the list of "
+                      + "power-ups the player caught - which a silent collection never is")
+
+        bar.isHidden = true
+        XCTAssertFalse(scene.dailyStandingPowerUpIsRunning(index), "and hidden, it has ended")
+    }
+
+    /// Put back by the twist, it counts for nothing in the player's statistics.
+    func testASilentCollectionLeavesTheTalliesAlone() {
+        let scene = scene()
+        let before = scene.totalStatsArray[0].powerupsCollected
+        let carrier = SKSpriteNode(texture: scene.powerUpTextureArray[Self.shrinkBall])
+        scene.applyPowerUp(node: carrier, silently: true, standing: true)
+
+        XCTAssertLessThan(scene.ballSizeTarget, 1, "the power-up itself did apply")
+        XCTAssertEqual(scene.totalStatsArray[0].powerupsCollected, before,
+                       "the day's standing power-up is not a catch, and was being counted as "
+                       + "one every time the twist put it back")
+    }
+
+    /// And it is put on while the next ball waits on the paddle, not only once it is launched.
+    func testTheDaysPowerUpGoesOnWhileTheBallWaitsOnThePaddle() {
+        let scene = scene()
+        scene.ballLostBool = true
+        scene.ballIsOnPaddle = true
+        let carrier = SKSpriteNode(texture: scene.powerUpTextureArray[Self.shrinkBall])
+        scene.applyPowerUp(node: carrier, silently: true, standing: true)
+        XCTAssertLessThan(scene.ballSizeTarget, 1,
+                          "\"the power-up should be active from the start\" - it waited for the "
+                          + "launch, because the lost-ball flag stays up until then")
+
+        let caught = self.scene()
+        caught.ballLostBool = true
+        caught.ballIsOnPaddle = true
+        caught.applyPowerUp(node: SKSpriteNode(
+            texture: caught.powerUpTextureArray[Self.shrinkBall]))
+        XCTAssertEqual(caught.ballSizeTarget, 1,
+                       "an ordinary catch in that window is still refused, as it always was")
     }
 }

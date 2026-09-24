@@ -160,6 +160,8 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
     enum SettingRow: Int {
         case appIcon, theme, sounds, music, haptics, background, perspective
         case paddleSpeed, swipeUpToPause, reset
+        case interfaceSound
+        // Last, so every row that already existed keeps the number the switches below read
     }
 
     var settingRows: [SettingRow] {
@@ -173,7 +175,9 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         // above it: all three are what the game *looks* like, and it had been sitting among
         // the rows that decide how it plays
 
-        rows += [.sounds, .music]
+        rows += [.sounds, .interfaceSound, .music]
+        // **UI Sound under In-Game Sound** (James, round 341): the two sound switches together,
+        // then the music
         if SettingsViewController.deviceHasHaptics { rows.append(.haptics) }
         rows += [.perspective, .paddleSpeed, .swipeUpToPause]
 
@@ -251,9 +255,19 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
                     // falls back to the generic glyph - a theme icon is a picture
                     cell.settingState.text = ""
 //                }
+            case SettingRow.interfaceSound.rawValue:
+            // UI Sound
+                let on = InterfaceSound.isOn(in: defaults)
+                cell.settingDescription.text = "UI Sound"
+                cell.centreLabel.text = ""
+                cell.setIcon(UIImage(systemName: on ? "hand.tap.fill" : "hand.raised.slash.fill")!,
+                             recolour: true)
+                cell.settingState.text = on ? "on" : "off"
+                cell.setStateColour(on ? #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1)
+                                       : #colorLiteral(red: 0.6000000238, green: 0.6000000238, blue: 0.6000000238, alpha: 1))
             case 2:
             // Sounds
-                cell.settingDescription.text = "Sounds"
+                cell.settingDescription.text = "In-Game Sound"
                 cell.centreLabel.text = ""
                 cell.setIcon(UIImage(named: soundsSetting ? "iconSound" : "iconSoundOff")!, recolour: true)
                 if soundsSetting {
@@ -638,6 +652,11 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
             // Theme
                 hideAnimate()
                 moveToItemDetails(senderID: 1)
+            case SettingRow.interfaceSound.rawValue:
+            // UI Sound
+                defaults.set(!InterfaceSound.isOn(in: defaults), forKey: InterfaceSound.settingKey)
+                InterfaceSound.click(in: defaults)
+                // Clicks as it comes on, which is the one way to say what it just turned on
             case 2:
             // Sounds
                 soundsSetting = !soundsSetting
@@ -1036,6 +1055,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
     func resetData() {
         soundsSetting = true
         defaults.set(soundsSetting, forKey: "soundsSetting")
+        defaults.set(true, forKey: InterfaceSound.settingKey)
         musicSetting = true
         defaults.set(musicSetting, forKey: "musicSetting")
         hapticsSetting = true

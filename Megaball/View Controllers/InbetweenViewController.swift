@@ -1042,19 +1042,9 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
     /// Measured rather than multiplied out: `textRect` knows what this label's own font does
     /// with this label's own width, which a line count times a line height does not.
     private func giveTheTitleTheLinesItNeeds() {
-        guard let label = packNameLabel, label.numberOfLines != 1,
-              (label.text ?? "").isEmpty == false, label.bounds.width > 0 else { return }
-
-        let needed = ceil(label.textRect(
-            forBounds: CGRect(x: 0, y: 0, width: label.bounds.width,
-                              height: .greatestFiniteMagnitude),
-            limitedToNumberOfLines: label.numberOfLines).height)
-
-        for constraint in label.constraints where constraint.firstAttribute == .height {
-            guard abs(constraint.constant - needed) > 0.5 else { continue }
-            constraint.constant = needed
-            view.setNeedsLayout()
-        }
+        if packNameLabel?.fitFixedHeightToItsText() == true { view.setNeedsLayout() }
+        // Shared with the pause and game-over screens since round 341, which had the same
+        // two-line date in the same one-line box
     }
 
     /// Air between the run's name and the rules it is played under.

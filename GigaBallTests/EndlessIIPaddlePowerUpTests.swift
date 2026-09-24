@@ -1904,11 +1904,48 @@ final class EndlessIIBallSpinTests: XCTestCase {
 
     // MARK: - The grip
 
-    func testAStillPaddleGripsNothing() {
+    /// Nothing moving and nothing to say which way: the one grip with no information in it.
+    func testNothingSlippingAndDeadCentreGripsNothing() {
         XCTAssertEqual(EndlessIIBallSpin.turnRate(paddleSpeed: 0), 0)
         XCTAssertEqual(EndlessIIBallSpin.turnRate(
-            paddleSpeed: EndlessIIBallSpin.gripThreshold - 1), 0,
-            "a paddle creeping along is not friction, it is noise")
+            paddleSpeed: EndlessIIBallSpin.slipNoise - 1), 0,
+            "a paddle creeping along under a ball falling straight onto its middle is noise")
+    }
+
+    /// **James, round 341, the third time of asking: "the ball spin power-up should cause the
+    /// ball to spin even if the paddle is stationary when it hits it."** Rounds 305 and 313
+    /// each made the number non-zero; neither made it visible. Held here as degrees in the
+    /// quarter second off the paddle, which is where a curve is seen, at the *steep* arrival
+    /// most bounces are - round 313's answer gave that ball two degrees.
+    func testAStillPaddleVisiblyCurvesASteepBall() {
+        let steep = CGVector(dx: 150, dy: -580)
+        let rate = EndlessIIBallSpin.turnRate(paddleSpeed: 0, arriving: steep)
+        let whole = rate/log(1/EndlessIIBallSpin.decayPerSecond)
+        let early = abs(whole*(1 - pow(EndlessIIBallSpin.decayPerSecond, 0.25)))*180/CGFloat.pi
+        XCTAssertGreaterThan(early, 8,
+                             "a still paddle turned a steep ball \(early) degrees in the first "
+                             + "quarter second, which nobody playing will see")
+
+        let straight = EndlessIIBallSpin.turnRate(paddleSpeed: 0, collision: 0.4,
+                                                   arriving: CGVector(dx: 0, dy: -600))
+        XCTAssertNotEqual(straight, 0,
+                          "and a ball falling straight on, off centre, still spins - the side "
+                          + "it landed on says which way")
+    }
+
+    /// **"The level of spin should increase with the speed of the paddle depending on the ball
+    /// and paddle's directions of travel"** (James, round 341). A paddle swept against the
+    /// ball's travel slips harder against it than one swept along with it, so it spins harder.
+    func testAPaddleSweptAgainstTheBallSpinsItHarderThanOneSweptWithIt() {
+        let arriving = CGVector(dx: 400, dy: -400)
+        let still = abs(EndlessIIBallSpin.turnRate(paddleSpeed: 0, arriving: arriving))
+        let against = abs(EndlessIIBallSpin.turnRate(paddleSpeed: -300, arriving: arriving))
+        let with = abs(EndlessIIBallSpin.turnRate(paddleSpeed: 300, arriving: arriving))
+
+        XCTAssertGreaterThan(against, still, "against the ball's travel adds to the slip")
+        XCTAssertLessThan(with, still, "with it takes slip away")
+        XCTAssertGreaterThanOrEqual(with, EndlessIIBallSpin.restingTurn - 0.0001,
+                                    "and every grip still spins it a little")
     }
 
     func testFasterPaddleCurvesHarder() {
@@ -6151,5 +6188,38 @@ final class EndlessIIMagnetFlowTests: XCTestCase {
         let scene = self.scene()
         let path = scene.endlessIIFlowingPath(from: .zero, to: CGPoint(x: 0, y: 0.5), phase: 0)
         XCTAssertTrue(dashes(path).isEmpty)
+    }
+}
+
+/// How long a spent turn-based power-up hangs on after its last bounce.
+///
+/// **James, round 341: "the paddle turn based power-ups don't end immediately after the last
+/// turn, they wait a few seconds to stop it looking weird the last time the ball interacts with
+/// the paddle. I think it is now too long though. The delay could be half as long as it is. It
+/// should only be half a second or a second, not multiple seconds."**
+final class TurnBasedGoodbyeLengthTests: XCTestCase {
+
+    func testTheGoodbyeIsHalfASecondToASecond() {
+        XCTAssertGreaterThanOrEqual(EndlessIIClock.lingerSeconds, 0.5,
+                                    "long enough that a shape does not snap back in the frame "
+                                    + "the ball leaves it")
+        XCTAssertLessThanOrEqual(EndlessIIClock.lingerSeconds, 1,
+                                 "and never the several seconds James was seeing")
+    }
+
+    /// And it is spent, all of it, in that time - one clock run down in frames.
+    func testASpentClockIsGoneOnceItsGoodbyeHasRun() {
+        var clock = EndlessIIClock()
+        clock.collect(turns: 1)
+        clock.spendTurn(thenLingerFor: EndlessIIClock.lingerSeconds)
+        XCTAssertTrue(clock.lingering)
+        var elapsed: TimeInterval = 0
+        while clock.lingering && elapsed < 5 {
+            clock.run(down: 1.0/60)
+            elapsed += 1.0/60
+        }
+        XCTAssertFalse(clock.isRunning, "the clock ended")
+        XCTAssertEqual(elapsed, EndlessIIClock.lingerSeconds, accuracy: 1.0/30,
+                       "after its goodbye and no longer")
     }
 }
