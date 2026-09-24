@@ -2425,15 +2425,18 @@ Two things this round found rather than fixed, both worth writing down:
   `MenuViewController` adds a `SplashViewController` over itself on first launch, and the
   harness rendered what was in front. Six pictures of a logo, every round.
 
-Open from round 340:
+**Open after round 342** (this replaces the round 340 table: Always On and the spinner fade were
+built in round 341, Game Center on the SE was answered there, and the game view and the window
+floor in round 342):
 
 | Item | What is known |
 |---|---|
-| Always On "does not appear to be applied" | The mechanism reads correctly and is tested: the draw picks a lasting power-up, `tickDailyAlwaysOn` re-collects it whenever it stops, and the pause screen agrees it is running. Nothing found by reading. Needs the date key and mode of a day where James saw it do nothing, which fixes the draw exactly |
-| Spinning indestructible and retro bricks and their alternative orientation art | The cross-fade for plain spinners was built in round 332 and is running. The note may be that it fades into the wrong picture or that the change is still visible as a change; needs a sentence saying which |
-| A themed level preview on the daily card | The monochrome half is built: the card's picture is drained through the same `CIPhotoEffectMono` the scene uses. The theme half is not a filter. A level preview is a drawn asset per level in the Classic dress, and showing a Retro day's level in Retro means rendering the level from its brick layout with the theme's textures, which is a piece of work rather than an afternoon |
-| Game Center missing on the paused screen | Could not be reproduced: a mid-run pause hides the leaderboard line on every device by design (`updateResultLine` stands down when `sender == "Pause"`), so if the screenshot was a pause rather than a game over, nothing is wrong. The block has been given a required ceiling against the button row regardless, since every other constraint placing it measured downwards and only a breakable one held it up |
-| The paddle-speed and background previews on an iPad | The preview is a one-to-one window onto the play area, so on an iPad it is 660 points wide while the screen's own furniture is in the 460-point column. That is the inconsistency behind both "slider and close too near the edges" and "preview clipping"; the fix is a decision about which of the two is right rather than a bug |
+| **James's round 339 gameplay notes, never queued until now** | Reported in round 339 as "untouched" and then not written down here, which is how a list goes missing. Verbatim in substance: **(1)** gravity bricks accelerate as they fall, not like full gravity and not from a crawl, with a top speed. **(2)** After Quicksand in Mayhem, with bottom-row bricks destroyed during it, the field did not descend to the lowest row until another brick was destroyed. **(3)** Remove the purple circle the portal animation shows where the ball meets the brick. **(4)** New halo power-up and HUD graphics are in File Sharing. **(5)** When Drift ends, a Directional brick left with its open face against the wall is removed. **(6)** Directional bricks: a hit on the corner of the open face counts. **(7)** Mirror Paddle with the Halo: the shadow round the white paddle should be a subtle, soft drop shadow poking out evenly on every side and following the paddle's size. **(8)** Mirror Paddle with Wrap-Around: both paddles may wrap, keeping the mirror |
+| The game view following an iPad or Mac window | Built in round 342 and tested as arithmetic and on a bare scene. Not yet seen on a device: needs a window dragged during a level |
+| The paddle-speed and background previews on an iPad | The preview is a one-to-one window onto the play area, so on an iPad it is 660 points wide while the screen's own furniture is in the 460-point column. That is behind both "slider and close too near the edges" and "preview clipping"; the fix is a decision about which of the two is right |
+| A themed level preview on the daily card | The monochrome half is built. A Retro day's level in Retro means rendering the level from its brick layout with the theme's textures, which is a piece of work rather than an afternoon |
+| Aimed Sticky's sounds | Round 339: it already plays the sticky catch on the catch and the release on the launch, as plain Sticky does. Waiting on James to say what he hears instead |
+| `appOpenCount` written by test launches | See round 339's row above: the host menu writes it to `.standard` on every test launch. It decides when the intro shows; the review prompt is already guarded |
 
 **Round 341, from James's answers to round 340's questions and a new play-test list.** Built:
 
