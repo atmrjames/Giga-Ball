@@ -308,7 +308,15 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
                 // row's flat tint would turn the chosen background into a rectangle, so the
                 // frame is tinted where it is drawn instead
                 cell.setStateColour(#colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1))
-                showSelectionArrow(in: cell)
+                cell.settingState.text = ""
+                addRowChevron(to: cell, action: #selector(backgroundArrowTapped))
+                // **The same arrow the other two rows use, built the same way, in the same
+                // place** (James, rounds 332 and 339: "make the game background settings arrow
+                // the same size and style as the other arrows on the settings page"). It was
+                // drawn as a text attachment inside the *state* label at the right-hand end,
+                // where Music's and Paddle Speed's are buttons beside their titles - same
+                // glyph, same point size, and it still did not read as the same arrow because
+                // it was not in the same place. One construction now, for all three.
             case 6:
             // Parallax
                 cell.settingDescription.text = "Perspective Zoom"
@@ -522,6 +530,12 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
             chevron.widthAnchor.constraint(equalToConstant: 56),
             chevron.heightAnchor.constraint(equalToConstant: 56),
         ])
+    }
+
+    /// The chevron on the Game Background row, which opens the picker the row opens.
+    @objc func backgroundArrowTapped() {
+        hideAnimate()
+        moveToBackgroundSelect()
     }
 
     @objc func paddleSpeedTryTapped() {

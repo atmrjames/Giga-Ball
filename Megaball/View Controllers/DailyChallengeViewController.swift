@@ -98,6 +98,35 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
         }
     }
 
+    /// The badge's two size constraints, and the height they were last measured against.
+    private var modeLogoSize: [NSLayoutConstraint] = []
+    private var modeLogoHeightSeen: CGFloat = 0
+
+    /// Shrinks the mode's badge on a screen too short to wear it at full size.
+    ///
+    /// **James, round 339: "reduce the size of the game mode logo as needed to allow content
+    /// to fit better when the window is small."** On a 320 by 568 phone this badge was 190
+    /// points of a 568-point screen and the card under it was clipped to its own icon.
+    private func sizeTheModeLogoForTheScreen() {
+        let height = view.safeAreaLayoutGuide.layoutFrame.height
+        guard height > 0, abs(height - modeLogoHeightSeen) > 0.5 else { return }
+        modeLogoHeightSeen = height
+        let side = UIViewController.menuModeLogoSize(forHeight: height)
+        for constraint in modeLogoSize where abs(constraint.constant - side) > 0.5 {
+            constraint.constant = side
+        }
+    }
+
+    override func viewWillLayoutSubviews() {
+        super.viewWillLayoutSubviews()
+        sizeTheModeLogoForTheScreen()
+        // **Before the pass, not after it.** Changing a constraint from `viewDidLayoutSubviews`
+        // asks for another pass, and this screen's pager opens itself on today in the *first*
+        // one - reloading its cards and jumping to the far end. Split across two passes, the
+        // cards it built at the near end were still attached when the first pass ended, ten
+        // thousand points to the left of the window. Sized before the pass, there is one pass.
+    }
+
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         view.applyMenuParallaxToContent()
@@ -375,14 +404,20 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
         // still a whole viewport and paging still lands on whole days; the column is simply
         // narrower than the window on an iPad.
 
+        let modeLogoWidth = modeIcon.widthAnchor.constraint(
+            equalToConstant: UIViewController.menuModeLogoSize)
+        let modeLogoHeight = modeIcon.heightAnchor.constraint(
+            equalToConstant: UIViewController.menuModeLogoSize)
+        modeLogoSize = [modeLogoWidth, modeLogoHeight]
+        // Held so the badge can shrink on a screen with no room for it - see
+        // `sizeTheModeLogoForTheScreen`
+
         NSLayoutConstraint.activate([
             modeIcon.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor,
                                           constant: 16),
             modeIcon.centerXAnchor.constraint(equalTo: content.centerXAnchor),
-            modeIcon.widthAnchor.constraint(
-                equalToConstant: UIViewController.menuModeLogoSize),
-            modeIcon.heightAnchor.constraint(
-                equalToConstant: UIViewController.menuModeLogoSize),
+            modeLogoWidth,
+            modeLogoHeight,
             // The mode logo's own size (James, round 211: "Daily Challenge should be made the
             // same"). It was 48 - a badge beside a title rather than the artwork above one -
             // and this screen is the fourth of a set of four
@@ -553,8 +588,15 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
     /// first thing shown is today rather than the oldest day scrolling past.
     func scrollToViewedDay(animated: Bool) {
         guard dayKeys.isEmpty == false, days.bounds.width > 0 else { return }
+
         let x = CGFloat(pageForViewedOffset)*days.bounds.width
         days.setContentOffset(CGPoint(x: x, y: 0), animated: animated)
+        // **Deliberately not clamped to the content.** An offset past the last card is always
+        // wrong, and a clamp here reads as the obvious guard - but the offset and the content
+        // size are measured at different moments during a resize, so clamping against a stale
+        // content size lands the pager between two days, which is the thing round 313 fixed.
+        // The misalignment James reported in round 339 turned out to be a layout pass split in
+        // two (see `viewWillLayoutSubviews`); the arithmetic here was never the fault.
     }
 
     /// The rank of today's posted score, asked of Game Center at most once per visit.

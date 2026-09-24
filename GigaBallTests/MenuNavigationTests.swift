@@ -1459,3 +1459,133 @@ final class SceneTeardownTests: XCTestCase {
         XCTAssertNil(scene.laserTimer)
     }
 }
+
+/// The bottom button row, at every width a window can be dragged to.
+///
+/// **James, round 339, from an iPad with the window dragged narrow: "it's possible to resize
+/// the window to a point where the UI buttons at the bottom aren't symmetrical any more - the
+/// settings button is too narrow and the info button is too wide - it's also possible that the
+/// settings button disappears when the window is particularly narrow."**
+final class MenuButtonRowFitTests: XCTestCase {
+
+    /// A row of two small buttons, the arrangement the main menu uses.
+    private let smalls = [MainMenuCollectionViewCell.smallButtonSize,
+                          MainMenuCollectionViewCell.smallButtonSize]
+
+    /// A row with a big play button in the middle, the pause screen's.
+    private let withPlay = [MainMenuCollectionViewCell.smallButtonSize,
+                            MainMenuCollectionViewCell.largeButtonSize,
+                            MainMenuCollectionViewCell.smallButtonSize]
+
+    private func laidOut(width: CGFloat, sizes: [CGFloat]) -> UICollectionViewFlowLayout {
+        let screen = UIViewController()
+        screen.view.frame = CGRect(x: 0, y: 0, width: width, height: 700)
+        let row = UICollectionView(frame: CGRect(x: 0, y: 600, width: width, height: 75),
+                                   collectionViewLayout: UICollectionViewFlowLayout())
+        screen.view.addSubview(row)
+        screen.layoutMenuButtonRow(row, sizes: sizes)
+        return row.collectionViewLayout as! UICollectionViewFlowLayout
+    }
+
+    /// Everything in the row fits inside the row, however narrow the window gets.
+    func testEveryButtonStaysInsideTheRow() {
+        for width in stride(from: 300.0, through: 1100.0, by: 20.0) {
+            // From 300: the narrowest window iOS hands an app is a 320-point Slide Over pane,
+            // and a row holding a 75-point play button between two 50s cannot be made to fit
+            // anything much under that however the inset gives way. The promise is about every
+            // window a player can actually make, not about every number.
+            for (what, sizes) in [("two small buttons", smalls), ("a play button", withPlay)] {
+                let layout = laidOut(width: CGFloat(width), sizes: sizes)
+                let content = layout.sectionInset.left + layout.sectionInset.right
+                    + sizes.reduce(0, +)
+                    + layout.minimumInteritemSpacing*CGFloat(max(sizes.count - 1, 1))
+
+                XCTAssertLessThanOrEqual(content, CGFloat(width) + 0.5,
+                    "\(what) at \(Int(width))pt: the row needs \(Int(content))pt and has "
+                    + "\(Int(width)). The flow layout does not shrink a cell - it pushes the "
+                    + "last one out of the visible row, which is the settings button James "
+                    + "watched disappear")
+            }
+        }
+    }
+
+    /// And what is left of the inset is left of it on both sides.
+    func testTheRowStaysSymmetric() {
+        for width in stride(from: 300.0, through: 1100.0, by: 20.0) {
+            let layout = laidOut(width: CGFloat(width), sizes: smalls)
+            XCTAssertEqual(layout.sectionInset.left, layout.sectionInset.right, accuracy: 0.5,
+                           "at \(Int(width))pt the row is inset \(layout.sectionInset.left) on "
+                           + "the left and \(layout.sectionInset.right) on the right")
+            XCTAssertGreaterThanOrEqual(layout.sectionInset.left, 0,
+                                        "a negative inset hangs the row off the screen")
+        }
+    }
+
+    /// The gap never closes to nothing, so two buttons never touch.
+    func testTwoButtonsNeverTouch() {
+        for width in stride(from: 200.0, through: 1100.0, by: 20.0) {
+            let layout = laidOut(width: CGFloat(width), sizes: smalls)
+            XCTAssertGreaterThanOrEqual(layout.minimumInteritemSpacing,
+                                        UIViewController.menuButtonLeastGap - 0.5,
+                                        "at \(Int(width))pt the buttons are "
+                                        + "\(layout.minimumInteritemSpacing)pt apart")
+        }
+    }
+}
+
+/// How wide the content is allowed to be, at every window width.
+///
+/// **James, round 339: "the cell views expand with the window until a point, then snap back to
+/// a set width once the window is wide enough. Can we just make this set width the maximum
+/// width of the cell views so there's no need for them to snap back?"**
+final class MenuContentWidthTests: XCTestCase {
+
+    /// What the content is left with once the insets are taken off.
+    private func contentWidth(_ width: CGFloat, height: CGFloat, regular: Bool) -> CGFloat {
+        let insets = UIViewController.menuContentInsets(
+            available: CGSize(width: width, height: height), widthOnly: regular == false)
+        return width - insets.left - insets.right
+    }
+
+    /// Never wider than the cap, whatever the window is doing.
+    func testTheContentNeverExceedsItsMaximum() {
+        for width in stride(from: 320.0, through: 1400.0, by: 20.0) {
+            for height in [700.0, 1000.0, 1376.0] {
+                for regular in [true, false] {
+                    let content = contentWidth(CGFloat(width), height: CGFloat(height),
+                                               regular: regular)
+                    XCTAssertLessThanOrEqual(content,
+                                             UIViewController.menuMaximumWidth + 0.5,
+                        "\(Int(width))x\(Int(height)), regular \(regular): content is "
+                        + "\(Int(content))pt")
+                }
+            }
+        }
+    }
+
+    /// And it does not jump when the window crosses from compact to regular.
+    ///
+    /// That crossing is what James was watching: the same window, one point wider, suddenly
+    /// laid out to a different width. Both sides of it now answer with the cap.
+    func testThereIsNoStepWhenTheWidthClassChanges() {
+        for width in stride(from: 480.0, through: 900.0, by: 10.0) {
+            let compact = contentWidth(CGFloat(width), height: 1376, regular: false)
+            let regular = contentWidth(CGFloat(width), height: 1376, regular: true)
+            XCTAssertEqual(compact, regular, accuracy: 0.5,
+                "at \(Int(width))pt a compact window lays out \(Int(compact))pt of content and "
+                + "a regular one \(Int(regular)) - which is the snap")
+        }
+    }
+
+    /// A phone is untouched: none of them is as wide as the cap.
+    func testAPhoneIsNotInsetAtAll() {
+        for width in [320.0, 375.0, 390.0, 402.0, 430.0, 440.0] {
+            let insets = UIViewController.menuContentInsets(
+                available: CGSize(width: width, height: 874), widthOnly: true)
+            XCTAssertEqual(insets.left, 0, accuracy: 0.01, "\(Int(width))pt wide")
+            XCTAssertEqual(insets.right, 0, accuracy: 0.01)
+            XCTAssertEqual(insets.top, 0, accuracy: 0.01,
+                           "and a compact window keeps its full height")
+        }
+    }
+}

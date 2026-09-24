@@ -1154,3 +1154,219 @@ final class InGameHeaderSpineTests: XCTestCase {
         return built
     }
 }
+
+// MARK: - The menus
+
+/// The same treatment for the screens outside the game: rendered at four shapes, to be looked at.
+///
+/// **James, round 339: "can we do the same UI assessment of various non-game scene views from
+/// the app on different devices?"** and, from an iPad play test, a list of screens whose
+/// content ran to the edges of the window or changed width as he dragged its corner.
+///
+/// The PNGs land in /tmp/gb-menus. Nothing here asserts; `MenuGalleryAuditTests` below is the
+/// part that does.
+final class MenuGalleryTests: XCTestCase {
+
+    private var windows: [UIWindow] = []
+
+    override func tearDown() {
+        windows.forEach { $0.isHidden = true }
+        windows.removeAll()
+        super.tearDown()
+    }
+
+    static let shapes: [(name: String, size: CGSize, regular: Bool)] = [
+        ("se", CGSize(width: 320, height: 568), false),
+        ("16pro", CGSize(width: 402, height: 874), false),
+        ("ipad", CGSize(width: 1032, height: 1376), true),
+        ("ipad-wide", CGSize(width: 1194, height: 834), true),
+        ("window-480", CGSize(width: 480, height: 900), false),
+        ("window-520", CGSize(width: 520, height: 900), true),
+    ]
+    // The last two are the pair either side of the width class changing, which is where the
+    // cells were stepping from one width to another.
+
+    /// Every screen the menus can show, built the way the app builds it.
+    static func everyScreen() -> [(String, UIViewController)] {
+        let board = UIStoryboard(name: "Main", bundle: Bundle(for: MenuViewController.self))
+        var built: [(String, UIViewController)] = []
+
+        func fromBoard(_ id: String, _ name: String) {
+            guard let screen = board.instantiateViewController(withIdentifier: id)
+                    as UIViewController? else { return }
+            (screen as? SettingsViewController)?.navigatedFrom = "MainMenu"
+            if let modes = screen as? ModeSelectViewController {
+                modes.levelPack = 2
+                modes.selectedLevel = 1
+                modes.numberOfLevels = 10
+                modes.levelSender = "PackSelect"
+            }
+            if let levels = screen as? LevelSelectorViewController {
+                levels.packNumber = 2
+                levels.numberOfLevels = 10
+                levels.startLevel = 1
+            }
+            // Force-unwrapped in `viewDidLoad`, and set by whoever opens the screen. A screen
+            // built outside the app has nobody to set it, and the unwrap takes the whole test
+            // bundle down rather than the one screen.
+            built.append((name, screen))
+        }
+        fromBoard("menuView", "main-menu")
+        fromBoard("settingsVC", "settings")
+        fromBoard("backgroundSelectView", "background-select")
+        fromBoard("modeSelectView", "mode-select")
+        fromBoard("packSelectorView", "pack-select")
+        fromBoard("levelSelectorView", "level-select")
+        fromBoard("statsView", "stats")
+        fromBoard("itemsView", "items")
+        fromBoard("brickTypesView", "brick-types")
+        fromBoard("aboutVC", "about")
+
+        built.append(("music", MusicViewController()))
+        built.append(("paddle-speed", PaddleSpeedViewController()))
+        built.append(("daily-challenge", DailyChallengeViewController()))
+        return built
+    }
+
+    func host(_ screen: UIViewController, size: CGSize, regular: Bool) -> UIView {
+        let parent = UIViewController()
+        parent.view.frame = CGRect(origin: .zero, size: size)
+        parent.view.backgroundColor = UIColor(red: 0.09, green: 0.03, blue: 0.12, alpha: 1)
+        let window = UIWindow(frame: CGRect(origin: .zero, size: size))
+        window.rootViewController = parent
+        window.isHidden = false
+        windows.append(window)
+        if regular, #available(iOS 17.0, *) {
+            window.traitOverrides.horizontalSizeClass = .regular
+        }
+        parent.addChild(screen)
+        screen.view.frame = parent.view.bounds
+        screen.view.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        parent.view.addSubview(screen.view)
+        screen.didMove(toParent: parent)
+        for _ in 0..<4 {
+            parent.view.setNeedsLayout()
+            parent.view.layoutIfNeeded()
+        }
+        return parent.view
+    }
+
+    func testWriteTheMenusOut() {
+        let folder = URL(fileURLWithPath: "/tmp/gb-menus")
+        try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+
+        for (shape, size, regular) in Self.shapes {
+            for (name, screen) in Self.everyScreen() {
+                let host = self.host(screen, size: size, regular: regular)
+                let renderer = UIGraphicsImageRenderer(bounds: host.bounds)
+                let png = renderer.image { context in
+                    host.layer.render(in: context.cgContext)
+                }.pngData()!
+                try? png.write(to: folder.appendingPathComponent("\(name)-\(shape).png"))
+            }
+            print("MENUS \(shape)")
+        }
+    }
+}
+
+/// And the part that asserts: no menu screen runs its content to the edge of a large window.
+///
+/// **James, round 339, across five screens at once: "bring the UI elements in to a maximum
+/// width and height like other views", "prevent clipping of elements", "run checks and tests
+/// where possible to review these issues and prevent them from happening going forwards".**
+final class MenuGalleryAuditTests: XCTestCase {
+
+    private var windows: [UIWindow] = []
+
+    override func tearDown() {
+        windows.forEach { $0.isHidden = true }
+        windows.removeAll()
+        super.tearDown()
+    }
+
+    private func host(_ screen: UIViewController, size: CGSize, regular: Bool) -> UIView {
+        let parent = UIViewController()
+        parent.view.frame = CGRect(origin: .zero, size: size)
+        let window = UIWindow(frame: CGRect(origin: .zero, size: size))
+        window.rootViewController = parent
+        window.isHidden = false
+        windows.append(window)
+        if regular, #available(iOS 17.0, *) {
+            window.traitOverrides.horizontalSizeClass = .regular
+        }
+        parent.addChild(screen)
+        screen.view.frame = parent.view.bounds
+        screen.view.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        parent.view.addSubview(screen.view)
+        screen.didMove(toParent: parent)
+        for _ in 0..<4 {
+            parent.view.setNeedsLayout()
+            parent.view.layoutIfNeeded()
+        }
+        return parent.view
+    }
+
+    /// Anything a player reads or presses, and where it is.
+    private func furniture(in view: UIView, to root: UIView) -> [(UIView, CGRect)] {
+        var found: [(UIView, CGRect)] = []
+        for subview in view.subviews {
+            guard subview.isHidden == false, subview.alpha > 0.05 else { continue }
+            let interesting = subview is UILabel || subview is UIButton || subview is UISlider
+                || subview is UITableView || subview is UICollectionView
+            if interesting, subview.bounds.width > 1, subview.bounds.height > 1 {
+                found.append((subview, subview.convert(subview.bounds, to: root)))
+            }
+            if subview is UITableView || subview is UICollectionView { continue }
+            found += furniture(in: subview, to: root)
+        }
+        return found
+    }
+
+    /// On a window wider than the column, nothing reaches the window's own edge.
+    ///
+    /// The column is `menuMaximumWidth`; a screen that has not asked for it lays its content
+    /// out across the whole window, which on a 13-inch iPad is a slider a foot long and a close
+    /// button in the far corner.
+    func testNoMenuRunsItsContentToTheEdgeOfALargeWindow() {
+        let size = CGSize(width: 1032, height: 1376)
+        let leastMargin = (size.width - UIViewController.menuMaximumWidth)/2 - 40
+        // Forty points of slack: a background view is allowed to fill the window, and so is
+        // anything the column's own inset does not apply to
+
+        for (name, screen) in MenuGalleryTests.everyScreen() {
+            let root = host(screen, size: size, regular: true)
+            for (view, frame) in furniture(in: root, to: root) {
+                guard frame.width < size.width - 1 else { continue }
+                // A view that *is* the window - a background, a full-width table - is not what
+                // this is about; what it holds is measured on its own
+                XCTAssertGreaterThan(frame.minX, leastMargin,
+                    "\(name): a \(type(of: view)) starts \(Int(frame.minX))pt from the left of "
+                    + "a \(Int(size.width))pt window. Everything here should sit inside the "
+                    + "\(Int(UIViewController.menuMaximumWidth))pt column")
+                XCTAssertLessThan(frame.maxX, size.width - leastMargin,
+                    "\(name): a \(type(of: view)) ends \(Int(size.width - frame.maxX))pt from "
+                    + "the right of the window")
+            }
+        }
+    }
+
+    /// And the content is the same width either side of the width class changing.
+    func testNoScreenChangesWidthWhenTheWindowCrossesTheWidthClass() {
+        for (name, _) in MenuGalleryTests.everyScreen() {
+            var widths: [CGFloat] = []
+            for (size, regular) in [(CGSize(width: 480, height: 900), false),
+                                    (CGSize(width: 520, height: 900), true)] {
+                guard let screen = MenuGalleryTests.everyScreen()
+                    .first(where: { $0.0 == name })?.1 else { continue }
+                let root = host(screen, size: size, regular: regular)
+                let insets = screen.additionalSafeAreaInsets
+                widths.append(size.width - insets.left - insets.right)
+            }
+            guard widths.count == 2 else { continue }
+            XCTAssertLessThanOrEqual(widths[1], widths[0] + 41,
+                "\(name): a 480pt window lays out \(Int(widths[0]))pt of content and a 520pt "
+                + "one \(Int(widths[1])) - the content should never *shrink* as the window "
+                + "grows, which is the snap James watched")
+        }
+    }
+}

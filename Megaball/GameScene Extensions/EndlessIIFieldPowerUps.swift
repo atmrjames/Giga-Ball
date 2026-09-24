@@ -413,7 +413,18 @@ extension GameScene {
 
     /// The aura's reach as a multiple of the ball's radius, by stacking level. Twice the
     /// ball's radius to start (§5.4); a deepening collection grows it.
-    static let endlessIIAuraReach: [CGFloat] = [2.0, 2.8]
+    ///
+    /// **Round 339: "make the glow around the ball on the aura power up larger so its effect
+    /// is greater."** Round 284 answered "Aura should be bigger" by drawing the picture
+    /// bigger and leaving the reach alone; this is the other half, and it is the half the
+    /// second half of that sentence is about. A fifth further out at both levels, which the
+    /// glow follows on its own - the sprite is sized from the reach, not from a number of its
+    /// own.
+    ///
+    /// **This changes what a Mayhem run scores**, so it is the kind of number to watch in a
+    /// play test rather than to keep pushing: the aura eats bricks, and an aura a fifth wider
+    /// eats about forty per cent more of them per pass.
+    static let endlessIIAuraReach: [CGFloat] = [2.4, 3.4]
 
     /// How much of the artwork's half-width still reads as glow.
     ///

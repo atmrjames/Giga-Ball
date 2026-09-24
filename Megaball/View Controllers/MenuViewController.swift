@@ -201,6 +201,12 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
 
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
+        capMenuContentSize()
+        // **The main menu was the one screen that never asked for the column** (James, round
+        // 339, from an iPad: "the cell views expand with the window until a point, then snap
+        // back to a set width once the window is wide enough"). Every other menu holds its
+        // content to `menuMaximumWidth`; this one filled whatever window it was given, so the
+        // rows were a different width on every drag of the corner.
         let room = menuRoomForModeRows
         guard room > 0 else { return }
         let fitted = MenuViewController.modeRowHeight(inRoomOf: room)

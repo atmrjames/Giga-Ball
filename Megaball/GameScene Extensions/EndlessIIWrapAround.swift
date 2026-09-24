@@ -79,6 +79,10 @@ extension GameScene {
             subject.position.x = subject.position.x > 0 ? -inside : inside
             body.velocity = arriving
             // Out one side, in the other, still travelling the same way
+            playMayhemSound("wrapAround", or: "portalJump")
+            // **The wrap is the portal-ish event, and until round 339 it was silent.** The
+            // sound was on the paddle's wall nudge instead, a few lines down, where it played
+            // in every mode the game has.
         }
     }
 
@@ -376,7 +380,16 @@ extension GameScene {
         guard overshoot > 0.5 else { return }
         paddleIsAgainstTheWall = true
         lightHaptic.impactOccurred(intensity: 0.7)
-        playMayhemSound("wrapAround", or: "portalJump")
+        playMayhemSound("paddleWall")
+        // **James, round 339: "portal jump sound effect is playing at random, even in game
+        // modes that don't have portals - it should only play when the ball goes through a
+        // portal brick, portal paddle, or wrap around."**
+        //
+        // This is the paddle being held against the edge of the field, which happens in every
+        // mode and several times a minute. It asked for "wrapAround", no such recording exists,
+        // and the fallback was the portal's - so the portal jump was the sound of a thumb
+        // pressing against the side of a Classic level. No fallback now: it is silent until a
+        // recording of its own arrives, which is the honest state for a sound nobody has made.
         // Round 200 asked for softer than a full light tap and round 202 found 0.4 too
         // light to feel at all - 0.7 is the split. The hysteresis is what actually fixed
         // the annoyance; the intensity just has to be present without being an event

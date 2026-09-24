@@ -60,6 +60,12 @@ final class MusicViewController: UIViewController, UITableViewDelegate, UITableV
 
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
+        // **Everything here is pinned to the safe area, not to the view** (round 339). The
+        // column every menu lays itself out in is applied as an `additionalSafeAreaInsets`, so
+        // a view pinned to the view's own edges never sees it: on a 1032-point iPad this
+        // screen's rows ran from 24 points to 1008, where the rest of the app holds a
+        // 460-point column. `limitMenuContentSize` was already being called; nothing was
+        // listening to it.
         view.applyMenuParallaxToContent()
         if let closeButton { alignCloseButtonWithReturnToGame(closeButton) }
         // In to the narrow position when the pause screen's play button is on screen behind
@@ -151,16 +157,16 @@ final class MusicViewController: UIViewController, UITableViewDelegate, UITableV
         NSLayoutConstraint.activate([
             title.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor,
                                        constant: 24),
-            title.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 24),
-            title.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -24),
+            title.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 24),
+            title.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -24),
 
             hint.topAnchor.constraint(equalTo: title.bottomAnchor, constant: 10),
-            hint.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 44),
-            hint.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -44),
+            hint.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 44),
+            hint.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -44),
 
             tableView.topAnchor.constraint(equalTo: hint.bottomAnchor, constant: 20),
-            tableView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            tableView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            tableView.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor),
+            tableView.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor),
             // **No inset of its own** (James, round 210: "make the cells the same size, shape,
             // width as other table views. They seem too narrow"). The card is drawn by
             // `applyGlass` inside the cell and already carries the margin every settings row
@@ -168,10 +174,10 @@ final class MusicViewController: UIViewController, UITableViewDelegate, UITableV
             tableView.bottomAnchor.constraint(equalTo: credit.topAnchor, constant: -12),
 
             credit.bottomAnchor.constraint(equalTo: close.topAnchor, constant: -18),
-            credit.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 24),
-            credit.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -24),
+            credit.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 24),
+            credit.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -24),
 
-            close.leadingAnchor.constraint(equalTo: view.leadingAnchor,
+            close.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor,
                                            constant: UIViewController.menuButtonWideInset),
             close.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor,
                                           constant: -25),

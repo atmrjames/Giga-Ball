@@ -784,7 +784,11 @@ class SplashViewController: UIViewController {
         // caught the detail line drawn into the score. Every other in-game screen scales its
         // own type for the screen it is on, and this is the same card drawn smaller rather
         // than a different one.
-        for label in [resumingLabel, modeLabel, detailLabel, scoreLabel, livesLabel] {
+        for label in [resumingLabel, modeLabel, detailLabel, livesLabel] {
+            // **Not the score.** It is two faces on one line, set as an attributed string, and
+            // assigning `font` to a label that has attributed text rewrites every run in it -
+            // so scaling it here gave the title and the number one size, which is the hierarchy
+            // that line exists to draw. Its own runs are scaled below.
             guard let label, let font = label.font else { continue }
             let key = ObjectIdentifier(label)
             let base = resumeBaseSize[key] ?? font.pointSize
@@ -792,13 +796,20 @@ class SplashViewController: UIViewController {
             label.font = font.withSize((base*scale).rounded())
         }
         if let attributed = scoreLabel.attributedText, attributed.length > 0 {
-            let scaled = NSMutableAttributedString(attributedString: attributed)
-            scaled.enumerateAttribute(.font, in: NSRange(location: 0, length: scaled.length)) {
+            var faces: [(NSRange, UIFont)] = []
+            attributed.enumerateAttribute(.font,
+                                          in: NSRange(location: 0, length: attributed.length)) {
                 value, range, _ in
-                guard let font = value as? UIFont else { return }
-                let key = font.fontName + "\(range.location)"
-                let base = resumeBaseAttributed[key] ?? font.pointSize
-                resumeBaseAttributed[key] = base
+                if let font = value as? UIFont { faces.append((range, font)) }
+            }
+            // Collected first, applied after. Mutating an attributed string while enumerating
+            // it is undefined, and what it actually did was give the score's two faces one
+            // size - which is the hierarchy this label exists to draw.
+
+            let scaled = NSMutableAttributedString(attributedString: attributed)
+            for (range, font) in faces {
+                let base = resumeBaseAttributed[range.location] ?? font.pointSize
+                resumeBaseAttributed[range.location] = base
                 scaled.addAttribute(.font, value: font.withSize((base*scale).rounded()),
                                     range: range)
             }
@@ -830,7 +841,7 @@ class SplashViewController: UIViewController {
 
     /// What the card's type was before any screen shrank it.
     private var resumeBaseSize: [ObjectIdentifier: CGFloat] = [:]
-    private var resumeBaseAttributed: [String: CGFloat] = [:]
+    private var resumeBaseAttributed: [Int: CGFloat] = [:]
 
     /// The badge, and which mode it is drawing.
     private weak var resumeBadgeView: UIImageView?

@@ -161,6 +161,26 @@ extension UIViewController {
 
     static let menuModeLogoSize: CGFloat = 190
 
+    /// What that logo shrinks to on a screen with no room for it.
+    ///
+    /// **James, round 339: "reduce the size of the game mode logo as needed to allow content
+    /// to fit better when the window is small - do this across other views as needed."** On a
+    /// 320 by 568 phone the daily's badge took the top third of the screen and the card under
+    /// it was clipped to its own icon: no mode name, no twists, and the buttons cut off at the
+    /// bottom. The badge is the least important thing on that screen and it was taking the
+    /// most room.
+    ///
+    /// Measured against the height a 402 by 874 phone has, and never grown: an iPad has plenty
+    /// of room and a 190-point badge is already the size it was drawn for.
+    static func menuModeLogoSize(forHeight height: CGFloat) -> CGFloat {
+        guard height > 0, height < menuModeLogoFullHeight else { return menuModeLogoSize }
+        let share = max(0.55, (height/menuModeLogoFullHeight*100).rounded()/100)
+        return (menuModeLogoSize*share).rounded()
+    }
+
+    /// The screen height the 190-point badge was drawn for.
+    static let menuModeLogoFullHeight: CGFloat = 874
+
     /// The mode's icon on the two screens the *game* shows: the level intro and the pause
     /// and game-over screen.
     ///
@@ -432,6 +452,12 @@ extension UIViewController {
     /// centre reads as a button that has been moved rather than placed.
     static let menuButtonWideInset: CGFloat = 24
 
+    /// The least air between two buttons in a row, before the row's own inset gives way.
+    ///
+    /// A number the row is allowed to shrink *to*, not one it aims for: on every screen wide
+    /// enough to honour its inset the spacing works out far larger than this.
+    static let menuButtonLeastGap: CGFloat = 16
+
     /// Puts a menu's icon above its title, and hands anything that hung from the icon down to
     /// the title instead.
     ///
@@ -564,7 +590,21 @@ extension UIViewController {
         // up the chain that decides whether the play button is there in the first place
         let target = hasLargeButton ? UIViewController.menuButtonRowInset
                                     : UIViewController.menuButtonWideInset
-        let inset = max(0, target - fromScreen)
+        let gapsWanted = CGFloat(max(sizes.count - 1, 1))
+        let leastItNeeds = sizes.reduce(0, +)
+            + gapsWanted*UIViewController.menuButtonLeastGap
+        let inset = max(0, min(target - fromScreen,
+                               (row.frame.width - leastItNeeds)/2))
+        // **And never more inset than the row has room for** (James, round 339, from an iPad
+        // with the window dragged narrow: "it's possible to resize the window to a point where
+        // the UI buttons at the bottom aren't symmetrical any more... it's also possible that
+        // the settings button disappears when the window is particularly narrow").
+        //
+        // The inset was a promise about where a thumb lands and nothing checked it against the
+        // width it was being taken out of. Below about 210 points there was no room left for
+        // two 50-point buttons and the gap between them, so the flow layout pushed the second
+        // one out of the visible row - it did not shrink or overlap, it was simply gone. The
+        // inset gives way first now, symmetrically, so the row always holds what is in it.
         // **Two arrangements, chosen by what is in the row** (James, round 169: "only views
         // with a big centre button should have the narrower position small buttons").
         //
@@ -655,8 +695,9 @@ extension UIViewController {
     ///   halved the content at every level down. Subtracting what is already there is what
     ///   makes this idempotent however deep the stack goes.
     static func menuContentInsets(available: CGSize,
-                                  inherited: UIEdgeInsets = .zero) -> UIEdgeInsets {
-        let tallest = min(available.height, menuMaximumHeight)
+                                  inherited: UIEdgeInsets = .zero,
+                                  widthOnly: Bool = false) -> UIEdgeInsets {
+        let tallest = widthOnly ? available.height : min(available.height, menuMaximumHeight)
         let vertical = max(0, (available.height - tallest)/2)
         // **A height ceiling as well, on James's word** (round 320: "the iPad UI width limit
         // looks good, but it also needs a height limit. to match similar to the largest
@@ -665,7 +706,11 @@ extension UIViewController {
         // were caps set by *shape*, which bit windows no taller than a phone. This one is an
         // absolute height, so nothing phone-sized is touched, and a slide-over never reaches
         // here anyway because `limitMenuContentSize` stops at a compact width
-        let widest = min(tallest*menuMaximumAspectRatio, menuMaximumWidth)
+        let widest = widthOnly ? menuMaximumWidth
+                               : min(tallest*menuMaximumAspectRatio, menuMaximumWidth)
+        // Width only, on a compact width: the shape cap is about a window that is too square
+        // for its content, which is an iPad's problem, and applying it to a tall narrow pane
+        // would squeeze a phone-shaped window for no reason
         let horizontal = max(0, (available.width - widest)/2)
         // Two ceilings, whichever is lower: a *shape* for windows that are merely too square,
         // and an absolute width for windows that are simply large. The ratio on its own leaves
@@ -741,16 +786,22 @@ extension UIViewController {
     func limitMenuContentSize() {
         keepReturnToGameButtonFrontmost()
         giveMenuListsBreathingRoom()
+        capMenuContentSize()
+    }
+
+    /// The size cap on its own, without the list padding or the button re-fronting.
+    ///
+    /// **Round 339.** The main menu needs the column - it was the one screen laying its rows
+    /// out across whatever window it was given - and it must not have the breathing room:
+    /// its table is a fixed set of mode rows sized to fill the space exactly, not a list that
+    /// scrolls, and 72 points of header and footer spacers turned a menu that fits into one
+    /// that does not.
+    func capMenuContentSize() {
         // Every menu screen calls this from viewDidLayoutSubviews, which makes it the one
         // place that runs on every layout of every screen - so it carries the return-to-game
         // button's re-fronting too. See keepReturnToGameButtonFrontmost for why it needs one
 
-        guard traitCollection.horizontalSizeClass == .regular else {
-            // Phones are already smaller than the limit in width, and capping their
-            // height only pushes a row below the fold. The limit is for iPad.
-            if additionalSafeAreaInsets != .zero { additionalSafeAreaInsets = .zero }
-            return
-        }
+        let regular = traitCollection.horizontalSizeClass == .regular
 
         let inherited = UIEdgeInsets(
             top: view.safeAreaInsets.top - additionalSafeAreaInsets.top,
@@ -758,7 +809,20 @@ extension UIViewController {
             bottom: view.safeAreaInsets.bottom - additionalSafeAreaInsets.bottom,
             right: view.safeAreaInsets.right - additionalSafeAreaInsets.right)
         let wanted = UIViewController.menuContentInsets(available: menuAvailableSize,
-                                                        inherited: inherited)
+                                                        inherited: inherited,
+                                                        widthOnly: regular == false)
+        // **The width cap applies at any width class; the height and shape caps only on an
+        // iPad** (James, round 339: "the cell views expand with the window until a point, then
+        // snap back to a set width once the window is wide enough. Can we just make this set
+        // width the maximum width of the cell views so there's no need for them to snap
+        // back?").
+        //
+        // The snap was the size class changing. A window narrower than an iPad's regular
+        // threshold is *compact*, this method stood down entirely, and the content filled it -
+        // so at 480 points the cells were 480 wide and at 520, where the window turns regular,
+        // they were suddenly 460. Nothing about the content wanted to be 480; it was simply
+        // that nobody was capping it. The width cap costs a phone nothing, because no phone is
+        // wider than 460 points, and it takes the step out.
 
         guard additionalSafeAreaInsets != wanted else { return }
         // Setting this triggers another layout pass, so assigning unconditionally would

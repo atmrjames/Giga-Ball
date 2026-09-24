@@ -2886,12 +2886,16 @@ final class TheAuraRidesOnTheBallTests: XCTestCase {
             scene.brickHeight = 20
             scene.ball.setScale(ballScale)
             scene.ball.position = CGPoint(x: 0, y: 300)
+
+            let radius = scene.ball.size.width/2/ballScale
+            let justOutside = radius*GameScene.endlessIIAuraReach[0] + 2
             let brick = SKSpriteNode(color: .white, size: CGSize(width: 40, height: 20))
             brick.name = BrickCategoryName
-            brick.position = CGPoint(x: 0, y: 322)
-            // The brick's underside is 12 points above the ball's centre. A plain ball's reach
-            // is its radius of 5 doubled, so 10 - just short; at 1.5x the radius is 7.5 and the
-            // reach is 15, which takes it
+            brick.position = CGPoint(x: 0, y: 300 + justOutside + 10)
+            // The brick's underside sits two points outside a *plain* ball's reach, measured
+            // off the reach itself rather than written down: round 339 widened the aura and
+            // this test's hard-coded 12 points quietly became an assertion about the old
+            // number rather than about the thing it is named for
             scene.addChild(brick)
             scene.endlessIICollectAura()
             scene.tickEndlessIIAura()

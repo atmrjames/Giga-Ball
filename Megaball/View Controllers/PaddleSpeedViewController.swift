@@ -159,6 +159,15 @@ final class PaddleSpeedViewController: UIViewController, MenuNavigable {
 
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
+        limitMenuContentSize()
+        // **And everything on this screen is pinned to the safe area, not to the view.** The
+        // column is applied as an `additionalSafeAreaInsets`, which is how every other screen
+        // here takes it - a view pinned to the *view's* own edges never sees it, which is why
+        // asking for the column alone changed nothing.
+        // **James, round 339, from an iPad: "the slider and close button go all the way to the
+        // screen edges, bring them in to a maximum width like the other views."** This screen
+        // never asked for the column the rest of the app lays itself out in, so on a 1194-point
+        // window the slider was a metre of track and the close button was in the far corner.
         view.applyMenuParallaxToContent()
         if let closeButton { alignCloseButtonWithReturnToGame(closeButton) }
         // In to the narrow position when the big play is here (round 176) - this screen is a
@@ -323,12 +332,12 @@ final class PaddleSpeedViewController: UIViewController, MenuNavigable {
         NSLayoutConstraint.activate([
             title.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor,
                                        constant: 24),
-            title.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 24),
-            title.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -24),
+            title.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 24),
+            title.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -24),
 
             hint.topAnchor.constraint(equalTo: title.bottomAnchor, constant: 10),
-            hint.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 44),
-            hint.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -44),
+            hint.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 44),
+            hint.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -44),
 
             field.topAnchor.constraint(equalTo: hint.bottomAnchor, constant: 12),
             field.centerXAnchor.constraint(equalTo: view.centerXAnchor),
@@ -349,18 +358,18 @@ final class PaddleSpeedViewController: UIViewController, MenuNavigable {
             sceneView.leadingAnchor.constraint(equalTo: field.leadingAnchor),
             sceneView.trailingAnchor.constraint(equalTo: field.trailingAnchor),
 
-            valueLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 44),
-            valueLabel.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -44),
+            valueLabel.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 44),
+            valueLabel.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -44),
             valueLabel.bottomAnchor.constraint(equalTo: slider.topAnchor, constant: -8),
 
             slider.bottomAnchor.constraint(equalTo: close.topAnchor, constant: -28),
-            slider.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 44),
-            slider.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -44),
+            slider.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor, constant: 44),
+            slider.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -44),
             // The slider sits *under* the field it controls (James, round 121), where the
             // thumb already is - reaching over the thing being judged to change it put a
             // hand across the only part of the screen worth looking at
 
-            close.leadingAnchor.constraint(equalTo: view.leadingAnchor,
+            close.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor,
                                           constant: UIViewController.menuButtonWideInset),
             close.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor,
                                           constant: -25),

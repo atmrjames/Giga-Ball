@@ -127,6 +127,15 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
     /// run's own numbers as though it were one of them.
     let leaderboardTitle = UILabel()
     /// The rules sit with the level they are the rules of; the title makes room for them.
+    /// The air between the lowest thing in the bottom group and the button row.
+    ///
+    /// **James, round 339: "make the gap between the home button at the bottom and the bottom
+    /// elements - game centre info label slightly larger."** Twelve points put the note against
+    /// the buttons; twenty-two gives it room to read as its own line rather than as a caption
+    /// on the row below it. The stats block's own clearance moves with it, so the two keep the
+    /// distance round 112 settled on between them.
+    static let bottomGroupClearance: CGFloat = 22
+
     /// How far under the line above it the twists sit.
     ///
     /// Ten until round 339, which is a frame's worth of clearance and not quite an eye's:
@@ -683,7 +692,8 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
         containterView.addSubview(signedOutLabel)
 
         let statsAboveTheButtons = resultLabel.bottomAnchor.constraint(
-            equalTo: buttonCollectionView.topAnchor, constant: -46)
+            equalTo: buttonCollectionView.topAnchor,
+            constant: -(46 + PauseMenuViewController.bottomGroupClearance - 12))
         statsAboveTheButtons.priority = .defaultHigh
         // The bottom of the lower group against the button row, at the gap round 112 settled
         // on. High rather than required: on a short screen the clearances above win and the
@@ -782,8 +792,9 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
             signedOutLabel.topAnchor.constraint(greaterThanOrEqualTo:
                                                     resultLabel.bottomAnchor,
                                                 constant: 14),
-            signedOutLabel.bottomAnchor.constraint(equalTo: buttonCollectionView.topAnchor,
-                                                   constant: -12),
+            signedOutLabel.bottomAnchor.constraint(
+                equalTo: buttonCollectionView.topAnchor,
+                constant: -PauseMenuViewController.bottomGroupClearance),
             signedOutLabel.topAnchor.constraint(greaterThanOrEqualTo:
                                                     runStatsLabel.bottomAnchor,
                                                 constant: 6),
@@ -1857,10 +1868,12 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
     private func markedWithTheStatsIcon(_ title: AttributedString) -> AttributedString {
         let font = UIFont.boldSystemFont(ofSize: 14)
         guard let icon = UIImage(named: "iconStats") else { return title }
-        let side = ceil(font.capHeight) + 2
+        let side = ceil(font.capHeight) + 5
         // A touch larger than the capitals beside it (James, round 334: "make the statistics
         // icon just a little bit larger, only slightly") - a drawn mark at exactly cap height
-        // reads smaller than the letters, because letters have stems and this has none
+        // reads smaller than the letters, because letters have stems and this has none.
+        // **Larger again in round 339**, asked for in the same words: two points over the caps
+        // was still reading as the smaller of the two things on that line.
         let drawn = UIGraphicsImageRenderer(size: CGSize(width: side, height: side)).image { _ in
             icon.withTintColor(#colorLiteral(red: 0.8235294118, green: 1, blue: 0, alpha: 1), renderingMode: .alwaysOriginal)
                 .draw(in: CGRect(x: 0, y: 0, width: side, height: side))
