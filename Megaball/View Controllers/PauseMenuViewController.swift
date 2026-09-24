@@ -103,6 +103,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
     private var livesUnderHighscore: NSLayoutConstraint!
     private var livesUnderScore: NSLayoutConstraint!
     private var livesUnderDailyTotal: NSLayoutConstraint!
+    private var gameCentreUnderTheStatsButton: NSLayoutConstraint!
     private var statsUnderTheResult: NSLayoutConstraint!
     private var statsWellUnderTheResult: NSLayoutConstraint!
     private weak var activePowerUpHUD: PausedPowerUpHUD?
@@ -401,11 +402,13 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
               let summary = InGameRecents.shared.runSummary else {
             runStatsLabel.isHidden = true
             moreStatsButton.isHidden = true
+            gameCentreUnderTheStatsButton.isActive = false
             statsUnderTheResult.isActive = false
             statsWellUnderTheResult.isActive = false
             return
         }
         moreStatsButton.isHidden = false
+        gameCentreUnderTheStatsButton.isActive = true
         showActivePowerUps()
 
         guard isDailyChallenge == false else {
@@ -700,8 +703,42 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
         // group simply sits where it fits, rather than the layout breaking a constraint it
         // cannot honour
 
+        let gameCentreStaysOnTheScreen = resultLabel.bottomAnchor.constraint(
+            lessThanOrEqualTo: buttonCollectionView.topAnchor,
+            constant: -PauseMenuViewController.bottomGroupClearance)
+        // **The leaderboard line may be pushed up, never off** (James, round 340: "game centre
+        // info is missing from iPhone SE"). Everything that positions this block was a minimum
+        // measured downwards - ten below the Statistics button, eight below the stats list -
+        // and the only thing holding it *up* was `statsAboveTheButtons`, which is wanted rather
+        // than required so that a short screen can break it. On a 375 by 667 phone that is
+        // exactly what happens: the minimums win, the block is laid out below the button row,
+        // and a player sees nothing. This is the other end of it, and it is required, so the
+        // pressure now comes off the gaps above instead.
+
+        gameCentreUnderTheStatsButton = leaderboardTitle.topAnchor.constraint(
+            greaterThanOrEqualTo: moreStatsButton.bottomAnchor, constant: 10)
+        gameCentreUnderTheStatsButton.priority = UILayoutPriority(999)
+        // A point under required, so that on a screen too short to honour both this and the
+        // ceiling above, it is the gap that gives and not the block's place on the screen
+        // A point under required, so that on a screen too short to honour both this and the
+        // ceiling above, it is the gap that gives and not the block's place on the screen
+        // **The Game Center block is always below the Statistics button, stats list or no**
+        // (James, round 340, with a screenshot of a finished daily: "overlap between statistics
+        // and game centre on game over of daily challenge"). A daily hides the stats *list* -
+        // round 241 put all of it behind the button instead - and the pair below, which is what
+        // held the two blocks apart, went with it. The button did not: it stayed on screen with
+        // nothing at all saying where it sat relative to the leaderboard line, and the two were
+        // drawn on top of one another.
+        //
+        // Switched on with the button rather than left active, because a hidden view still
+        // holds its place and this would otherwise keep a button's height of air open under a
+        // button that is not there.
+
         statsUnderTheResult = leaderboardTitle.topAnchor.constraint(
             greaterThanOrEqualTo: runStatsLabel.bottomAnchor, constant: 8)
+        statsUnderTheResult.priority = UILayoutPriority(999)
+        // The same point under required, and for the same reason
+        // The same point under required, and for the same reason
         statsWellUnderTheResult = leaderboardTitle.topAnchor.constraint(
             greaterThanOrEqualTo: runStatsLabel.bottomAnchor, constant: 20)
         statsWellUnderTheResult.priority = .defaultHigh
@@ -780,6 +817,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
             dailyTotalLabel.topAnchor.constraint(equalTo: dailyTotalTitle.bottomAnchor),
 
             statsAboveTheButtons,
+            gameCentreStaysOnTheScreen,
             leaderboardTitle.centerXAnchor.constraint(equalTo: containterView.centerXAnchor),
             resultLabel.topAnchor.constraint(equalTo: leaderboardTitle.bottomAnchor,
                                              constant: 2),
@@ -1050,6 +1088,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
     @objc func dailyTwistsTapped() {
         guard let challenge = DailyChallengeSession.shared.active else { return }
         if hapticsSetting { interfaceHaptic.impactOccurred() }
+        InterfaceSound.click()
 
         let body = DailyTwist.explainer(for: challenge.twists)
         // Built by `DailyTwist.explainer` since round 308, because the briefing card now shows
@@ -1392,6 +1431,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
                     if self.sender == "Pause" {
                         if self.hapticsSetting {
                             self.interfaceHaptic.impactOccurred()
+                            InterfaceSound.click()
                         }
                         cell.setButton("ButtonInfoHighlighted.png")
                     } else if self.isDailyChallenge {
@@ -1399,12 +1439,14 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
                     } else {
                         if self.hapticsSetting {
                             self.interfaceHaptic.impactOccurred()
+                            InterfaceSound.click()
                         }
                         cell.setButton("ButtonRestartHighlighted.png")
                     }
                 case 1:
                     if self.hapticsSetting {
                         self.interfaceHaptic.impactOccurred()
+                        InterfaceSound.click()
                     }
                     cell.setButton(self.sender == "Pause"
                                    ? "ButtonPlayHighlighted.png" : "ButtonHomeHighlighted.png")
@@ -1412,11 +1454,13 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
                     if self.sender == "Pause" {
                         if self.hapticsSetting {
                             self.interfaceHaptic.impactOccurred()
+                            InterfaceSound.click()
                         }
                         cell.setButton("ButtonSettingsHighlighted.png")
                     } else if self.dailyGameOver {
                         if self.hapticsSetting {
                             self.interfaceHaptic.impactOccurred()
+                            InterfaceSound.click()
                         }
                         cell.setButton("ButtonLeaderboardHighlighted.png")
                     } else {
@@ -1807,6 +1851,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
     @IBAction func homeButton(_ sender: Any) {
         if hapticsSetting {
             interfaceHaptic.impactOccurred()
+            InterfaceSound.click()
         }
         if self.sender == "Pause" {
             GigaBallConfirm.mainMenu.show(on: self, restart: offersRestartInTheConfirm
@@ -1823,6 +1868,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
     func openInformation() {
         if hapticsSetting {
             interfaceHaptic.impactOccurred()
+            InterfaceSound.click()
         }
         hideAnimate()
 
@@ -1894,6 +1940,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
     func openRunStats() {
         if hapticsSetting {
             interfaceHaptic.impactOccurred()
+            InterfaceSound.click()
         }
         hideAnimate()
         let statsView = RunStatsViewController()
@@ -1943,6 +1990,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
     @objc func gameCentreTapped() {
         guard GKLocalPlayer.local.isAuthenticated else { return }
         if hapticsSetting { interfaceHaptic.impactOccurred() }
+        InterfaceSound.click()
         let boards = GKGameCenterViewController(state: .leaderboards)
         boards.gameCenterDelegate = self
         view.window?.rootViewController?.present(boards, animated: true)
@@ -1953,6 +2001,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
         guard GKLocalPlayer.local.isAuthenticated else { return }
         if hapticsSetting {
             interfaceHaptic.impactOccurred()
+            InterfaceSound.click()
         }
         let boards = GKGameCenterViewController(leaderboardID: DailyChallengeBoards.daily,
                                                 playerScope: .global, timeScope: .allTime)
@@ -1996,6 +2045,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
     /// What that power-up does, in the app's own pop-up.
     private func explainPowerUp(_ index: Int) {
         if hapticsSetting { interfaceHaptic.impactOccurred() }
+        InterfaceSound.click()
         let setup = LevelPackSetup()
         guard setup.powerUpNameArray.indices.contains(index) else { return }
 
@@ -2186,6 +2236,7 @@ extension PauseMenuViewController: GKGameCenterControllerDelegate {
     func gameCenterViewControllerDidFinish(_ gameCenterViewController: GKGameCenterViewController) {
         gameCenterViewController.dismiss(animated: true)
         if hapticsSetting { interfaceHaptic.impactOccurred() }
+        InterfaceSound.click()
     }
 }
 

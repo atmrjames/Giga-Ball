@@ -1329,13 +1329,51 @@ final class DailyLayoutTwistTests: XCTestCase {
 
         scene.dailyTimeTrialRemaining = 89.2
         scene.showDailyClock()
-        XCTAssertEqual(scene.dailyClockLabel?.text, "90",
+        XCTAssertEqual(scene.dailyClockLabel?.text, "90s",
                        "rounded up - the player is not told 89 while the 90th second runs")
+        // **With its unit** (James, round 340: "the countdown timer should be to the left of
+        // the multiplier, and have an 's' after the number"). It sits beside a multiplier
+        // wearing its own "x" now, and a bare figure in that company reads as a second score.
 
         scene.dailyTimeTrialRemaining = 9.4
         scene.showDailyClock()
-        XCTAssertEqual(scene.dailyClockLabel?.text, "10")
+        XCTAssertEqual(scene.dailyClockLabel?.text, "10s")
         XCTAssertEqual(scene.dailyClockLabel?.fontColor, .red, "urgent for the last ten")
+    }
+
+    /// And it sits on the multiplier's row, to its left, clear of the number beside it.
+    ///
+    /// **James, round 340: "in the time trial, the countdown timer should be to the left of
+    /// the multiplier."** The multiplier is drawn as a strip of placed characters rather than
+    /// as the label's own text, so its frame is empty and a neighbour cannot read its width off
+    /// it - which is the part of this worth pinning: the clock asks `FixedWidthDigits` the same
+    /// question the strip does, and a change to either has to keep them agreeing.
+    func testTheClockSitsToTheLeftOfTheMultiplier() throws {
+        let scene = timeTrialScene()
+        defer { DailyChallengeSession.shared.active = nil }
+
+        scene.multiplierLabel = SKLabelNode(fontNamed: "FugazOne-Regular")
+        scene.multiplierLabel.fontSize = 20
+        scene.multiplierLabel.position = CGPoint(x: 120, y: 260)
+        scene.multiplierShown = "x1.0"
+        scene.dailyClockLabel = SKLabelNode(fontNamed: "FugazOne-Regular")
+        scene.dailyTimeTrialRemaining = 90
+        scene.showDailyClock()
+
+        let clock = try XCTUnwrap(scene.dailyClockLabel)
+        XCTAssertEqual(clock.position.y, scene.multiplierLabel.position.y,
+                       "the clock is on the multiplier's row")
+
+        let font = try XCTUnwrap(UIFont(name: "FugazOne-Regular", size: 20))
+        let multiplier = FixedWidthDigits.layout("x1.0", font: font).width
+        XCTAssertLessThanOrEqual(clock.position.x,
+                                 scene.multiplierLabel.position.x - multiplier,
+                                 "the clock's right edge is drawn over the multiplier: it is at "
+                                 + "\(clock.position.x) and the multiplier's left edge is at "
+                                 + "\(scene.multiplierLabel.position.x - multiplier)")
+        XCTAssertEqual(clock.horizontalAlignmentMode, .right,
+                       "the clock grows leftwards, away from the multiplier, as the seconds "
+                       + "gain a digit")
     }
 
     func testTheClockRidesInTheSaveAndComesBack() throws {
@@ -2290,10 +2328,50 @@ final class DailyAlwaysOnTests: XCTestCase {
 
         XCTAssertEqual(scene.powerUpProbArray[standing], 0,
                        "catching the one already on is a drop that does nothing")
-        for rival in GameScene.endlessIIExclusiveIndicesEnded(byCollecting: standing) {
+        for rival in GameScene.endlessIIExclusiveIndicesEnded(byCollecting: standing)
+            + GameScene.classicIndicesEnded(byCollecting: standing) {
             XCTAssertEqual(scene.powerUpProbArray[rival], 0,
                            "\(LevelPackSetup().powerUpNameArray[rival]) would end the day's twist")
         }
+    }
+
+    /// And on a Classic day, where the only rivals are the tray's own pairs.
+    ///
+    /// **James, round 340: an Always On day "shouldn't show cancelling power-ups."** Mayhem's
+    /// exclusions were asked and the original twenty-eight were not, so a day standing on
+    /// Expand Paddle went on dropping Shrink Paddle - and the two share a tray slot, so
+    /// catching it ended the day's twist.
+    func testAClassicStandingPowerUpSilencesItsOwnTraySlot() {
+        let scene = scene(.classic)
+        guard let standing = scene.dailyAlwaysOnPowerUp else { return XCTFail("no draw") }
+        scene.powerUpProbArray = Array(repeating: 5,
+                                       count: LevelPackSetup().powerUpNameArray.count)
+        scene.applyDailyEconomyTwists()
+
+        XCTAssertEqual(scene.powerUpProbArray[standing], 0)
+        let slot = GameScene.classicIndicesEnded(byCollecting: standing)
+        for rival in slot {
+            XCTAssertEqual(scene.powerUpProbArray[rival], 0,
+                           "\(LevelPackSetup().powerUpNameArray[rival]) shares a tray slot with "
+                           + "\(LevelPackSetup().powerUpNameArray[standing]), so catching it "
+                           + "would end the day's twist")
+        }
+    }
+
+    /// The families are what the tray means by a slot, read off the one list.
+    func testEveryTraySlotIsACancellingFamily() {
+        let names = LevelPackSetup().powerUpNameArray
+        for family in GameScene.trayPowerUpFamilies {
+            for index in family {
+                XCTAssertTrue(names.indices.contains(index),
+                              "the tray families name power-up \(index), which does not exist")
+                XCTAssertEqual(Set(GameScene.classicIndicesEnded(byCollecting: index)),
+                               Set(family.filter { $0 != index }),
+                               "every member of a slot ends every other member")
+            }
+        }
+        XCTAssertTrue(GameScene.classicIndicesEnded(byCollecting: 0).isEmpty,
+                      "Extra Ball has no tray slot and so cancels nothing")
     }
 
     /// The bridge from named power-ups to indices finds them, which is the half that would
@@ -2499,8 +2577,13 @@ final class TwistNamesMatchTheWorkbookTests: XCTestCase {
         XCTAssertFalse(GameScene.dailyLifeIsSpent(onTimeTrial: true))
         XCTAssertTrue(GameScene.dailyLifeIsSpent(onTimeTrial: false),
                       "and every other day still spends one")
-        XCTAssertTrue(DailyTwist.timeTrial.blurb.lowercased().contains("unlimited lives"),
+        XCTAssertTrue(DailyTwist.timeTrial.blurb.lowercased().contains("unlimited balls"),
                       "a player has to be told, or they will play it as if lives mattered")
+        // **Balls, not lives** (James, round 340: "in the time trial, the unlimited lives
+        // should say unlimited balls"). The workbook's column says lives and every other
+        // surface in the game says balls - the rack, the line under it, the other twists in
+        // this very list ("Only one ball is provided", "Two extra balls are provided"). The
+        // fact is the workbook's; the noun is the game's.
         // **The workbook's words, not the game's** (round 310). The blurb used to say "you
         // won't lose the ball", which is the same fact in the game's own voice, and James asked
         // for his descriptions verbatim: "for the twist descriptions, use the descriptions I
@@ -2795,6 +2878,46 @@ final class DailyLayoutFlipTests: XCTestCase {
 
         XCTAssertNil(DailyTwist.presented(nil, under: [.mirrored]),
                      "a level with no picture stays a level with no picture")
+    }
+
+    /// And it is drained of colour on the day the run will be.
+    ///
+    /// **James, round 340: the level preview on a Monochromatic day was in full colour.** Same
+    /// objection as round 300's, one twist along: the card is where a player decides what they
+    /// are walking into, and a colour picture of a game about to arrive in grey tells them the
+    /// wrong thing about it.
+    ///
+    /// Checked by pixel. A filter that is asked for and never applied looks exactly like one
+    /// that is, from the outside.
+    func testTheCardsPictureIsDrainedOnAMonochromeDay() throws {
+        let red = UIGraphicsImageRenderer(size: CGSize(width: 4, height: 4)).image { context in
+            UIColor.red.setFill()
+            context.fill(CGRect(x: 0, y: 0, width: 4, height: 4))
+        }
+
+        let drained = try XCTUnwrap(DailyTwist.presented(red, under: [.monochromatic]))
+        let (r, g, b) = try middlePixel(of: drained)
+        XCTAssertEqual(r, g, accuracy: 2, "red and green still differ, so the colour is still "
+                       + "there: the preview is not the picture the run will be")
+        XCTAssertEqual(g, b, accuracy: 2, "green and blue still differ, and grey has none")
+
+        let (cr, cg, _) = try middlePixel(of: try XCTUnwrap(DailyTwist.presented(red, under: [])))
+        XCTAssertGreaterThan(cr - cg, 50, "and an ordinary day still shows the level in colour")
+    }
+
+    /// The colour in the middle of a picture, as three channels.
+    private func middlePixel(of image: UIImage) throws -> (CGFloat, CGFloat, CGFloat) {
+        let bitmap = try XCTUnwrap(image.cgImage)
+        var pixel: [UInt8] = [0, 0, 0, 0]
+        let context = try XCTUnwrap(CGContext(
+            data: &pixel, width: 1, height: 1, bitsPerComponent: 8, bytesPerRow: 4,
+            space: CGColorSpaceCreateDeviceRGB(),
+            bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue))
+        context.draw(bitmap, in: CGRect(x: 0, y: 0, width: 1, height: 1))
+        return (CGFloat(pixel[0]), CGFloat(pixel[1]), CGFloat(pixel[2]))
+        // Drawn into a one-pixel context rather than read out of the bitmap's own buffer: the
+        // filtered image comes back in whatever colour space Core Image chose, and this asks
+        // the question in the one space the answer means anything in
     }
 
     /// The card and the scene must read the same twist. Both go through `layoutFlip(in:)`, so

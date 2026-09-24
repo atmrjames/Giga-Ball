@@ -2395,6 +2395,46 @@ What it does not yet show is Endless Mayhem's turn-based distinction; worth a lo
 Tap to skip the game-over height tally is **built** — the gesture is on the pause menu and does
 not cancel touches, so every button on the screen keeps working.
 
+**Round 340, from James's Five Screens review, menu notes and play-test list.** Built this
+round: the resume card's score heading (it was drawn at 35 points over a 30-point number, and
+the reason is worth keeping - `UILabel.attributedText` is never nil, so the pass that remembers
+each run's natural size was reading the storyboard's plain text before the card's own score line
+had been built, and filing the storyboard's face as the heading's); the iPad's overlapping badge
+and its missing Level Score column, both the same fault, which is that a storyboard installs a
+size-class variant of a constraint when the trait collection arrives and both screens had swept
+the storyboard's ties away once, at build time, before that happened; the daily's twists centred
+the way the Daily Challenge menu centres them, by paragraph rather than by measuring, because a
+measured indent cannot hold on a screen whose label shrinks its own font; the between-levels
+numbers in the game's own face; the level intro's zoom cut from 1.15 to 1.08 with more air under
+the wordmark; the Time Trial clock beside the multiplier with an "s" on it, and "unlimited balls"
+rather than "unlimited lives"; the music screen's ticks at the card's edge; the four new sounds;
+and an Always On day no longer dropping the power-up that would cancel the one standing, in
+Classic as well as Mayhem.
+
+Two things this round found rather than fixed, both worth writing down:
+
+- **320 by 568 is not an iPhone SE, and has not been one since the deployment target became
+  iOS 17.** The original SE tops out at iOS 15. The smallest phone that can run this app is the
+  SE 2nd and 3rd generation at 375 by 667, and several screens that "failed on the SE" in the
+  audits were failing on a shape no player has. The galleries and audits now photograph
+  375 by 667 under that name and keep 320 by 568 under its real one, which is
+  `SceneDelegate.smallestWindow` - the floor a player may pull an iPad or Mac window down to.
+  Whether that floor should be raised is James's call and is not a tidy-up: it decides how small
+  the game may be made, and raising it takes something away from somebody.
+- **The gallery had been photographing the launch animation instead of the main menu.**
+  `MenuViewController` adds a `SplashViewController` over itself on first launch, and the
+  harness rendered what was in front. Six pictures of a logo, every round.
+
+Open from round 340:
+
+| Item | What is known |
+|---|---|
+| Always On "does not appear to be applied" | The mechanism reads correctly and is tested: the draw picks a lasting power-up, `tickDailyAlwaysOn` re-collects it whenever it stops, and the pause screen agrees it is running. Nothing found by reading. Needs the date key and mode of a day where James saw it do nothing, which fixes the draw exactly |
+| Spinning indestructible and retro bricks and their alternative orientation art | The cross-fade for plain spinners was built in round 332 and is running. The note may be that it fades into the wrong picture or that the change is still visible as a change; needs a sentence saying which |
+| A themed level preview on the daily card | The monochrome half is built: the card's picture is drained through the same `CIPhotoEffectMono` the scene uses. The theme half is not a filter. A level preview is a drawn asset per level in the Classic dress, and showing a Retro day's level in Retro means rendering the level from its brick layout with the theme's textures, which is a piece of work rather than an afternoon |
+| Game Center missing on the paused screen | Could not be reproduced: a mid-run pause hides the leaderboard line on every device by design (`updateResultLine` stands down when `sender == "Pause"`), so if the screenshot was a pause rather than a game over, nothing is wrong. The block has been given a required ceiling against the button row regardless, since every other constraint placing it measured downwards and only a breakable one held it up |
+| The paddle-speed and background previews on an iPad | The preview is a one-to-one window onto the play area, so on an iPad it is 660 points wide while the screen's own furniture is in the 460-point column. That is the inconsistency behind both "slider and close too near the edges" and "preview clipping"; the fix is a decision about which of the two is right rather than a bug |
+
 **Backlogged**
 
 | Item | Blocked on |

@@ -404,6 +404,7 @@ final class PaddleSpeedViewController: UIViewController, MenuNavigable {
 
     @objc private func closeTapped() {
         if hapticsSetting { interfaceHaptic.impactOccurred() }
+        InterfaceSound.click()
         menuNavigationGoBack()
     }
 

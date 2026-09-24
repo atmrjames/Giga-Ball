@@ -1082,7 +1082,7 @@ extension GameScene {
         brick.run(.sequence([.scale(to: 1.15, duration: 0.06),
                              .scale(to: 1, duration: 0.1)]))
         if hapticsSetting { heavyHaptic.impactOccurred() }
-        playMayhemSound("brickLocked")
+        playMayhemSound("fixedBrick")
         return true
     }
 

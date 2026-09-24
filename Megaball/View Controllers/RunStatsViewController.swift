@@ -259,6 +259,7 @@ class RunStatsViewController: UIViewController, UITableViewDataSource, UITableVi
 
     @objc private func closeTapped() {
         if hapticsSetting { interfaceHaptic.impactOccurred() }
+        InterfaceSound.click()
         removeAnimate()
         NotificationCenter.default.post(name: .returnPauseNotification, object: nil)
         // The game-over screen underneath comes back the way it does from settings

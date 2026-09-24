@@ -252,7 +252,7 @@ enum DailyTwist: String, CaseIterable, Codable {
     var blurb: String {
         switch self {
         case .oneLife: return "Only one ball is provided"
-        case .loaded: return "Five lives. Spend them well."
+        case .loaded: return "Five balls. Spend them well."
         case .suddenDeath: return "Any ball lost ends the run - every ball, every mode."
         case .spareBalls: return "Two extra balls are provided"
         case .noPowerUps: return "Just the paddle, the ball and the bricks"
@@ -265,7 +265,7 @@ enum DailyTwist: String, CaseIterable, Codable {
         case .upsideDown: return "The level is presented upside down"
         case .brickSwap: return "Brick types are swapped around"
         case .noPausing: return "The pause button is disabled"
-        case .timeTrial: return "There’s only 90s available but unlimited lives"
+        case .timeTrial: return "There’s only 90s available but unlimited balls"
         case .mayhemBricks: return "Brick variety is dialled up"
         case .monochromatic: return "All colour is drained from the game"
         case .dailyTheme: return "One theme is applied"

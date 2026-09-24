@@ -268,6 +268,7 @@ class PackSelectViewController: UIViewController, UICollectionViewDelegate, UICo
     /// Opens the pack's list of levels - what the whole cell used to do.
     private func openLevelList(for pack: Int) {
         if hapticsSetting { interfaceHaptic.impactOccurred() }
+        InterfaceSound.click()
         hideAnimate()
         moveToLevelSelector(packNumber: pack,
                             numberOfLevels: LevelPackSetup().numberOfLevels[pack],
@@ -278,6 +279,7 @@ class PackSelectViewController: UIViewController, UICollectionViewDelegate, UICo
     /// used to carry, now a badge in the corner of the square.
     private func play(pack: Int) {
         if hapticsSetting { interfaceHaptic.impactOccurred() }
+        InterfaceSound.click()
         MenuViewController().clearSavedGame()
         moveToGame(selectedLevel: LevelPackSetup().startLevelNumber[pack],
                    numberOfLevels: LevelPackSetup().numberOfLevels[pack],
@@ -376,6 +378,7 @@ class PackSelectViewController: UIViewController, UICollectionViewDelegate, UICo
             return
         }
         if hapticsSetting { interfaceHaptic.impactOccurred() }
+        InterfaceSound.click()
         (collectionView.cellForItem(at: indexPath) as? PackGridCell)?.setPressed(true)
     }
 
@@ -478,6 +481,7 @@ class PackSelectViewController: UIViewController, UICollectionViewDelegate, UICo
 
     func showGameCenterLeaderboards() {
         if hapticsSetting { interfaceHaptic.impactOccurred() }
+        InterfaceSound.click()
         GameCenterHandler().gameCenterSave()
         // Standing bests go up first, the same as every other leaderboard button
         let boards = GKGameCenterViewController(state: .leaderboards)
@@ -489,6 +493,7 @@ class PackSelectViewController: UIViewController, UICollectionViewDelegate, UICo
         gameCenterViewController.dismiss(animated: true, completion: nil)
         if hapticsSetting {
             interfaceHaptic.impactOccurred()
+            InterfaceSound.click()
         }
     }
 
@@ -500,6 +505,7 @@ class PackSelectViewController: UIViewController, UICollectionViewDelegate, UICo
                 case 0:
                     if self.hapticsSetting {
                         self.interfaceHaptic.impactOccurred()
+                        InterfaceSound.click()
                     }
                     cell.setPressedArtwork(UIImage(named:"ButtonCloseHighlighted.png"))
                 case 1:
@@ -508,6 +514,7 @@ class PackSelectViewController: UIViewController, UICollectionViewDelegate, UICo
                     if self.gameCenterSetting {
                         if self.hapticsSetting {
                             self.interfaceHaptic.impactOccurred()
+                            InterfaceSound.click()
                         }
                         cell.setButton("ButtonLeaderboardHighlighted.png")
                     } else {

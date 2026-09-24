@@ -287,9 +287,15 @@ extension GameScene {
 
         if let standing = dailyAlwaysOnPowerUp {
             powerUpProbArray[standing] = 0
-            for other in GameScene.endlessIIExclusiveIndicesEnded(byCollecting: standing) {
+            for other in GameScene.endlessIIExclusiveIndicesEnded(byCollecting: standing)
+                + GameScene.classicIndicesEnded(byCollecting: standing) {
                 if powerUpProbArray.indices.contains(other) { powerUpProbArray[other] = 0 }
             }
+            // **Both halves of the game** (James, round 340: an Always On day "shouldn't show
+            // cancelling power-ups"). Mayhem's exclusions were asked and the original
+            // twenty-eight were not, so a Classic day standing on Expand Paddle went on
+            // dropping Shrink Paddle - and the tray has only one slot for the pair, so catching
+            // it ended the day's twist. The tray's own families are that answer.
             // **Neither the standing power-up nor anything that would end it** (the workbook's
             // own disallowed list: "anything that contradicts the always on power-up / the
             // always on power-up itself"). Catching the one that is already on is a drop that
@@ -582,27 +588,52 @@ extension GameScene {
     /// be stood up in a test and this is the part worth pinning.
     static func dailyLifeIsSpent(onTimeTrial timeTrial: Bool) -> Bool { timeTrial == false }
 
-    /// Builds the countdown into the HUD: centred, just below the power-up tray.
+    /// Builds the countdown into the HUD, on the multiplier's row and to its left.
+    ///
+    /// **James, round 340: "in the time trial, the countdown timer should be to the left of
+    /// the multiplier, and have an 's' after the number."** It was centred under the power-up
+    /// tray, which put the one number that is counting *down* in the middle of the field on
+    /// its own, away from the two that count up. The HUD's numbers belong together: the score,
+    /// the multiplier under it, and now the clock beside the multiplier.
     ///
     /// **Not centre-top beside the pause button**, which was the first try - that spot reads
     /// as free in the scene file and is exactly where the Dynamic Island sits on the device.
     /// It is the same lesson the old mode icon learned (its removal comment says "directly
     /// under the notch"), and the first screenshot of a Time Trial run showed a clock that
-    /// was there and invisible. Below the tray is real screen on every device, and a HUD
-    /// label floating over the field's top rows is what every HUD label already does.
+    /// was there and invisible.
     func setupDailyClock() {
         guard dailyTimeTrial, dailyClockLabel == nil else { return }
-        let clock = SKLabelNode(fontNamed: scoreLabel.fontName)
-        clock.fontSize = scoreLabel.fontSize
+        let clock = SKLabelNode(fontNamed: multiplierLabel.fontName)
+        clock.fontSize = multiplierLabel.fontSize
         clock.fontColor = scoreLabel.fontColor
-        clock.verticalAlignmentMode = .top
-        clock.position = CGPoint(
-            x: 0,
-            y: powerUpTray.position.y - powerUpTray.size.height/2 - labelSpacing/2)
         clock.zPosition = 10
         addChild(clock)
         dailyClockLabel = clock
+        placeTheDailyClock()
         showDailyClock()
+    }
+
+    /// Puts the clock a fixed gap to the left of the multiplier, whatever the multiplier says.
+    ///
+    /// The multiplier is drawn as a strip of placed characters rather than as the label's own
+    /// text, so the label's frame says nothing about how wide it is. `FixedWidthDigits` is
+    /// what places those characters, and asking it the same question gives the width actually
+    /// drawn - which is the only way a label to the left of it can know where its right edge
+    /// belongs.
+    func placeTheDailyClock() {
+        guard let clock = dailyClockLabel else { return }
+        clock.horizontalAlignmentMode = .right
+        clock.verticalAlignmentMode = multiplierLabel.verticalAlignmentMode
+        // Set here rather than where the label is built, because the geometry below only means
+        // anything if the clock grows leftwards: its right edge is what is being placed
+        let drawn = UIFont(name: multiplierLabel.fontName ?? "", size: multiplierLabel.fontSize)
+            .map { FixedWidthDigits.layout(multiplierShown.isEmpty ? "x1.0" : multiplierShown,
+                                           font: $0).width } ?? 0
+        clock.position = CGPoint(x: multiplierLabel.position.x - drawn - labelSpacing*2,
+                                 y: multiplierLabel.position.y)
+        // Twice the label spacing, which is the gap the HUD keeps between the pause button and
+        // the score on the row above: near enough to read as one row, far enough that a
+        // two-figure clock and a rising multiplier never touch
     }
 
     /// Runs the whistle's clock. From `update`, every frame, in every mode.
@@ -640,11 +671,18 @@ extension GameScene {
     }
 
     /// Says what is left, in whole seconds, turning urgent for the last ten.
+    ///
+    /// With its unit on it (James, round 340: "have an 's' after the number"). The number sits
+    /// beside a multiplier that wears its own "x", and a bare figure in that company reads as
+    /// a second score.
     func showDailyClock() {
         guard let clock = dailyClockLabel else { return }
         let seconds = Int(dailyTimeTrialRemaining.rounded(.up))
-        clock.text = "\(seconds)"
+        clock.text = "\(seconds)s"
         clock.fontColor = seconds <= 10 ? .red : scoreLabel.fontColor
+        placeTheDailyClock()
+        // Placed again on every tick, because the multiplier beside it changes width when it
+        // climbs past x10 and the clock's own right edge is measured from it
     }
 
     /// How much more often a brick takes a style on a Extra Mayhem day.

@@ -191,6 +191,7 @@ class BackgroundSelectViewController: UIViewController, UICollectionViewDelegate
 
     @objc private func tapped() {
         if hapticsSetting { interfaceHaptic.impactOccurred() }
+        InterfaceSound.click()
         close()
     }
 
@@ -306,6 +307,7 @@ class BackgroundSelectViewController: UIViewController, UICollectionViewDelegate
         // the next level
 
         if hapticsSetting { interfaceHaptic.impactOccurred() }
+        InterfaceSound.click()
         updateLabels()
     }
 
@@ -349,6 +351,7 @@ class BackgroundSelectViewController: UIViewController, UICollectionViewDelegate
     func collectionView(_ collectionView: UICollectionView, didHighlightItemAt indexPath: IndexPath) {
         if hapticsSetting {
             interfaceHaptic.impactOccurred()
+            InterfaceSound.click()
         }
         if let cell = backButtonCollectionView.cellForItem(at: indexPath) as? MainMenuCollectionViewCell {
             UIView.animate(withDuration: 0.1) {

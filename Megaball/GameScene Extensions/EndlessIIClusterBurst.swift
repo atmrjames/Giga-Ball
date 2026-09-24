@@ -39,6 +39,12 @@ extension GameScene {
     func endlessIIReleaseCluster() {
         guard gameMode == .endlessII else { return }
 
+        playMayhemSound("clusterRelease")
+        // **James, round 340: "cluster release to be played when a cluster power-up is
+        // collected and all the balls are released."** Once for the burst rather than once per
+        // pellet: twelve copies of one recording started in the same frame is the comb
+        // filtering round 334 chased, and `playOnce` would swallow eleven of them anyway.
+
         let speed = ballSpeedLimit > 0 ? ballSpeedLimit : 300
         // The live scene always has a limit by the time anything can be collected; the
         // fallback is for a burst released before the ball's speed is set, which must still

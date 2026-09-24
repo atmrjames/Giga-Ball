@@ -205,17 +205,20 @@ class LevelStatsViewController: UIViewController, UICollectionViewDelegate, UICo
                 case 0:
                     if self.hapticsSetting {
                         self.interfaceHaptic.impactOccurred()
+                        InterfaceSound.click()
                     }
                     cell.setPressedArtwork(UIImage(named:"ButtonCloseHighlighted"))
                 case 1:
                     if self.hapticsSetting {
                         self.interfaceHaptic.impactOccurred()
+                        InterfaceSound.click()
                     }
                     cell.setButton("ButtonPlayHighlighted")
                 case 2:
                     if self.gameCenterSetting && self.packNumber == 1 {
                         if self.hapticsSetting {
                             self.interfaceHaptic.impactOccurred()
+                            InterfaceSound.click()
                         }
                         cell.setButton("ButtonLeaderboardHighlighted")
                     } else {
@@ -649,6 +652,7 @@ class LevelStatsViewController: UIViewController, UICollectionViewDelegate, UICo
         runHistorySortButton?.setTitle(runHistorySortsByHeight ? "HEIGHT ▾" : "DATE ▾",
                                        for: .normal)
         if hapticsSetting { interfaceHaptic.impactOccurred() }
+        InterfaceSound.click()
         runHistoryTable?.reloadData()
     }
 
@@ -745,6 +749,7 @@ class LevelStatsViewController: UIViewController, UICollectionViewDelegate, UICo
         gameCenterViewController.dismiss(animated: true, completion: nil)
         if hapticsSetting {
             interfaceHaptic.impactOccurred()
+            InterfaceSound.click()
         }
     }
     // Remove game center view contoller once dismissed

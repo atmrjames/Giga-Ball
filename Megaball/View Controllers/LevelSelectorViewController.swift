@@ -249,6 +249,7 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
         if tableView == self.levelsTableView {
             if hapticsSetting {
                 interfaceHaptic.impactOccurred()
+                InterfaceSound.click()
             }
             if let cell = self.levelsTableView.cellForRow(at: indexPath) as? LevelSelectorTableViewCell {
                 UIView.animate(withDuration: 0.1) {
@@ -353,17 +354,20 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
                 case 0:
                     if self.hapticsSetting {
                         self.interfaceHaptic.impactOccurred()
+                        InterfaceSound.click()
                     }
                     cell.setPressedArtwork(UIImage(named:"ButtonCloseHighlighted"))
                 case 1:
                     if self.hapticsSetting {
                         self.interfaceHaptic.impactOccurred()
+                        InterfaceSound.click()
                     }
                     cell.setButton("ButtonPlayHighlighted")
                 case 2:
                     if self.gameCenterSetting {
                         if self.hapticsSetting {
                             self.interfaceHaptic.impactOccurred()
+                            InterfaceSound.click()
                         }
                         cell.setButton("ButtonLeaderboardHighlighted")
                     } else {
@@ -436,6 +440,7 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
               let indexPath = levelsTableView.indexPath(for: cell) else { return }
 
         if hapticsSetting { interfaceHaptic.impactOccurred() }
+        InterfaceSound.click()
         MenuViewController().clearSavedGame()
         moveToGame(selectedLevel: startLevel! + indexPath.row, numberOfLevels: 1,
                    sender: levelSender, levelPack: packNumber!)
@@ -639,6 +644,7 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
         gameCenterViewController.dismiss(animated: true, completion: nil)
         if hapticsSetting {
             interfaceHaptic.impactOccurred()
+            InterfaceSound.click()
         }
     }
     // Remove game center view contoller once dismissed

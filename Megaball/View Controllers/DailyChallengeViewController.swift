@@ -682,6 +682,7 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
 
     private func turn(to offset: Int) {
         if hapticsSetting { interfaceHaptic.impactOccurred() }
+        InterfaceSound.click()
         viewedOffset = offset
         scrollToViewedDay(animated: true)
         showChallenge()
@@ -691,6 +692,7 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
 
     @objc private func playTapped() {
         if hapticsSetting { interfaceHaptic.impactOccurred() }
+        InterfaceSound.click()
         let challenge = DailyChallengeGenerator.challenge(forKey: viewedKey)
 
         if let notice = DailyChallengePosting.practiceNotice(
@@ -760,6 +762,7 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
 
     @objc private func closeTapped() {
         if hapticsSetting { interfaceHaptic.impactOccurred() }
+        InterfaceSound.click()
         // The tick every other close gives (play-test round 10: this one was silent)
         menuNavigationGoBack()
     }
@@ -767,6 +770,7 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
     @objc private func leaderboardTapped() {
         guard GKLocalPlayer.local.isAuthenticated else { return }
         if hapticsSetting { interfaceHaptic.impactOccurred() }
+        InterfaceSound.click()
         let boards = GKGameCenterViewController(leaderboardID: DailyChallengeBoards.daily,
                                                 playerScope: .global, timeScope: .allTime)
         boards.gameCenterDelegate = self
@@ -811,6 +815,7 @@ extension DailyChallengeViewController: GKGameCenterControllerDelegate {
     func gameCenterViewControllerDidFinish(_ gameCenterViewController: GKGameCenterViewController) {
         gameCenterViewController.dismiss(animated: true)
         if hapticsSetting { interfaceHaptic.impactOccurred() }
+        InterfaceSound.click()
     }
 }
 
@@ -868,6 +873,7 @@ extension DailyChallengeViewController: UICollectionViewDataSource,
         guard landed != viewedOffset else { return }
         viewedOffset = landed
         if hapticsSetting { interfaceHaptic.impactOccurred() }
+        InterfaceSound.click()
         showChallenge()
     }
 
@@ -876,6 +882,7 @@ extension DailyChallengeViewController: UICollectionViewDataSource,
     /// than remembered.
     func explain(_ twist: DailyTwist) {
         if hapticsSetting { interfaceHaptic.impactOccurred() }
+        InterfaceSound.click()
         GigaBallAlert.show(on: self, title: twist.displayName, message: twist.blurb,
                            symbol: "dice.fill")
     }
@@ -886,6 +893,7 @@ extension DailyChallengeViewController: UICollectionViewDataSource,
     /// through a fortnight and the day on screen is usually not one being played.
     func explainTheDaysTwists(on key: String) {
         if hapticsSetting { interfaceHaptic.impactOccurred() }
+        InterfaceSound.click()
         let challenge = DailyChallengeGenerator.challenge(forKey: key)
         GigaBallAlert.show(on: self, title: "Today's Twists",
                            attributed: DailyTwist.explainer(for: challenge.twists),

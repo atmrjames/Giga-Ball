@@ -402,6 +402,7 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
     func tableView(_ tableView: UITableView, didHighlightRowAt indexPath: IndexPath) {
         if hapticsSetting {
             interfaceHaptic.impactOccurred()
+            InterfaceSound.click()
         }
         if let cell = self.modeSelectTableView.cellForRow(at: indexPath) as? ModeSelectTableViewCell {
             UIView.animate(withDuration: 0.1) {
@@ -502,6 +503,7 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
                 case 0:
                     if self.hapticsSetting {
                         self.interfaceHaptic.impactOccurred()
+                        InterfaceSound.click()
                     }
                     cell.setButton("ButtonInfoHighlighted.png")
                 case 1:
@@ -509,6 +511,7 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
                 case 2:
                     if self.hapticsSetting {
                         self.interfaceHaptic.impactOccurred()
+                        InterfaceSound.click()
                     }
                     cell.setButton("ButtonSettingsHighlighted.png")
                 default:

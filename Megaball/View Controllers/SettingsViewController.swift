@@ -540,6 +540,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
 
     @objc func paddleSpeedTryTapped() {
         if hapticsSetting { interfaceHaptic.impactOccurred() }
+        InterfaceSound.click()
         infoTappedAt = Date().timeIntervalSince1970
         moveToPaddleSpeed()
     }
@@ -550,6 +551,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
 
     @objc func swipeInfoTapped() {
         if hapticsSetting { interfaceHaptic.impactOccurred() }
+        InterfaceSound.click()
         infoTappedAt = Date().timeIntervalSince1970
         // Stamped again on the way up, so a slow press - finger down, held, lifted after the
         // window - still shields the row toggle that follows it
@@ -681,6 +683,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
                 hapticsSetting = !hapticsSetting
                 defaults.set(hapticsSetting, forKey: "hapticsSetting")
                 if hapticsSetting { interfaceHaptic.impactOccurred() }
+        InterfaceSound.click()
                 // Switching haptics on answers with one tick - the demonstration.
                 // Switching them off answers with the silence it just bought
                 // (play-test round 12: the release path fired on the *old* value,
@@ -784,6 +787,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
 
     @objc func musicArrowTapped() {
         if hapticsSetting { interfaceHaptic.impactOccurred() }
+        InterfaceSound.click()
         hideAnimate()
         moveToMusic()
     }
@@ -843,6 +847,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
     func tableView(_ tableView: UITableView, didHighlightRowAt indexPath: IndexPath) {
         if hapticsSetting {
             interfaceHaptic.impactOccurred()
+            InterfaceSound.click()
         }
         // With haptics off, every press is silent - including the haptics row itself
         // (play-test round 12: turning haptics *off* was firing one). The tick that
@@ -887,6 +892,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
     func collectionView(_ collectionView: UICollectionView, didHighlightItemAt indexPath: IndexPath) {
         if hapticsSetting {
             interfaceHaptic.impactOccurred()
+            InterfaceSound.click()
         }
         if let cell = self.backButtonCollectionView.cellForItem(at: indexPath) as? MainMenuCollectionViewCell {
             UIView.animate(withDuration: 0.1) {

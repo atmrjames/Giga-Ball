@@ -520,6 +520,7 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
     @objc private func achievementTabChanged(_ picker: UISegmentedControl) {
         achievementTab = picker.selectedSegmentIndex
         if hapticsSetting { interfaceHaptic.impactOccurred() }
+        InterfaceSound.click()
         grid?.reloadData()
         emptyNote.text = AchievementCatalogue.emptyNote(
             for: AchievementCatalogue.tabs[achievementTab].mode)
@@ -878,6 +879,7 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
     func tableView(_ tableView: UITableView, didHighlightRowAt indexPath: IndexPath) {
         if hapticsSetting {
             interfaceHaptic.impactOccurred()
+            InterfaceSound.click()
         }
         if let cell = self.itemsTableView.cellForRow(at: indexPath) as? SettingsTableViewCell {
             cell.setPressed(true, colour: #colorLiteral(red: 0.8335226774, green: 0.9983789325, blue: 0.5007104874, alpha: 1), duration: 0.1)
@@ -1005,6 +1007,7 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
     func collectionView(_ collectionView: UICollectionView, didHighlightItemAt indexPath: IndexPath) {
         guard collectionView == backButtonCollectionView else {
             if hapticsSetting { interfaceHaptic.impactOccurred() }
+        InterfaceSound.click()
             // The rows tapped the taptic engine when they lit up and the squares did not, so
             // a grid felt dead where the same list had felt alive (play-test round 83)
             (collectionView.cellForItem(at: indexPath) as? PackGridCell)?
@@ -1013,6 +1016,7 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
         }
         if hapticsSetting {
             interfaceHaptic.impactOccurred()
+            InterfaceSound.click()
         }
         if let cell = self.backButtonCollectionView.cellForItem(at: indexPath) as? MainMenuCollectionViewCell {
             UIView.animate(withDuration: 0.1) {

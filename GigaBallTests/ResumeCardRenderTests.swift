@@ -565,3 +565,92 @@ final class ResumeCardOnATallScreenTests: XCTestCase {
         XCTAssertLessThan(card.width, root.bounds.width/2)
     }
 }
+
+/// The two faces the resume card's score line is set in.
+///
+/// **James, round 340: "the score heading font is a bit too large."** It was eighteen points
+/// too large, and not because of the number chosen for it. `UILabel.attributedText` is never
+/// nil: before the card's own score line is built, the label answers with the storyboard's
+/// plain text wearing the storyboard's 35-point face, and the pass that remembers each run's
+/// natural size so it can scale the line for the screen was filing that 35 as the heading's.
+/// From then on every screen drew a 35-point heading over a 30-point number.
+///
+/// Measured as a proportion rather than as two point sizes, because the line is scaled for the
+/// screen it is on and the proportion is the thing that was wrong.
+final class ResumeScoreLineFacesTests: XCTestCase {
+
+    private let shapes: [(String, CGSize)] = [
+        ("iPhone SE", CGSize(width: 375, height: 667)),
+        ("iPhone 16 Pro", CGSize(width: 402, height: 874)),
+        ("iPad 13-inch", CGSize(width: 1032, height: 1376)),
+        ("smallest window", CGSize(width: 320, height: 568)),
+    ]
+
+    override func setUp() {
+        super.setUp()
+        UserDefaults().removePersistentDomain(forName: resumeCardSuite)
+    }
+
+    override func tearDown() {
+        UserDefaults().removePersistentDomain(forName: resumeCardSuite)
+        super.tearDown()
+    }
+
+    private func laidOut(in size: CGSize) -> SplashViewController {
+        let game = SavedGame(
+            levelNumber: LevelPackSetup().startLevelNumber[2] + 2, endLevelNumber: 10,
+            packNumber: 2, levelScore: 4300, totalScore: 15_200, numberOfLives: 2,
+            endlessHeight: 0, numberOfLevels: 10,
+            levelTimerValue: 45, packTimerValue: 300,
+            deathsPerLevel: 1, deathsPerPack: 3,
+            powerUpsGeneratedPerLevel: 4, powerUpsCollectedPerLevel: 2,
+            powerUpsGeneratedPerPack: 20, powerUpsCollectedPerPack: 11,
+            paddleHitsPerLevel: 33, multiplier: 1.4,
+            brickTextures: [], brickColours: [], brickXPositions: [], brickYPositions: [],
+            ballProperties: [], fallingPowerUpXPositions: [], fallingPowerUpYPositions: [],
+            fallingPowerUps: [], activePowerUps: [], activePowerUpDurations: [],
+            activePowerUpTimers: [], activePowerUpMagnitudes: [])
+        game.save(to: resumeCardStore())
+        resumeCardStore().set(true, forKey: SavedGame.resumeFlagKey)
+        let board = UIStoryboard(name: "Main", bundle: Bundle(for: SplashViewController.self))
+        let splash = board.instantiateViewController(withIdentifier: "splashView")
+            as! SplashViewController
+        splash.defaults = resumeCardStore()
+        splash.gameToResume = true
+        splash.view.frame = CGRect(origin: .zero, size: size)
+        for _ in 0..<3 {
+            splash.view.setNeedsLayout()
+            splash.view.layoutIfNeeded()
+        }
+        return splash
+    }
+
+    /// The heading is read against the number under it, and it is the smaller of the two.
+    func testTheHeadingIsSmallerThanTheNumberOnEveryScreen() throws {
+        let wanted = SplashViewController.scoreTitleFace.pointSize
+            / SplashViewController.scoreFace.pointSize
+        XCTAssertLessThan(wanted, 1, "the heading is set larger than the number it titles")
+
+        for (name, size) in shapes {
+            let splash = laidOut(in: size)
+            let text = try XCTUnwrap(splash.scoreLabel.attributedText)
+            var faces: [CGFloat] = []
+            text.enumerateAttribute(.font, in: NSRange(location: 0, length: text.length)) {
+                value, _, _ in
+                if let font = value as? UIFont { faces.append(font.pointSize) }
+            }
+            XCTAssertEqual(faces.count, 2,
+                           "\(name): the score line should be a heading and a number, and it is "
+                           + "\(faces.count) faces - which is what assigning `font` to a label "
+                           + "holding attributed text does to it")
+            let heading = try XCTUnwrap(faces.first)
+            let number = try XCTUnwrap(faces.last)
+            XCTAssertLessThan(heading, number,
+                              "\(name): the heading is \(heading)pt over a \(number)pt number")
+            XCTAssertEqual(heading/number, wanted, accuracy: 0.06,
+                           "\(name): the heading is \(heading)pt and the number \(number)pt, a "
+                           + "proportion of \(heading/number) rather than \(wanted) - the sizes "
+                           + "remembered for scaling came from a line other than this one")
+        }
+    }
+}

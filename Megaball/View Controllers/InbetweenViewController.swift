@@ -79,6 +79,7 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
     @IBAction func tapGestureAction(_ sender: Any) {
         if hapticsSetting {
             interfaceHaptic.impactOccurred()
+            InterfaceSound.click()
         }
         if finishScoreTallyIfRunning() { return }
         if skipIntroHoldIfRunning() { return }
@@ -87,6 +88,7 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
     @IBAction func tapBackgroundGestureAction(_ sender: Any) {
         if hapticsSetting {
             interfaceHaptic.impactOccurred()
+            InterfaceSound.click()
         }
         if finishScoreTallyIfRunning() { return }
         if skipIntroHoldIfRunning() { return }
@@ -304,7 +306,8 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
 
     func showAnimate() {
         showIntroLogo()
-        self.view.transform = CGAffineTransform(scaleX: 1.15, y: 1.15)
+        self.view.transform = CGAffineTransform(scaleX: InbetweenViewController.introZoom,
+                                                y: InbetweenViewController.introZoom)
         self.view.alpha = 0.0;
         self.fadeIntroLogo(to: 0)
         UIView.animate(withDuration: showAnimateDuration, animations: {
@@ -349,7 +352,9 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
                     if (finished) {
                         self.introHoldRunning = true
                         UIView.animate(withDuration: 1.50, animations: {
-                            self.view.transform = CGAffineTransform(scaleX: 1.15, y: 1.15)
+                            self.view.transform = CGAffineTransform(
+                                scaleX: InbetweenViewController.introZoom,
+                                y: InbetweenViewController.introZoom)
                             self.view.alpha = 1.0})
                         { (finished: Bool) in
                             if (finished) {
@@ -490,31 +495,13 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
     /// hides those two labels, and a lone column against an empty half reads worse than the
     /// stack it replaced.
     private func putTheScoreAndBonusOnOneLine() {
-        guard sideBySideScores == false, levelScoreBonus > 0,
-              let host = levelScoreTitle.superview else { return }
+        guard levelScoreBonus > 0, let host = levelScoreTitle.superview else { return }
+        retireTheStackedScoreTies(in: host)
+        guard sideBySideScores == false else { return }
         sideBySideScores = true
 
         let left: [UILabel] = [levelScoreTitle, levelScoreLabel]
         let right: [UILabel] = [speedBonusTitle, speedBonusLabel]
-
-        for constraint in host.constraints {
-            guard let first = constraint.firstItem as? UILabel else { continue }
-            if left.contains(first),
-               constraint.firstAttribute == .centerX || constraint.firstAttribute == .leading {
-                constraint.isActive = false
-            }
-            if right.contains(first),
-               constraint.firstAttribute == .centerX || constraint.firstAttribute == .leading
-                || constraint.firstAttribute == .trailing {
-                constraint.isActive = false
-            }
-            if first === speedBonusTitle, constraint.firstAttribute == .top,
-               constraint.secondItem === levelScoreLabel {
-                constraint.isActive = false
-                // The link that put the bonus under the score. Everything below still hangs
-                // off the bonus's own label, which is now beside the score rather than under it
-            }
-        }
 
         let half = InbetweenViewController.scoreAndBonusGap/2
         for label in left + right {
@@ -534,7 +521,7 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
         // arm's length apart on an iPad. Hugging makes each column as wide as its own widest
         // line, and the pair then sits a fixed distance either side of the middle.
 
-        NSLayoutConstraint.activate([
+        let placed = [
             levelScoreTitle.trailingAnchor.constraint(equalTo: host.centerXAnchor,
                                                       constant: -half),
             levelScoreLabel.trailingAnchor.constraint(equalTo: host.centerXAnchor,
@@ -548,9 +535,52 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
             speedBonusTitle.trailingAnchor.constraint(lessThanOrEqualTo: host.trailingAnchor,
                                                       constant: -10),
             speedBonusTitle.topAnchor.constraint(equalTo: levelScoreTitle.topAnchor),
-        ])
+        ]
+        sideBySideScores7Placed = placed
+        NSLayoutConstraint.activate(placed)
         // The two columns share a leading edge with their own number, so whichever of the two
         // lines is wider sets the column and the other centres inside it
+    }
+
+    /// The constraints this screen puts the pair side by side with, kept so the sweep below
+    /// can tell them from the storyboard's.
+    private var sideBySideScores7Placed: [NSLayoutConstraint] = []
+
+    /// Takes the storyboard's stacked arrangement of the two readings out of the way.
+    ///
+    /// **Asked again on every layout pass** (James, round 340, from the iPad: "level score
+    /// heading and score label is missing on the iPad 13-inch"). They were not missing, they
+    /// were nothing high: a storyboard varies a constraint by size class, and UIKit installs
+    /// the regular-width variant when the trait collection arrives - which on an iPad is after
+    /// this screen has already rearranged its two columns. A second centre tie then pinned the
+    /// speed bonus across the whole 414-point column and squeezed the level score to a
+    /// zero-height sliver beside it. On a phone the variant never arrives, which is why this
+    /// only ever showed up on the iPad.
+    ///
+    /// Our own constraints are held by the same view and name the same labels, so they are
+    /// skipped by identity rather than by attribute.
+    private func retireTheStackedScoreTies(in host: UIView) {
+        let left: [UILabel] = [levelScoreTitle, levelScoreLabel]
+        let right: [UILabel] = [speedBonusTitle, speedBonusLabel]
+        for constraint in host.constraints where constraint.isActive
+            && sideBySideScores7Placed.contains(where: { $0 === constraint }) == false {
+            guard let first = constraint.firstItem as? UILabel else { continue }
+            if left.contains(first),
+               constraint.firstAttribute == .centerX || constraint.firstAttribute == .leading {
+                constraint.isActive = false
+            }
+            if right.contains(first),
+               constraint.firstAttribute == .centerX || constraint.firstAttribute == .leading
+                || constraint.firstAttribute == .trailing {
+                constraint.isActive = false
+            }
+            if first === speedBonusTitle, constraint.firstAttribute == .top,
+               constraint.secondItem === levelScoreLabel {
+                constraint.isActive = false
+                // The link that put the bonus under the score. Everything below still hangs
+                // off the bonus's own label, which is now beside the score rather than under it
+            }
+        }
     }
 
     /// The air between the level score and the speed bonus, which is the same on every device.
@@ -806,7 +836,33 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
     /// Scaled from whatever the storyboard set, and only once, for the same reason
     /// `raiseTheTotal` is: a hard-coded size here would be a second opinion about the first,
     /// and a second pass would shrink what the first pass had already shrunk.
+    /// The three numbers on this card are set in the face the game's own HUD uses.
+    ///
+    /// **James, round 340: "use the score font from the game view - do this for all score
+    /// numbers throughout these screen views."** The pause and game-over screens have been in
+    /// Fugaz One since round 312 and the resume card since round 311; this one was still in the
+    /// system's black face, so the number a player watched climb in the HUD changed its face on
+    /// the way to the card that totals it.
+    ///
+    /// The titles beside them stay in the system face. It is the numbers that are the game's,
+    /// and a heading set in a display face reads as a second number.
+    ///
+    /// Only the family is changed. `sizeTheResultBandForTheScreen` sizes these labels from the
+    /// storyboard's own point sizes every pass, and `withSize` keeps whatever family it finds -
+    /// so this runs first and the sizing that follows carries it.
+    private func setTheScoresInTheGamesOwnFace() {
+        guard scoresAreInTheGamesFace == false else { return }
+        scoresAreInTheGamesFace = true
+        for label in [levelScoreLabel, speedBonusLabel, totalScoreLabel] {
+            guard let label, let font = label.font else { continue }
+            label.font = UIViewController.gameScoreFont(ofSize: font.pointSize)
+        }
+    }
+
+    private var scoresAreInTheGamesFace = false
+
     private func sizeTheResultBandForTheScreen() {
+        setTheScoresInTheGamesOwnFace()
         // The three title lines as well as the result: they are the band the badge hangs over,
         // and the pause screen scales its own. A header grown for an iPad over lines that
         // stayed a phone's size is the render round 338 caught on the between-levels card
@@ -894,6 +950,13 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
         packAndLevelConstriant.priority = .defaultHigh
     }
 
+    override func viewWillLayoutSubviews() {
+        super.viewWillLayoutSubviews()
+        putTheScoreAndBonusOnOneLine()
+        // Before the pass rather than after it, since it retires constraints: a constraint
+        // deactivated from `viewDidLayoutSubviews` asks for another pass to notice it
+    }
+
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         limitMenuContentSize()
@@ -949,7 +1012,7 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
         guard let label = levelNameLabel, label.attributedText != nil,
               label.bounds.width > 0 else { return }
 
-        lineTheTwistsUpWithEachOther()
+        centreTheTwistsLikeTheDailyCard()
         giveTheTwistsAirAboveThem()
 
         let needed = ceil(label.textRect(
@@ -1020,56 +1083,72 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
     /// How much of it.
     static let twistsClearance: CGFloat = 18
 
-    /// Starts every twist on the same left edge, with the block as a whole still centred.
+    /// How far the level intro swells, coming in and while it holds.
     ///
-    /// **James, round 338: "looks like well laid out, logical, beautiful and functional."** The
-    /// twists are one attributed string with a badge at the head of each line, centred - so
-    /// three lines of different lengths put their badges in three different places and the
-    /// column zig-zags. A list of rules should read as a list.
+    /// **James, round 340: "the items are too close to the giga-ball logo at the top - as they
+    /// animate they scale up and end up clipping with the giga-ball logo - just move them down
+    /// slightly."**
     ///
-    /// Done with an indent rather than by left-aligning the label, because the label runs the
-    /// full width of the screen: aligning it left would push the whole block against the edge.
-    /// The widest line is measured, the slack either side of it is halved, and every line is
-    /// indented by that - which centres the *block* and left-aligns the lines inside it.
-    private func lineTheTwistsUpWithEachOther() {
+    /// A transform scales about the view's *centre*, so a badge 116 points from the top of an
+    /// 874-point screen is thrown 47 points further up at 1.15 - onto a wordmark that does not
+    /// move with it, because round 313 deliberately hosted the mark outside the transform so it
+    /// would hold still. The hold is the worst of it: the screen ends its second and a half at
+    /// full swell and sits there.
+    ///
+    /// Eight per cent rather than fifteen, with a little more air under the mark to go with it
+    /// (`inGameLogoToIconGap`). The zoom still reads as a zoom, and the badge clears the
+    /// wordmark on every shape including the iPad's column, where the band is scaled up as well
+    /// and the margin was thinnest.
+    static let introZoom: CGFloat = 1.08
+
+    /// Lays the twists out the way the Daily Challenge menu lays them out: each line centred
+    /// on its own, icon and name together.
+    ///
+    /// **James, round 340: "centre the twists including the icon and labels - at the moment the
+    /// icons look centred but the labels are to the right. It looks right on the iPhone 16 Pro
+    /// but not on some of the other devices. Use how they are laid out on the Daily Challenge
+    /// main menu view."**
+    ///
+    /// Round 338 left-aligned the lines inside a centred block, by measuring the widest line and
+    /// indenting every line by half the slack. That is a nice idea and it cannot be made to hold
+    /// across devices, which is what James is seeing: the label shrinks its font to fit
+    /// (`adjustsFontSizeToFitWidth`) while the measurement is taken at full size, a line long
+    /// enough to wrap is measured unwrapped, and an icon attachment does not shrink with the
+    /// text around it. Every one of those makes the measured width disagree with the drawn
+    /// width, and the indent is half of that disagreement - so the block sits true on the shape
+    /// the numbers happened to suit and off-centre everywhere else.
+    ///
+    /// `DailyCardView.showTwists` never had the problem because it never measures: one label per
+    /// twist, `textAlignment = .center`, stacked. This label is a single string rather than a
+    /// stack, so the same thing is said with a centred paragraph style - each line, icon and
+    /// name as one piece, centred in the label. No measurement, nothing to disagree with, and
+    /// the same look as the screen the player chose the day on.
+    private func centreTheTwistsLikeTheDailyCard() {
         guard DailyChallengeSession.shared.active != nil else { return }
-        // **Only when there are twists to line up.** `UILabel.attributedText` is never nil -
+        // **Only when there are twists to centre.** `UILabel.attributedText` is never nil -
         // it returns an attributed version of whatever `text` holds - so a guard on it being
         // non-nil is no guard at all, and this ran on every screen: round 338 left the word
         // "Tunnel" indented off-centre on the between-levels card for exactly that reason.
-        guard let label = levelNameLabel, let text = label.attributedText,
-              label.bounds.width > 0 else { return }
+        guard let label = levelNameLabel, let text = label.attributedText else { return }
 
         let full = NSRange(location: 0, length: text.length)
-        var widest: CGFloat = 0
-        text.enumerateAttribute(.paragraphStyle, in: full) { _, _, _ in }
-        for line in text.string.components(separatedBy: "\n") {
-            guard let range = text.string.range(of: line) else { continue }
-            let piece = text.attributedSubstring(
-                from: NSRange(range, in: text.string))
-            widest = max(widest, ceil(piece.size().width))
-        }
-        guard widest > 0, widest < label.bounds.width else { return }
-
-        let indent = ((label.bounds.width - widest)/2).rounded(.down)
         let paragraph = NSMutableParagraphStyle()
-        paragraph.alignment = .left
+        paragraph.alignment = .center
         paragraph.paragraphSpacing = 2
-        paragraph.firstLineHeadIndent = indent
-        paragraph.headIndent = indent
-        // `headIndent` as well as the first line's, so a twist whose name wraps keeps its
-        // second line under the first rather than under the badge
+        paragraph.lineBreakMode = .byWordWrapping
+        // Word wrapping rather than the label's default truncation, so a long twist name on a
+        // narrow screen takes a second line instead of losing its tail to an ellipsis
 
         let existing = text.attribute(.paragraphStyle, at: 0, effectiveRange: nil)
             as? NSParagraphStyle
-        guard existing?.firstLineHeadIndent != indent
-                || existing?.alignment != .left else { return }
-        // Only when it changes, for the same reason the height above is: a layout pass that
-        // rewrites the label asks for another one
+        guard existing?.alignment != .center
+                || existing?.firstLineHeadIndent != 0 else { return }
+        // Only when it changes: a layout pass that rewrites the label asks for another one
 
-        let lined = NSMutableAttributedString(attributedString: text)
-        lined.addAttribute(.paragraphStyle, value: paragraph, range: full)
-        label.attributedText = lined
+        let centred = NSMutableAttributedString(attributedString: text)
+        centred.addAttribute(.paragraphStyle, value: paragraph, range: full)
+        label.attributedText = centred
+        label.textAlignment = .center
     }
 
     /// Fades the wordmark with the screen it belongs to, since it is no longer inside it.

@@ -284,10 +284,18 @@ final class MusicViewController: UIViewController, UITableViewDelegate, UITableV
         cell.contentView.bringSubviewToFront(tick)
 
         NSLayoutConstraint.activate([
-            tick.centerXAnchor.constraint(equalTo: cell.settingState.centerXAnchor),
-            // Centred on the row's state position rather than hung off its trailing edge
-            // (James, round 210: "centre the checkmark within the cell") - that is where every
-            // other settings row puts its answer, so the column reads straight down the list
+            tick.trailingAnchor.constraint(equalTo: cell.cellView2.trailingAnchor,
+                                           constant: -MusicViewController.tickFromTheCardsEdge),
+            // **At the end of the row** (James, round 340: "the checkmarks are still quite far
+            // from the right edge of the cells - can these be moved to the right edge"). Round
+            // 210 put them on the settings list's state column, which is where a *word* goes -
+            // "On", "Off", a paddle speed - and a word needs room on both sides of itself. A
+            // glyph does not, so the column left it stranded in the middle of the row with a
+            // third of the card empty beyond it. The card's own edge is the thing the eye
+            // lines the ticks up against, and now that is what they are lined up against.
+            //
+            // `cellView2` rather than `contentView`: the glass card is inset inside the cell,
+            // so the cell's edge is not the edge anybody can see
             tick.centerYAnchor.constraint(equalTo: cell.settingDescription.centerYAnchor),
             // Centred on the name, not on `contentView` (James, round 212: "the checkmarks
             // should be vertically centred in the cells"). The glass card does not fill the
@@ -298,6 +306,13 @@ final class MusicViewController: UIViewController, UITableViewDelegate, UITableV
             tick.heightAnchor.constraint(equalToConstant: 56),
         ])
     }
+
+    /// How far the tick's own edge sits inside the card's.
+    ///
+    /// The 56-point target is much wider than the 22-point glyph inside it, so this is measured
+    /// to the button and the glyph lands about fourteen points further in - which is the inset
+    /// the icon on the other end of the row wears, and makes the two ends match.
+    static let tickFromTheCardsEdge: CGFloat = 0
 
     /// Where the last touch on the list landed, in the list's own coordinates.
     private var lastTouch: CGPoint = .init(x: -1, y: -1)
@@ -362,6 +377,7 @@ final class MusicViewController: UIViewController, UITableViewDelegate, UITableV
     private func toggle(_ track: MusicTrack) {
         guard track.isChoosable else { return }
         if hapticsSetting { interfaceHaptic.impactOccurred() }
+        InterfaceSound.click()
 
         let anyLeft = MusicSelection.set(track, enabled: !MusicSelection.isEnabled(track))
 
@@ -421,6 +437,7 @@ final class MusicViewController: UIViewController, UITableViewDelegate, UITableV
 
     @objc private func creditTapped() {
         if hapticsSetting { interfaceHaptic.impactOccurred() }
+        InterfaceSound.click()
         guard let url = URL(string: MusicViewController.soundCloudSet) else { return }
         UIApplication.shared.open(url)
     }
@@ -429,6 +446,7 @@ final class MusicViewController: UIViewController, UITableViewDelegate, UITableV
 
     @objc private func closeTapped() {
         if hapticsSetting { interfaceHaptic.impactOccurred() }
+        InterfaceSound.click()
         menuNavigationGoBack()
     }
 

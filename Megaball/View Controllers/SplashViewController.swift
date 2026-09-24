@@ -343,8 +343,18 @@ class SplashViewController: UIViewController {
             // in the endless modes - where a mode's name has nothing under it to say - took the
             // ten points above the score with it and left the height jammed under "Endless
             // Mayhem". Caught by rendering the three cards and looking at them
+            resumeBaseAttributed.removeAll()
             scoreLabel.attributedText = resumeScoreLine(title: lines.scoreTitle,
                                                         value: lines.scoreValue)
+            // **The remembered sizes belong to the line being replaced, not to this one**
+            // (James, round 340: "the score heading font is a bit too large"). It was, by
+            // eighteen points, and not because of the number chosen for it: `attributedText` is
+            // never nil, so before this line is built at all the label answers with the
+            // storyboard's plain text wearing the storyboard's 35-point face. Any layout pass
+            // that lands in that window - and one does, because the card is built and sized
+            // before it is filled in - files 35 as the heading's natural size, and every pass
+            // afterwards scales *that* instead of the seventeen this line actually asks for.
+            // The cache is only ever right about the string it was taken from.
             livesLabel.text = lines.lives
             resumeBalls = lines.balls
             livesLabel.isHidden = lines.lives.isEmpty
@@ -439,18 +449,7 @@ class SplashViewController: UIViewController {
         // The pause screen's own detail face, so the rack reads as a footnote to the score
         // rather than as a second number competing with it
 
-        let carded = [resumingLabel, modeLabel, detailLabel, scoreLabel, livesLabel]
-            .compactMap { $0 }
-        for label in carded {
-            var node: UIView? = label
-            while let view = node {
-                for constraint in view.constraints
-                where constraint.firstItem === label || constraint.secondItem === label {
-                    constraint.isActive = false
-                }
-                node = view.superview
-            }
-        }
+        retireTheStoryboardsTiesToTheCard()
         // **Up the whole chain, not just the one view** (round 329, from James's device log).
         // Round 312 cleared `container.constraints`, which is where a constraint between a
         // label and that container lives - and is not where every one of them lives. A
@@ -827,6 +826,55 @@ class SplashViewController: UIViewController {
         }
     }
 
+    /// Takes the storyboard's own ties to the card's labels out of the way of the stack's.
+    ///
+    /// **Asked again on every layout pass, not once when the card is built** (James, round 340,
+    /// from the iPad: "the game mode badge is overlapping the labels"). A storyboard may vary a
+    /// constraint by size class, and UIKit installs the variant when the trait collection
+    /// arrives - which on an iPad is *after* this screen has built its card. So a sixth tie
+    /// appeared on `modeLabel` that the build-time pass had never seen, pinning it to the
+    /// container rather than the stack: the label came out 1032 points wide inside a 420-point
+    /// stack, and the recovery UIKit chose broke the badge row's own height, which is why the
+    /// badge was drawn across three lines of text with the row measuring zero.
+    ///
+    /// The stack's constraints are left alone, since they name these labels too and this runs
+    /// while the card is on screen. At build time there is no stack yet and nothing is skipped,
+    /// which is what the first pass has always done.
+    ///
+    /// **And so are the labels' own content-size constraints, which is the whole difference
+    /// between running this once and running it every pass.** UIKit installs an
+    /// `NSContentSizeLayoutConstraint` on a label the first time it lays out, carrying the size
+    /// the text wants; before the card has ever been drawn there is none, which is why the
+    /// build-time pass never had to think about it. Sweeping them up on the second pass sets
+    /// every label in the card to nothing high - RESUMING, the mode, the line of balls - and
+    /// hands the slack to whichever one hugs least, so the card came out as one label 240
+    /// points tall and five invisible ones.
+    private func retireTheStoryboardsTiesToTheCard() {
+        let carded = [resumingLabel, modeLabel, detailLabel, scoreLabel, livesLabel]
+            .compactMap { $0 }
+        for label in carded {
+            var node: UIView? = label
+            while let view = node {
+                if view !== resumeStack {
+                    for constraint in view.constraints
+                    where constraint.isActive && !constraint.isTheLabelsOwnSize(for: label)
+                        && (constraint.firstItem === label || constraint.secondItem === label) {
+                        constraint.isActive = false
+                    }
+                }
+                node = view.superview
+            }
+        }
+    }
+
+    override func viewWillLayoutSubviews() {
+        super.viewWillLayoutSubviews()
+        guard resumeStack != nil else { return }
+        retireTheStoryboardsTiesToTheCard()
+        // Before the pass rather than after it: a constraint retired from `viewDidLayoutSubviews`
+        // asks for another pass, and this one has to be gone before the stack lays out at all
+    }
+
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         limitMenuContentSize()
@@ -889,6 +937,7 @@ class SplashViewController: UIViewController {
 
     @objc private func cancelResumeTapped() {
         if hapticsSetting { interfaceHaptic.impactOccurred() }
+        InterfaceSound.click()
         NotificationCenter.default.post(name: .cancelGameResume, object: nil)
         gameToResume = false
         removeAnimate(duration: 0.25)
@@ -922,8 +971,16 @@ class SplashViewController: UIViewController {
     // point size - it is a display face with a tall x-height - so the 35 that was right for
     // `systemFont(.black)` reads as a size up in this one
 
-    /// The face the word beside it wears - the pause screen's score title.
-    static let scoreTitleFace = UIFont.systemFont(ofSize: 20, weight: .semibold)
+    /// The face the word above it wears.
+    ///
+    /// **James, round 340: "the score heading font is a bit too large."** Seventeen rather than
+    /// the pause screen's twenty, which is not this card drifting away from that screen but
+    /// keeping up with it. A title is read against the number under it, and round 311 made this
+    /// card's number thirty where the pause screen's is thirty-five ("perhaps the score could
+    /// get a little bit smaller"). Twenty over thirty-five is the proportion James approved
+    /// there; twenty over thirty is a heavier title than he ever agreed to, and that is what he
+    /// is looking at. Seventeen over thirty is the same proportion again.
+    static let scoreTitleFace = UIFont.systemFont(ofSize: 17, weight: .semibold)
 
     private func resumeScoreLine(title: String, value: String) -> NSAttributedString {
         let paragraph = NSMutableParagraphStyle()
@@ -1040,5 +1097,17 @@ class SplashViewController: UIViewController {
         hapticsSetting = defaults.bool(forKey: "hapticsSetting")
         savedGame = SavedGame.load(from: defaults)
         // Load user settings
+    }
+}
+
+/// Whether a constraint is the one UIKit adds to a view to carry its intrinsic content size.
+///
+/// There is no public type to test against, so the class's name is the test. A false answer
+/// costs a constraint that should have been retired; a false *positive* would leave a
+/// storyboard tie in place, so the check is the exact name rather than a prefix.
+private extension NSLayoutConstraint {
+    func isTheLabelsOwnSize(for label: UIView) -> Bool {
+        firstItem === label && secondItem == nil
+            && String(describing: type(of: self)) == "NSContentSizeLayoutConstraint"
     }
 }

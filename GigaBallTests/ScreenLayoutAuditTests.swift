@@ -49,9 +49,16 @@ final class ScreenLayoutAuditTests: XCTestCase {
 
     /// The shapes worth checking: the smallest phone the app supports, two current phones, a
     /// 13-inch iPad, and an iPad Slide Over - which is narrower than any phone and as tall as
-    /// the iPad.
+    /// the iPad. The window floor rides along with them.
+    ///
+    /// **Round 340: 320x568 is not an iPhone SE.** It was labelled one here for several rounds,
+    /// and the app's deployment target is iOS 17, which the original SE cannot run - the
+    /// smallest phone that can is the SE 2nd and 3rd generation at 375x667. The old number is
+    /// still worth laying out, because `SceneDelegate.smallestWindow` lets a player pull an
+    /// iPad or Mac window down to it, so it stays in the list under its real name.
     private let sizes: [(name: String, size: CGSize)] = [
-        ("iPhone SE", CGSize(width: 320, height: 568)),
+        ("iPhone SE", CGSize(width: 375, height: 667)),
+        ("smallest window", CGSize(width: 320, height: 568)),
         ("iPhone 16 Pro", CGSize(width: 402, height: 874)),
         ("iPhone 17 Pro Max", CGSize(width: 440, height: 956)),
         ("iPad 13-inch", CGSize(width: 1032, height: 1376)),
@@ -503,7 +510,8 @@ final class LevelIntroFurnitureTests: XCTestCase {
     }
 
     private let sizes: [(name: String, size: CGSize)] = [
-        ("iPhone SE", CGSize(width: 320, height: 568)),
+        ("iPhone SE", CGSize(width: 375, height: 667)),
+        ("smallest window", CGSize(width: 320, height: 568)),
         ("iPhone 16 Pro", CGSize(width: 402, height: 874)),
         ("iPhone 17 Pro Max", CGSize(width: 440, height: 956)),
         ("iPad 13-inch", CGSize(width: 1032, height: 1376)),
@@ -599,7 +607,7 @@ final class InGameGalleryTests: XCTestCase {
     }
 
     private static let shapes: [(name: String, size: CGSize, regular: Bool)] = [
-        ("se", CGSize(width: 320, height: 568), false),
+        ("se", CGSize(width: 375, height: 667), false),
         ("16pro", CGSize(width: 402, height: 874), false),
         ("ipad", CGSize(width: 1032, height: 1376), true),
         ("slideover", CGSize(width: 320, height: 1024), false),
@@ -968,7 +976,8 @@ final class InGameHeaderSpineTests: XCTestCase {
     }
 
     private let shapes: [(name: String, size: CGSize, regular: Bool)] = [
-        ("iPhone SE", CGSize(width: 320, height: 568), false),
+        ("iPhone SE", CGSize(width: 375, height: 667), false),
+        ("smallest window", CGSize(width: 320, height: 568), false),
         ("iPhone 16 Pro", CGSize(width: 402, height: 874), false),
         ("iPhone 17 Pro Max", CGSize(width: 440, height: 956), false),
         ("iPad 13-inch", CGSize(width: 1032, height: 1376), true),
@@ -1176,7 +1185,7 @@ final class MenuGalleryTests: XCTestCase {
     }
 
     static let shapes: [(name: String, size: CGSize, regular: Bool)] = [
-        ("se", CGSize(width: 320, height: 568), false),
+        ("se", CGSize(width: 375, height: 667), false),
         ("16pro", CGSize(width: 402, height: 874), false),
         ("ipad", CGSize(width: 1032, height: 1376), true),
         ("ipad-wide", CGSize(width: 1194, height: 834), true),
@@ -1244,11 +1253,31 @@ final class MenuGalleryTests: XCTestCase {
         screen.view.autoresizingMask = [.flexibleWidth, .flexibleHeight]
         parent.view.addSubview(screen.view)
         screen.didMove(toParent: parent)
+        standDownTheSplash(over: screen)
         for _ in 0..<4 {
             parent.view.setNeedsLayout()
             parent.view.layoutIfNeeded()
         }
         return parent.view
+    }
+
+    /// Takes the launch animation off the main menu, so the render is of the menu.
+    ///
+    /// **James, round 340: "the main menu screenshot is just the splash animation."** It was:
+    /// `MenuViewController` adds a `SplashViewController` over itself on its first launch and
+    /// the gallery photographs what is in front, which on that one screen is a full-screen
+    /// wordmark on its opening frame. Six pictures of a logo, every round, in place of the
+    /// screen James actually wanted to look at.
+    ///
+    /// Stood down here rather than by asking the menu not to show it: the menu *should* show
+    /// it, and what is wrong is only that a photograph taken a tenth of a second into the app's
+    /// life is not a photograph of the main menu.
+    func standDownTheSplash(over screen: UIViewController) {
+        for child in screen.children where child is SplashViewController {
+            child.willMove(toParent: nil)
+            child.view.removeFromSuperview()
+            child.removeFromParent()
+        }
     }
 
     func testWriteTheMenusOut() {
@@ -1367,6 +1396,188 @@ final class MenuGalleryAuditTests: XCTestCase {
                 "\(name): a 480pt window lays out \(Int(widths[0]))pt of content and a 520pt "
                 + "one \(Int(widths[1])) - the content should never *shrink* as the window "
                 + "grows, which is the snap James watched")
+        }
+    }
+}
+
+/// Where the day's twists sit on the level intro, across every shape the app runs on.
+///
+/// **James, round 340: "centre the twists including the icon and labels - at the moment the
+/// icons look centred but the labels are to the right. It looks right on the iPhone 16 Pro but
+/// not on some of the other devices. Use how they are laid out on the Daily Challenge main menu
+/// view."**
+///
+/// The phrase that matters is "on some of the other devices": round 338's block was centred by
+/// measuring the widest line, so it was true wherever the measurement matched what was drawn and
+/// off-centre everywhere else. A test that looks at one screen would have passed. This one lays
+/// the label's own attributed text out through TextKit at each device width and checks the slack
+/// either side of every line, which is the thing James was looking at.
+final class DailyIntroTwistCentringTests: XCTestCase {
+
+    override func tearDown() {
+        DailyChallengeSession.shared.active = nil
+        super.tearDown()
+    }
+
+    private func intro(size: CGSize) -> InbetweenViewController? {
+        DailyChallengeSession.shared.active = DailyChallenge(
+            dateKey: DailyChallengeSession.shared.todayKey, mode: .classic,
+            classicLevel: 1, twists: [.fogOfWar, .oneLife, .noPowerUps])
+        let board = UIStoryboard(name: "Main", bundle: Bundle(for: InbetweenViewController.self))
+        guard let screen = board.instantiateViewController(withIdentifier: "inbetweenView")
+                as? InbetweenViewController else { return nil }
+        screen.levelNumber = 1
+        screen.loadViewIfNeeded()
+        screen.view.frame = CGRect(origin: .zero, size: size)
+        for _ in 0..<3 {
+            screen.view.setNeedsLayout()
+            screen.view.layoutIfNeeded()
+        }
+        return screen
+    }
+
+    /// Every shape: the SE's width, the 16 Pro's (where it always looked right), the Max's, and
+    /// both iPads, whose menu column is wider than any phone.
+    private let shapes: [(String, CGSize)] = [
+        ("iPhone SE", CGSize(width: 375, height: 667)),
+        ("iPhone 16 Pro", CGSize(width: 402, height: 874)),
+        ("iPhone 16 Pro Max", CGSize(width: 440, height: 956)),
+        ("iPad 11-inch", CGSize(width: 834, height: 1210)),
+        ("iPad 13-inch", CGSize(width: 1032, height: 1376)),
+    ]
+
+    /// No line is indented, and the paragraph centres itself the way the daily card's rows do.
+    func testTheTwistsAreCentredRatherThanIndented() throws {
+        for (name, size) in shapes {
+            let screen = try XCTUnwrap(intro(size: size), "the storyboard no longer has an "
+                                       + "inbetweenView")
+            let text = try XCTUnwrap(screen.levelNameLabel?.attributedText)
+            let style = text.attribute(.paragraphStyle, at: 0, effectiveRange: nil)
+                as? NSParagraphStyle
+            XCTAssertEqual(style?.alignment, .center,
+                           "\(name): the twists are laid out \(String(describing: style?.alignment)) "
+                           + "rather than centred")
+            XCTAssertEqual(style?.firstLineHeadIndent ?? 0, 0, accuracy: 0.5,
+                           "\(name): the twists are indented \(style?.firstLineHeadIndent ?? 0)pt, "
+                           + "which is round 338's measured block coming back")
+        }
+    }
+
+    /// And each drawn line has the same slack to its left as to its right.
+    func testEachTwistLineHasTheSameSlackEitherSide() throws {
+        for (name, size) in shapes {
+            let screen = try XCTUnwrap(intro(size: size))
+            let label = try XCTUnwrap(screen.levelNameLabel)
+            let text = try XCTUnwrap(label.attributedText)
+            XCTAssertGreaterThan(label.bounds.width, 0, "\(name): the twists label has no width")
+
+            let storage = NSTextStorage(attributedString: text)
+            let manager = NSLayoutManager()
+            let container = NSTextContainer(size: CGSize(width: label.bounds.width,
+                                                         height: .greatestFiniteMagnitude))
+            container.lineFragmentPadding = 0
+            container.maximumNumberOfLines = 0
+            storage.addLayoutManager(manager)
+            manager.addTextContainer(container)
+            manager.ensureLayout(for: container)
+
+            var index = 0
+            var lines = 0
+            while index < manager.numberOfGlyphs {
+                var range = NSRange(location: 0, length: 0)
+                let used = manager.lineFragmentUsedRect(forGlyphAt: index, effectiveRange: &range)
+                let left = used.minX
+                let right = label.bounds.width - used.maxX
+                XCTAssertEqual(left, right, accuracy: 1,
+                               "\(name): a twist line is drawn \(left)pt from the left of the "
+                               + "label and \(right)pt from the right, so the block is not centred")
+                index = NSMaxRange(range)
+                lines += 1
+            }
+            XCTAssertGreaterThanOrEqual(lines, 3, "\(name): only \(lines) twist lines were laid out")
+        }
+    }
+}
+
+/// Where the Game Center line ends up on the screens that show one.
+///
+/// **James, round 340: "game centre info is missing from iPhone SE."** It was not hidden, it
+/// was laid out below the button row: everything that placed the block was a minimum measured
+/// downwards from whatever was above it, and the only thing holding the block up was a wanted
+/// constraint, which a short screen is free to break. This checks the block is on the screen
+/// and above the buttons, on every shape, which is the claim rather than the constraint.
+final class GameCentreLineOnEveryScreenTests: XCTestCase {
+
+    private var windows: [UIWindow] = []
+
+    override func tearDown() {
+        windows.forEach { $0.isHidden = true }
+        windows.removeAll()
+        DailyChallengeSession.shared.active = nil
+        super.tearDown()
+    }
+
+    private let shapes: [(String, CGSize, Bool)] = [
+        ("iPhone SE", CGSize(width: 375, height: 667), false),
+        ("iPhone 16 Pro", CGSize(width: 402, height: 874), false),
+        ("iPhone 16 Pro Max", CGSize(width: 440, height: 956), false),
+        ("iPad 13-inch", CGSize(width: 1032, height: 1376), true),
+        ("smallest window", CGSize(width: 320, height: 568), false),
+    ]
+
+    private func gameOver(size: CGSize, regular: Bool) -> PauseMenuViewController? {
+        DailyChallengeSession.shared.active = DailyChallenge(
+            dateKey: DailyChallengeSession.shared.todayKey, mode: .classic,
+            classicLevel: 1, twists: [])
+        let board = UIStoryboard(name: "Main", bundle: Bundle(for: PauseMenuViewController.self))
+        guard let screen = board.instantiateViewController(withIdentifier: "pauseMenuVC")
+                as? PauseMenuViewController else { return nil }
+        screen.sender = "GameOver"
+        screen.levelNumber = LevelPackSetup().startLevelNumber[2] + 2
+        screen.score = 3200
+        screen.totalStatsArray = [TotalStats()]
+        screen.loadViewIfNeeded()
+
+        let window = UIWindow(frame: CGRect(origin: .zero, size: size))
+        window.traitOverrides.horizontalSizeClass = regular ? .regular : .compact
+        window.rootViewController = screen
+        window.isHidden = false
+        windows.append(window)
+        screen.viewWillAppear(false)
+
+        // Game Center does not answer in a test, so the line is put up by hand: what is under
+        // test is where it lands, not whether it is asked for.
+        screen.leaderboardTitle.isHidden = false
+        screen.resultLabel.isHidden = false
+        screen.resultLabel.text = "7/102 on today's leaderboard"
+        for _ in 0..<4 {
+            window.setNeedsLayout()
+            window.layoutIfNeeded()
+        }
+        return screen
+    }
+
+    /// The block is above the row of buttons, and on the screen, at every size.
+    func testTheLeaderboardLineIsNeverPushedOffTheBottom() throws {
+        for (name, size, regular) in shapes {
+            let screen = try XCTUnwrap(gameOver(size: size, regular: regular),
+                                       "the storyboard no longer has a pauseMenuVC")
+            let root = screen.view!
+            let buttons = screen.buttonCollectionView.convert(
+                screen.buttonCollectionView.bounds, to: root)
+            for (what, label) in [("GAME CENTER", screen.leaderboardTitle),
+                                  ("the placing", screen.resultLabel)] {
+                let place = label.convert(label.bounds, to: root)
+                XCTAssertGreaterThan(place.height, 0, "\(name): \(what) has no height")
+                XCTAssertLessThanOrEqual(place.maxY, buttons.minY + 0.5,
+                                         "\(name): \(what) is drawn at \(place.maxY) and the "
+                                         + "button row starts at \(buttons.minY), so it is "
+                                         + "behind the buttons")
+                XCTAssertLessThanOrEqual(place.maxY, root.bounds.height + 0.5,
+                                         "\(name): \(what) is off the bottom of the screen")
+                XCTAssertGreaterThanOrEqual(place.minY, 0,
+                                            "\(name): \(what) is off the top of the screen")
+            }
         }
     }
 }

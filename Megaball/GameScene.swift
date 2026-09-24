@@ -5345,6 +5345,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		if soundsSetting {
 			if ball.position.x > paddleLeftEdgePosition + ball.size.width/3 && ball.position.x < paddleRightEdgePosition - ball.size.width/3 && stickyPaddleCatches != 0 {
 				self.run(stickyPaddleHitSound)
+			} else if endlessIIBallSpinIsRunning, let spin = GameScene.mayhemSound("ballSpinPaddleHit") {
+				self.run(spin)
+				// **James, round 340: "ball spin paddle hit - instead of paddle hit when ball
+				// spin power-up is active and ball hits paddle."** The spin is put on the ball
+				// *by* the paddle, so the bounce that does it is the moment worth hearing
 			} else {
 				self.run(ballPaddleHitSound)
 			}

@@ -17,6 +17,7 @@
 
 import UIKit
 import SpriteKit
+import CoreImage
 
 enum PowerUpIcon {
 
@@ -1365,15 +1366,54 @@ extension DailyTwist {
     /// and changes no positions, so it falls through untouched.
     static func presented(_ image: UIImage?, under twists: [DailyTwist]) -> UIImage? {
         guard let image, let bitmap = image.cgImage else { return image }
+        let turned: UIImage
         switch layoutFlip(in: twists) {
         case .mirrored:
-            return UIImage(cgImage: bitmap, scale: image.scale, orientation: .upMirrored)
+            turned = UIImage(cgImage: bitmap, scale: image.scale, orientation: .upMirrored)
         case .upsideDown:
-            return UIImage(cgImage: bitmap, scale: image.scale, orientation: .downMirrored)
+            turned = UIImage(cgImage: bitmap, scale: image.scale, orientation: .downMirrored)
         default:
-            return image
+            turned = image
         }
+
+        guard twists.contains(.monochromatic) else { return turned }
+        return DailyTwist.drainedOfColour(turned) ?? turned
+        // **The picture is drained too** (James, round 340, on a Monochromatic day: the level
+        // preview was in full colour). The card is where a player decides what they are walking
+        // into, and every other thing on it already answers to the day's twists - the level is
+        // shown mirrored on a Mirrored day and upside down on an Upside Down one. A colour
+        // picture of a game that is about to arrive in grey is the card telling them the wrong
+        // thing about it.
     }
+
+    /// The same greyscale the run itself is played in.
+    ///
+    /// `CIPhotoEffectMono`, because that is the filter `applyDailyMonochrome` hangs on the
+    /// scene - the preview and the run are the same picture, so they have to be drained the
+    /// same way. A second opinion about what "no colour" looks like would show as a card that
+    /// does not match the game it opens.
+    ///
+    /// Returns nil rather than a half-drawn picture if Core Image will not answer, and the
+    /// caller falls back to the colour one: a coloured preview is a smaller fault than none.
+    static func drainedOfColour(_ image: UIImage) -> UIImage? {
+        guard let bitmap = image.cgImage,
+              let filter = CIFilter(name: "CIPhotoEffectMono") else { return nil }
+        filter.setValue(CIImage(cgImage: bitmap), forKey: kCIInputImageKey)
+        guard let output = filter.outputImage,
+              let drawn = DailyTwist.colourContext.createCGImage(output, from: output.extent)
+        else { return nil }
+        return UIImage(cgImage: drawn, scale: image.scale,
+                       orientation: image.imageOrientation)
+        // The orientation is carried across rather than baked in: `turned` above says which way
+        // up the level is by wearing an orientation over the original bitmap, and the filtered
+        // bitmap is that same bitmap greyed, so it needs the same instruction
+    }
+
+    /// One context for every preview drawn, rather than one per picture.
+    ///
+    /// A `CIContext` is expensive to build and cheap to keep, and the daily menu redraws its
+    /// card on every swipe.
+    private static let colourContext = CIContext(options: nil)
 
     func titleLine(font: UIFont, colour: UIColor) -> NSAttributedString {
         DailyTwist.badgedLine(icon: icon, name: displayName, font: font, colour: colour)

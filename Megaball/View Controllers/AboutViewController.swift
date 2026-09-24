@@ -138,11 +138,13 @@ class AboutViewController: UIViewController, UICollectionViewDelegate, UICollect
 
     @objc private func openWebsite() {
         if hapticsSetting { interfaceHaptic.impactOccurred() }
+        InterfaceSound.click()
         if let site = URL(string: "https://giga-ball.app") { UIApplication.shared.open(site) }
     }
 
     @objc private func openMail() {
         if hapticsSetting { interfaceHaptic.impactOccurred() }
+        InterfaceSound.click()
         if let mail = URL(string: "mailto:contact@giga-ball.app?subject=Giga-Ball") {
             UIApplication.shared.open(mail)
         }
@@ -189,6 +191,7 @@ class AboutViewController: UIViewController, UICollectionViewDelegate, UICollect
     func collectionView(_ collectionView: UICollectionView, didHighlightItemAt indexPath: IndexPath) {
         if hapticsSetting {
             interfaceHaptic.impactOccurred()
+            InterfaceSound.click()
         }
         if let cell = self.backButtonCollectionView.cellForItem(at: indexPath) as? MainMenuCollectionViewCell {
             UIView.animate(withDuration: 0.1) {

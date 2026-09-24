@@ -220,7 +220,10 @@ extension UIViewController {
     /// One number for all five screens. The wordmark stays where it is on each of them, so the
     /// mark itself does not move between the resume card, the intro, the between-levels card,
     /// the pause screen and the game-over card.
-    static let inGameLogoToIconGap: CGFloat = 34
+    static let inGameLogoToIconGap: CGFloat = 42
+    // **Forty-two since round 340**, eight more than round 339's, for the level intro's swell:
+    // the card scales about its own centre while the wordmark holds still, so the badge is
+    // thrown upwards as it comes in. See `InbetweenViewController.introZoom`
 
     /// How far the bottom row of buttons sits above the bottom of an in-game screen.
     ///

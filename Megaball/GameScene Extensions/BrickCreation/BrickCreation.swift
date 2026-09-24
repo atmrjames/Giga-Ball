@@ -120,6 +120,7 @@ extension GameScene {
 
         if hapticsSetting {
             interfaceHaptic.impactOccurred()
+            InterfaceSound.click()
         }
 
         resumeGame()

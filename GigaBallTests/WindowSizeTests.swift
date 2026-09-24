@@ -243,7 +243,14 @@ final class WindowSizeTests: XCTestCase {
     /// be, because it decides how small a player is allowed to make the game.
     func testTheWindowFloorIsTheSmallestPhoneTheAppSupports() {
         XCTAssertEqual(SceneDelegate.smallestWindow, CGSize(width: 320, height: 568),
-                       "the iPhone SE, which is the smallest screen iOS 15 runs on")
+                       "the floor a player may pull an iPad or Mac window down to")
+        // **Round 340: this number is no longer a phone, and it is still the right floor.** It
+        // was chosen as the original iPhone SE's screen, back when the app ran on iOS 15; the
+        // deployment target is iOS 17 now, which that phone cannot run, and the smallest phone
+        // that can is the SE 2nd and 3rd generation at 375x667. What keeps 320x568 here is the
+        // other thing it is: a window, on an iPad in Slide Over or a Mac, which a player can
+        // make this small whatever phone they own. Raising it would take that away from them,
+        // so it is James's call rather than a tidy-up.
     }
 
     /// **The play zone keeps its ratio and stays inside the window at every shape** (round 312).

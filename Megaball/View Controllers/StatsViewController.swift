@@ -174,6 +174,7 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         selectedTab = chosen
         if hapticsSetting {
             interfaceHaptic.impactOccurred()
+            InterfaceSound.click()
         }
         reloadRows()
     }
@@ -265,6 +266,7 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
                 case 0:
                     if self.hapticsSetting {
                         self.interfaceHaptic.impactOccurred()
+                        InterfaceSound.click()
                     }
                     cell.setPressedArtwork(UIImage(named:"ButtonCloseHighlighted"))
                 case 1:
@@ -273,6 +275,7 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
                     if self.gameCenterSetting {
                         if self.hapticsSetting {
                             self.interfaceHaptic.impactOccurred()
+                            InterfaceSound.click()
                         }
                         cell.setButton("ButtonLeaderboardHighlighted")
                     } else {
@@ -422,6 +425,7 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         gameCenterViewController.dismiss(animated: true, completion: nil)
         if hapticsSetting {
             interfaceHaptic.impactOccurred()
+            InterfaceSound.click()
         }
     }
     // Remove game center view contoller once dismissed

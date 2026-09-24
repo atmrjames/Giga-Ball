@@ -293,8 +293,7 @@ extension GameScene {
     func activeRecentPowerUpIndices() -> Set<Int> {
         var active: Set<Int> = []
 
-        let families: [[Int]] = [[2, 3], [4, 5], [15, 16], [6], [7], [20, 21], [22],
-                                 [26, 27]]
+        let families = GameScene.trayPowerUpFamilies
         // Tray slot order: ball speed, paddle size, hidden bricks, sticky, gravity,
         // Giga/Undestructi-Ball, lasers, ball size - the same order iconArray holds
         for (slot, bar) in iconTimerArray.enumerated()
@@ -381,5 +380,37 @@ extension GameScene {
         // was being written into the recents as a Tiny brick
         // The normal size goes unrecorded on purpose: "you just hit an ordinary-sized
         // brick" identifies nothing
+    }
+}
+
+extension GameScene {
+
+    /// The original power-ups grouped by the tray slot they share.
+    ///
+    /// A slot is a family, and a family is a contradiction: the bar that counts Expand Paddle
+    /// down is the same bar Shrink Paddle uses, so catching one while the other runs replaces
+    /// it. That is what the tray has meant since 2020 - it is why each slot holds a good-and-bad
+    /// pair - and it is therefore the game's own answer to "what cancels what" among these
+    /// twenty-eight, rather than a second opinion written down beside it.
+    ///
+    /// Read by `activeRecentPowerUpIndices`, which asks which family a lit bar belongs to, and
+    /// by the Always On twist, which asks what must not drop.
+    static let trayPowerUpFamilies: [[Int]] = [[2, 3], [4, 5], [15, 16], [6], [7], [20, 21],
+                                               [22], [26, 27]]
+
+    /// What catching `index` would end, among the original power-ups.
+    ///
+    /// **James, round 340, on an Always On day: the twist "shouldn't show cancelling
+    /// power-ups."** `endlessIIExclusiveIndicesEnded(byCollecting:)` has answered this for
+    /// Mayhem's own since round 223, and nothing answered it for the twenty-eight - so a
+    /// Classic Always On day standing on Expand Paddle still dropped Shrink Paddle, and the
+    /// day's twist could be taken away by a drop roll.
+    ///
+    /// Empty for a power-up that shares its slot with nothing, and for anything outside the
+    /// original set: Mayhem's own are `EndlessIIExclusions`' business.
+    static func classicIndicesEnded(byCollecting index: Int) -> [Int] {
+        guard let family = trayPowerUpFamilies.first(where: { $0.contains(index) })
+        else { return [] }
+        return family.filter { $0 != index }
     }
 }

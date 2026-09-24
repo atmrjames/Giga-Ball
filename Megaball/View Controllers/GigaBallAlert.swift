@@ -585,18 +585,21 @@ final class GigaBallAlertViewController: UIViewController {
 
     @objc private func confirmTapped() {
         if hapticsSetting { interfaceHaptic.impactOccurred() }
+        InterfaceSound.click()
         let action = confirm
         close { action?() }
     }
 
     @objc private func dismissTapped() {
         if hapticsSetting { interfaceHaptic.impactOccurred() }
+        InterfaceSound.click()
         let action = dismiss
         close { action?() }
     }
 
     @objc private func otherTapped() {
         if hapticsSetting { interfaceHaptic.impactOccurred() }
+        InterfaceSound.click()
         let action = other
         close { action?() }
     }
