@@ -103,7 +103,12 @@ enum DailyDay {
 /// A named, self-describing rule change (§4). The raw value is the persistence and
 /// pool-identity name - append-only, never renamed.
 enum DailyTwist: String, CaseIterable, Codable {
-    case oneLife, loaded, suddenDeath, spareBalls
+    case oneLife, spareBalls
+    // **Loaded and Sudden Death are gone** (James, round 347: "remove from the game"). Retired
+    // in round 228 and kept since for a stored day's sake - but no stored thing holds a twist:
+    // a record and a save keep the day's *date*, and the day is rebuilt from it. And both
+    // carried a retirement date before the first daily, so neither ever entered a pool, and
+    // taking them out of `allCases` moves no day's draw. The golden-record test says so
     case noPowerUps, noGoodNews, noBadNews, powerShower, drought
     case fogOfWar
     case mirrored, upsideDown, brickSwap
@@ -158,7 +163,7 @@ enum DailyTwist: String, CaseIterable, Codable {
 
     var category: Category {
         switch self {
-        case .oneLife, .loaded, .suddenDeath, .spareBalls: return .lives
+        case .oneLife, .spareBalls: return .lives
         case .noPowerUps, .noGoodNews, .noBadNews, .powerShower, .drought: return .economy
         case .fogOfWar: return .dress
         case .mirrored, .upsideDown, .brickSwap: return .layout
@@ -190,15 +195,15 @@ enum DailyTwist: String, CaseIterable, Codable {
     var displayName: String {
         switch self {
         case .oneLife: return "One Life"
-        case .loaded: return "Loaded"
-        case .suddenDeath: return "Sudden Death"
         case .spareBalls: return "Extra Balls"
         case .noPowerUps: return "No Power-Ups"
         case .noGoodNews: return "No Good News"
         case .noBadNews: return "No Bad News"
         case .powerShower: return "Power Shower"
         case .drought: return "Drought"
-        case .fogOfWar: return "Fog of War"
+        case .fogOfWar: return "Foggy"
+        // Renamed by James in round 347. The case keeps its old name: a raw value is a pool
+        // identity, and renaming one would move every day that drew it
         case .mirrored: return "Mirrored"
         case .upsideDown: return "Upside Down"
         case .brickSwap: return "Brick Swap"
@@ -251,18 +256,16 @@ enum DailyTwist: String, CaseIterable, Codable {
 
     var blurb: String {
         switch self {
-        case .oneLife: return "Only one ball is provided"
-        case .loaded: return "Five balls. Spend them well."
-        case .suddenDeath: return "Any ball lost ends the run - every ball, every mode."
+        case .oneLife: return "Start with only 1 ball"
         case .spareBalls: return "Two extra balls are provided"
         case .noPowerUps: return "Just the paddle, the ball and the bricks"
         case .noGoodNews: return "Bad power-ups only"
         case .noBadNews: return "Good power-ups only"
         case .powerShower: return "Power-ups are more frequent"
         case .drought: return "Power-ups are rare"
-        case .fogOfWar: return "Every brick is invisible"
-        case .mirrored: return "The level is presented mirrored"
-        case .upsideDown: return "The level is presented upside down"
+        case .fogOfWar: return "Every brick starts invisible"
+        case .mirrored: return "Flips the level horizontally"
+        case .upsideDown: return "Flips the level vertically"
         case .brickSwap: return "Brick types are swapped around"
         case .noPausing: return "The pause button is disabled"
         case .timeTrial: return "There’s only 90s available but unlimited balls"
@@ -271,11 +274,10 @@ enum DailyTwist: String, CaseIterable, Codable {
         case .dailyTheme: return "One theme is applied"
         case .alwaysOn: return "One power-up is permanently active"
         case .landslide: return "Bricks continuously descend downwards"
-        case .fullDeck:
-            return "Everything is in play from the first metre. The rare stays rare."
-        case .levelPegging:
-            return "Everything is in play from the first metre, and nothing is rarer than "
-                + "anything else."
+        case .fullDeck: return "Everything is in play from the start"
+        case .levelPegging: return "Rarity rules are removed"
+        // James's wording, round 347. No blurb ends in a full stop: they are labels under a
+        // name, and two of the twenty had one
         }
     }
 
@@ -292,15 +294,6 @@ enum DailyTwist: String, CaseIterable, Codable {
             // endless modes means a rack where there was none. It began as the generous day
             // for the single-ball modes (James's suggestion from the first daily play test)
             // and has grown into the one lives twist that gives
-        case .loaded:
-            return false
-            // **Retired** (James, round 228: "extra balls covers loaded"). Five lives in
-            // Classic and three balls in the endless modes were the same idea counted twice,
-            // and Extra Balls says it in a way that means something in every mode.
-            //
-            // The case stays rather than being deleted, for the reason `PowerUpAvailability
-            // .retired` exists: a raw value is what a stored day is written down as, and a
-            // day already played would decode into nothing without it
         case .mirrored, .upsideDown, .brickSwap:
             return mode == .classic
         case .landslide:
@@ -324,13 +317,6 @@ enum DailyTwist: String, CaseIterable, Codable {
             // A designed layout is the thing being turned over, and only Classic has one:
             // the endless fields are generated a row at a time, where "the wrong way round"
             // would be a different random field rather than a familiar one seen afresh
-        case .suddenDeath:
-            return false
-            // **Retired** (James, round 228: "sudden death is replaced by one life"), where
-            // it had only been parked. The reasoning was already written and has not changed:
-            // in the endless modes it was One Life said twice, and in Classic it is One Life
-            // by another name. The scene keeps its teeth, because a hand-built challenge can
-            // still ask for it
         default:
             return true
         }
@@ -373,16 +359,12 @@ enum DailyTwist: String, CaseIterable, Codable {
     /// days after roll afresh. Set it in the *future* after 1.3 ships, the way an activation
     /// is set in the future, and nothing a player has played can move.
     ///
-    /// Loaded and Sudden Death carry a date before the game's first daily, which is the one
-    /// thing that will not be allowed later: it rewrites history, and it is allowed here only
-    /// because there is no history yet (James: "happy to overwrite previous daily challenge
-    /// days as we're not yet released"). The golden-record test caught the change, which is
-    /// what it is for, and its pins were re-taken deliberately rather than quietly.
+    /// Nothing is retired today. Loaded and Sudden Death were, with a date before the game's
+    /// first daily, and round 347 removed them outright - which is safe only because they never
+    /// entered a pool. A twist retired *after* 1.3 ships must keep its case and take a real
+    /// date here, because the days before that date drew it.
     var retirementKey: String {
-        switch self {
-        case .loaded, .suddenDeath: return "2000-01-01"
-        default: return "9999-12-31"
-        }
+        "9999-12-31"
     }
 
     /// Whether this twist may be drawn for a day with this key.
@@ -521,7 +503,6 @@ enum DailyTwist: String, CaseIterable, Codable {
     /// The draw weight within its category.
     var weight: Int {
         switch self {
-        case .suddenDeath: return 6
         case .noPowerUps: return 8
         case .fogOfWar: return 8
         default: return 10

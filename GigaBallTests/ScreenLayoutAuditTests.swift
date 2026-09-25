@@ -762,7 +762,7 @@ final class InGameGalleryTests: XCTestCase {
     func testPrintTheHeaderGeometry() {
         DailyChallengeSession.shared.active = DailyChallenge(
             dateKey: DailyChallengeSession.shared.todayKey, mode: .classic,
-            classicLevel: 0, twists: [.fogOfWar, .mirrored, .suddenDeath])
+            classicLevel: 0, twists: [.fogOfWar, .mirrored, .timeTrial])
         guard let host = inbetween(size: CGSize(width: 320, height: 568), configure: {
             $0.levelNumber = 1
             $0.packNumber = 2
@@ -884,7 +884,7 @@ final class InGameGalleryTests: XCTestCase {
 
             for (label, twists) in [("notwists", [DailyTwist]()),
                                     ("1twist", [.fogOfWar]),
-                                    ("3twists", [.fogOfWar, .mirrored, .suddenDeath])] {
+                                    ("3twists", [.fogOfWar, .mirrored, .timeTrial])] {
                 DailyChallengeSession.shared.active = DailyChallenge(
                     dateKey: DailyChallengeSession.shared.todayKey, mode: .classic,
                     classicLevel: 0, twists: twists)

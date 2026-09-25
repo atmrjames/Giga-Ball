@@ -201,7 +201,7 @@ enum BrickTypeCatalogue {
     private static func description(of style: EndlessIIStyle) -> String {
         switch style {
         case .rounded:
-            return "Smooth, corner-less brick"
+            return "No sharp edges"
         case .spinning:
             return "Spins around its centre"
         case .flashing:
@@ -221,7 +221,7 @@ enum BrickTypeCatalogue {
         case .spawner:
             return "Creates new bricks nearby when hit"
         case .portal:
-            return "Sends the ball to the top or to another portal brick. Cannot be destroyed"
+            return "Sends the ball through a portal"
         case .convex:
             return "Pointy brick"
         case .concave:

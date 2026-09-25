@@ -323,13 +323,21 @@ final class PowerUpDurationTextTests: XCTestCase {
         setup.powerUpNameArray.firstIndex(of: name) ?? -1
     }
 
+    /// James, round 347: "Mystery and Backstop say 'Complete Body to unlock', and Expand Ball
+    /// and Shrink Ball say 'Complete Computer to unlock'. Every other unlock line says 'Pack'.
+    /// - fix this"
+    func testEveryPackUnlockLineSaysPack() {
+        for line in setup.powerUpUnlockedDescriptionArray where line.hasPrefix("Complete ") {
+            XCTAssertTrue(line.contains(" Pack "), line)
+        }
+    }
+
     /// Every duration the page prints is one of the four the game has.
     func testThePageOnlySpeaksOfDurationsTheGameHas() {
-        let allowed: Set<String> = ["", "10s", "5 paddle hits", "5 bounces",
-                                    "1 backstop hit", "Until a Key"]
-        // "5 bounces" is the Safety Paddle since round 305 - bounces off the *bar*, which is
-        // not the same thing as the paddle hits the rest of the batch counts, and is spelled
-        // differently so the page does not claim it is
+        let allowed: Set<String> = ["", "10s", "5 paddle hits", "1 backstop hit", "Until a Key"]
+        // Round 305 spelled the Safety Paddle "5 bounces", its bounces being off the *bar*
+        // rather than the paddle. James, round 347, on that line and the retired Jagged
+        // Paddle's "5 hits": "fix this" - one wording for every count of hits on a paddle
         let retired = setup.retiredPowerUpIndices
         for (i, timer) in setup.powerUpTimerArray.enumerated() where retired.contains(i) == false {
             XCTAssertTrue(allowed.contains(timer),

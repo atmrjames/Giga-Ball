@@ -938,10 +938,6 @@ final class DailyChallengeTests: XCTestCase {
         XCTAssertEqual(one.dailyStartingLives, 0, "one ball total - none in reserve")
 
         DailyChallengeSession.shared.active = DailyChallenge(
-            dateKey: "t", mode: .classic, classicLevel: 1, twists: [.loaded])
-        XCTAssertEqual(one.dailyStartingLives, 4, "five balls total - four racked")
-
-        DailyChallengeSession.shared.active = DailyChallenge(
             dateKey: "t", mode: .endlessII, classicLevel: nil, twists: [.spareBalls])
         XCTAssertEqual(one.dailyStartingLives, 2,
                        "the endless lives twist: two spares behind the ball in play")
@@ -958,7 +954,7 @@ final class DailyChallengeTests: XCTestCase {
         XCTAssertTrue(scene.livesRowSuppressed)
 
         DailyChallengeSession.shared.active = DailyChallenge(
-            dateKey: "t", mode: .classic, classicLevel: 1, twists: [.loaded])
+            dateKey: "t", mode: .classic, classicLevel: 1, twists: [.spareBalls])
         scene.numberOfLives = 4
         XCTAssertFalse(scene.livesRowSuppressed, "a rack with balls in it stays")
     }
@@ -976,17 +972,6 @@ final class DailyChallengeTests: XCTestCase {
             dateKey: "t", mode: .endlessII, classicLevel: nil, twists: [])
         XCTAssertTrue(scene.livesRowSuppressed,
                       "an ordinary endless daily keeps the modes' own rule - no counter")
-    }
-
-    func testSuddenDeathIsParkedFromThePool() {
-        // Play test: "The sudden death twist doesn't make sense in endless modes" - the
-        // endless modes are one life already, and in Classic it is One Life by another
-        // name until Mayhem Rules can put several balls in a Classic level. No mode may
-        // draw it, which the generator's applicability filter enforces.
-        for mode in [GameMode.classic, .endless, .endlessII] {
-            XCTAssertFalse(DailyTwist.suddenDeath.applies(to: mode),
-                           "\(mode) can still draw Sudden Death")
-        }
     }
 
     func testAClassicDailyStandsDownTheEconomyPowerUps() {
@@ -1039,19 +1024,6 @@ final class DailyChallengeTests: XCTestCase {
             XCTAssertTrue(GameScene.endlessIIHarmfulPowerUps.contains(index),
                           "power-up \(index) survived a bad-news-only day")
         }
-    }
-
-    func testSuddenDeathOverrulesMultiBall() {
-        let scene = dailyScene(DailyChallenge(dateKey: "t", mode: .endlessII,
-                                              classicLevel: nil, twists: [.suddenDeath]))
-        scene.addChild(scene.ball)
-        let extra = SKSpriteNode()
-        extra.name = BallCategoryName
-        scene.addChild(extra)
-        scene.endlessIIExtraBalls.append(extra)
-
-        XCTAssertFalse(scene.endlessIIBallWasLost(scene.ball),
-                       "false means the life is lost - the run does not carry on")
     }
 
     func testFogHidesEveryBrickType() {
@@ -2072,26 +2044,16 @@ final class DailyTwistWorkbookTests: XCTestCase {
         return scene
     }
 
-    /// Neither retired twist can be drawn for any mode.
-    func testTheRetiredTwistsAreOfferedNowhere() {
-        for mode in [GameMode.classic, .endless, .endlessII] {
-            XCTAssertFalse(DailyTwist.loaded.applies(to: mode),
-                           "Loaded is still in \(mode.name)'s pool")
-            XCTAssertFalse(DailyTwist.suddenDeath.applies(to: mode),
-                           "Sudden Death is still in \(mode.name)'s pool")
+    /// James, round 347: "Loaded and Sudden Death aren't offered in any mode, so no player sees
+    /// them now - remove from the game if there's any references." Gone as names, and no twist
+    /// left in the game is one nobody can be given.
+    func testLoadedAndSuddenDeathAreGoneAndEveryTwistLeftCanBeDrawn() {
+        XCTAssertNil(DailyTwist(rawValue: "loaded"))
+        XCTAssertNil(DailyTwist(rawValue: "suddenDeath"))
+        for twist in DailyTwist.allCases {
+            XCTAssertTrue([GameMode.classic, .endless, .endlessII].contains { twist.applies(to: $0) },
+                          "\(twist.displayName) is offered in no mode")
         }
-    }
-
-    /// Their raw values stay, because a stored day is written down as one.
-    func testTheirNamesStillDecode() {
-        XCTAssertEqual(DailyTwist(rawValue: "loaded"), .loaded)
-        XCTAssertEqual(DailyTwist(rawValue: "suddenDeath"), .suddenDeath)
-    }
-
-    /// And a challenge built by hand still means what it says.
-    func testAHandBuiltChallengeStillHonoursThem() {
-        XCTAssertEqual(scene([.loaded]).dailyStartingLives, 4)
-        XCTAssertEqual(scene([.suddenDeath]).dailyStartingLives, 0)
     }
 
     /// Extra Balls reaches every mode now, and means two more than the mode's own rack.
@@ -2168,10 +2130,6 @@ final class DailyTwistRetirementTests: XCTestCase {
 
     /// A retirement date is honoured on the day it names, and not before.
     func testARetirementTakesEffectOnItsOwnDate() {
-        XCTAssertFalse(DailyTwist.loaded.inPool(on: "2026-11-15", for: .classic),
-                       "a retired twist is still being offered")
-        XCTAssertFalse(DailyTwist.suddenDeath.inPool(on: "2026-11-15", for: .classic))
-
         XCTAssertTrue(DailyTwist.oneLife.inPool(on: "2026-11-15", for: .classic),
                       "a living twist was retired by accident")
     }
@@ -2615,7 +2573,7 @@ final class TwistNamesMatchTheWorkbookTests: XCTestCase {
 
     /// The workbook's Twist column, for the twists the game has built.
     private let workbook: [DailyTwist: String] = [
-        .fogOfWar: "Fog of War", .noBadNews: "No Bad News", .noGoodNews: "No Good News",
+        .fogOfWar: "Foggy", .noBadNews: "No Bad News", .noGoodNews: "No Good News",
         .noPowerUps: "No Power-Ups", .drought: "Drought", .spareBalls: "Extra Balls",
         .powerShower: "Power Shower", .oneLife: "One Life", .alwaysOn: "Always On",
         .upsideDown: "Upside Down", .mirrored: "Mirrored", .brickSwap: "Brick Swap",
@@ -2624,6 +2582,9 @@ final class TwistNamesMatchTheWorkbookTests: XCTestCase {
         .noPausing: "No Breaks",
     ]
 
+    /// Foggy was Fog of War in the workbook, and James renamed it in round 347 ("Fog of war
+    /// (rename to Foggy)"). The workbook is his document, so the rename is his decision and
+    /// this list follows it.
     func testEveryTwistIsCalledWhatTheWorkbookCallsIt() {
         for (twist, name) in workbook {
             XCTAssertEqual(twist.displayName, name, "\(twist)")
@@ -2643,10 +2604,18 @@ final class TwistNamesMatchTheWorkbookTests: XCTestCase {
     /// that forbids building anything before it is written down. What is *not* allowed is a
     /// twist in neither set.
     func testTheOnlyTwistsMissingFromTheWorkbookAreTheRetiredOnesAndTheNewOnes() {
-        let retired: Set<DailyTwist> = [.loaded, .suddenDeath]
         let sinceTheWorkbook: Set<DailyTwist> = [.fullDeck, .levelPegging]
         let missing = Set(DailyTwist.allCases).subtracting(workbook.keys)
-        XCTAssertEqual(missing, retired.union(sinceTheWorkbook))
+        XCTAssertEqual(missing, sinceTheWorkbook)
+        // The retired pair left the game in round 347, so every other case is in the workbook
+    }
+
+    /// James, round 347: "Twist punctuation: Loaded, Sudden Death, Full Deck and Level Pegging
+    /// end with full stops. The other eighteen don't. - Fix". A blurb is a label under a name.
+    func testNoTwistBlurbEndsInAFullStop() {
+        for twist in DailyTwist.allCases {
+            XCTAssertFalse(twist.blurb.hasSuffix("."), "\(twist.displayName): \(twist.blurb)")
+        }
     }
 
     /// Every twist says something, and says it once.
@@ -2672,7 +2641,7 @@ final class TwistNamesMatchTheWorkbookTests: XCTestCase {
         // **Balls, not lives** (James, round 340: "in the time trial, the unlimited lives
         // should say unlimited balls"). The workbook's column says lives and every other
         // surface in the game says balls - the rack, the line under it, the other twists in
-        // this very list ("Only one ball is provided", "Two extra balls are provided"). The
+        // this very list ("Start with only 1 ball", "Two extra balls are provided"). The
         // fact is the workbook's; the noun is the game's.
         // **The workbook's words, not the game's** (round 310). The blurb used to say "you
         // won't lose the ball", which is the same fact in the game's own voice, and James asked
@@ -3194,7 +3163,7 @@ final class DailyExtraBallsTests: XCTestCase {
     func testTheEmptyingTwistsStillEmptyIt() {
         let scene = GameScene()
         scene.numberOfLives = 3
-        for twist in [DailyTwist.oneLife, .suddenDeath] {
+        for twist in [DailyTwist.oneLife] {
             DailyChallengeSession.shared.active = DailyChallenge(
                 dateKey: "2026-10-08", mode: .classic, classicLevel: 3, twists: [twist])
             XCTAssertEqual(scene.dailyStartingLives, 0,

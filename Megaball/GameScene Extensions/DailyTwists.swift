@@ -35,13 +35,6 @@ extension GameScene {
         guard isDailyChallenge else { return nil }
         if DailyChallengeSession.shared.has(.oneLife) { return 0 }
         // One ball total: the one on the paddle, an empty rack
-        if DailyChallengeSession.shared.has(.loaded) { return 4 }
-        // Five balls total, four of them racked. Retired from the pool in round 228 - Extra
-        // Balls covers it - but a hand-built challenge still means what it says
-        if DailyChallengeSession.shared.has(.suddenDeath) { return 0 }
-        // Sudden Death in Classic is One Life by another name; in the endless modes it
-        // has its own teeth (see endlessIIBallWasLost's gate). Retired in round 228 for
-        // exactly that reason, and still honoured if a challenge asks for it
         if DailyChallengeSession.shared.has(.spareBalls) {
             let endless = DailyChallengeSession.shared.active?.mode.isEndless ?? endlessMode
             return endless ? 2 : GameScene.classicStartingRack + 2
@@ -184,11 +177,6 @@ extension GameScene {
 
         totalStatsArray[0].upsertDailyRecord(record)
         // Persisted by the saveGameStats that follows in the end-of-run sequence
-    }
-
-    /// Whether losing any ball ends the run today, whatever the mode's own rules say.
-    var dailySuddenDeath: Bool {
-        isDailyChallenge && DailyChallengeSession.shared.has(.suddenDeath)
     }
 
     /// Applies the day's economy to the power-up tables.

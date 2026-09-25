@@ -229,8 +229,7 @@ final class ArtStillToDrawTests: XCTestCase {
         // twist matrix, which is why they were not in the first set of twenty
     ]
 
-    /// The two that are furniture rather than twists: retired, kept only so a case name that
-    /// is a key in the save and in `retirementKey` never changes meaning.
+    /// Twists kept in the code but no longer drawn, which need no artwork. None today.
     private var retiredTwists: [DailyTwist] {
         DailyTwist.allCases.filter { $0.retirementKey < "9999" }
     }
@@ -312,10 +311,10 @@ final class ArtStillToDrawTests: XCTestCase {
                        + "drawings, which is how one gets missed")
     }
 
-    func testTheRetiredTwistsAreTheTwoNobodyCanBeGiven() {
-        XCTAssertEqual(Set(retiredTwists), Set([.loaded, .suddenDeath]),
-                       "they need no artwork because no day can draw them - they are kept so "
-                       + "that a case name which is a key in the save keeps its meaning")
+    func testNoTwistIsRetiredToday() {
+        XCTAssertEqual(retiredTwists, [],
+                       "Loaded and Sudden Death left the game in round 347. A twist retired "
+                       + "after 1.3 ships keeps its case and needs no artwork")
     }
 
     /// The list, printed, so a round that adds a type or a shape can read what it owes.

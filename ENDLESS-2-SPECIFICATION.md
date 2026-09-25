@@ -2599,6 +2599,27 @@ testing." What it found and did:
   section. Committed in the website's own clone and not pushed until James has seen it, since
   the site is live.
 
+**Round 347: James's notes on the description list, and the website live.**
+
+- **Wording**, James's own: the Round and Portal bricks ("No sharp edges", "Sends the ball
+  through a portal"); the Portal and Laser Beam power-ups; One Life, Mirrored, Upside Down,
+  Full Deck and Level Pegging; **Fog of War renamed Foggy** ("Every brick starts invisible"),
+  the case keeping its old name because a raw value is a pool identity. No twist blurb ends in
+  a full stop now. Every pack-unlock line says "Pack", and every count of hits on a paddle
+  says "5 paddle hits" - the Safety Paddle's "5 bounces", deliberate since round 305, went at
+  James's word.
+- **Loaded and Sudden Death are removed from the game**, not only from the pool. Both were
+  retired in round 228 with a date before the first daily, so neither ever entered a pool; and
+  no record or save stores a twist, only a day's date. Taking them out of `allCases` therefore
+  moves no day, which `testTheDaysAlreadyPlayedStillReadExactlyTheSame` confirms. The
+  retirement mechanism stays for twists retired after 1.3 ships, which must keep their case.
+- **Left as they were, on James's explanations:** Hide Bricks names invisible bricks because a
+  revealed one can be hidden again; Lose A Ball has no multiplier line because losing a ball
+  resets the multiplier anyway. Brick Retreat's 10s stays too: James described it as
+  permanent in Classic, but it is a Mayhem-only power-up and never runs there.
+- **The website is live** with the game's own icons beside every new power-up and twist,
+  rendered from the app rather than redrawn, and one list of what comes after 1.3.
+
 **Open after round 344:**
 
 | Item | What is known |

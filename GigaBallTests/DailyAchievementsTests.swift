@@ -116,10 +116,6 @@ final class DailyAchievementsTests: XCTestCase {
     func testTheTargetIsTheTwistsStillBeingOffered() {
         let live = DailyAchievements.liveTwists(on: "2026-09-05")
         XCTAssertFalse(live.isEmpty, "the pool is not empty on a day the daily is running")
-        XCTAssertFalse(live.contains(.loaded),
-                       "Loaded is retired, so it cannot be required")
-        XCTAssertFalse(live.contains(.suddenDeath),
-                       "and so is Sudden Death")
     }
 
     /// Every day from `key` onwards that adds a twist nobody had met yet.

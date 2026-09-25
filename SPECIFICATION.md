@@ -176,7 +176,7 @@ Endless 2.0 exists.
 
 One challenge a day, the same for every player, changing at 00:00 UTC. Each day draws a mode
 (Classic, Endless or Endless Mayhem), a Classic level where it is Classic, and up to three
-twists - Time Trial, Fog of War, Mirrored, Upside Down, One Life, No Power-Ups, Always On,
+twists - Time Trial, Foggy, Mirrored, Upside Down, One Life, No Power-Ups, Always On,
 Monochromatic, a daily theme and more. The first run of the day is the **competition run** and
 posts to the two daily boards (the day's, and a running total across days); every run after it
 is **free play** and posts nothing. A daily never unlocks Classic content or touches the other

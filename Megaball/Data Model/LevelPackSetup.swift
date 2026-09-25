@@ -824,10 +824,11 @@ class LevelPackSetup {
         "Complete City Pack to unlock", // Undestructi-Ball
         "Complete Food Pack to unlock", // Lasers
         "Complete Food Pack to unlock", // Quicksand
-        "Complete Body to unlock", // Mystery
-        "Complete Body to unlock", // Backstop
-        "Complete Computer to unlock", // Increase Ball Size
-        "Complete Computer to unlock", // Decrease Ball Size
+        "Complete Body Pack to unlock", // Mystery
+        "Complete Body Pack to unlock", // Backstop
+        "Complete Computer Pack to unlock", // Increase Ball Size
+        "Complete Computer Pack to unlock", // Decrease Ball Size
+        // "Pack" like every other line (James, round 347)
         "", // Multi-Ball - never locked
         "", // Trajectory Line - never locked
         "", // Landing Marker - never locked
@@ -913,7 +914,7 @@ class LevelPackSetup {
         "Marks where the ball will land",
         "Sticks the ball to the paddle on contact, the launch angle of the ball can be adjusted",
         "The ball is attracted to the paddle",
-        "The ball enters through the paddle and out of the top",
+        "The ball enters a portal via the paddle",
         "An arc region where all bricks are destroyed",
         "Moving the paddle controls the ball's horizontal movement",
         "The paddle loses its ability to adjust the ball's bounce angle",
@@ -921,7 +922,7 @@ class LevelPackSetup {
         "The paddle moves in the opposite direction to the input",
         "Some bricks are destroyed at random",
         "All bricks move up 2 rows",
-        "A laser beam fires from the ball, destroying every brick in that column",
+        "A laser beam fires from the ball, destroying every brick it hits",
         "Destroys every brick it hits",
         "A glow around the ball destroys every brick it touches",
         "Bricks are added at random",
@@ -1075,12 +1076,14 @@ class LevelPackSetup {
         "",
         "10s",
         "10s",
-        "5 bounces",
+        "5 paddle hits",
+        // Counted off the safety paddle itself, and worded as every other paddle count is
+        // (James, round 347: the one line that said "bounces")
         "10s",
         "5 paddle hits",
         "5 paddle hits",
         "5 paddle hits",
-        "5 hits",
+        "5 paddle hits",
         "5 paddle hits",
         "5 paddle hits",
         "",

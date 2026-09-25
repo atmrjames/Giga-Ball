@@ -150,13 +150,6 @@ extension GameScene {
         // below - so it "flew off in the wrong direction" and ended up wherever that left it.
         // The hold is ended first, or the world stays frozen around a ball that is not there
 
-        if dailySuddenDeath {
-            endlessIIClearExtraBalls()
-            return false
-        }
-        // Sudden Death: any ball lost ends the run, Multi-Ball's carry-on rule overruled
-        // for the day (daily spec §4)
-
         if lost === ball, endlessIIPendingHandover != nil {
             return true
         }
