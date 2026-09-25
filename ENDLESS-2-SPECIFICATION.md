@@ -2509,6 +2509,56 @@ built or decided, is in the table below.
   from whole packs.
 - **Stale rows cleared:** `appOpenCount` had been fixed in round 328.
 
+**Round 345: a verification pass while the external TestFlight build waited for review.**
+James: "review the documentation, make sure everything is up to date, run the tests suites,
+check outputs ... run the methods my friend suggested including crap index, and mutation
+testing." What it found and did:
+
+- **The tools are in the repository now** (`tools/crap.py`, `tools/mutate.py`). Rounds 311 and
+  313 used both and left only their results: the scripts lived in a session's scratch
+  directory and went with it. The mutation tool learned three things this round, all in its
+  header: a failing `xcodebuild test` keeps running for minutes after its tests have finished,
+  so the verdict is read from the output as it streams rather than from the exit (the first run
+  mistook every kill for a hang); a hang is reported as unknown, never as a kill; and the file
+  is put back from the text held in memory and read again to prove it, because with Xcode open
+  one run ended with its last mutant still in the working tree beside a message saying the file
+  had been restored.
+- **CRAP, against round 313.** Functions over 30: **99**, from 145. The app is **76%** covered
+  (52,517 of 68,902 lines). `applyPowerUp` went from 1% to 93%, `saveCurrentGame` from 3% to 83%.
+  The top was `didBegin` - seventy-three decisions, none run by a test, because an
+  `SKPhysicsContact` cannot be made outside the engine. It only ever read the contact's two
+  bodies, so it now hands them to `handleContact(between:and:)`, which tests can call with real
+  bodies: a ball on a brick, the corner of a Directional brick's open face, a laser, and round
+  200's crash (a laser whose node had gone). Second was the settings screen's row handler,
+  thirty-one decisions at 0%: every switch is tapped now against a store of the test's own.
+  **After:** the contact handler scores 956 (from 5,402, now 44% covered) and the settings
+  handler 105 (from 992); the suite is 2,664 tests and the app 76.6% covered. What leads now is
+  `achievementsCheck` (cc 128, 63%), then the handler, then two info-screen table methods and the
+  pause menu's button highlight at 0% - UI plumbing, lower value than it scores.
+- **Mutation, on the logic built or changed since round 340, and on the scoring maths.** After
+  the new tests: window fit 90% (was 33%), Progression 93% (was 80%), Classic odds 100%, Scoring
+  64% with every survivor an equivalent mutant (a boundary where both versions give the same
+  number), milestone progress, `firesOnHit`, the gravity fall and the Drift clean-up all 100%
+  on the lines they target, the brick-face rules 100% on the lines that matter. **What the
+  survivors had been saying**: nothing tested a window fit with the score hung off the right
+  edge, a scene not yet laid out, or the backdrops widening; nothing put a brick anywhere but the
+  origin, so `ball.x - brick.x` could have been `+`; nothing left exactly one of the first three
+  packs unfinished when asking about City; and nothing checked that a Directional brick facing
+  *into* the field beside a wall survives Drift's clean-up. Each has a test now, and each was
+  checked by putting its mutant back and watching the test fail.
+- **Outputs.** The last full suite's log was read for the runtime warnings a green run does not
+  fail on: none but one deliberate missing-picture test, and the sound files, which fail to load
+  in every simulator launch on this Mac - the host's audio server, now written into CLAUDE.md so
+  nobody goes looking for missing files. The app's own log in a normal session: nothing but
+  Game Center complaining that nobody was signed in, which the milestone report of round 344
+  added to; it now reports only when a player is signed in.
+- **Documentation.** SPECIFICATION.md said two modes, iOS 15, portrait only, a two-second data
+  model suite and a settings table from 2020; it describes four modes, iOS 17, the resizable
+  iPad window, the suite as it is and today's settings now, with a Daily Challenge section of its
+  own. The daily spec and FUTURE-RELEASES carry a dated current status above their histories;
+  §8.5 here is marked settled; SAFE-AREA-PLAN is marked historical; CLAUDE.md's build command is
+  the destination that works today, with the reason.
+
 **Open after round 344:**
 
 | Item | What is known |

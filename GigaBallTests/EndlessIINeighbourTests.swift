@@ -804,6 +804,11 @@ final class EndlessIINeighbourTests: XCTestCase {
         let intoTheRightWall = directional(rightmost, facing: .right)
         let upAtTheWall = directional(leftmost, facing: .top)
         let leftInTheMiddle = directional(0, facing: .left)
+        let rightInTheMiddle = directional(cell.width, facing: .right)
+        let leftAtTheRightWall = directional(rightmost - 0, facing: .left)
+        leftAtTheRightWall.position.y = 200 - cell.height
+        // Round 345's mutation run: facing the wall has to mean facing *that* wall - a side
+        // soft face in the middle, or one turned away from the wall it is against, is reachable
 
         scene.endEndlessIIDrift()
 
@@ -811,6 +816,9 @@ final class EndlessIINeighbourTests: XCTestCase {
         XCTAssertNotEqual(intoTheRightWall.name, BrickCategoryName, "nor that one")
         XCTAssertEqual(upAtTheWall.name, BrickCategoryName, "a face the ball can reach stays")
         XCTAssertEqual(leftInTheMiddle.name, BrickCategoryName, "and so does one away from it")
+        XCTAssertEqual(rightInTheMiddle.name, BrickCategoryName, "facing right, away from a wall")
+        XCTAssertEqual(leftAtTheRightWall.name, BrickCategoryName,
+                       "against the right wall but open to the left, into the field")
     }
 
     /// "Be a bit more fair with the directional bricks - the corner of the open face can be hit
@@ -855,6 +863,12 @@ final class EndlessIINeighbourTests: XCTestCase {
                                                 brickSize: rect.size), side, "\(side)")
             XCTAssertEqual(EndlessIIImpact.faces(ballAt: ball, brick: rect), [side], "\(side)")
         }
+
+        let nearTheEndOfTheTop = CGPoint(x: centre.x + 15, y: centre.y + 16)
+        XCTAssertEqual(EndlessIIImpact.side(ballAt: nearTheEndOfTheTop, brickAt: centre,
+                                            brickSize: rect.size), .top,
+                       "a brick is twice as wide as it is tall, so the top runs further out than "
+                       + "a square's would - 15 points along a 20-point half-width is still the top")
     }
 
     /// "For the portal animation, remove the purple circle that shows up where the ball

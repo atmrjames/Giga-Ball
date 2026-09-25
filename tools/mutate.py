@@ -17,7 +17,9 @@ minute each on a quiet machine. Point it at small, pure logic with fast tests. R
 its first real hole this way (`DailyStreak.isTheDayAfter`'s failure branch, never asked about).
 
 The original file is always put back, including on an error or Ctrl-C, and the script checks
-`git diff` for it at the end.
+`git diff` for it at the end. **Close the file in Xcode first** (or quit Xcode): an open editor
+can save its own copy back over the restore, which is the likeliest reason round 345's second
+run ended with a mutant in the working tree while Xcode had the project open.
 """
 
 import argparse
@@ -158,8 +160,20 @@ def main():
             print(f"{verdict:9} line {number:4} {label:14} {before.strip()[:70]}"
                   f"  ({time.time() - started:.0f}s)", flush=True)
     finally:
-        shutil.copyfile(backup, args.file)
-        os.remove(backup)
+        with open(args.file, "w", encoding="utf-8") as handle:
+            handle.write(original)
+        with open(args.file, encoding="utf-8") as handle:
+            restored = handle.read() == original
+        if restored:
+            os.remove(backup)
+        else:
+            print(f"RESTORE FAILED: {args.file} does not match what was read at the start; "
+                  f"the original is still in {backup}")
+        # **From memory, and checked** (round 345). The first version copied the backup file
+        # back and trusted it, and one run ended with its last mutant still in the working tree
+        # beside a message saying the file was restored. The text read at the start is the one
+        # thing certain to be right, so it is what goes back - and the file is read again to
+        # make sure it did. The backup stays on disk if anything disagrees.
 
     diff = subprocess.run(["git", "diff", "--stat", "--", args.file],
                           capture_output=True, text=True).stdout.strip()
