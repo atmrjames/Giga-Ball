@@ -6280,3 +6280,113 @@ final class RetroPaddleTopTests: XCTestCase {
         XCTAssertTrue(scene.paddleRetroStickyTexture.isHidden)
     }
 }
+
+
+/// James's round 339 notes on the Mirror Paddle.
+final class MirrorPaddleShadowAndWrapTests: XCTestCase {
+
+    private func mayhem() -> GameScene {
+        let scene = GameScene(size: CGSize(width: 402, height: 874))
+        scene.gameMode = .endlessII
+        scene.gameWidth = 380
+        scene.totalStatsArray = [TotalStats()]
+        scene.addChild(scene.paddle)
+        scene.paddle.size = CGSize(width: 90, height: 12)
+        scene.paddle.physicsBody = SKPhysicsBody(rectangleOf: scene.paddle.size)
+        scene.paddle.physicsBody?.collisionBitMask = CollisionTypes.paddleCategory.rawValue
+            | CollisionTypes.boarderCategory.rawValue
+        return scene
+    }
+
+    /// "This shadow should be a subtle drop shadow with soft edges that just pokes out of all
+    /// sides of the white paddle evenly, growing and shrinking with the paddle as needed."
+    func testTheShadowPokesOutEvenlyAtEverySize() throws {
+        let scene = mayhem()
+        let spread = GameScene.endlessIIPaddleShadowSpread
+        for scale: CGFloat in [1, 1.5, 0.5] {
+            scene.paddle.xScale = scale
+            scene.showEndlessIIPaddleShadow()
+            let shadow = try XCTUnwrap(scene.childNode(withName: GameScene.endlessIIPaddleShadowName)
+                                       as? SKSpriteNode)
+            XCTAssertTrue(shadow.parent === scene,
+                          "beside the paddle, not inside it where its scale applies twice")
+            let frame = shadow.frame
+            let paddle = scene.paddle.frame
+            XCTAssertEqual(paddle.minX - frame.minX, spread, accuracy: 0.5, "left, \(scale)")
+            XCTAssertEqual(frame.maxX - paddle.maxX, spread, accuracy: 0.5, "right, \(scale)")
+            XCTAssertEqual(paddle.minY - frame.minY, spread, accuracy: 0.5, "below, \(scale)")
+            XCTAssertEqual(frame.maxY - paddle.maxY, spread, accuracy: 0.5, "above, \(scale)")
+        }
+    }
+
+    /// "With mirror paddle and wrap around power-ups, the paddles were blocked from wrapping
+    /// around - they should be allowed, whilst maintaining the mirroring."
+    ///
+    /// Anything that rewrites the paddle's mask during a wrap - Expand and Shrink write it out
+    /// in full - put the wall back under it.
+    func testTheWallStaysOpenWhateverRewritesThePaddle() {
+        let scene = mayhem()
+        scene.endlessIICollectWrapAround()
+        scene.tickEndlessIIWrapAround()
+        scene.paddle.physicsBody?.collisionBitMask = CollisionTypes.paddleCategory.rawValue
+            | CollisionTypes.boarderCategory.rawValue
+        // What an Expand collected during the wrap writes
+        scene.tickEndlessIIWrapAround()
+        XCTAssertEqual((scene.paddle.physicsBody?.collisionBitMask ?? 0)
+                       & CollisionTypes.boarderCategory.rawValue, 0,
+                       "the paddle may still pass through the wall")
+    }
+
+    /// And the twin wraps too, mirrored: its overhang comes back in at the far side.
+    func testTheMirrorWrapsWithThePaddle() throws {
+        let scene = mayhem()
+        scene.endlessIICollectWrapAround()
+        scene.endlessIICollectMirrorPaddle()
+        scene.paddle.position.x = scene.gameWidth/2 - 10
+        // Overhanging the right wall by most of its half-width
+        scene.tickEndlessIIMirrorPaddle()
+
+        let mirror = try XCTUnwrap(scene.childNode(withName: GameScene.endlessIIMirrorPaddleName))
+        XCTAssertEqual(mirror.position.x, -scene.paddle.position.x, "still the mirror image")
+        let ghost = try XCTUnwrap(scene.childNode(withName: GameScene.endlessIIMirrorWrapGhostName),
+                                  "the twin's overhang comes back in on the right")
+        XCTAssertEqual(ghost.position.x, mirror.position.x + scene.gameWidth, accuracy: 0.5)
+        XCTAssertEqual(ghost.physicsBody?.categoryBitMask,
+                       CollisionTypes.mirrorPaddleCategory.rawValue,
+                       "and returns balls as the twin does")
+    }
+}
+
+/// The mirror's shadow over the Halo, drawn to a file to be looked at (round 342).
+final class MirrorShadowRenderTests: XCTestCase {
+    func testPrintTheShadowOverTheHalo() throws {
+        let scene = SKScene(size: CGSize(width: 300, height: 120))
+        scene.backgroundColor = UIColor(red: 0.12, green: 0.0, blue: 0.18, alpha: 1)
+        scene.anchorPoint = CGPoint(x: 0.5, y: 0.5)
+        let halo = SKSpriteNode(texture: GameScene.endlessIIHaloTexture,
+                                size: CGSize(width: 260, height: 130))
+        halo.position = CGPoint(x: 0, y: -20)
+        halo.zPosition = 1
+        scene.addChild(halo)
+        let paddle = SKSpriteNode(color: .white, size: CGSize(width: 90, height: 12))
+        paddle.zPosition = 3
+        paddle.xScale = 1.3
+        scene.addChild(paddle)
+        let shadow = SKSpriteNode(texture: GameScene.endlessIIPaddleShadowTexture)
+        shadow.centerRect = GameScene.endlessIIPaddleShadowCentre
+        shadow.color = .black
+        shadow.colorBlendFactor = 1
+        shadow.alpha = GameScene.endlessIIPaddleShadowAlpha
+        shadow.size = CGSize(width: paddle.size.width + GameScene.endlessIIPaddleShadowSpread*2,
+                             height: paddle.size.height + GameScene.endlessIIPaddleShadowSpread*2)
+        shadow.zPosition = 2.95
+        scene.addChild(shadow)
+
+        let view = SKView(frame: CGRect(origin: .zero, size: scene.size))
+        let texture = try XCTUnwrap(view.texture(from: scene))
+        let file = URL(fileURLWithPath: NSTemporaryDirectory())
+            .appendingPathComponent("mirror-shadow.png")
+        try XCTUnwrap(UIImage(cgImage: texture.cgImage()).pngData()).write(to: file)
+        print("\n  Mirror shadow over the halo: \(file.path)\n")
+    }
+}

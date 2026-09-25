@@ -44,8 +44,8 @@ extension GameScene {
     /// The Directional brick's bright bar, named apart from the other glyphs so it can be
     /// replaced on its own when the brick is re-pointed.
     static let directionalEdgeName = "endlessIIDirectionalEdge"
-    /// How fast a Gravity brick falls and a Moving brick wanders, in cells per second.
-    private static let gravityFallSpeed: CGFloat = 6
+    /// How fast a Moving brick wanders, in cells per second. A Gravity brick's fall has its
+    /// own speed, which changes as it falls - see `EndlessIIFall`.
     private static let movingSpeed: CGFloat = 1.1
 
     // MARK: - Applying
@@ -336,8 +336,11 @@ extension GameScene {
             // column may have the space. Moved out of the field rather than removed from the
             // map, so nothing below has to check for a missing entry
 
-            endlessIIFallers[key] = EndlessIIFall(brick: brick, targetY: target,
-                                                 crushes: crushes)
+            var fall = EndlessIIFall(brick: brick, targetY: target, crushes: crushes)
+            fall.speed = endlessIIFallers[key]?.speed ?? EndlessIIFall.startSpeed
+            endlessIIFallers[key] = fall
+            // A brick already falling that loses its support again keeps the speed it had
+            // built up - it is the same fall, going further - rather than starting over
             // **A Fixed brick destroys what falls onto it** (the 2026 brick workbook). It
             // lands first and is destroyed on arrival rather than vanishing in mid-air: the
             // brick has to be seen to run into the anchor, or a faller stopping short and
@@ -717,11 +720,14 @@ extension GameScene {
     }
 
     /// Whether a hit on this brick should do anything at all.
-    func endlessIIAcceptsHit(_ brick: SKSpriteNode, from side: EndlessIISide?) -> Bool {
+    func endlessIIAcceptsHit(_ brick: SKSpriteNode, from side: EndlessIISide?,
+                             touching: Set<EndlessIISide> = []) -> Bool {
         guard brick.endlessIIRole == .directional else { return true }
         guard let side else { return true }
         // A laser has no side; it comes from below and is treated as such by its caller
-        return side == brick.endlessIIVulnerableSide
+        guard let open = brick.endlessIIVulnerableSide else { return true }
+        return side == open || touching.contains(open)
+        // **A corner of the open face counts** (James, round 339) - see `EndlessIIImpact.faces`
     }
 
     // MARK: - Exploding
@@ -1702,27 +1708,19 @@ extension GameScene {
         }
     }
 
-    /// Marks both ends of a portal jump.
+    /// Marks a portal jump with a line from where the ball went in to where it came out.
     ///
     /// Without this the jump is easy to miss entirely, and it was: bricks sit near the top of
     /// the field, so a Portal among them sends the ball a short distance, and a ball that
     /// moves half a screen in one frame with nothing to say why just looks like a bad bounce.
-    /// A ring collapsing where it left and one opening where it arrives is the whole story.
+    ///
+    /// **No rings any more** (James, round 339: "For the portal animation, remove the purple
+    /// circle that shows up where the ball contacts the brick"). A purple ring collapsed where
+    /// the ball went in and another opened where it came out; they were the whole story until
+    /// round 327b drew the line between the two, and since then they have been saying it a
+    /// second time, in a colour nothing else in the jump uses. Both went, not only the one he
+    /// named - a ring at the exit alone would mark one end of a line that already marks both.
     func endlessIIShowPortalJump(from: CGPoint, to: CGPoint) {
-        for (position, collapsing) in [(from, true), (to, false)] {
-            let ring = SKShapeNode(circleOfRadius: ballSize*1.8)
-            ring.position = position
-            ring.zPosition = 3
-            ring.fillColor = .clear
-            ring.strokeColor = GameScene.portalBrickColour
-            ring.lineWidth = 3
-            ring.setScale(collapsing ? 1 : 0.2)
-            addChild(ring)
-            ring.run(.sequence([.group([.scale(to: collapsing ? 0.2 : 1, duration: 0.22),
-                                        .fadeOut(withDuration: 0.22)]),
-                                .removeFromParent()]))
-        }
-
         let path = CGMutablePath()
         path.move(to: from)
         path.addLine(to: to)
@@ -1760,11 +1758,11 @@ extension GameScene {
 
     /// What Endless 2.0 does when a brick is struck but survives.
     ///
-    /// Exploding and Spawner normally fire when their brick is destroyed. On an
-    /// Indestructible one that moment never comes, so they fire on contact instead - which
-    /// turns each of them into something that keeps working: a brick that clears its
-    /// neighbours every time you hit it, or one that keeps refilling them. Neither runs
-    /// away, because both only act on cells that are there to act on.
+    /// Exploding and Spawner fire here on every hit a brick survives, and again through
+    /// `endlessIIBrickDestroyed` on the hit that destroys it (round 342, `firesOnHit`). An
+    /// Indestructible one is the brick that keeps working for ever: it clears its neighbours
+    /// every time you hit it, or keeps refilling them. Neither runs away, because both only
+    /// act on cells that are there to act on.
     func endlessIIBrickStruck(_ brick: SKSpriteNode) {
         guard gameMode == .endlessII else { return }
         guard let behaviour = endlessIIBehaviour(of: brick) else { return }
@@ -1852,12 +1850,14 @@ extension GameScene {
         }
 
         for key in endlessIIFallers.keys {
-            guard let fall = endlessIIFallers[key] else { continue }
+            guard var fall = endlessIIFallers[key] else { continue }
             guard fall.brick.parent != nil else {
                 endlessIIFallers[key] = nil
                 continue
             }
-            let step = GameScene.gravityFallSpeed*brickHeight*CGFloat(delta)
+            fall.speed = EndlessIIFall.accelerated(fall.speed, over: delta)
+            endlessIIFallers[key] = fall
+            let step = fall.speed*brickHeight*CGFloat(delta)
             if fall.brick.position.y - step <= fall.targetY {
                 fall.brick.position.y = fall.targetY
                 endlessIIFallers[key] = nil
@@ -1888,6 +1888,28 @@ struct EndlessIIFall {
     let targetY: CGFloat
     /// Whether it is falling onto a Fixed brick, and so is destroyed the moment it arrives.
     var crushes: Bool = false
+    /// How fast it is falling now, in cells per second.
+    var speed: CGFloat = EndlessIIFall.startSpeed
+
+    /// **It speeds up as it falls, to a limit** (James, round 339: "Can gravity bricks slowly
+    /// accelerate as they fall - not like full gravity - not starting super slow either - and
+    /// ensure there's a top speed").
+    ///
+    /// It was a constant six cells a second. Now a fall starts at half that, which is already
+    /// a brick visibly on its way rather than one easing off a ledge, and gains fourteen cells a
+    /// second every second - a fifth of what the ball's size would make true gravity look like,
+    /// which is the "not like full gravity". It stops gaining at twelve, twice the old speed,
+    /// so a brick dropping the whole field arrives quickly and never becomes a blur. A drop of
+    /// one row takes about as long as it did (0.19s against 0.17s); a drop of five is quicker
+    /// (0.65s against 0.83s), which is where acceleration shows.
+    static let startSpeed: CGFloat = 3
+    static let acceleration: CGFloat = 14
+    static let topSpeed: CGFloat = 12
+
+    /// The speed after another `delta` seconds of falling.
+    static func accelerated(_ speed: CGFloat, over delta: TimeInterval) -> CGFloat {
+        min(topSpeed, speed + acceleration*CGFloat(delta))
+    }
 }
 
 /// A Moving brick and the way it is currently heading.

@@ -168,6 +168,50 @@ extension GameScene {
         // speaks in cells - the generator, the crush, a Spinning brick's clearance - and a
         // field sitting half a column out would keep working by rounding until the day it
         // did not (§8.6's own warning, in the other axis)
+
+        removeEndlessIIDirectionalsFacingTheWall()
+    }
+
+    /// Takes away any Directional brick the drift has left with its open face against a wall.
+    ///
+    /// James, round 339: "During the drift power-up, if any direction bricks with their side
+    /// face open end up with the pen side against the wall when the drift power-up ends, remove
+    /// those bricks automatically."
+    ///
+    /// While Drift runs the walls are doorways, so a left-facing brick carried into the first
+    /// column is still reachable - through the far wall. The moment the clock stops they are
+    /// walls again, and that brick's one soft side faces something no ball can get behind: a
+    /// brick that can never be destroyed, which is not a hard brick but a broken one
+    /// (`endlessIISideIsReachable` says the same about walls). Re-pointing it, which is what the
+    /// row sweep does for a face blocked by an Indestructible, would turn the soft side to face
+    /// the player without their having earned it, so it goes instead. No score for it - the
+    /// player did not break it - and a short fade, so a brick that vanishes reads as the field
+    /// tidying up rather than as a glitch.
+    ///
+    /// Returns how many went, for the tests.
+    @discardableResult
+    func removeEndlessIIDirectionalsFacingTheWall() -> Int {
+        guard gameMode == .endlessII else { return 0 }
+        var removed = 0
+        enumerateChildNodes(withName: BrickCategoryName) { node, _ in
+            guard let brick = node as? SKSpriteNode,
+                  brick.endlessIIRole == .directional,
+                  let side = brick.endlessIIVulnerableSide, side == .left || side == .right
+            else { return }
+            let column = self.endlessIICell(of: brick).column
+            let againstTheWall = (side == .left && column <= 0)
+                || (side == .right && column >= self.numberOfBrickColumns - 1)
+            guard againstTheWall else { return }
+
+            brick.name = BrickRemovalCategoryName
+            brick.physicsBody = nil
+            brick.run(.sequence([.fadeOut(withDuration: 0.2), .removeFromParent()]))
+            // Renamed at once, so it stops counting and stops being struck on this frame, and
+            // removed when the fade has had its moment - the same order `removeBrick` uses
+            removed += 1
+        }
+        if removed > 0 { countBricks() }
+        return removed
     }
 
     /// Where a brick belongs across the field: where it was when the current step began.

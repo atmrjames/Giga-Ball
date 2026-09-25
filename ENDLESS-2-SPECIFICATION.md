@@ -2425,99 +2425,53 @@ Two things this round found rather than fixed, both worth writing down:
   `MenuViewController` adds a `SplashViewController` over itself on first launch, and the
   harness rendered what was in front. Six pictures of a logo, every round.
 
-**Open after round 342** (this replaces the round 340 table: Always On and the spinner fade were
-built in round 341, Game Center on the SE was answered there, and the game view and the window
-floor in round 342):
+**Round 343: James's round 339 gameplay notes, and an audit of every request since August.**
+Built:
+
+- **Gravity bricks accelerate.** A fall starts at 3 cells a second, gains 14 a second, and tops
+  out at 12 (`EndlessIIFall`). A brick knocked loose again mid-fall keeps its speed.
+- **Quicksand no longer strands the field.** The descent only starts from `countBricks`, and
+  that only runs when a brick goes; while Quicksand or Retreat holds the field, an emptied bottom
+  row is counted, refused, and never asked about again. The shift now counts on the frame it
+  lands.
+- **No purple rings on a portal jump.** The white-and-lime line has said the whole thing
+  since round 327b. Both rings went, not only the entry one he named.
+- **James's new halo art** (the power-up, the HUD icon and its disabled state) is in the
+  catalogue under the existing names.
+- **Drift ending removes a Directional brick facing a wall**, with a short fade and no score.
+- **A corner of a Directional brick's open face is a hit.** `EndlessIIImpact.faces` names every
+  face the ball was past, and the open face being among them is enough.
+- **The mirror paddle's shadow is even and soft.** It was a child of the paddle sized from
+  `paddle.size`, which already carries the scale, so Expand scaled it twice. Its blur was also
+  cropped by the effect node. Now it is a pre-softened, nine-sliced sprite of its own, sized in
+  scene points every frame.
+- **Mirror and Wrap-Around.** The wrap took the paddle off the wall once, as it started, and six
+  paddle paths (Expand and Shrink among them) put the wall back. The tick now keeps it off every
+  frame. The twin also has a wrap ghost of its own, and a ball landing on it bounces as if off
+  the twin, measured from the ghost's position.
+- **Exploding and Spawner fire on every hit**, as in round 342; the comment on
+  `endlessIIBrickStruck` still described the old rule and now says the new one.
+- **The level's exit keeps the ball's dress** (James's 2020 list, asked again on 2 and 19
+  September). The field clear ended Giga-Ball and Undestructi-Ball on the frame the exit
+  animation began, so the ball changed back to plain on its way out.
+
+**The audit.** Every message James sent since 1 August was read back (478 of them, across nine
+sessions). What had been built was checked in code rather than trusted to the round notes,
+because this spec's wording often differs from his. What the audit found, and had not been
+built or decided, is in the table below.
+
+**Open after round 343:**
 
 | Item | What is known |
 |---|---|
-| **James's round 339 gameplay notes, never queued until now** | Reported in round 339 as "untouched" and then not written down here, which is how a list goes missing. Verbatim in substance: **(1)** gravity bricks accelerate as they fall, not like full gravity and not from a crawl, with a top speed. **(2)** After Quicksand in Mayhem, with bottom-row bricks destroyed during it, the field did not descend to the lowest row until another brick was destroyed. **(3)** Remove the purple circle the portal animation shows where the ball meets the brick. **(4)** New halo power-up and HUD graphics are in File Sharing. **(5)** When Drift ends, a Directional brick left with its open face against the wall is removed. **(6)** Directional bricks: a hit on the corner of the open face counts. **(7)** Mirror Paddle with the Halo: the shadow round the white paddle should be a subtle, soft drop shadow poking out evenly on every side and following the paddle's size. **(8)** Mirror Paddle with Wrap-Around: both paddles may wrap, keeping the mirror |
-| The game view following an iPad or Mac window | Built in round 342 and tested as arithmetic and on a bare scene. Not yet seen on a device: needs a window dragged during a level |
+| **Classic's drop odds, and a single level unlocking the next** | On James's 2020 list and his 2 September list, and gone from his 19 September list without being built or decided: **(1)** the Next Level power-up rarer (still weight 1 in `PowerUpAllocation`, unchanged since 2020); **(2)** Get a Life much rarer unless the player has 0 or 1 balls left (weight 3, eligible below 5 lives); **(3)** a level completed on its own unlocking the next (`InbetweenLevels` skips the unlock when `numberOfLevels == 1`). All three change Classic, whose leaderboards hold years of scores, so they are James's call and not a tidy-up |
+| Best-so-far on the endless milestones | The same history: "for achievements like 5 minutes in endless mode, could have best so far when incomplete." Eighteen achievements already print a percentage through `awardProgress`; the minute milestones (17 to 20, 72 to 75) and the height ones do not |
+| The rest of FUTURE-RELEASES' August 1.3 list | Never built and never formally cut: Dynamic Type, a colour-blind overlay, an assist mode, texture atlases, dark and light mode, the Game Center button on the achievement detail page, a points breakdown for bonuses, an image for the share sheet. Several now read as 1.4. That document's 1.3 section also still lists work finished weeks ago, and wants pruning in one sitting with James |
+| The game view following an iPad or Mac window | Built in round 342, tested as arithmetic and on a bare scene. Not yet seen on a device |
 | The paddle-speed and background previews on an iPad | The preview is a one-to-one window onto the play area, so on an iPad it is 660 points wide while the screen's own furniture is in the 460-point column. That is behind both "slider and close too near the edges" and "preview clipping"; the fix is a decision about which of the two is right |
 | A themed level preview on the daily card | The monochrome half is built. A Retro day's level in Retro means rendering the level from its brick layout with the theme's textures, which is a piece of work rather than an afternoon |
 | Aimed Sticky's sounds | Round 339: it already plays the sticky catch on the catch and the release on the launch, as plain Sticky does. Waiting on James to say what he hears instead |
 | `appOpenCount` written by test launches | See round 339's row above: the host menu writes it to `.standard` on every test launch. It decides when the intro shows; the review prompt is already guarded |
-
-**Round 341, from James's answers to round 340's questions and a new play-test list.** Built:
-
-- **Always On was undone by the serve.** Every animation that brings the ball onto the paddle -
-  the level's pop-in, the return after a lost ball, the snap when a launch interrupts either -
-  ended at `scale(to: 1)`, fixed when the animation was built. Always On collects its power-up
-  as play begins, inside that window, so a Shrink Ball ran, the pop-in finished after it at full
-  size, and the tray went on counting down a power-up the ball was not wearing; the twist's tick
-  asks whether the bar is lit, so it never put it back. A resume sets the scale directly, which
-  is why quitting and resuming "fixed" it until the next lost ball. The animations now ease to
-  `ballSizeTarget` and `paddleSizeTarget`, read when they arrive. The same trap waited for an
-  Always On Expand or Shrink Paddle.
-
-  **That was half of it, and only the simulator found the other half.** With a log in the tick
-  the day read `idx 27 ... active []` sixty times a second: the tick asked
-  `activeRecentPowerUpIndices`, which names a tray slot's power-up by looking it up among the
-  ones recently *caught*, and a silent collection is never caught - so for a slot holding two
-  power-ups the answer was "neither" and Shrink Ball was collected every frame, each time
-  adding one to the player's tally and able to hand out the smallest-ball achievement. It also
-  refused outright while the next ball waited on the paddle, because `ballLostBool` stays up
-  until the launch. Now: `dailyStandingPowerUpIsRunning` reads the slot's own bar (on an Always
-  On day nothing else can light it), `applyPowerUp(standing:)` goes on while the ball waits and
-  counts for nothing. Checked in play on the Peach day: the ball small on the paddle before the
-  first launch, small in flight, and small again on the paddle after a lost ball.
-- **Monochromatic dresses the rack in Classic, greyed.** `DailyTwist.forcedTheme(for:)` is the
-  one answer the scene and every in-game screen's ball rack now ask.
-- **The daily's date has its own line with room for it** on the pause and game-over screens,
-  through the level intro's measuring pass, now shared as `UILabel.fitFixedHeightToItsText`.
-- **The resume card reads in the pause screen's order and faces**: badge, pack or "Daily
-  Challenge" and the day in the small grey face, the level's name large, COMPETITION RUN or FREE
-  PLAY in the pause screen's small lime capitals, RESUMING where PAUSED sits, then the score and
-  the balls. Overrules round 339's badge-under-the-name.
-- **No rack on a finished run**, and the daily's total is a sixth larger than the rows it adds.
-- **UI Sound** is its own setting, on for every existing player; **Sounds** is **In-Game Sound**.
-  The swipe to pause clicks like the pause button.
-- **Cluster** and the three voiced bricks (Spawner, Exploding, Fixed) no longer play the generic
-  sound under their own.
-- **The turn-based goodbye is half a second.**
-- **Ball Spin is relative slip.** One term, paddle travel less the ball's sideways travel, over a
-  floor every grip earns - so a still paddle spins every ball, sweeping against the ball spins it
-  hardest and sweeping with it least. Rounds 305 and 313 kept the paddle and the slide as two
-  terms and gave a steep ball on a still paddle about two degrees; it is about ten now.
-- **Rounded and Diamond spinners fade their light** like the rest, borrowing their own picture
-  turned half a circle, since a half turn leaves their outline alone.
-- **The main menu's button row follows the window.** It had its own spacing, worked out once at
-  launch; dragged narrower, the flow layout pushed the settings button onto a line nobody could
-  see. Round 339's fix was to the shared row this screen never used.
-- **Countdown beeps** (synthesised, `countdownTick` and `countdownGo`) for READY and GO!, and a
-  **3, 2, 1** drawn in READY's style over the last three seconds of a Time Trial.
-
-**Round 342, from James's answers to round 341.** Built:
-
-- **The window floor is 375 by 667**, the smallest phone iOS 17 runs on, for iPad and Mac windows
-  as well. A 320-wide Slide Over panel can no longer hold the app, which James knew when he
-  chose it.
-- **The game view follows the window's shape.** His question: could the purple side bars adjust
-  as the window does, so the game fills the height without being clipped? Yes, because the play
-  zone already fills the height and everything either side of it is border. `fitTheWindow`
-  (WindowFit.swift), called from `GameViewController.viewDidLayoutSubviews`, reshapes the scene
-  to the window's shape, **changing its width and never its height**. No node or body moves:
-  the scene's anchor is its centre, so the play zone stays centred, and the walls keep the size
-  their bodies were built at. Past the walls the scene is painted the walls' purple, and the HUD's
-  backdrop and Mayhem's backdrop widen with it. The scene narrows no further than the play zone,
-  or the HUD where a compact layout hung it off the screen's edges. A window thinner than that is
-  the one shape that cannot fill without clipping, so it still gets bands above and below.
-  **Not seen on an iPad**: the iPadOS 26 simulators here still refuse to boot, so this is
-  arithmetic and tests until James drags a window.
-- **UI Sound is silent as it turns off and clicks as it turns on.** The row clicked on touch
-  down, before the setting flipped. The same pass found 28 clicks nested inside
-  `if hapticsSetting`, so with haptics off most of the app's buttons were silent whatever UI
-  Sound said. They are outside it now.
-- **Ball Spin's grip no longer flickers on retro.** The shared overlay and retro's paddle sprite
-  were both at z 4, and under `ignoresSiblingOrder` that is no order at all. Round 275 stopped
-  the overlay being hidden; this puts it on its own plane (`paddleTopPlane`, 4.1).
-- **The trajectory line is under the ball** (2.6 and 2.7, below the ball's 3).
-- **Exploding and Spawner bricks fire on every hit they survive**, not only the one that
-  destroys them. `firesOnHit` is true for any behaviour now, and `hitBrick` asks it for any brick
-  still carrying its name after the hit. Until now only the never-destroyed Indestructible fired
-  on contact.
-- **Aimed Sticky dresses a retro paddle** in retro's own sticky layer for as long as the aim
-  runs. Only plain Sticky's catch ever put that layer up, and the aim catches another way.
 
 **Backlogged**
 

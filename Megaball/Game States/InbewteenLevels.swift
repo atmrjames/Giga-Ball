@@ -126,6 +126,8 @@ class InbetweenLevels: GKState {
             self.scene.ball.run(resetGroup, completion: { [weak self] in
                 guard let self else { return }
                 self.scene.ball.isHidden = true
+                self.scene.ball.texture = self.scene.ballTexture
+                // Out of sight, so the next level's ball arrives plain, as the reset meant
             })
         })
         scene.paddle.run(paddleSequence, completion: { [weak self] in
@@ -158,7 +160,17 @@ class InbetweenLevels: GKState {
         }
         // Backstop active at end of level achievement
         
+        let wearing = scene.ball.texture
         scene.clearTheFieldForANewRun()
+        if let wearing { scene.ball.texture = wearing }
+        // **The ball leaves wearing what it finished the level in** (James's old task list,
+        // carried since 2020 and asked again on 2 and 19 September 2026: "At end of level when
+        // ball animated out, keep it as current ball texture rather than changing to regular
+        // texture"). The clear below ends every power-up, and ending Giga-Ball or Undestructi-
+        // Ball puts the plain picture back - on the frame the exit animation above starts, so
+        // the half-second the ball spends growing and shrinking away was spent as a different
+        // ball. It goes back to the plain picture once it is hidden, in the completion above.
+        //
         // Every power-up ended and the board taken off: the bricks, the ones being removed, the
         // falling power-ups and the lasers. Shared with the restart the pause menu offers
         // (round 329d), which needs the same empty field and used to have no way to ask for it

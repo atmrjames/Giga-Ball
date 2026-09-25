@@ -178,6 +178,18 @@ extension GameScene {
         }
         // Whole rows at a time, so a brick's position.y is still its row (§8.6) - the rows
         // themselves are simply two further from the paddle until the clock ends
+
+        if endlessIIFieldShiftHasSettled { countBricks() }
+        // **The landing is a moment the field may need to step** (James, round 339: "Following
+        // a quicksand power-up in endless mayhem mode, with bricks on the lowest rows destroyed
+        // during the power-up, when returning to the regular brick position, the bricks didn't
+        // descend to the lowest row until another brick was destroyed").
+        //
+        // The descent is not ticked: `countBricks` starts it, and `countBricks` runs when a
+        // brick goes. While Quicksand or Retreat runs the field is held, so a bottom row
+        // emptied then is counted, refused, and never asked about again - the next brick
+        // destroyed was the next time anything looked. Asked once here, on the frame the
+        // field lands, which is the first frame the hold lets go
     }
 
     /// Where the field's borrowed rows should be right now.

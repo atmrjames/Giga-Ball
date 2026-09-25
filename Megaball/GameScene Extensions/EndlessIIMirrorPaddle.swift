@@ -120,6 +120,54 @@ extension GameScene {
     }
 
     static let endlessIIMirrorLaserStripName = "endlessIIMirrorLaserStrip"
+    static let endlessIIMirrorWrapGhostName = "endlessIIMirrorWrapGhost"
+
+    /// The mirror's own other half, while Wrap-Around lets the paddles through the walls.
+    ///
+    /// James, round 339: "With mirror paddle and wrap around power-ups, the paddles were
+    /// blocked from wrapping around - they should be allowed, whilst maintaining the
+    /// mirroring."
+    ///
+    /// The mirror stands at the negated x, so a paddle overhanging the right wall puts its twin
+    /// overhanging the left one by the same amount - and the real paddle has a ghost that shows
+    /// its overhang coming back in at the far side, while the twin had nothing: half of it
+    /// simply went off the edge. This is the twin's ghost, built the way the paddle's is (a
+    /// second sprite a field's width away, wearing the same picture, with a body of its own so
+    /// the re-entering half returns balls), and in the twin's category so it bounces like the
+    /// mirror rather than like the paddle. Mirroring is kept because it is derived: the twin is
+    /// still wherever the paddle's negation puts it, and its ghost is wherever the twin's
+    /// overhang lands.
+    func tickEndlessIIMirrorWrapGhost(_ mirror: SKSpriteNode) {
+        let existing = childNode(withName: GameScene.endlessIIMirrorWrapGhostName) as? SKSpriteNode
+        let limit = gameWidth/2 - mirror.size.width/2
+        guard endlessIIWrapIsRunning, abs(mirror.position.x) > limit else {
+            existing?.removeFromParent()
+            return
+        }
+        let ghost = existing ?? {
+            let made = SKSpriteNode()
+            made.name = GameScene.endlessIIMirrorWrapGhostName
+            addChild(made)
+            return made
+        }()
+        if ghost.texture !== mirror.texture { ghost.texture = mirror.texture }
+        if ghost.size != mirror.size || ghost.physicsBody == nil {
+            ghost.xScale = 1
+            ghost.yScale = 1
+            ghost.size = mirror.size
+            ghost.physicsBody = endlessIIMirrorPaddleBody(size: mirror.size)
+            // The mirror's size already carries its scale, so the ghost wears it at scale one
+            // - copying the scale as well would draw it twice as wide as the twin it continues
+        }
+        ghost.centerRect = mirror.centerRect
+        ghost.color = mirror.color
+        ghost.colorBlendFactor = mirror.colorBlendFactor
+        ghost.alpha = mirror.alpha
+        ghost.zPosition = mirror.zPosition
+        ghost.position = CGPoint(x: mirror.position.x > 0 ? mirror.position.x - gameWidth
+                                                          : mirror.position.x + gameWidth,
+                                 y: mirror.position.y)
+    }
 
     /// The laser turrets, on the mirror, while the paddle wears them.
     ///
@@ -170,15 +218,10 @@ extension GameScene {
     /// the green/yellow paddle appears behind it." Depth is what says which of two crossing
     /// paddles is yours, and colour alone stopped saying it the moment they overlapped.
     ///
-    /// SpriteKit has no layer shadows, so this is the game's usual trick: the paddle's own
-    /// texture again, black, mostly transparent, a little larger and a few points low, as a
-    /// child of the paddle so it follows every move for free. A negative child z draws it
-    /// behind the paddle's own pixels and still in front of the mirror.
+    /// SpriteKit has no layer shadows, so it is a sprite of its own - see
+    /// `showEndlessIIPaddleShadow` for how it came to be one.
     /// How far the shadow reaches past every edge of the paddle, in points.
     static let endlessIIPaddleShadowSpread: CGFloat = 9
-
-    /// How soft it is.
-    static let endlessIIPaddleShadowBlur: Double = 7
 
     static let endlessIIPaddleShadowAlpha: CGFloat = 0.3
 
@@ -188,52 +231,88 @@ extension GameScene {
     /// **Centred and blurred, not offset and hard** (James, round 209: "drop shadow on the
     /// paddle with mirror paddle active is too harsh. It should be centred on the paddle with
     /// some span and blur so it appears on all edges of the paddle and is soft and subtle").
-    /// Round 200 built it as a second copy of the paddle's own picture, a little larger and
-    /// pushed down - which draws a hard black lip under the bottom edge and nothing at all
-    /// along the top, so it read as a duplicate paddle rather than as a shadow.
     ///
-    /// An `SKEffectNode` with a gaussian blur is the only way to get a soft edge here: the art
-    /// is a black copy of the paddle grown by `endlessIIPaddleShadowSpread` on every side, and
-    /// the blur turns that margin into the falloff. **Rasterised**, so the blur is computed
-    /// once and not every frame - the paddle moves constantly, and a live filter under it is a
-    /// full-screen effect running at 120fps for a piece of scenery.
+    /// **Round 342 found why it never was** (James, round 339: "With mirror paddle and halo
+    /// power-ups on together, the shadow around the white paddle can be seen, and it looks bad.
+    /// This shadow should be a subtle drop shadow with soft edges that just pokes out of all
+    /// sides of the white paddle evenly, growing and shrinking with the paddle as needed").
+    /// It was a black copy of the paddle, grown by the spread and blurred in a rasterised
+    /// `SKEffectNode`, hung on the paddle as a child - and two things were wrong with that:
     ///
-    /// Rasterising is also why the paddle's width is remembered: a cached bitmap does not
-    /// follow Expand or Shrink, so a resize has to rebuild rather than restretch. The tick
-    /// calls this every frame and it returns immediately unless the width has actually moved.
+    /// - **It was scaled twice.** It was sized from `paddle.size`, which already carries the
+    ///   paddle's scale (`endlessIIPaddleHalfWidth` says why that is certain), and then drawn
+    ///   inside the paddle, whose `xScale` applied to it again. Under Expand it ran far past the
+    ///   ends while staying the same thickness above and below: the opposite of even.
+    /// - **The blur was cut off.** An effect node crops its output to its children's bounds,
+    ///   so the falloff past the grown copy stopped at a hard edge. On the dark field a 30%
+    ///   black box vanishes; over the Halo's lime glow it is a dark rectangle.
+    ///
+    /// Now it is a sprite of its own beside the paddle rather than inside it, wearing one
+    /// picture that is already soft (`endlessIIPaddleShadowTexture`), nine-sliced so the soft
+    /// edge keeps its width however far the middle stretches, and sized every frame to the
+    /// paddle as drawn plus the same margin on all four sides. Nothing is rasterised, so there
+    /// is nothing to rebuild when the paddle changes size: a size write per frame is the whole
+    /// cost.
     func showEndlessIIPaddleShadow() {
         let name = GameScene.endlessIIPaddleShadowName
-        if let existing = paddle.childNode(withName: name) {
-            let builtFor = existing.userData?["builtForWidth"] as? CGFloat ?? 0
-            guard abs(builtFor - paddle.size.width) > 0.5 else { return }
-            existing.removeFromParent()
-        }
-
+        let shadow = (childNode(withName: name) as? SKSpriteNode) ?? {
+            let made = SKSpriteNode(texture: GameScene.endlessIIPaddleShadowTexture)
+            made.name = name
+            made.centerRect = GameScene.endlessIIPaddleShadowCentre
+            made.color = .black
+            made.colorBlendFactor = 1
+            addChild(made)
+            return made
+        }()
         let spread = GameScene.endlessIIPaddleShadowSpread
-        let art = SKSpriteNode(texture: paddle.texture,
-                               size: CGSize(width: paddle.size.width + spread*2,
-                                            height: paddle.size.height + spread*2))
-        art.color = .black
-        art.colorBlendFactor = 1
-        art.centerRect = endlessIIPaddleDressCenterRect
-        // The paddle's own current nine-slice, like the bar and the mirror (round 201)
-
-        let shadow = SKEffectNode()
-        shadow.name = name
-        shadow.filter = CIFilter(name: "CIGaussianBlur",
-                                 parameters: [kCIInputRadiusKey: GameScene.endlessIIPaddleShadowBlur])
-        shadow.shouldRasterize = true
-        shadow.alpha = GameScene.endlessIIPaddleShadowAlpha
-        shadow.position = .zero
-        // Centred on the paddle, so the spread is even on all four edges
-        shadow.zPosition = -0.05
-        shadow.userData = ["builtForWidth": paddle.size.width]
-        shadow.addChild(art)
-        paddle.addChild(shadow)
+        let size = CGSize(width: abs(paddle.size.width) + spread*2,
+                          height: abs(paddle.size.height) + spread*2)
+        if shadow.size != size { shadow.size = size }
+        shadow.position = paddle.position
+        shadow.zPosition = paddle.zPosition - 0.05
+        // Behind the paddle's own pixels and in front of the mirror, which sits a tenth back
+        shadow.alpha = paddle.isHidden ? 0 : GameScene.endlessIIPaddleShadowAlpha
     }
 
     func removeEndlessIIPaddleShadow() {
-        paddle.childNode(withName: GameScene.endlessIIPaddleShadowName)?.removeFromParent()
+        childNode(withName: GameScene.endlessIIPaddleShadowName)?.removeFromParent()
+    }
+
+    /// The shadow's one picture: a black pill whose edge fades out over `softEdge` points.
+    ///
+    /// Drawn once, with Core Graphics' own shadow - the pill itself is drawn far off the
+    /// canvas and only its blurred shadow lands on it, which is the standard way to get a
+    /// soft shape with nothing hard in the middle of it.
+    static let endlessIIPaddleShadowSoftEdge: CGFloat = 8
+
+    static let endlessIIPaddleShadowTexture: SKTexture = {
+        let edge = endlessIIPaddleShadowSoftEdge
+        let pill = CGSize(width: 24, height: 8)
+        let canvas = CGSize(width: pill.width + edge*2, height: pill.height + edge*2)
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 3
+        let image = UIGraphicsImageRenderer(size: canvas, format: format).image { context in
+            let cg = context.cgContext
+            let away: CGFloat = 1000
+            cg.setShadow(offset: CGSize(width: away, height: 0), blur: edge,
+                         color: UIColor.black.cgColor)
+            let rect = CGRect(x: edge - away, y: edge, width: pill.width, height: pill.height)
+            cg.addPath(CGPath(roundedRect: rect, cornerWidth: pill.height/2,
+                              cornerHeight: pill.height/2, transform: nil))
+            cg.setFillColor(UIColor.black.cgColor)
+            cg.fillPath()
+        }
+        return SKTexture(image: image)
+    }()
+
+    /// The middle of that picture, which is all that stretches: the soft edge and the pill's
+    /// rounded ends keep their size whatever the paddle does.
+    static var endlessIIPaddleShadowCentre: CGRect {
+        let edge = endlessIIPaddleShadowSoftEdge
+        let canvas = CGSize(width: 24 + edge*2, height: 8 + edge*2)
+        let cap = edge + 4
+        return CGRect(x: cap/canvas.width, y: 0.45,
+                      width: (canvas.width - cap*2)/canvas.width, height: 0.1)
     }
 
     /// The twin's body: a rectangle, or the reflected shape's silhouette while one is running.
@@ -346,6 +425,7 @@ extension GameScene {
             mirror.physicsBody = nil
             mirror.run(.sequence([.fadeOut(withDuration: 0.2), .removeFromParent()]))
             childNode(withName: GameScene.endlessIIMirrorLaserStripName)?.removeFromParent()
+            childNode(withName: GameScene.endlessIIMirrorWrapGhostName)?.removeFromParent()
             removeEndlessIIPaddleShadow()
             // The shadow is the mirror's costume on the real paddle, and it leaves with it
             return
@@ -379,10 +459,10 @@ extension GameScene {
             // six years
         }
         dressEndlessIIMirrorTurrets(mirror)
+        tickEndlessIIMirrorWrapGhost(mirror)
         showEndlessIIPaddleShadow()
-        // Rebuilt only when the paddle's width has actually moved - the shadow is a rasterised
-        // blur, so a cached bitmap cannot be stretched by Expand or Shrink the way the mirror's
-        // sprite can. It returns immediately on every other frame
+        // Every frame: it follows the paddle's position and its drawn size, which is a
+        // position and a size write rather than anything rebuilt
 
         mirror.texture = endlessIIMirrorPaddleDress
         mirror.color = GameScene.endlessIIMirrorPaddleColour
@@ -423,8 +503,15 @@ extension GameScene {
         // the paddle beside it gave the artwork's
 
         let arriving = ballStateBeforeStep[ObjectIdentifier(subject)]?.velocity ?? body.velocity
+        var twinX = mirror.position.x
+        if endlessIIWrapIsRunning, abs(subject.position.x - twinX) > gameWidth/2 {
+            twinX += subject.position.x > twinX ? gameWidth : -gameWidth
+        }
+        // Measured against whichever copy the ball met - the twin or its wrap ghost on the far
+        // side (`tickEndlessIIMirrorWrapGhost`) - as `endlessIIPaddleXNearest` does for the
+        // paddle. Against the twin a field away, a ghost landing is an edge hit at full angle
         let collision = PaddleBounce.collision(ballX: subject.position.x,
-                                               paddleX: mirror.position.x,
+                                               paddleX: twinX,
                                                paddleWidth: mirror.size.width)
         let clamped = min(max(collision, -1), 1)
 

@@ -451,4 +451,23 @@ enum EndlessIIImpact {
         }
         return dy > 0 ? .top : .bottom
     }
+
+    /// Every face of the brick the ball was touching, which at a corner is two.
+    ///
+    /// James, round 339: "Be a bit more fair with the directional bricks - the corner of the
+    /// open face can be hit and the brick isn't destroyed - we should count this as a hit."
+    ///
+    /// `side` has to name one face, and at a corner it names whichever axis the ball happens to
+    /// be further along - so a ball that clipped the corner of a Directional brick's open top
+    /// could be read as striking the armoured side beside it, and bounced off having done
+    /// nothing. A face is touched when the ball's centre is beyond that face's line: flat on,
+    /// that is one face; on a corner it is beyond two, and both are honestly what it hit.
+    static func faces(ballAt ball: CGPoint, brick rect: CGRect) -> Set<EndlessIISide> {
+        var touched: Set<EndlessIISide> = []
+        if ball.x >= rect.maxX { touched.insert(.right) }
+        if ball.x <= rect.minX { touched.insert(.left) }
+        if ball.y >= rect.maxY { touched.insert(.top) }
+        if ball.y <= rect.minY { touched.insert(.bottom) }
+        return touched
+    }
 }

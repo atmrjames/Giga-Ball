@@ -4371,8 +4371,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 														 brickSize: struckSprite.size)
 					// Worked out here, where the ball's position is still the one it had on
 					// contact, rather than inside hitBrick which is also reached by lasers
+					let touching = EndlessIIImpact.faces(ballAt: struckBall.position,
+														 brick: endlessIIFieldRect(of: struckSprite))
+					// And every face it was touching, which on a corner is two - so the corner
+					// of a Directional brick's open face is a hit (round 339)
                     hitBrick(node: brickNode, sprite: struckSprite, hitFrom: struckSide,
-							 struckBy: struckBall)
+							 touching: touching, struckBy: struckBall)
 					brickNodeShare = brickNode
                 }
 				let angleDeg = Double(atan2(Double(struckBall.physicsBody!.velocity.dy), Double(struckBall.physicsBody!.velocity.dx)))/Double.pi*180
@@ -4645,7 +4649,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		// at the least interesting moment. One deliberate write instead
 	}
 	
-    func hitBrick(node: SKNode, sprite: SKSpriteNode, laserNode: SKNode? = nil, laserSprite: SKSpriteNode? = nil, hitFrom: EndlessIISide? = nil, struckBy: SKSpriteNode? = nil) {
+    func hitBrick(node: SKNode, sprite: SKSpriteNode, laserNode: SKNode? = nil, laserSprite: SKSpriteNode? = nil, hitFrom: EndlessIISide? = nil, touching: Set<EndlessIISide> = [], struckBy: SKSpriteNode? = nil) {
 
 		let gigaLaser = laserNode != nil && laserSprite?.texture == laserGigaTexture
 		// A Giga-Ball laser passes through whatever it meets and carries on. Every `return`
@@ -4730,7 +4734,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		}
 		// A Fixed brick spends its first hit anchoring itself. The second one destroys it
 
-		if endlessIIAcceptsHit(sprite, from: hitFrom) == false {
+		if endlessIIAcceptsHit(sprite, from: hitFrom, touching: touching) == false {
 			stopLaser()
 			if sprite.isHidden {
 				sprite.run(.fadeIn(withDuration: 0.2))

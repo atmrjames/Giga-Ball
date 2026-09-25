@@ -269,6 +269,18 @@ extension GameScene {
 
         showEndlessIIEdgeGlow(.left, wanted: running)
         showEndlessIIEdgeGlow(.right, wanted: running)
+
+        if running, let body = paddle.physicsBody,
+           body.collisionBitMask & CollisionTypes.boarderCategory.rawValue != 0 {
+            body.collisionBitMask &= ~CollisionTypes.boarderCategory.rawValue
+        }
+        // **Every frame, not only when the wrap starts** (James, round 339: "With mirror paddle
+        // and wrap around power-ups, the paddles were blocked from wrapping around"). The
+        // branch below takes the paddle off the frame's edge once, as the power-up begins - and
+        // six paddle paths rebuild the body or rewrite its mask while a run goes on: Expand and
+        // Shrink write the mask out in full, wall bit included. Any of them landing during a
+        // wrap put the wall back under a paddle that was still being told it could pass
+        // through it, and the engine pushed it back every frame. One bitwise check a frame
         // **The same glow the top exit wears** (James, round 242: "the same graphic running
         // vertically along each side of the game for the wrap-around power-up"), in the two
         // colours the walls were already tinted. Outside the `if` below, because that branch

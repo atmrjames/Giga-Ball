@@ -748,6 +748,125 @@ final class EndlessIINeighbourTests: XCTestCase {
         XCTAssertGreaterThan(scene.endlessIIMarkerFloor, -scene.frame.height/2,
                              "it used to run on to the bottom of the screen")
     }
+
+    // MARK: - James's round 339 gameplay notes
+
+    /// "Can gravity bricks slowly accelerate as they fall - not like full gravity - not
+    /// starting super slow either - and ensure there's a top speed."
+    func testAGravityBrickSpeedsUpToALimit() {
+        XCTAssertGreaterThanOrEqual(EndlessIIFall.startSpeed, 2, "not starting super slow")
+        var speed = EndlessIIFall.startSpeed
+        var previous = speed
+        for _ in 0..<12 {
+            speed = EndlessIIFall.accelerated(speed, over: 1.0/60)
+            XCTAssertGreaterThanOrEqual(speed, previous, "it only ever speeds up")
+            previous = speed
+        }
+        XCTAssertGreaterThan(speed, EndlessIIFall.startSpeed, "and it does speed up")
+        XCTAssertEqual(EndlessIIFall.accelerated(speed, over: 10), EndlessIIFall.topSpeed,
+                       "with a top speed")
+    }
+
+    /// And a fall that loses its support again keeps the speed it had built up.
+    func testAFallingBrickThatIsDroppedAgainKeepsItsSpeed() {
+        let scene = makeScene()
+        scene.gameMode = .endlessII
+        scene.totalStatsArray = [TotalStats()]
+        let faller = addBrick(scene, at: CGPoint(x: 0, y: 200), size: cell)
+        faller.endlessIIRole = .gravity
+        scene.settleEndlessIIGravityBricks()
+        scene.tickEndlessIIRoles(0.1)
+        let built = scene.endlessIIFallers[ObjectIdentifier(faller)]?.speed ?? 0
+        XCTAssertGreaterThan(built, EndlessIIFall.startSpeed)
+
+        scene.settleEndlessIIGravityBricks()
+        XCTAssertEqual(scene.endlessIIFallers[ObjectIdentifier(faller)]?.speed ?? 0, built,
+                       accuracy: 0.001, "the same fall, going further")
+    }
+
+    /// "During the drift power-up, if any direction bricks with their side face open end up
+    /// with the open side against the wall when the drift power-up ends, remove those bricks
+    /// automatically."
+    func testDriftEndingRemovesADirectionalBrickFacingTheWall() {
+        let scene = makeScene()
+        scene.gameMode = .endlessII
+        scene.totalStatsArray = [TotalStats()]
+        let leftmost = -scene.gameWidth/2 + cell.width/2
+        let rightmost = scene.gameWidth/2 - cell.width/2
+
+        func directional(_ x: CGFloat, facing side: EndlessIISide) -> SKSpriteNode {
+            let brick = addBrick(scene, at: CGPoint(x: x, y: 200), size: cell)
+            brick.endlessIIRole = .directional
+            brick.endlessIIVulnerableSide = side
+            return brick
+        }
+        let intoTheLeftWall = directional(leftmost, facing: .left)
+        let intoTheRightWall = directional(rightmost, facing: .right)
+        let upAtTheWall = directional(leftmost, facing: .top)
+        let leftInTheMiddle = directional(0, facing: .left)
+
+        scene.endEndlessIIDrift()
+
+        XCTAssertNotEqual(intoTheLeftWall.name, BrickCategoryName, "no ball can reach that face")
+        XCTAssertNotEqual(intoTheRightWall.name, BrickCategoryName, "nor that one")
+        XCTAssertEqual(upAtTheWall.name, BrickCategoryName, "a face the ball can reach stays")
+        XCTAssertEqual(leftInTheMiddle.name, BrickCategoryName, "and so does one away from it")
+    }
+
+    /// "Be a bit more fair with the directional bricks - the corner of the open face can be hit
+    /// and the brick isn't destroyed - we should count this as a hit."
+    func testTheCornerOfTheOpenFaceIsAHit() {
+        let rect = CGRect(x: -20, y: -10, width: 40, height: 20)
+        let corner = CGPoint(x: 23, y: 12)
+        XCTAssertEqual(EndlessIIImpact.faces(ballAt: corner, brick: rect), [.top, .right],
+                       "a ball on the corner is touching both faces")
+        XCTAssertEqual(EndlessIIImpact.faces(ballAt: CGPoint(x: 0, y: 15), brick: rect), [.top],
+                       "flat on, only the one")
+
+        let scene = makeScene()
+        let brick = addBrick(scene, at: .zero, size: cell)
+        brick.endlessIIRole = .directional
+        brick.endlessIIVulnerableSide = .top
+        let primary = EndlessIIImpact.side(ballAt: CGPoint(x: 24, y: 11), brickAt: .zero,
+                                           brickSize: cell)
+        XCTAssertEqual(primary, .right, "the one-face reading calls this corner the armour")
+        XCTAssertTrue(scene.endlessIIAcceptsHit(brick, from: primary,
+                                                touching: [.top, .right]),
+                      "and the open face it also touched makes it a hit")
+        XCTAssertFalse(scene.endlessIIAcceptsHit(brick, from: .right, touching: [.right]),
+                       "the armour alone is still armour")
+    }
+
+    /// "For the portal animation, remove the purple circle that shows up where the ball
+    /// contacts the brick."
+    func testAPortalJumpDrawsNoRings() {
+        let scene = makeScene()
+        scene.endlessIIShowPortalJump(from: .zero, to: CGPoint(x: 0, y: 200))
+        let rings = scene.children.compactMap { $0 as? SKShapeNode }
+            .filter { $0.strokeColor == GameScene.portalBrickColour }
+        XCTAssertTrue(rings.isEmpty, "the line between the two ends is the whole of it now")
+    }
+
+    /// "Following a quicksand power-up in endless mayhem mode, with bricks on the lowest rows
+    /// destroyed during the power-up, when returning to the regular brick position, the bricks
+    /// didn't descend to the lowest row until another brick was destroyed."
+    func testTheFieldStepsDownAsSoonAsQuicksandHasLetGo() {
+        let scene = makeScene()
+        scene.gameMode = .endlessII
+        scene.endlessMode = true
+        scene.totalStatsArray = [TotalStats()]
+        _ = addBrick(scene, at: CGPoint(x: 0, y: 200), size: cell)
+        // High in the field: the bottom row is empty, as it is after the rows Quicksand pushed
+        // down were cleared while it held the field
+        scene.endlessIIFieldShift = -cell.height*2
+        let before = scene.endlessHeight
+
+        scene.tickEndlessIIFieldShift(10)
+
+        XCTAssertEqual(scene.endlessIIFieldShift, 0, "the field is back where it belongs")
+        XCTAssertGreaterThan(scene.endlessHeight, before,
+                             "and it stepped down on landing rather than waiting for a brick")
+    }
 }
 
 /// Which other players get a line behind the field.
@@ -813,4 +932,5 @@ final class EndlessIIRivalLineTests: XCTestCase {
         XCTAssertEqual(EndlessIIRivals.label(for: EndlessIIRival(name: "  ", height: 412)),
                        "412m")
     }
+
 }
