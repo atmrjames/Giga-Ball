@@ -1,6 +1,15 @@
 # Daily Challenge — design specification
 
-**Status: phases 1-3 built, plus §12.5 (interruption and offline posting) in full and phase
+**Status, 25 September 2026 (round 344): built and in the 1.3 TestFlight.** Phases 1 to 3,
+§12.5's interruption and offline posting, streaks and per-day results, the twists in §4
+(Monochromatic's Blackout filter, Always On, Brick Swap, Landslide, Full Deck and daily themes
+included), nineteen achievements
+(`AchievementCatalogue.earnableInDaily`, round 310), and both leaderboards live in App Store
+Connect. **Out of 1.3, in 1.4:** Mayhem Rules, the notifications and share card of §11.5, and
+the "a newer version exists" flag of §13 (build it before the first pool addition, not after).
+The paragraph below is the status as it accumulated round by round, kept as history.
+
+*Status history:* phases 1-3 built, plus §12.5 (interruption and offline posting) in full and phase
 5's streaks (round 268); ten feedback rounds folded in. Still open: phase 4's twist subset -
 of which only **Mayhem Rules** remains written-and-unbuilt, and it is out of 1.3 as of
 round 300 - a round of its own rather than the curated weights list it reads as (ENDLESS-2

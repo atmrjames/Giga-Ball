@@ -16,9 +16,16 @@ sections written specifically to stop mistakes being repeated.
 ## Build and test
 
 ```bash
+DEVELOPER_DIR=/Applications/Xcode-beta.app/Contents/Developer \
 xcodebuild -project Megaball.xcodeproj -scheme Megaball \
-  -destination 'platform=iOS Simulator,name=iPhone 17 Pro' test
+  -destination 'id=6C4F510D-FAC7-42B0-98CE-258809ABA4B7' test > run.log 2>&1
 ```
+
+That is the iPhone 16 Pro on iOS 18.5, **the destination that works as of 25 September 2026**:
+the iOS 27 runtimes here (24A5390f, 24A434) still do not match Xcode-beta's simulator SDK
+(24A5390e), which is the hang described below. **Send the output to a file and read the file**
+(`grep -c "' passed "`, then `Failing tests:` and `error: -[`), and run a full suite in the
+background: piping `xcodebuild` straight into `grep` has hung twice.
 
 - Local builds need `DEVELOPER_DIR=/Applications/Xcode-beta.app/Contents/Developer`. Xcode
   26.6's `actool` **crashes** on the Icon Composer assets — see SPECIFICATION.md §13.
@@ -143,6 +150,17 @@ xcodebuild -project Megaball.xcodeproj -scheme Megaball \
 - **Stale derived data has twice hidden a new file from the test target**, producing "cannot
   find X in scope" for code that builds fine in the app. If a brand-new file's symbols are
   missing from tests, `xcodebuild clean` before believing the error.
+
+- **The simulator plays no sound on this Mac.** Both the suite and a normal launch log
+  `SKAction: Error loading sound resource` for every file, though every file is in the bundle.
+  It is the host's audio server, the same one the relaunch notes above describe, and not the
+  app: James's devices play all of them. Do not go looking for a missing file.
+
+- **Two measuring tools live in `tools/`.** `crap.py` scores untested complexity from a
+  coverage run (`-enableCodeCoverage YES -resultBundlePath run.xcresult`); `mutate.py` puts one
+  small bug at a time into a file and runs that file's tests to see whether they notice. Both
+  explain themselves in their headers. They were rebuilt in round 345 because the first ones
+  lived in a session's scratch directory and were lost with it.
 
 ## Adding a file
 

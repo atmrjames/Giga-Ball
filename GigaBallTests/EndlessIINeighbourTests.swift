@@ -934,3 +934,116 @@ final class EndlessIIRivalLineTests: XCTestCase {
     }
 
 }
+
+/// What a contact sets off, driven through `handleContact` (round 345).
+///
+/// The CRAP pass put `didBegin` at the top of the app: seventy-three decisions and none of them
+/// run by a test, because an `SKPhysicsContact` cannot be made outside the engine. The handler
+/// takes the two bodies now, and bodies can be made.
+final class ContactRoutingTests: XCTestCase {
+
+    private let cell = CGSize(width: 40, height: 20)
+
+    private func scene() -> GameScene {
+        let scene = GameScene(size: CGSize(width: 500, height: 900))
+        scene.gameMode = .endlessII
+        scene.totalStatsArray = [TotalStats()]
+        scene.gameWidth = 440
+        scene.brickWidth = cell.width
+        scene.brickHeight = cell.height
+        scene.numberOfBrickColumns = 11
+        scene.numberOfBrickRows = 22
+        scene.yBrickOffsetEndless = 300
+        scene.finalBrickRowHeight = 300 - cell.height*21
+        scene.ballSize = 12
+        scene.ball.size = CGSize(width: 12, height: 12)
+        scene.ball.physicsBody = SKPhysicsBody(circleOfRadius: 6)
+        scene.ball.physicsBody?.categoryBitMask = CollisionTypes.ballCategory.rawValue
+        scene.ball.physicsBody?.velocity = CGVector(dx: 120, dy: 300)
+        scene.addChild(scene.ball)
+        return scene
+    }
+
+    private func brick(in scene: GameScene, at point: CGPoint = .zero) -> SKSpriteNode {
+        let brick = SKSpriteNode(color: .white, size: cell)
+        brick.texture = scene.brickNormalTexture
+        brick.position = point
+        brick.name = BrickCategoryName
+        brick.physicsBody = SKPhysicsBody(rectangleOf: cell)
+        brick.physicsBody?.categoryBitMask = CollisionTypes.brickCategory.rawValue
+        scene.addChild(brick)
+        return brick
+    }
+
+    func testABallMeetingABrickBreaksIt() {
+        let scene = scene()
+        let target = brick(in: scene)
+        scene.ball.position = CGPoint(x: 0, y: -cell.height/2 - 6)
+
+        scene.handleContact(between: scene.ball.physicsBody!, and: target.physicsBody!)
+        XCTAssertNotEqual(target.name, BrickCategoryName, "an ordinary brick goes on one hit")
+    }
+
+    /// The order the engine hands the bodies over in does not matter.
+    func testEitherOrderIsTheSameContact() {
+        let scene = scene()
+        let target = brick(in: scene)
+        scene.ball.position = CGPoint(x: 0, y: -cell.height/2 - 6)
+
+        scene.handleContact(between: target.physicsBody!, and: scene.ball.physicsBody!)
+        XCTAssertNotEqual(target.name, BrickCategoryName)
+    }
+
+    /// James, round 339: "the corner of the open face can be hit and the brick isn't destroyed
+    /// - we should count this as a hit." Through the contact, where the faces are worked out.
+    func testTheCornerOfADirectionalBricksOpenFaceBreaksIt() {
+        let scene = scene()
+        let target = brick(in: scene)
+        target.endlessIIRole = .directional
+        target.endlessIIVulnerableSide = .top
+        scene.ball.position = CGPoint(x: cell.width/2 + 4, y: cell.height/2 + 2)
+        // Past the top-right corner, and further along x than y by the brick's own proportions,
+        // so the one-face reading calls it the armoured right side
+
+        scene.handleContact(between: scene.ball.physicsBody!, and: target.physicsBody!)
+        XCTAssertNotEqual(target.name, BrickCategoryName, "the open face's corner is a hit")
+    }
+
+    func testAnArmouredFaceStillBouncesTheBall() {
+        let scene = scene()
+        let target = brick(in: scene)
+        target.endlessIIRole = .directional
+        target.endlessIIVulnerableSide = .top
+        scene.ball.position = CGPoint(x: 0, y: -cell.height/2 - 6)
+
+        scene.handleContact(between: scene.ball.physicsBody!, and: target.physicsBody!)
+        XCTAssertEqual(target.name, BrickCategoryName, "the underside is armour")
+    }
+
+    func testALaserBreaksABrickAndIsCounted() {
+        let scene = scene()
+        let target = brick(in: scene)
+        let laser = SKSpriteNode(color: .red, size: CGSize(width: 3, height: 12))
+        laser.name = LaserCategoryName
+        laser.physicsBody = SKPhysicsBody(rectangleOf: laser.size)
+        laser.physicsBody?.categoryBitMask = CollisionTypes.laserCategory.rawValue
+        scene.addChild(laser)
+
+        scene.handleContact(between: laser.physicsBody!, and: target.physicsBody!)
+        XCTAssertNotEqual(target.name, BrickCategoryName)
+        XCTAssertEqual(scene.totalStatsArray[0].lasersHit, 1)
+    }
+
+    /// Round 200's crash in the wild: a Cluster ball that met two bricks in one frame arrived
+    /// at the second contact already removed, and the handler force-unwrapped its node.
+    func testALaserAlreadyGoneIsNotACrash() {
+        let scene = scene()
+        let target = brick(in: scene)
+        let orphan = SKPhysicsBody(rectangleOf: CGSize(width: 3, height: 12))
+        orphan.categoryBitMask = CollisionTypes.laserCategory.rawValue
+        // A body on no node at all, which is what a removed node's contact carries
+
+        scene.handleContact(between: orphan, and: target.physicsBody!)
+        XCTAssertEqual(target.name, BrickCategoryName, "nothing to do, and nothing done")
+    }
+}

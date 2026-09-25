@@ -4215,19 +4215,31 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     }
     
     func didBegin(_ contact: SKPhysicsContact) {
-            
-        if gameState.currentState is Playing {
-        
+        guard gameState.currentState is Playing else { return }
+        handleContact(between: contact.bodyA, and: contact.bodyB)
+    }
+
+    /// Everything a contact sets off, given the two bodies that touched.
+    ///
+    /// **Split out of `didBegin` in round 345 so it can be tested.** The CRAP pass ranked
+    /// `didBegin` the riskiest function in the app - seventy-three decisions, and not one line
+    /// run by the suite - and the reason was mechanical: `SKPhysicsContact` cannot be made
+    /// outside the engine, so no test could hand one in. The only things the handler ever read
+    /// from a contact were its two bodies, and bodies *can* be made, so the bodies are what it
+    /// takes now. `didBegin` keeps the one thing that belongs to the engine's call - "only while
+    /// playing" - and nothing below changed but its indentation's starting point.
+    func handleContact(between bodyA: SKPhysicsBody, and bodyB: SKPhysicsBody) {
+        do {
             var firstBody: SKPhysicsBody
             var secondBody: SKPhysicsBody
             // Local variables to hold the two physics bodies involved in a collision.
             
-            if contact.bodyA.categoryBitMask < contact.bodyB.categoryBitMask {
-                firstBody = contact.bodyA
-                secondBody = contact.bodyB
+            if bodyA.categoryBitMask < bodyB.categoryBitMask {
+                firstBody = bodyA
+                secondBody = bodyB
             } else {
-                firstBody = contact.bodyB
-                secondBody = contact.bodyA
+                firstBody = bodyB
+                secondBody = bodyA
             }
             // Stores the 2 bodies, with the body with the lower category being first
 

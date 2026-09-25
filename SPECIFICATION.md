@@ -17,9 +17,12 @@ Current version 1.2 (August 2026), with 1.3 in progress on `release-1.3`. Bundle
 
 Giga-Ball is a single-player Breakout / Arkanoid game for iPhone and iPad. The player
 moves a paddle horizontally to keep a ball in play, destroying a grid of bricks above.
-Destroyed bricks may drop power-ups. There are two modes: a **Classic Mode** of 110
-hand-designed levels across 11 themed packs, and an **Endless Mode** where rows descend
-indefinitely and the goal is height.
+Destroyed bricks may drop power-ups. There are four modes: a **Classic Mode** of 110
+hand-designed levels across 11 themed packs; the original **Endless Mode**, where rows descend
+indefinitely and the goal is height; **Endless Mayhem** (new in 1.3), an endless mode of its own
+with new brick types, shapes and power-ups; and the **Daily Challenge** (new in 1.3), one
+challenge a day for everyone, drawn from the other three with twists. Classic and the original
+Endless play exactly as they always have, because their leaderboards hold years of scores.
 
 It is free, with no advertising, no in-app purchases and no data collection. Progress
 syncs across the player's devices via iCloud, and scores post to Game Center.
@@ -34,19 +37,21 @@ syncs across the player's devices via iCloud, and scores post to Game Center.
 | Gameplay | SpriteKit, with the built-in Box2D physics via `SKPhysicsBody` |
 | UI shell | UIKit, one storyboard (`Main.storyboard`), programmatic container hierarchy |
 | State machine | GameplayKit `GKStateMachine` |
-| Minimum iOS | 15.0 |
-| Devices | iPhone and iPad, **portrait only** |
+| Minimum iOS | 17.0 (raised from 15 in round 301) |
+| Devices | iPhone in portrait; iPad in every orientation, resizable, in a window as small as 375 × 667 |
 | Lifecycle | UIScene (`SceneDelegate` builds the window from the storyboard) |
 | Persistence | `UserDefaults`, a `Codable` plist in Documents, `NSUbiquitousKeyValueStore` |
 | Services | Game Center (leaderboards, achievements), CloudKit (availability check only) |
 
 There is no dependency manager and no analytics or crash-reporting SDK.
 
-`GigaBallTests` is a host-app unit test bundle covering the data model — `LevelPackSetup`
-array alignment, `TotalStats` coding, `Scoring`, `Progression`, power-up allocation and
-the starting unlock state. It runs in about two seconds. Physics, rendering and the view
-controllers are not covered; neither is `CloudKitHandler`'s save/load, which reads and
-writes the `UserDefaults` and key-value-store singletons with no seam to inject a double.
+`GigaBallTests` is a host-app unit test bundle of about 2,600 tests (September 2026). It began
+with the data model and now reaches the scene's mechanics, the power-ups and their pairings, the
+daily's generator and twists, the save and resume paths, the iCloud merge (through an injected
+store since round 313), and the layout of every menu and in-game screen at several device and
+window sizes. A full run takes about fifteen minutes on this Mac; CLAUDE.md says how to read
+one. `tools/crap.py` scores untested complexity from a coverage run and `tools/mutate.py` checks
+whether the tests would notice a wrong line - both described in their own headers.
 
 ### Project layout
 
@@ -167,6 +172,17 @@ What it adds, in full in [ENDLESS-2-SPECIFICATION.md](ENDLESS-2-SPECIFICATION.md
 Everything is additive: no existing brick, power-up or level behaves differently because
 Endless 2.0 exists.
 
+### Daily Challenge
+
+One challenge a day, the same for every player, changing at 00:00 UTC. Each day draws a mode
+(Classic, Endless or Endless Mayhem), a Classic level where it is Classic, and up to three
+twists - Time Trial, Fog of War, Mirrored, Upside Down, One Life, No Power-Ups, Always On,
+Monochromatic, a daily theme and more. The first run of the day is the **competition run** and
+posts to the two daily boards (the day's, and a running total across days); every run after it
+is **free play** and posts nothing. A daily never unlocks Classic content or touches the other
+modes' records. Streaks, per-day results and nineteen achievements of its own. In full in
+[DAILY-CHALLENGE-SPECIFICATION.md](DAILY-CHALLENGE-SPECIFICATION.md).
+
 ---
 
 ## 4. Gameplay mechanics
@@ -177,6 +193,15 @@ and wider screens this produces vertical borders either side rather than a stret
 field. `GameSceneLayout` solves for the height first and spends whatever width is left on
 the borders, so the field is always as tall as the window allows and is never cropped; the
 scene is presented `aspectFit` for the same reason.
+
+**The window can change shape during a level** (iPad and Mac windows), and since round 342 the
+scene follows it (`WindowFit.swift`): its width is widened or narrowed to the window's shape
+and its height never changes, so the play zone keeps the window's height and the purple
+border either side takes the difference. No node or physics body moves. It narrows no further
+than the play zone, or the HUD where a compact layout hung it off the edges; a window thinner
+than that gets bands above and below, because the alternative is clipping the walls. **The
+smallest window is 375 by 667** (`SceneDelegate.smallestWindow`, round 342), the smallest
+phone iOS 17 runs on, for iPad and Mac windows alike.
 
 **And the menus are a phone's menus, centred** (round 314). Their content is capped both by
 shape - `menuMaximumAspectRatio` - and by an absolute `menuMaximumWidth`, whichever is
@@ -434,16 +459,21 @@ Game Center can be disabled in settings.
 
 | Setting | Values |
 |---|---|
-| Sounds | on / off |
-| Music | on / off |
-| Haptics | on / off |
-| Parallax | on / off (tilt-based motion effect on menu backgrounds) |
-| Paddle sensitivity | 3 levels |
-| Game Center | on / off |
-| Ball / Paddle / Brick theme | 1 of 12 each, subject to unlocks |
-| App icon | 1 of 12, subject to unlocks |
-| Stats collapse | display preference on stats screens |
-| Reset data | destructive, confirmed via warning screen |
+| App Icon | 1 of 12, subject to unlocks |
+| Ball & Paddle Theme | 1 of 12, subject to unlocks; Retro also brings its own bricks |
+| In-Game Sound | on / off (was "Sounds") |
+| UI Sound | on / off: the button click, separately from the game (round 341) |
+| Music | on / off, with a choice of tracks |
+| Haptics | on / off; hidden on devices with no haptic engine, such as iPads |
+| Game Background | 1 of 11, chosen on a screen with a model of the game view |
+| Perspective Zoom | on / off: the tilt-based motion on menu backgrounds (was "Parallax"), and off whenever the system's Reduce Motion is on |
+| Paddle Speed | a slider from 1.0 to 3.0 in quarter steps, with a practice field |
+| Swipe Up To Pause | on / off |
+| Reset Ball | the pause menu's settings only: puts a stuck ball back on the paddle |
+
+From the pause menu, App Icon and Ball & Paddle Theme are left out, because both restyle a game
+already in progress. Reset Data still exists in code and is not reachable from the menus, which is James's decision
+(5 August 2026: "It was a feature I decided not to implement").
 
 ---
 
@@ -497,7 +527,8 @@ multitasking. Deprecated but currently honoured.~~ **Neither half of that is tru
 round 314). The key is not in `Info.plist` and not in the build settings either, so it is
 absent rather than true - and iPadOS 26 ignores it in any case, which is how James came to be
 playing in a window he could drag into any shape. Rounds 313f-h and 314a are the layout work
-that followed from it: the scene letterboxes rather than crops, and the menus cap their
+that followed from it: the scene letterboxes rather than crops (and since round 342 widens to
+fill the window instead - see §4), and the menus cap their
 content to a phone's width and centre it. **The app participates in iPadOS multitasking**,
 and has to be laid out as though it does.
 
