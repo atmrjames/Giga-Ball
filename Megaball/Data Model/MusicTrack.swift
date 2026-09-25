@@ -39,17 +39,15 @@ enum MusicTrack: String, CaseIterable, Codable {
         Bundle.main.url(forResource: fileName, withExtension: MusicTrack.fileExtension)
     }
 
-    /// **The menu's theme is not part of the game's rotation.**
+    /// The tracks a run draws from first: everything but the menu's theme.
     ///
-    /// `playMusic(sender: "Menu")` plays the Title Theme and nothing else, and the other three
-    /// are what a run draws from. So the choosing screen governs these three: turning the
-    /// Title Theme off would leave the main menu silent, which is a different setting from the
-    /// one James asked for ("untick one or all of them to play whilst playing the game").
-    /// It is still listed and still previewable - a player looking for the tune they can hear
-    /// on the menu should find it where the music lives.
+    /// **Every track is choosable since round 346** (James: "can the theme music be selectable
+    /// and deselectable like the other tracks. If it's deselected, other tracks are used on the
+    /// menu pages"). It used to be listed but not tickable, because the menu played it and
+    /// nothing else and unticking it would have silenced the main menu. Now the menu falls back
+    /// to the other ticked tracks (`MusicSelection.menuTrack`), and a run falls back to the
+    /// theme only when it is the one track left ticked - so no ticked list is ever silent.
     static var gameTracks: [MusicTrack] { allCases.filter { $0 != .titleTheme } }
-
-    var isChoosable: Bool { self != .titleTheme }
 }
 
 /// Which tracks a run may draw from, and the rules that keep that in step with the master
@@ -64,10 +62,10 @@ enum MusicTrack: String, CaseIterable, Codable {
 enum MusicSelection {
     static let defaultsKey = "musicTracksOff"
 
-    /// The tracks a run may draw from.
+    /// Every track the player has left ticked, the menu's theme included.
     static func enabled(in store: KeyValueStore = UserDefaults.standard) -> [MusicTrack] {
         let off = Set(storedOff(in: store))
-        return MusicTrack.gameTracks.filter { off.contains($0.rawValue) == false }
+        return MusicTrack.allCases.filter { off.contains($0.rawValue) == false }
     }
 
     static func isEnabled(_ track: MusicTrack, in store: KeyValueStore = UserDefaults.standard) -> Bool {
@@ -84,7 +82,6 @@ enum MusicSelection {
     @discardableResult
     static func set(_ track: MusicTrack, enabled: Bool,
                     in store: KeyValueStore = UserDefaults.standard) -> Bool {
-        guard track.isChoosable else { return anyEnabled(in: store) }
         var off = Set(storedOff(in: store))
         if enabled { off.remove(track.rawValue) } else { off.insert(track.rawValue) }
         store.set(Array(off), forKey: defaultsKey)
@@ -114,7 +111,19 @@ enum MusicSelection {
     }
 
     /// One track for a run to play, or nil if the player has turned them all off.
+    ///
+    /// The ticked game tracks; the Title Theme only when it is the one track still ticked.
     static func drawATrack(in store: KeyValueStore = UserDefaults.standard) -> MusicTrack? {
-        enabled(in: store).randomElement()
+        let ticked = enabled(in: store)
+        return ticked.filter { $0 != .titleTheme }.randomElement()
+            ?? (ticked.contains(.titleTheme) ? .titleTheme : nil)
+    }
+
+    /// What the menus play: the Title Theme while it is ticked, and otherwise one of the other
+    /// ticked tracks (James, round 346). Nil only when nothing is ticked, which is the music
+    /// being off.
+    static func menuTrack(in store: KeyValueStore = UserDefaults.standard) -> MusicTrack? {
+        let ticked = enabled(in: store)
+        return ticked.contains(.titleTheme) ? .titleTheme : ticked.randomElement()
     }
 }

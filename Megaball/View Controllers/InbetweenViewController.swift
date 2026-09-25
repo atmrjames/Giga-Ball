@@ -172,18 +172,22 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
         if levelScoreBonus <= 0 {
             speedBonusTitle.isHidden = true
             speedBonusLabel.isHidden = true
-            totalScoreSpeedBonus.isActive = false
-            totalScoreNoSpeedBonus.isActive = true
+            storyboardChoices.set(totalScoreSpeedBonus, active: false)
+            storyboardChoices.set(totalScoreNoSpeedBonus, active: true)
         } else {
             speedBonusTitle.isHidden = false
             speedBonusLabel.isHidden = false
-            totalScoreNoSpeedBonus.isActive = false
-            totalScoreSpeedBonus.isActive = true
+            storyboardChoices.set(totalScoreNoSpeedBonus, active: false)
+            storyboardChoices.set(totalScoreSpeedBonus, active: true)
             putTheScoreAndBonusOnOneLine()
         }
         
-        packAndLevelConstriant.isActive = false
-        completeLabelConstraint.isActive = true
+        storyboardChoices.set(packAndLevelConstriant, active: false)
+        storyboardChoices.set(completeLabelConstraint, active: true)
+        // Remembered rather than just set (round 346): all four of these live in views whose
+        // storyboard constraints carry a size-class variation, which UIKit re-applies whole
+        // when the traits change - as they do while the app goes to the background. See
+        // `StoryboardConstraintChoices`
         layOutTheThreeBands()
         showTheLivesLeft()
         keepTheScoresOffTheTapLine()
@@ -342,8 +346,8 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
                 self.levelScoreLabel.text = ""
                 self.speedBonusTitle.text = ""
                 self.speedBonusLabel.text = ""
-                self.completeLabelConstraint.isActive = false
-                self.packAndLevelConstriant.isActive = true
+                self.storyboardChoices.set(self.completeLabelConstraint, active: false)
+                self.storyboardChoices.set(self.packAndLevelConstriant, active: true)
                 NotificationCenter.default.post(name: .continueToNextLevel, object: nil)
                 UIView.animate(withDuration: 0.25, animations: {
                     self.contentView.transform = CGAffineTransform(scaleX: 1.0, y: 1.0)
@@ -925,6 +929,9 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
 
     private var headerToResultGap: NSLayoutConstraint?
 
+    /// The storyboard constraints this card has overruled - see `StoryboardConstraintChoices`.
+    private(set) var storyboardChoices = StoryboardConstraintChoices()
+
     private func layOutTheThreeBands() {
         guard let contentView else { return }
 
@@ -932,7 +939,7 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
         where constraint.firstItem === completeLabel
             && constraint.firstAttribute == .top
             && constraint.secondItem === levelNameLabel {
-            constraint.isActive = false
+            storyboardChoices.set(constraint, active: false)
         }
         let gap = completeLabel.topAnchor.constraint(
             greaterThanOrEqualTo: levelNameLabel.bottomAnchor,
@@ -952,6 +959,9 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
 
     override func viewWillLayoutSubviews() {
         super.viewWillLayoutSubviews()
+        storyboardChoices.reassert()
+        // What this card overruled in the storyboard, overruled again if a trait change put
+        // it back (round 346)
         putTheScoreAndBonusOnOneLine()
         // Before the pass rather than after it, since it retires constraints: a constraint
         // deactivated from `viewDidLayoutSubviews` asks for another pass to notice it

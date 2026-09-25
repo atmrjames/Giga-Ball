@@ -34,8 +34,11 @@ import SpriteKit
 /// that goes silently empty is the sort of thing that bites a downgrade or a restore.
 enum PaddleSpeed {
 
-    static let range: ClosedRange<CGFloat> = 1.0...3.0
+    static let range: ClosedRange<CGFloat> = 1.0...5.0
     static let step: CGFloat = 0.25
+    // **Up to 5.0 since round 346** (James: "can we increase the maximum speed up to 5.0,
+    // maintaining 0.25 increments?"). The bottom and the step are unchanged, so every speed a
+    // player has chosen is still exactly where it was
     // Quarters rather than tenths (James, round 121): 1.00, 1.25, 1.50 ... 3.00. Nine steps
     // a thumb can actually land on, and every one of the five old settings is still exactly
     // reachable - x1.25 and x1.50 were two of them
@@ -60,9 +63,16 @@ enum PaddleSpeed {
     /// the nine steps cannot fall out of step with each other - the suffix is the number with
     /// its decimal point and any trailing zero removed, which is what James named the files:
     /// 1.00 is `1`, 1.25 is `125`, 1.50 is `15`, 2.75 is `275`.
+    /// The nine drawn stages of the icon, lightest to darkest, which were drawn for 1.0 to 3.0.
+    static let iconStages: [CGFloat] = [1.0, 1.25, 1.5, 1.75, 2.0, 2.25, 2.5, 2.75, 3.0]
+
     static func iconName(for value: CGFloat) -> String {
-        let snapped = snapped(value)
-        var digits = String(format: "%.2f", Double(snapped))
+        let share = (snapped(value) - range.lowerBound)/(range.upperBound - range.lowerBound)
+        let stage = iconStages[Int((share*CGFloat(iconStages.count - 1)).rounded())]
+        // **The icon says how far along the range a speed is**, so the wider range (round 346)
+        // spreads the nine drawn stages across 1.0 to 5.0 rather than asking for eight more
+        // pictures: the slowest is still the lightest, the fastest the darkest
+        var digits = String(format: "%.2f", Double(stage))
             .replacingOccurrences(of: ".", with: "")
         while digits.count > 1, digits.hasSuffix("0") { digits.removeLast() }
         return "iconPaddleSensitivity" + digits
@@ -311,7 +321,10 @@ final class PaddleSpeedViewController: UIViewController, MenuNavigable {
 
         let hint = UILabel()
         hint.translatesAutoresizingMaskIntoConstraints = false
-        hint.text = "Drag in the field to try it"
+        hint.text = nil
+        hint.isHidden = true
+        // **No subtitle** (James, round 346: "remove the drag in the field... page subtitle").
+        // The label stays as an empty link in the chain the field hangs from
         hint.font = .systemFont(ofSize: 13)
         hint.textColor = UIColor(white: 1, alpha: 0.45)
         hint.textAlignment = .center

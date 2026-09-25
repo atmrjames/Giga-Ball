@@ -312,7 +312,10 @@ extension GameScene {
 
         countBricks()
         if hapticsSetting { heavyHaptic.impactOccurred() }
-        if soundsSetting { run(laserFiredSound) }
+        // **No `laserFiredSound` here** (James, round 346: "the laser beam sound effect in the
+        // game is wrong. Use the one I supplied"). His `laserBeam` recording plays at the top of
+        // this function; the ordinary laser's shot was played as well, on the same frame, and it
+        // is the sharper of the two, so it was the one heard
     }
 
     /// The beam's own picture: a white-hot core with the glow falling away either side of it.

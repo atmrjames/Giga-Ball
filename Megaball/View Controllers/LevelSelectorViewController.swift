@@ -144,9 +144,9 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
                 cell.statDescription.text = "Pack Hi-Score"
                 let highScore = totalStatsArray[0].packHighScores[packNumber!-2]
                 if highScore > 0 {
-                    cell.statValue.text = String(highScore)
+                    cell.showValue(String(highScore), asScore: true)
                 } else {
-                    cell.statValue.text = "Not set"
+                    cell.showValue("Not set", asScore: false)
                 }
                 return cell
             case 1:
@@ -155,9 +155,9 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
                 let bestTimeSeconds = totalStatsArray[0].packBestTimes[packNumber!-2]
                 let displayMinutesString = String(format: "%02d", bestTimeSeconds/60)
                 let displaySecondsString = String(format: "%02d", bestTimeSeconds%60)
-                cell.statValue.text = "\(displayMinutesString):\(displaySecondsString)"
+                cell.showValue("\(displayMinutesString):\(displaySecondsString)", asScore: false)
                 if totalStatsArray[0].packBestTimes[packNumber!-2] == 0 {
-                    cell.statValue.text = "Not set"
+                    cell.showValue("Not set", asScore: false)
                 }
                 return cell
             default:

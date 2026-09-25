@@ -1141,6 +1141,46 @@ final class BallRackView: UIView {
     }
 }
 
+/// The storyboard constraints a screen has switched on or off in code, held so the choice
+/// survives UIKit putting the storyboard back.
+///
+/// **James, round 346: "Pausing the game, closing the app (not quitting) then re-entering the
+/// app, causes some of the items on the pause view to move down. I noticed the same thing
+/// happening with the game over view too."** A view whose constraints carry a size-class
+/// variation in the storyboard has its *whole* constraint list re-applied by UIKit whenever the
+/// traits change - every constraint in it active again, whatever code had since decided. And
+/// the traits do change while the app goes to the background: iOS lays the app out again, at
+/// other sizes, for the app switcher's snapshots. On the pause screen that brought back the
+/// storyboard's centre tie that round 338 had cut so the title block could hang from the
+/// wordmark, the two fought, and PAUSED and everything under it came back forty points lower.
+///
+/// So a screen records its decision here rather than just making it, and `reassert` puts back
+/// anything UIKit has undone. Called from `viewWillLayoutSubviews`, because a trait change is
+/// always followed by a layout pass and a change made before the pass costs no second one.
+struct StoryboardConstraintChoices {
+    private var choices: [(constraint: NSLayoutConstraint, active: Bool)] = []
+
+    /// Sets `constraint` to `active` and remembers it, replacing any earlier choice for it.
+    mutating func set(_ constraint: NSLayoutConstraint?, active: Bool) {
+        guard let constraint else { return }
+        constraint.isActive = active
+        choices.removeAll { $0.constraint === constraint }
+        choices.append((constraint, active))
+    }
+
+    /// Makes every remembered constraint what was chosen for it. Returns whether any had been
+    /// undone, which is what a test asks.
+    @discardableResult
+    func reassert() -> Bool {
+        var undone = false
+        for choice in choices where choice.constraint.isActive != choice.active {
+            choice.constraint.isActive = choice.active
+            undone = true
+        }
+        return undone
+    }
+}
+
 extension UILabel {
 
     /// Sets any fixed height this label carries to what its own text needs at its own width.

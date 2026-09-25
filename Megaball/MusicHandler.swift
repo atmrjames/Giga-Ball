@@ -61,11 +61,11 @@ final class MusicHandler: NSObject, AVAudioPlayerDelegate {
 
     /// Which track a caller is asking for.
     ///
-    /// The menu has one theme and always has; everything else draws from the tracks the player
-    /// left ticked (`MusicSelection`). Nil means the rotation is empty, which is the music
+    /// The menu plays the Title Theme while it is ticked and another ticked track when it is
+    /// not (round 346); a run draws from the ticked tracks (`MusicSelection`). Nil means the rotation is empty, which is the music
     /// being off in all but name - so nothing plays and nothing fades.
     private func trackURL(for sender: String?) -> URL? {
-        sender == "Menu" ? MusicTrack.titleTheme.url : MusicSelection.drawATrack()?.url
+        sender == "Menu" ? MusicSelection.menuTrack()?.url : MusicSelection.drawATrack()?.url
     }
 
     private var wantedVolume: Float { gameInProgress ? gameVolumeSet : menuVolumeSet }

@@ -241,4 +241,55 @@ final class ProgressionTests: XCTestCase {
         }
         XCTAssertTrue(Progression.unlocksCityPack(packBestTimes: [90, 120, 150]))
     }
+
+    // MARK: - The main menu's Classic play button (round 346)
+
+    /// James, round 346: "Add one. It should play the next available pack to the player. If
+    /// all packs are available, it should play a pack at random."
+    private func unlocked(_ packs: [Int]) -> [Bool] {
+        var open = [Bool](repeating: false, count: 13)
+        packs.forEach { open[$0] = true }
+        return open
+    }
+
+    func testAPlayerWorkingThroughTheGameGetsTheirNextPack() {
+        var generator = DailySeededGenerator(seed: 1)
+        var times = [Int](repeating: 0, count: 11)
+        times[0] = 300
+        XCTAssertEqual(Progression.quickPlayPack(unlocked: unlocked([2, 3]), bestTimes: times,
+                                                 using: &generator), 3,
+                       "pack 2 is finished and 3 is open and unplayed, so 3 is the next one")
+        XCTAssertEqual(Progression.quickPlayPack(unlocked: unlocked([2]),
+                                                 bestTimes: [Int](repeating: 0, count: 11),
+                                                 using: &generator), 2,
+                       "a new player's next pack is the first")
+    }
+
+    func testWithEveryPackOpenAnyOfThemCanComeUp() {
+        var generator = DailySeededGenerator(seed: 7)
+        let everything = unlocked(Progression.classicPacks)
+        var seen = Set<Int>()
+        for _ in 0..<400 {
+            let pack = Progression.quickPlayPack(unlocked: everything,
+                                                 bestTimes: [Int](repeating: 0, count: 11),
+                                                 using: &generator)!
+            seen.insert(pack)
+        }
+        XCTAssertEqual(seen, Set(Progression.classicPacks),
+                       "random across every pack, not the first unfinished one - with them all "
+                       + "open there is no 'next'")
+    }
+
+    func testWithEveryOpenPackFinishedItPicksAmongTheOpenOnes() {
+        var generator = DailySeededGenerator(seed: 3)
+        for _ in 0..<50 {
+            let pack = Progression.quickPlayPack(unlocked: unlocked([2, 3, 4]),
+                                                 bestTimes: [90, 120, 150] + [Int](repeating: 0, count: 8),
+                                                 using: &generator)!
+            XCTAssertTrue([2, 3, 4].contains(pack), "never a locked pack (\(pack))")
+        }
+        XCTAssertNil(Progression.quickPlayPack(unlocked: unlocked([]),
+                                               bestTimes: [Int](repeating: 0, count: 11),
+                                               using: &generator))
+    }
 }

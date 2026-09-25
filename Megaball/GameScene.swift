@@ -1360,6 +1360,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var dailyFogPending: [SKSpriteNode] = []
 	/// Time Trial's clock: seconds left before the whistle. See `tickDailyTimeTrial`.
 	var dailyTimeTrialRemaining: Double = DailyTwist.timeTrialSeconds
+	/// Whether the Time Trial's first ball has been served, after which only a pause stops the
+	/// clock (round 346).
+	var dailyTimeTrialUnderway = false
 	/// The countdown in the HUD, built only on a Time Trial day.
 	var dailyClockLabel: SKLabelNode?
 	/// The Time Trial's closing three, two, one, and which of them was last shown.

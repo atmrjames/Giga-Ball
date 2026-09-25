@@ -43,6 +43,13 @@ class LevelSelectorTableViewCell: UITableViewCell {
         cellView3.layer.shadowOpacity = 0.5
         cellView3.layer.shadowRadius = 4
 
+        if let size = highScoreLabel?.font?.pointSize {
+            highScoreLabel.font = UIViewController.gameScoreFont(ofSize: size)
+        }
+        // The level's best in the game's score face (James, round 346: "Anywhere scores or
+        // heights show up in the app, they should be in the same font style as the score and
+        // heights from the game view")
+
         isGlass = SettingsTableViewCell.addGlass(behind: cellView3, cornerRadius: 14) != nil
         if isGlass {
             cellView3.layer.shadowOpacity = 0

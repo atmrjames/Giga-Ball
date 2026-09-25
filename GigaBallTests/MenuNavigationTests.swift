@@ -1756,3 +1756,120 @@ final class SettingsRowTapTests: XCTestCase {
         XCTAssertFalse(screen.settingRows.contains(.theme))
     }
 }
+
+/// **James, round 346: "Pausing the game, closing the app (not quitting) then re-entering the
+/// app, causes some of the items on the pause view to move down. I noticed the same thing
+/// happening with the game over view too. Please check all the in game views for the same
+/// issue."** His screenshots have the gap between "Endless Mayhem" and PAUSED about forty points
+/// wider after the return.
+///
+/// What going to the background does to a screen is lay it out again under other traits, for
+/// the app switcher's snapshots, and then under its own. A view whose storyboard constraints
+/// carry a size-class variation has its whole constraint list re-applied on each change, which
+/// switched back on a tie the pause screen had cut in round 338. These tests make the same
+/// round trip, horizontal size class regular and back, and ask that nothing moved.
+final class InGameScreensAfterTheAppSwitcherTests: XCTestCase {
+
+    private var window: UIWindow?
+
+    override func tearDown() {
+        window?.isHidden = true
+        window = nil
+        super.tearDown()
+    }
+
+    /// Shows `screen` full-window, as `GameViewController` does, in a real window so trait
+    /// changes reach it.
+    private func show(_ screen: UIViewController) {
+        let host = UIViewController()
+        let window: UIWindow
+        if let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
+            window = UIWindow(windowScene: scene)
+        } else {
+            window = UIWindow()
+        }
+        window.frame = CGRect(x: 0, y: 0, width: 402, height: 874)
+        window.rootViewController = host
+        window.isHidden = false
+        self.window = window
+        host.addChild(screen)
+        screen.view.frame = host.view.bounds
+        host.view.addSubview(screen.view)
+        screen.didMove(toParent: host)
+        window.layoutIfNeeded()
+        screen.view.layoutIfNeeded()
+    }
+
+    /// The app switcher's round trip, as far as the layout can tell.
+    private func visitTheAppSwitcher(_ screen: UIViewController) {
+        screen.traitOverrides.horizontalSizeClass = .regular
+        screen.view.setNeedsLayout()
+        screen.view.layoutIfNeeded()
+        screen.traitOverrides.horizontalSizeClass = .compact
+        screen.view.setNeedsLayout()
+        screen.view.layoutIfNeeded()
+    }
+
+    private func top(of view: UIView, in screen: UIViewController) -> CGFloat {
+        view.convert(view.bounds, to: screen.view).minY
+    }
+
+    func testPausedStaysWhereItWasAfterTheAppComesBack() throws {
+        let board = UIStoryboard(name: "Main", bundle: Bundle(for: PauseMenuViewController.self))
+        let pause = try XCTUnwrap(board.instantiateViewController(withIdentifier: "pauseMenuVC")
+                                    as? PauseMenuViewController)
+        pause.sender = "Pause"
+        pause.levelNumber = 0
+        pause.totalStatsArray = [TotalStats()]
+        show(pause)
+
+        let title = try XCTUnwrap(pause.titleLabel)
+        let before = top(of: title, in: pause)
+        visitTheAppSwitcher(pause)
+
+        XCTAssertEqual(top(of: title, in: pause), before, accuracy: 1,
+                       "PAUSED moved from \(before) to \(top(of: title, in: pause)) after the "
+                       + "traits changed and changed back - James's report, reproduced")
+    }
+
+    func testTheBetweenLevelsCardStaysWhereItWasAfterTheAppComesBack() throws {
+        let board = UIStoryboard(name: "Main", bundle: Bundle(for: InbetweenViewController.self))
+        let card = try XCTUnwrap(board.instantiateViewController(withIdentifier: "inbetweenView")
+                                   as? InbetweenViewController)
+        show(card)
+        card.view.transform = .identity
+        card.view.alpha = 1
+        card.view.layoutIfNeeded()
+
+        let complete = try XCTUnwrap(card.completeLabel)
+        let total = try XCTUnwrap(card.totalScoreLabel)
+        let before = (top(of: complete, in: card), top(of: total, in: card))
+        visitTheAppSwitcher(card)
+
+        XCTAssertEqual(top(of: complete, in: card), before.0, accuracy: 1)
+        XCTAssertEqual(top(of: total, in: card), before.1, accuracy: 1)
+    }
+
+    /// The mechanism on its own: a choice UIKit undid is put back, and one it left alone is not
+    /// counted.
+    func testAChoiceUndoneFromOutsideIsPutBack() {
+        let parent = UIView()
+        let child = UIView()
+        parent.addSubview(child)
+        let tie = child.topAnchor.constraint(equalTo: parent.topAnchor)
+        tie.isActive = true
+
+        var choices = StoryboardConstraintChoices()
+        choices.set(tie, active: false)
+        XCTAssertFalse(choices.reassert(), "nothing had been undone")
+
+        tie.isActive = true
+        // What the storyboard's re-application does
+        XCTAssertTrue(choices.reassert())
+        XCTAssertFalse(tie.isActive)
+
+        choices.set(tie, active: true)
+        XCTAssertFalse(choices.reassert(), "the later choice replaces the earlier one")
+        XCTAssertTrue(tie.isActive)
+    }
+}

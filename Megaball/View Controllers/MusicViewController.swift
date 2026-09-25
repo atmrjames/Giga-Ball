@@ -96,14 +96,17 @@ final class MusicViewController: UIViewController, UITableViewDelegate, UITableV
 
         let hint = UILabel()
         hint.translatesAutoresizingMaskIntoConstraints = false
-        hint.text = "Play a track to hear it. Tick the ones to play during a game."
+        hint.text = nil
+        hint.isHidden = true
+        // **No subtitle** (James, round 346: "remove the play a track to hear... page
+        // subtitle"). Kept as an empty link in the chain the table hangs from
         hint.font = .systemFont(ofSize: 13)
         hint.textColor = UIColor(white: 1, alpha: 0.55)
         hint.numberOfLines = 0
         hint.textAlignment = .center
         view.addSubview(hint)
-        // Two jobs on one row needs saying once: the tap previews, the tick chooses. Without
-        // it a tick looks like the only thing a row does and the preview is never found
+        // The play glyph in each row's icon place says the first of the row's two jobs, and
+        // the tick the second, so the sentence that used to explain them has gone (round 346)
 
         tableView.translatesAutoresizingMaskIntoConstraints = false
         tableView.backgroundColor = .clear
@@ -204,7 +207,14 @@ final class MusicViewController: UIViewController, UITableViewDelegate, UITableV
 
         cell.settingDescription.text = track.name
         cell.centreLabel.text = ""
-        cell.setIcon(UIImage(named: "iconMusic")!, recolour: true)
+        let playing = previewing == track
+        cell.setIcon(UIImage(systemName: playing ? "stop.circle.fill" : "play.circle.fill",
+                             withConfiguration: UIImage.SymbolConfiguration(weight: .semibold)),
+                     recolour: true)
+        // **The play button is the row's icon** (James, round 346: "can the play buttons be over
+        // the music note icon on the left of the cell?"). The note said "this is music" on a
+        // page that is nothing else; the button beside the name said "play me". One glyph in
+        // the icon's place now does the second job where the first used to be
         cell.accessoryView = nil
         for tag in [Self.playTag, Self.tickTag] {
             cell.contentView.viewWithTag(tag)?.removeFromSuperview()
@@ -213,59 +223,41 @@ final class MusicViewController: UIViewController, UITableViewDelegate, UITableV
         // whatever the last row put on it, which is how one information button became one on
         // nearly every row (play-test round 15)
 
-        addPlayButton(to: cell, row: indexPath.row, playing: previewing == track)
+        addPlayButton(to: cell)
 
-        if track.isChoosable {
-            cell.settingState.text = ""
-            // **The tick is the state.** Saying "on" as well put the word behind the tick,
-            // which is where the row's state label lives - two answers to one question, one
-            // of them half hidden by the other. Every other settings row uses the word
-            // because it has nothing else; this one has the thing itself
-            addTickButton(to: cell, row: indexPath.row,
-                          on: MusicSelection.isEnabled(track))
-        } else {
-            cell.settingState.text = "menu"
-            cell.setStateColour(#colorLiteral(red: 0.6000000238, green: 0.6000000238, blue: 0.6000000238, alpha: 1))
-            // The Title Theme is listed because a player looking for the tune from the menu
-            // should find it where the music lives - but it is the menu's, not a run's, so it
-            // says what it is instead of offering a tick that would silence the main menu
-        }
+        cell.settingState.text = ""
+        // **The tick is the state.** Saying "on" as well put the word behind the tick,
+        // which is where the row's state label lives - two answers to one question, one
+        // of them half hidden by the other. Every other settings row uses the word
+        // because it has nothing else; this one has the thing itself
+        addTickButton(to: cell, row: indexPath.row,
+                      on: MusicSelection.isEnabled(track))
+        // Every row, the Title Theme included, since round 346 (`MusicTrack.gameTracks`)
         return cell
     }
 
     private static let playTag = 8901
     private static let tickTag = 8902
 
-    /// The play glyph beside a track's name.
+    /// Where a press starts or stops a track's preview: over the row's icon, which wears the
+    /// play glyph (round 346).
     ///
-    /// Placed exactly where the settings list puts a door - just past the end of the written
-    /// name - so the two screens read the same way.
-    private func addPlayButton(to cell: SettingsTableViewCell, row: Int, playing: Bool) {
-        let play = UIButton(type: .system)
+    /// Invisible and not pressed itself - the glass swallows its touch, so the row's selection
+    /// and this frame are what decide (`watchTouches`, `controlHit`). 56 points square, not
+    /// Apple's 44: the settings list found 44 still too easy to miss inside a cell (play-test
+    /// round 21).
+    private func addPlayButton(to cell: SettingsTableViewCell) {
+        let play = UIView()
         play.tag = Self.playTag
-        play.setImage(UIImage(systemName: playing ? "stop.circle" : "play.circle",
-                              withConfiguration: UIImage.SymbolConfiguration(
-                                  pointSize: 20, weight: .regular)), for: .normal)
-        play.tintColor = SettingsTableViewCell.glassForeground.withAlphaComponent(playing ? 1 : 0.7)
-        play.translatesAutoresizingMaskIntoConstraints = false
+        play.backgroundColor = .clear
         play.isUserInteractionEnabled = false
-        // Drawn, not pressed: the glass swallows its touch, so the row's selection and this
-        // button's frame are what decide - see `watchTouches`
+        play.translatesAutoresizingMaskIntoConstraints = false
         cell.contentView.addSubview(play)
-        cell.contentView.bringSubviewToFront(play)
-
-        let title = cell.settingDescription.text ?? ""
-        let font = cell.settingDescription.font ?? .systemFont(ofSize: 17)
-        let written = (title as NSString).size(withAttributes: [.font: font]).width
-
         NSLayoutConstraint.activate([
-            play.leadingAnchor.constraint(equalTo: cell.settingDescription.leadingAnchor,
-                                          constant: written + 2),
-            play.centerYAnchor.constraint(equalTo: cell.settingDescription.centerYAnchor),
+            play.centerXAnchor.constraint(equalTo: cell.iconImage.centerXAnchor),
+            play.centerYAnchor.constraint(equalTo: cell.iconImage.centerYAnchor),
             play.widthAnchor.constraint(equalToConstant: 56),
             play.heightAnchor.constraint(equalToConstant: 56),
-            // 56, not Apple's 44: the settings list found 44 still too easy to miss inside a
-            // cell (play-test round 21), and the glyph is unchanged - it simply catches more
         ])
     }
 
@@ -375,7 +367,6 @@ final class MusicViewController: UIViewController, UITableViewDelegate, UITableV
     // MARK: - Choosing
 
     private func toggle(_ track: MusicTrack) {
-        guard track.isChoosable else { return }
         if hapticsSetting { interfaceHaptic.impactOccurred() }
         InterfaceSound.click()
 
@@ -389,6 +380,14 @@ final class MusicViewController: UIViewController, UITableViewDelegate, UITableV
             // Ticking one back on with the switch off turns the switch on - the pair are one
             // state, and leaving the switch off while a track is ticked would be the same lie
             // from the other side
+            if track == .titleTheme, previewing == nil,
+               MusicHandler.sharedHelper.gameInProgress == false {
+                MusicHandler.sharedHelper.crossfadeMusic(sender: "Menu")
+            }
+            // The menu's own music follows the Title Theme's tick at once (round 346): unticked,
+            // the menus fade to another ticked track; ticked again, they fade back to it. Not
+            // over a preview, which has borrowed the music, and not mid-game, where the menu
+            // track is not what is playing
         } else {
             defaults.set(false, forKey: "musicSetting")
             MusicHandler.sharedHelper.stopMusic()

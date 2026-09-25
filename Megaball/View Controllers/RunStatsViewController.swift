@@ -24,7 +24,7 @@ class RunStatsViewController: UIViewController, UITableViewDataSource, UITableVi
     private let highlights = InGameRecents.shared.superlatives
 
     /// The run's facts, in the stats page's own row shape: a symbol, a label, a value.
-    private var factRows: [(icon: String, label: String, value: String)] = []
+    private var factRows: [(icon: String, label: String, value: String, isScore: Bool)] = []
     private let facts = UITableView(frame: .zero, style: .plain)
     private var factsHeight: NSLayoutConstraint?
 
@@ -99,7 +99,11 @@ class RunStatsViewController: UIViewController, UITableViewDataSource, UITableVi
             // interesting-sounding rather than interesting. Paddle hits stays: it is the one
             // of them that measures how the run was played
             _ = bricksPerMetre
-            factRows = lines.map { (icon: $0.0, label: $0.1, value: $0.2) }
+            factRows = lines.enumerated().map { index, line in
+                (icon: line.0, label: line.1, value: line.2, isScore: index == 0)
+            }
+            // The first row is the headline, the run's score or height, which wears the game's
+            // score face (round 346); everything after it is a count or a time
             // The same facts, now as rows for the table below rather than as one centred
             // block of text (play-test round 85: "the game-over More Stats view should use
             // the stats page's table style")
@@ -224,7 +228,7 @@ class RunStatsViewController: UIViewController, UITableViewDataSource, UITableVi
                                                      for: indexPath) as! StatsTableViewCell
             let row = factRows[indexPath.row]
             cell.statDescription.text = row.label
-            cell.statValue.text = row.value
+            cell.showValue(row.value, asScore: row.isScore)
             cell.showIcon(row.icon)
             cell.showDivider(indexPath.row < factRows.count - 1)
             return cell

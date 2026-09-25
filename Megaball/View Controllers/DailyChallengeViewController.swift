@@ -718,38 +718,13 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
     }
 
     private func startRun(_ challenge: DailyChallenge) {
-        DailyChallengeSession.shared.active = challenge
-
-        var record = totalStatsArray[0].dailyRecord(forKey: viewedKey)
-            ?? DailyChallengeRecord(dateKey: viewedKey)
-        DailyChallengeSession.shared.isScoringAttempt =
-            viewedOffset == 0 && record.attemptCount == 0
-        DailyChallengeSession.shared.forfeitedByLeaving = false
-        // A forfeit belongs to the run that earned it. Cleared as a run starts as well as as
-        // one ends, because the session outlives both and a stale one would quietly unpost a
-        // run that never left the app
-        record.attemptCount += 1
-        totalStatsArray[0].upsertDailyRecord(record)
+        let launch = DailyChallengeSession.shared.beginRun(
+            challenge, key: viewedKey, isToday: viewedOffset == 0,
+            stats: totalStatsArray[0], defaults: defaults)
         saveData()
-        // The press is what spends the attempt (§7): the record exists from this moment,
-        // so a force-quit mid-run still finds the day spent - and every later press of
-        // this button is practice, which the label above already said
-
-        let underlying = challenge.mode
-        underlying.makeCurrent(in: defaults)
         MenuViewController().clearSavedGame()
-        // A daily is always a fresh run - it must never resume a campaign save into a
-        // twisted game, or vice versa
-
-        if let level = challenge.classicLevel {
-            menu?.moveToGame(selectedLevel:
-                                DailyChallengeGenerator.levelNumber(forClassicLevel: level),
-                             numberOfLevels: 1, sender: "MainMenu",
-                             levelPack: DailyChallengeGenerator.pack(forClassicLevel: level))
-        } else {
-            menu?.moveToGame(selectedLevel: 0, numberOfLevels: 1, sender: "MainMenu",
-                             levelPack: 1)
-        }
+        menu?.moveToGame(selectedLevel: launch.level, numberOfLevels: 1, sender: "MainMenu",
+                         levelPack: launch.pack)
         removeAnimate()
     }
 
@@ -898,5 +873,48 @@ extension DailyChallengeViewController: UICollectionViewDataSource,
         GigaBallAlert.show(on: self, title: "Today's Twists",
                            attributed: DailyTwist.explainer(for: challenge.twists),
                            symbol: "dice.fill")
+    }
+}
+
+extension DailyChallengeSession {
+
+    /// Starts a daily run: makes it the active challenge, decides whether it is the scoring
+    /// attempt, spends the day's attempt in `stats`, and records the mode it is played in.
+    /// Returns the level and pack to launch. The caller saves `stats` and starts the game.
+    ///
+    /// **One start for the daily, wherever it is pressed** (round 346): the Daily Challenge
+    /// screen's play button and the main menu's both come through here. The bookkeeping is the
+    /// part that must not differ - which run posts, and that a press spends the attempt - so it
+    /// lives in one place rather than in each button.
+    func beginRun(_ challenge: DailyChallenge, key: String, isToday: Bool, stats: TotalStats,
+                  defaults: UserDefaults) -> (level: Int, pack: Int) {
+        active = challenge
+
+        var record = stats.dailyRecord(forKey: key) ?? DailyChallengeRecord(dateKey: key)
+        isScoringAttempt = isToday && record.attemptCount == 0
+        forfeitedByLeaving = false
+        // A forfeit belongs to the run that earned it. Cleared as a run starts as well as as
+        // one ends, because the session outlives both and a stale one would quietly unpost a
+        // run that never left the app
+        record.attemptCount += 1
+        stats.upsertDailyRecord(record)
+        // The press is what spends the attempt (§7): the record exists from this moment, so a
+        // force-quit mid-run still finds the day spent - and every later press is practice
+
+        challenge.mode.makeCurrent(in: defaults)
+        // A daily is always a fresh run; the caller clears any campaign save, so it never
+        // resumes into a twisted game or the other way round
+
+        if let level = challenge.classicLevel {
+            return (DailyChallengeGenerator.levelNumber(forClassicLevel: level),
+                    DailyChallengeGenerator.pack(forClassicLevel: level))
+        }
+        return (0, 1)
+    }
+
+    /// Whether today's challenge is still unplayed on this device - the main menu's red dot
+    /// (James, round 346).
+    func todayIsUnplayed(in stats: TotalStats) -> Bool {
+        (stats.dailyRecord(forKey: todayKey)?.attemptCount ?? 0) == 0
     }
 }

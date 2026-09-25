@@ -324,9 +324,12 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
         guard let block = packNameLabel.superview, titleBlockCentreTie == nil else { return }
         for constraint in (block.superview?.constraints ?? [])
         where constraint.firstItem === block && constraint.firstAttribute == .centerY {
-            constraint.isActive = false
+            storyboardChoices.set(constraint, active: false)
             titleBlockCentreTie = constraint
         }
+        // Through `storyboardChoices`, so it stays cut (round 346): the tie lives in the
+        // container's list, which carries a size-class variation, and UIKit re-activated it
+        // when the app came back from the background
         // And the same air under the run's name that the level intro and the between-levels
         // card keep, for the same reason: PAUSED and the level's name both carry a halo, and
         // the storyboard's fifteen points let the two lights run together.
@@ -393,6 +396,9 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
 
     /// Held so a second layout pass knows the tie has already been dealt with.
     private var titleBlockCentreTie: NSLayoutConstraint?
+
+    /// The storyboard constraints this screen has overruled - see `StoryboardConstraintChoices`.
+    private(set) var storyboardChoices = StoryboardConstraintChoices()
 
     /// The wordmark, held so the header can shrink the band together on a short screen.
     private weak var pauseLogoView: UIImageView?
@@ -506,6 +512,13 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
     /// variation that was excluding them on iPad), and the cap had to measure the window
     /// rather than this view. With both, the pause and game-over screens are shaped like the
     /// rest of the app on an iPad instead of stretching the full width of one.
+    override func viewWillLayoutSubviews() {
+        super.viewWillLayoutSubviews()
+        storyboardChoices.reassert()
+        // Before the pass: a trait change puts the storyboard's constraints back, and this
+        // takes them off again before anything is placed by them (round 346)
+    }
+
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         limitMenuContentSize()

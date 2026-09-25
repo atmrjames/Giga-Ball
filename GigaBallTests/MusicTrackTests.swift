@@ -35,17 +35,32 @@ final class MusicTrackTests: XCTestCase {
         }
     }
 
-    func testAFreshPlayerHasEveryGameTrackOn() {
-        XCTAssertEqual(MusicSelection.enabled(in: store), MusicTrack.gameTracks)
+    func testAFreshPlayerHasEveryTrackOn() {
+        XCTAssertEqual(MusicSelection.enabled(in: store), MusicTrack.allCases)
     }
 
-    /// The menu's theme is not part of a run's rotation, so it is not one of the things the
-    /// screen can turn off - `playMusic(sender: "Menu")` plays it and nothing else, and
-    /// unticking it would leave the main menu silent rather than change what a run plays.
-    func testTheTitleThemeIsNotInTheRotationAndCannotBeUnticked() {
-        XCTAssertFalse(MusicTrack.gameTracks.contains(.titleTheme))
+    /// James, round 346: "can the theme music be selectable and deselectable like the other
+    /// tracks. If it's deselected, other tracks are used on the menu pages."
+    func testTheTitleThemeCanBeUntickedAndTheMenusPlaySomethingElse() {
+        XCTAssertEqual(MusicSelection.menuTrack(in: store), .titleTheme, "ticked, the menus' own")
         MusicSelection.set(.titleTheme, enabled: false, in: store)
-        XCTAssertEqual(MusicSelection.enabled(in: store), MusicTrack.gameTracks)
+        XCTAssertFalse(MusicSelection.isEnabled(.titleTheme, in: store))
+        for _ in 0..<30 {
+            let track = MusicSelection.menuTrack(in: store)
+            XCTAssertNotNil(track)
+            XCTAssertNotEqual(track, .titleTheme, "unticked, the menus use the other tracks")
+        }
+    }
+
+    /// And a run falls back to the theme only when it is the one track left ticked, so a
+    /// ticked list is never silent.
+    func testARunPlaysTheThemeOnlyWhenNothingElseIsTicked() {
+        for track in MusicTrack.gameTracks { MusicSelection.set(track, enabled: false, in: store) }
+        XCTAssertEqual(MusicSelection.drawATrack(in: store), .titleTheme)
+        MusicSelection.set(.theRebound, enabled: true, in: store)
+        for _ in 0..<30 {
+            XCTAssertEqual(MusicSelection.drawATrack(in: store), .theRebound)
+        }
     }
 
     func testUntickingATrackTakesItOutOfTheRotation() {
@@ -58,21 +73,23 @@ final class MusicTrackTests: XCTestCase {
         }
     }
 
+    /// "If all are deselected then the music setting is set to off" - all four now, the theme
+    /// included.
     func testUntickingTheLastOneLeavesNothingToPlay() {
-        for track in MusicTrack.gameTracks.dropLast() {
+        for track in MusicTrack.allCases.dropLast() {
             XCTAssertTrue(MusicSelection.set(track, enabled: false, in: store),
                           "there is still something to play")
         }
-        XCTAssertFalse(MusicSelection.set(MusicTrack.gameTracks.last!, enabled: false,
-                                          in: store),
+        XCTAssertFalse(MusicSelection.set(MusicTrack.allCases.last!, enabled: false, in: store),
                        "the last one going off is what turns the music setting off")
         XCTAssertNil(MusicSelection.drawATrack(in: store))
+        XCTAssertNil(MusicSelection.menuTrack(in: store))
     }
 
     func testTurningTheMusicBackOnTicksEverything() {
-        for track in MusicTrack.gameTracks { MusicSelection.set(track, enabled: false, in: store) }
+        for track in MusicTrack.allCases { MusicSelection.set(track, enabled: false, in: store) }
         MusicSelection.selectAll(in: store)
-        XCTAssertEqual(MusicSelection.enabled(in: store), MusicTrack.gameTracks)
+        XCTAssertEqual(MusicSelection.enabled(in: store), MusicTrack.allCases)
     }
 
     /// **A track added to the game later must play for people who already have a stored
@@ -97,14 +114,13 @@ final class MusicTrackTests: XCTestCase {
     /// The crossfade has to make exactly the same choice `playMusic` does, or the menu could
     /// fade into a track the player turned off. Both ask `trackURL(for:)`, and this pins what
     /// that answers: the menu's own theme for the menu, and only ticked tracks otherwise.
-    func testTheMenuAlwaysGetsItsOwnThemeAndARunNeverDoes() {
+    func testWhileOtherTracksAreTickedARunNeverDrawsTheTheme() {
         XCTAssertNotNil(MusicTrack.titleTheme.url, "the menu's theme has to exist to be used")
-        // Was `titleTheme.url == titleTheme.url`, which is true of anything (round 212's audit)
         var drawn = 0
         for _ in 0..<50 {
             guard let track = MusicSelection.drawATrack(in: store) else { continue }
             drawn += 1
-            XCTAssertNotEqual(track, .titleTheme, "the menu's theme is not in a run's rotation")
+            XCTAssertNotEqual(track, .titleTheme, "the theme is the menus', while there is choice")
         }
         XCTAssertGreaterThan(drawn, 0, "fifty draws and nothing came out")
     }
@@ -112,7 +128,7 @@ final class MusicTrackTests: XCTestCase {
     /// And with every track off there is nothing to fade *to*, so the crossfade must decline
     /// rather than fade the current track out into silence.
     func testWithEveryTrackOffThereIsNothingToFadeTo() {
-        for track in MusicTrack.gameTracks {
+        for track in MusicTrack.allCases {
             MusicSelection.set(track, enabled: false, in: store)
         }
         XCTAssertNil(MusicSelection.drawATrack(in: store))
@@ -120,6 +136,6 @@ final class MusicTrackTests: XCTestCase {
 
     func testRubbishInTheStoreLeavesEveryTrackPlaying() {
         store.set(42, forKey: MusicSelection.defaultsKey)
-        XCTAssertEqual(MusicSelection.enabled(in: store), MusicTrack.gameTracks)
+        XCTAssertEqual(MusicSelection.enabled(in: store), MusicTrack.allCases)
     }
 }

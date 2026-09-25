@@ -354,6 +354,11 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         let mode = GameMode(rawValue: indexPath.row) ?? .classic
         cell.modeTextLabel.text = mode.name
         cell.modeImageIcon.image = GameMode.menuIcon(for: mode)
+        cell.onPlay = { [weak self] in self?.playStraightIn(mode) }
+        cell.showsNotification = mode == .daily && totalStatsArray.isEmpty == false
+            && DailyChallengeSession.shared.todayIsUnplayed(in: totalStatsArray[0])
+        // Straight into a game from the main menu, and a dot for a daily not yet played
+        // (James, round 346) - see `ModeSelectTableViewCell.onPlay`
         
         UIView.animate(withDuration: 0.1) {
             cell.cellView1.transform = .identity
@@ -605,6 +610,80 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
     }
     // Segue to GameViewController
     
+    // MARK: - Straight in (round 346)
+
+    /// Starts a game of `mode` from the main menu, skipping the mode's own menu.
+    ///
+    /// Endless and Mayhem start their run; Classic starts the pack `Progression.quickPlayPack`
+    /// picks; the Daily Challenge starts today's, through the Free Play pop-up if today's
+    /// attempt is spent - the same pop-up and the same start (`DailyChallengeSession.beginRun`)
+    /// its own screen uses, so the two buttons cannot disagree about what a press means.
+    func playStraightIn(_ mode: GameMode) {
+        if hapticsSetting { interfaceHaptic.impactOccurred() }
+        InterfaceSound.click()
+        loadData()
+        guard totalStatsArray.isEmpty == false else { return }
+        let setup = LevelPackSetup()
+
+        switch mode {
+        case .classic:
+            guard let pack = Progression.quickPlayPack(
+                unlocked: totalStatsArray[0].levelPackUnlockedArray,
+                bestTimes: totalStatsArray[0].packBestTimes) else { return }
+            mode.makeCurrent(in: defaults)
+            clearSavedGame()
+            moveToGame(selectedLevel: setup.startLevelNumber[pack],
+                       numberOfLevels: setup.numberOfLevels[pack],
+                       sender: "MainMenu", levelPack: pack)
+        case .endless, .endlessII:
+            mode.makeCurrent(in: defaults)
+            clearSavedGame()
+            moveToGame(selectedLevel: setup.startLevelNumber[1], numberOfLevels: 1,
+                       sender: "MainMenu", levelPack: 1)
+        case .daily:
+            playTodaysDaily()
+        }
+    }
+
+    private func playTodaysDaily() {
+        let session = DailyChallengeSession.shared
+        let key = session.todayKey
+        let challenge = DailyChallengeGenerator.challenge(forKey: key)
+        let start = { [weak self] in
+            guard let self, self.totalStatsArray.isEmpty == false else { return }
+            let launch = session.beginRun(challenge, key: key, isToday: true,
+                                          stats: self.totalStatsArray[0],
+                                          defaults: self.defaults)
+            self.saveStats()
+            self.clearSavedGame()
+            self.moveToGame(selectedLevel: launch.level, numberOfLevels: 1, sender: "MainMenu",
+                            levelPack: launch.pack)
+        }
+        if let notice = DailyChallengePosting.practiceNotice(
+            record: totalStatsArray[0].dailyRecord(forKey: key), isToday: true,
+            mode: challenge.mode,
+            closedOn: session.displayName(forKey: key).capitalized) {
+            GigaBallAlert.show(on: self, title: "Free play", message: notice,
+                               symbol: "gamecontroller.fill",
+                               dismissTitle: "Cancel", confirmTitle: "Play",
+                               confirm: start)
+            return
+        }
+        start()
+    }
+
+    /// Writes the stats file, as the Daily Challenge screen's `saveData` does: the attempt a
+    /// press spends has to be on disk before the run starts, and in iCloud soon after.
+    private func saveStats() {
+        do {
+            let data = try PropertyListEncoder().encode(totalStatsArray)
+            if let store = totalStatsStore { try data.write(to: store) }
+        } catch {
+            Log.data.error("Error encoding total stats, \(String(describing: error), privacy: .public)")
+        }
+        CloudKitHandler().saveToiCloud()
+    }
+
     func moveToPackSelector() {
         let packSelectorView = self.storyboard?.instantiateViewController(withIdentifier: "packSelectorView") as! PackSelectViewController
         self.addChild(packSelectorView)

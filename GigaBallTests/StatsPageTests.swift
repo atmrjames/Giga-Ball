@@ -383,6 +383,52 @@ final class StatsPageTests: XCTestCase {
 /// backlogged, and this is it (play-test round 13): a slider from 1.0 to 3.0 in tenths,
 /// which the old five-step index could not express. The conversion is what these pin -
 /// a player who has been on x1.25 for years must open the new screen already on x1.25.
+/// James, round 346: "Anywhere scores or heights show up in the app, they should be in the same
+/// font style as the score and heights from the game view."
+final class ScoreFaceTests: XCTestCase {
+
+    private func isScoreFace(_ font: UIFont?) -> Bool {
+        font?.fontName == UIViewController.gameScoreFont(ofSize: 17).fontName
+    }
+
+    /// The heights and scores on the stats page are marked, and nothing else is: a brick count
+    /// in the score's face would read as a score.
+    func testTheStatsPageMarksItsHeightsAndScoresAndNothingElse() {
+        let stats = TotalStats()
+        stats.endlessModeHeight = [120, 340]
+        stats.endlessIIModeHeight = [80]
+        let marked = StatsPage.Tab.allCases
+            .flatMap { StatsPage.rows(for: $0, stats: stats) }
+            .filter(\.isScore).map(\.label)
+        XCTAssertTrue(marked.contains("Hi-Score height"))
+        XCTAssertTrue(marked.contains("Average height"))
+        for row in StatsPage.Tab.allCases.flatMap({ StatsPage.rows(for: $0, stats: stats) })
+        where row.isScore {
+            let label = row.label.lowercased()
+            XCTAssertTrue(label.contains("score") || label.contains("height"),
+                          "\(row.label) is drawn as a score and is not one")
+        }
+    }
+
+    /// A reused cell gives the face back: these rows are recycled, and a count landing on a
+    /// cell that last showed a score must not keep the score's font.
+    func testAStatsRowTakesTheScoreFaceAndGivesItBack() throws {
+        let nib = UINib(nibName: "StatsTableViewCell",
+                        bundle: Bundle(for: StatsTableViewCell.self))
+        let cell = try XCTUnwrap(nib.instantiate(withOwner: nil).first as? StatsTableViewCell)
+        let plainSize = try XCTUnwrap(cell.statValue.font).pointSize
+
+        cell.showValue("312 m", asScore: true)
+        XCTAssertTrue(isScoreFace(cell.statValue.font))
+        XCTAssertEqual(cell.statValue.font.pointSize, plainSize,
+                       "the same size as its neighbours, so the row is no taller")
+
+        cell.showValue("1,204", asScore: false)
+        XCTAssertFalse(isScoreFace(cell.statValue.font))
+        XCTAssertEqual(cell.statValue.font.pointSize, plainSize)
+    }
+}
+
 final class PaddleSpeedTests: XCTestCase {
 
     private func emptyDefaults() -> UserDefaults {
@@ -429,10 +475,25 @@ final class PaddleSpeedTests: XCTestCase {
         XCTAssertEqual(PaddleSpeed.snapped(1.6), 1.5, accuracy: 0.0001)
         XCTAssertEqual(PaddleSpeed.snapped(1.7), 1.75, accuracy: 0.0001)
         XCTAssertEqual(PaddleSpeed.snapped(0.2), 1.0, accuracy: 0.0001)
-        XCTAssertEqual(PaddleSpeed.snapped(9), 3.0, accuracy: 0.0001)
+        XCTAssertEqual(PaddleSpeed.snapped(9), 5.0, accuracy: 0.0001,
+                       "the top of the range is 5.0 since round 346")
+        XCTAssertEqual(PaddleSpeed.snapped(4.1), 4.0, accuracy: 0.0001, "still in quarters")
         for legacy in PaddleSpeed.legacyFactors {
             XCTAssertEqual(PaddleSpeed.snapped(legacy), legacy, accuracy: 0.0001,
                            "an old setting must land exactly on a step, not near one")
+        }
+    }
+
+    /// James, round 346: "can we increase the maximum speed up to 5.0, maintaining 0.25
+    /// increments?" The nine drawn icon stages spread across the wider range.
+    func testTheIconRunsLightestToDarkestAcrossTheWholeRange() {
+        XCTAssertEqual(PaddleSpeed.iconName(for: 1.0), "iconPaddleSensitivity1")
+        XCTAssertEqual(PaddleSpeed.iconName(for: 5.0), "iconPaddleSensitivity3")
+        XCTAssertEqual(PaddleSpeed.iconName(for: 3.0), "iconPaddleSensitivity2")
+        var value = PaddleSpeed.range.lowerBound
+        while value <= PaddleSpeed.range.upperBound {
+            XCTAssertNotNil(UIImage(named: PaddleSpeed.iconName(for: value)), "x\(value)")
+            value += PaddleSpeed.step
         }
     }
 

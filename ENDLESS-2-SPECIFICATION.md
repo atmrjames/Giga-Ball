@@ -2559,6 +2559,46 @@ testing." What it found and did:
   §8.5 here is marked settled; SAFE-AREA-PLAN is marked historical; CLAUDE.md's build command is
   the destination that works today, with the reason.
 
+**Round 346: James's play-test list after the external build went to review.** Built:
+
+- **A play button on every mode's main-menu row**, in the level rows' style, and only the button
+  starts a game - the row's body opens the mode's screen as before. Classic plays
+  `Progression.quickPlayPack` (James: "the next available pack ... If all packs are available,
+  it should play a pack at random"); the daily starts today's through the Free Play pop-up when
+  the attempt is spent. The daily's start moved into `DailyChallengeSession.beginRun`, which the
+  briefing screen's button now calls too, so which run posts and that a press spends the
+  attempt are decided in one place. **A red dot** on the daily's icon while today is unplayed.
+- **The pause and game-over screens moved down after a trip to the background** - forty points,
+  PAUSED and everything under it. A storyboard view whose constraints carry a size-class
+  variation has its whole constraint list re-applied by UIKit on every trait change, and iOS
+  changes the traits while it snapshots an app for the switcher: the centre tie round 338 cut so
+  the title block could hang from the wordmark came back and fought it. Found with lldb on the
+  running app - the tie was active again. The between-levels card had four constraints in the
+  same position. `StoryboardConstraintChoices` remembers what a screen decided and puts it back
+  in `viewWillLayoutSubviews`; `InGameScreensAfterTheAppSwitcherTests` makes the same round trip
+  (size class regular and back) and fails without it, PAUSED moving from 309 to 350. The level
+  intro's resume card already re-cut its ties on every pass.
+- **Scores and heights in the game's score face** everywhere else they appear: the stats page's
+  score and height rows (`StatsPage.Row.isScore`), a run's headline in Run Stats, the level and
+  pack best scores, the endless run history, and the daily card's result. A score inside a
+  sentence (a pop-up, the free-play line) stays in the sentence's face.
+- **Music:** the Title Theme can be ticked and unticked like the others; unticked, the menus play
+  another ticked track, and with nothing ticked there is no music. The play control sits over the
+  track's icon, and the hint line is gone.
+- **Paddle speed** runs to 5.0 in quarter steps, the icon spread across the whole range; the hint
+  line is gone. **App Icon and Theme** wear the chevron of a row that opens a page.
+- **Time Trial:** the clock starts at the first serve and then runs whenever the game is playing,
+  a sticky catch included; the rack of balls is not drawn, since the balls are unlimited.
+- **Best so far** on the endless milestones shows the figure as well as the share: "312m · 31%",
+  "4m 12s · 84%".
+- **The laser beam's sound:** it played the laser turret's shot on top of its own; James's
+  supplied file was already the bundle's, byte for byte, and now plays alone.
+- **A review list of every description** - bricks, power-ups and twists, read out of the app's
+  own catalogues rather than copied - published for James as an artifact.
+- **The website's sneak peek** was brought up to the finished build and given a Beyond 1.3
+  section. Committed in the website's own clone and not pushed until James has seen it, since
+  the site is live.
+
 **Open after round 344:**
 
 | Item | What is known |

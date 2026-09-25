@@ -106,4 +106,34 @@ enum Progression {
               levelNumber < last else { return nil }
         return reward(forLevel: levelNumber) == nil ? levelNumber + 1 : nil
     }
+
+    /// The eleven Classic packs, by pack number (the index `levelPackUnlockedArray` and
+    /// `LevelPackSetup.startLevelNumber` use; `packBestTimes` is the same minus two).
+    static let classicPacks = Array(2...12)
+
+    /// The pack the main menu's Classic play button starts (James, round 346: "It should play
+    /// the next available pack to the player. If all packs are available, it should play a pack
+    /// at random").
+    ///
+    /// With every pack open, any of them at random. Otherwise the first open pack not yet
+    /// finished - the one a player working through the game is on - and if every open pack is
+    /// finished (City waits for all of the first three, so this can happen), a random open one.
+    static func quickPlayPack<G: RandomNumberGenerator>(unlocked: [Bool], bestTimes: [Int],
+                                                        using generator: inout G) -> Int? {
+        let open = classicPacks.filter { unlocked.indices.contains($0) && unlocked[$0] }
+        guard open.isEmpty == false else { return nil }
+        if open.count == classicPacks.count { return open.randomElement(using: &generator) }
+        if let next = open.first(where: { pack in
+            let index = pack - 2
+            return bestTimes.indices.contains(index) == false || bestTimes[index] == 0
+        }) {
+            return next
+        }
+        return open.randomElement(using: &generator)
+    }
+
+    static func quickPlayPack(unlocked: [Bool], bestTimes: [Int]) -> Int? {
+        var generator = SystemRandomNumberGenerator()
+        return quickPlayPack(unlocked: unlocked, bestTimes: bestTimes, using: &generator)
+    }
 }

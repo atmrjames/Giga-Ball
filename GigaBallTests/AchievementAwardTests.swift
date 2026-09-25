@@ -214,7 +214,8 @@ final class EndlessMilestoneProgressTests: XCTestCase {
         stats.endlessModeHeight = [40, 312, 120]
         XCTAssertEqual(stats.endlessMilestoneProgress(3) ?? 0, 0.312, accuracy: 0.0001,
                        "312m of the 1,000m milestone")
-        XCTAssertEqual(stats.achievementProgressText(3), "31.2%")
+        XCTAssertEqual(stats.achievementProgressText(3), "312m · 31%",
+                       "James, round 346: the height itself, and the share after it")
         XCTAssertEqual(stats.endlessMilestoneProgress(69) ?? 0, 0, accuracy: 0.0001,
                        "Mayhem's own milestone counts Mayhem runs only")
     }
@@ -235,6 +236,14 @@ final class EndlessMilestoneProgressTests: XCTestCase {
         XCTAssertEqual(stats.endlessMilestoneProgress(73) ?? 0, 0.8, accuracy: 0.0001)
         XCTAssertEqual(stats.endlessMilestoneProgress(17) ?? 0, 1, accuracy: 0.0001,
                        "never past the whole")
+    }
+
+    func testATimeReadsInMinutesAndSeconds() {
+        let stats = TotalStats()
+        stats.endlessIIDurations = [252]
+        XCTAssertEqual(stats.achievementProgressText(18), "4m 12s · 84%")
+        stats.endlessIIDurations = [42]
+        XCTAssertEqual(stats.achievementProgressText(17), "42s · 70%")
     }
 
     func testAnythingElseKeepsItsStoredFigure() {

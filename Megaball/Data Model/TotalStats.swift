@@ -910,25 +910,44 @@ extension TotalStats {
     /// this way, the first look at the page shows their whole history. Durations have only been
     /// kept since round 309, so the minute milestones count from then.
     func endlessMilestoneProgress(_ index: Int) -> Double? {
-        guard let milestone = TotalStats.endlessMilestones[index], milestone.target > 0 else {
-            return nil
-        }
-        let best: Int
-        switch milestone.measure {
-        case .height(let mayhemOnly):
-            best = ((mayhemOnly ? [] : endlessModeHeight) + endlessIIHeights).max() ?? 0
-        case .seconds(let mayhemOnly):
-            best = ((mayhemOnly ? [] : endlessModeDurations ?? [])
-                    + (endlessIIDurations ?? [])).max() ?? 0
-        }
+        guard let milestone = TotalStats.endlessMilestones[index], milestone.target > 0,
+              let best = endlessMilestoneBest(index) else { return nil }
         return min(1, Double(best)/Double(milestone.target))
     }
 
+    /// The best run so far against an endless milestone, in the milestone's own unit: metres
+    /// for a height, seconds for a duration.
+    func endlessMilestoneBest(_ index: Int) -> Int? {
+        guard let milestone = TotalStats.endlessMilestones[index] else { return nil }
+        switch milestone.measure {
+        case .height(let mayhemOnly):
+            return ((mayhemOnly ? [] : endlessModeHeight) + endlessIIHeights).max() ?? 0
+        case .seconds(let mayhemOnly):
+            return ((mayhemOnly ? [] : endlessModeDurations ?? [])
+                    + (endlessIIDurations ?? [])).max() ?? 0
+        }
+    }
+
     /// What the achievements pages print beside an unearned achievement: its stored percentage,
-    /// or for an endless milestone, the best run so far as one.
+    /// or for an endless milestone, the best run so far.
+    ///
+    /// **The figure first, then the share** (James, round 346: "for the best so far
+    /// achievements, show the actual number instead of a % where appropriate. For example a
+    /// best so far height should show the height not a percentage of the achievement's target
+    /// height. Maybe it can show a percentage as well as the number"): "312m · 31%", "4m 12s ·
+    /// 84%". The number is the thing a player remembers doing; the share is how far there is
+    /// to go.
     func achievementProgressText(_ index: Int) -> String {
-        if let fraction = endlessMilestoneProgress(index) {
-            return fraction > 0 ? String(format: "%.1f", fraction*100) + "%" : ""
+        if let milestone = TotalStats.endlessMilestones[index],
+           let best = endlessMilestoneBest(index),
+           let fraction = endlessMilestoneProgress(index) {
+            guard best > 0 else { return "" }
+            let figure: String
+            switch milestone.measure {
+            case .height: figure = "\(best)m"
+            case .seconds: figure = best >= 60 ? "\(best/60)m \(best%60)s" : "\(best)s"
+            }
+            return figure + " · " + String(format: "%.0f", (fraction*100).rounded(.down)) + "%"
         }
         guard achievementsPercentageCompleteArray.indices.contains(index) else { return "" }
         return achievementsPercentageCompleteArray[index]

@@ -629,6 +629,43 @@ final class DailyChallengeTests: XCTestCase {
         XCTAssertFalse(session.lastRunPosted)
     }
 
+    /// The main menu's play button starts today's daily through the same door as the Daily
+    /// Challenge screen's (round 346), so it has to spend the attempt and decide the scoring
+    /// run exactly as that button does.
+    func testStartingADailySpendsTheAttemptAndOnlyTheFirstPressScores() {
+        let session = DailyChallengeSession.shared
+        let durable = session.clockStore
+        session.clockStore = InMemoryKeyValueStore()
+        let suite = "DailyBeginRunTests"
+        let defaults = UserDefaults(suiteName: suite)!
+        defer {
+            session.clockStore = durable
+            session.active = nil
+            session.isScoringAttempt = false
+            defaults.removePersistentDomain(forName: suite)
+        }
+        session.testDayOffset = 0
+        let stats = TotalStats()
+        let challenge = DailyChallenge(dateKey: session.todayKey, mode: .endlessII,
+                                       classicLevel: nil, twists: [])
+
+        XCTAssertTrue(session.todayIsUnplayed(in: stats),
+                      "the red dot: today's daily is waiting")
+        let launch = session.beginRun(challenge, key: session.todayKey, isToday: true,
+                                      stats: stats, defaults: defaults)
+        XCTAssertEqual(launch.level, 0)
+        XCTAssertEqual(launch.pack, 1)
+        XCTAssertTrue(session.isScoringAttempt, "the first press is the one that posts")
+        XCTAssertFalse(session.todayIsUnplayed(in: stats),
+                       "the press spends the day, so the dot goes as the run starts")
+        XCTAssertEqual(stats.dailyRecord(forKey: session.todayKey)?.attemptCount, 1)
+
+        _ = session.beginRun(challenge, key: session.todayKey, isToday: true,
+                             stats: stats, defaults: defaults)
+        XCTAssertFalse(session.isScoringAttempt, "every later press is free play")
+        XCTAssertEqual(stats.dailyRecord(forKey: session.todayKey)?.attemptCount, 2)
+    }
+
     func testAnAttemptThatCrossedMidnightPostsNothing() {
         // §1: finished and submitted before the deadline, not just started. The attempt
         // is spent - the briefing said so going in - but nothing goes to the board.
@@ -1309,6 +1346,31 @@ final class DailyLayoutTwistTests: XCTestCase {
         scene.tickDailyTimeTrial(5)
         XCTAssertEqual(scene.dailyTimeTrialRemaining, 90,
                        "nothing is Playing yet, so nothing is spent")
+    }
+
+    /// James, round 346: "the countdown clock stops when the ball is caught by a sticky paddle
+    /// - it should always continue to count down unless the game is paused."
+    func testOnceTheFirstBallIsServedACatchDoesNotStopTheClock() {
+        XCTAssertFalse(GameScene.timeTrialUnderway(already: false, ballOnPaddle: true),
+                       "before the first serve, reading the field is free")
+        XCTAssertTrue(GameScene.timeTrialUnderway(already: false, ballOnPaddle: false),
+                      "the serve starts it")
+        XCTAssertTrue(GameScene.timeTrialUnderway(already: true, ballOnPaddle: true),
+                      "and a ball caught on a sticky paddle afterwards does not stop it")
+    }
+
+    /// "Still shows balls as lives in the game even though it's unlimited lives - no need to
+    /// show this graphic."
+    func testATimeTrialShowsNoRackInTheGame() {
+        let scene = GameScene()
+        for mode in [GameMode.classic, .endlessII] {
+            DailyChallengeSession.shared.active = DailyChallenge(
+                dateKey: "2026-10-05", mode: mode, classicLevel: mode == .classic ? 3 : nil,
+                twists: [.timeTrial, .spareBalls])
+            scene.numberOfLives = 4
+            XCTAssertTrue(scene.livesRowSuppressed, "\(mode): unlimited balls, nothing to count")
+        }
+        DailyChallengeSession.shared.active = nil
     }
 
     func testAnOrdinaryDayHasNoClockAtAll() {

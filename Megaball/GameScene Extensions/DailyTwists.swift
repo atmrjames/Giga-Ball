@@ -77,6 +77,11 @@ extension GameScene {
     /// play test asked for it hidden outright.
     var dailyLivesRowHidden: Bool {
         guard isDailyChallenge else { return false }
+        if DailyChallengeSession.shared.has(.timeTrial) { return true }
+        // **A Time Trial shows no rack** (James, round 346: "still shows balls as lives in the
+        // game even though it's unlimited lives - no need to show this graphic"). Losing a ball
+        // costs nothing there (`dailyLifeIsSpent`), so a count of them is a limit that does not
+        // apply - the pause screen and resume card already say "Unlimited balls" (round 344)
         if endlessMode { return DailyChallengeSession.shared.has(.spareBalls) == false }
         return dailyStartingLives == 0 && numberOfLives <= 0
         // Dynamic on purpose: if a Get a Life ever lands mid-run the rack has something
@@ -659,16 +664,22 @@ extension GameScene {
 
     /// Runs the whistle's clock. From `update`, every frame, in every mode.
     ///
-    /// **The clock runs while the ball is live**: Playing, not paused, ball off the paddle.
-    /// A ball waiting on the paddle does not count down, so the ninety seconds are seconds
-    /// of play rather than seconds of hesitation - and a life lost buys the moment of reset
-    /// back. The pause guard matters on the days that can pause; on a No Breaks Time Trial
-    /// there is no pause to hold it.
+    /// **The clock runs from the first launch until the whistle, stopping only for a pause**
+    /// (James, round 346: "the countdown clock stops when the ball is caught by a sticky paddle
+    /// - it should always continue to count down unless the game is paused").
+    ///
+    /// It used to stop whenever the ball was on the paddle, to make the ninety seconds seconds
+    /// of play rather than of hesitation - and a sticky catch is the ball on the paddle, so a
+    /// Sticky Paddle quietly bought time: hold the ball, and the clock held too. It waits only
+    /// for the first serve now, so reading the field before the run starts is free and nothing
+    /// after it is. The pause guard matters on the days that can pause; on a No Breaks Time
+    /// Trial there is no pause to hold it.
     func tickDailyTimeTrial(_ delta: TimeInterval) {
         guard dailyTimeTrial, gameoverStatus == false,
-              gameState.currentState is Playing, isPaused == false,
-              ballIsOnPaddle == false, endlessIIAimHold == false
-        else { return }
+              gameState.currentState is Playing, isPaused == false else { return }
+        dailyTimeTrialUnderway = GameScene.timeTrialUnderway(already: dailyTimeTrialUnderway,
+                                                            ballOnPaddle: ballIsOnPaddle)
+        guard dailyTimeTrialUnderway else { return }
         guard spendDailyTimeTrial(delta) else { return }
 
         gameoverStatus = true
@@ -679,6 +690,13 @@ extension GameScene {
         // same state - so everything downstream (the daily result, the game-over screen,
         // posting) treats it as a run that finished rather than a special case. The score
         // at the whistle is the score, which is the whole twist
+    }
+
+    /// Whether the Time Trial's clock is running, given whether it already was and where the
+    /// ball is: from the first moment the ball leaves the paddle, for good (round 346). A ball
+    /// caught on a sticky paddle afterwards does not stop it.
+    static func timeTrialUnderway(already: Bool, ballOnPaddle: Bool) -> Bool {
+        already || ballOnPaddle == false
     }
 
     /// Spends flight time off the clock, and reports whether the whistle blew.

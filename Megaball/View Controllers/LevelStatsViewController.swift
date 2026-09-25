@@ -452,6 +452,9 @@ class LevelStatsViewController: UIViewController, UICollectionViewDelegate, UICo
             } else {
                 highscoreLabel.text = "0"
             }
+            highscoreLabel.font = UIViewController.gameScoreFont(
+                ofSize: highscoreLabel.font.pointSize)
+            // In the game's score face (round 346)
         }
     }
     
@@ -699,7 +702,8 @@ class LevelStatsViewController: UIViewController, UICollectionViewDelegate, UICo
 
         cell.textLabel?.text = String(entry.height) + "m"
         let isBest = entry.height == runHistory.map(\.height).max()
-        cell.textLabel?.font = .boldSystemFont(ofSize: isBest ? 19 : 15)
+        cell.textLabel?.font = UIViewController.gameScoreFont(ofSize: isBest ? 19 : 15)
+        // A height, so the game's score face (round 346)
         cell.textLabel?.textColor = isBest
             ? #colorLiteral(red: 0.8235294118, green: 1, blue: 0, alpha: 1)
             : .white

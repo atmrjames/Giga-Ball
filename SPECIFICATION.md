@@ -359,6 +359,7 @@ Splash (animated logo, tap to skip)
      │                                                                   └─ Game
      ├─────────────── Endless Mode ── Endless Detail ── Game
      ├─────────────── Endless Mayhem ─ Endless Detail ── Game
+     ├─────────────── Daily Challenge ─ Briefing ──────── Game
      ├─ Info (i) ──── Items / Stats / Items Detail / Item Stats / Bricks / About
      └─ Settings ──── (also reachable from the pause menu)
 
@@ -368,6 +369,13 @@ Game ─┬─ Pause Menu (pause, game over, pack complete — one screen, three
 
 Intro / onboarding: 5 pages, shown on first launch only
 ```
+
+Each mode's row on the main menu also carries a **play button** (round 346), in the level
+rows' style, that skips the mode's own screen: Endless and Mayhem start a run, Classic starts
+the pack `Progression.quickPlayPack` picks (every pack open: one at random; otherwise the first
+open pack not yet finished), and the daily starts today's through the same Free Play pop-up and
+the same `DailyChallengeSession.beginRun` as the briefing screen's own button. The row's body
+still opens the mode's screen. A red dot on the daily's icon means today's challenge is unplayed.
 
 Screens are presented by adding child view controllers and their views as subviews, not
 by navigation controller pushes or modal presentation. The pause menu, between-levels
@@ -459,15 +467,15 @@ Game Center can be disabled in settings.
 
 | Setting | Values |
 |---|---|
-| App Icon | 1 of 12, subject to unlocks |
-| Ball & Paddle Theme | 1 of 12, subject to unlocks; Retro also brings its own bricks |
+| App Icon | 1 of 12, subject to unlocks; the row wears the chevron of a row that opens a page |
+| Ball & Paddle Theme | 1 of 12, subject to unlocks; Retro also brings its own bricks; chevron as App Icon |
 | In-Game Sound | on / off (was "Sounds") |
 | UI Sound | on / off: the button click, separately from the game (round 341) |
-| Music | on / off, with a choice of tracks |
+| Music | on / off, with a choice of tracks. All four can be ticked or unticked, the Title Theme included: the menus play the Title Theme while it is ticked and another ticked track when it is not, a run draws from the ticked game tracks (the Title Theme only if nothing else is), and nothing ticked is music off (round 346) |
 | Haptics | on / off; hidden on devices with no haptic engine, such as iPads |
 | Game Background | 1 of 11, chosen on a screen with a model of the game view |
 | Perspective Zoom | on / off: the tilt-based motion on menu backgrounds (was "Parallax"), and off whenever the system's Reduce Motion is on |
-| Paddle Speed | a slider from 1.0 to 3.0 in quarter steps, with a practice field |
+| Paddle Speed | a slider from 1.0 to 5.0 in quarter steps, with a practice field (5.0 from round 346) |
 | Swipe Up To Pause | on / off |
 | Reset Ball | the pause menu's settings only: puts a stuck ball back on the paddle |
 

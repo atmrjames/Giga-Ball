@@ -361,7 +361,7 @@ final class DailyCardView: UIView {
 
         line.append(NSAttributedString(
             string: String(score) + unit,
-            attributes: [.font: UIFont.boldSystemFont(ofSize: 16),
+            attributes: [.font: UIViewController.gameScoreFont(ofSize: 16),
                          .foregroundColor: UIColor.white]))
 
         if record.posted, isToday, let standing {

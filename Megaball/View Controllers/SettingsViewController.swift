@@ -241,6 +241,10 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
                     // The icon you are actually wearing, not a generic one (play-test
                     // round 13) - the row is about a choice, so it should show the choice
                     cell.settingState.text = ""
+                    addRowChevron(to: cell, action: #selector(appIconArrowTapped))
+                    // **The arrow every row that opens a page wears** (James, round 346: "for
+                    // the app icon and theme settings cells, use the arrow to denote there's
+                    // another page, similar to some of the other settings cells")
 //                }
             case 1:
             // Theme
@@ -262,6 +266,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
                     // the icon you are wearing (play-test round 85). Recoloured only when it
                     // falls back to the generic glyph - a theme icon is a picture
                     cell.settingState.text = ""
+                    addRowChevron(to: cell, action: #selector(themeArrowTapped))
 //                }
             case SettingRow.interfaceSound.rawValue:
             // UI Sound
@@ -552,6 +557,17 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
             chevron.widthAnchor.constraint(equalToConstant: 56),
             chevron.heightAnchor.constraint(equalToConstant: 56),
         ])
+    }
+
+    /// The chevrons on the App Icon and Theme rows, which open the page the row opens.
+    @objc func appIconArrowTapped() {
+        hideAnimate()
+        moveToItemDetails(senderID: 0)
+    }
+
+    @objc func themeArrowTapped() {
+        hideAnimate()
+        moveToItemDetails(senderID: 1)
     }
 
     /// The chevron on the Game Background row, which opens the picker the row opens.
