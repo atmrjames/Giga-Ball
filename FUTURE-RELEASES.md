@@ -71,7 +71,17 @@ held back for a release that would follow immediately after. The foundations sti
 first within it, for the reason argued above: the player-visible work lands on top of
 them.
 
-### Where it stands (25 September 2026)
+### Where it stands (25 September 2026, evening)
+
+**iOS 27 has shipped, so 1.3 is no longer timed to it** (James: "that is now released, so the
+app update will come later"), and the website says only that it is in testing. What is left:
+James's play-testing and notes; the iPad and Mac window resize seen on a device; Aimed Sticky's
+sounds; and App Store preparation - a fresh Xcode Cloud build from `release-1.3` (the external
+TestFlight build predates rounds 346 to 348), the listing's text and screenshots, and the 32
+achievements added since 1.2 set up in App Store Connect and attached to the version with the
+new leaderboards.
+
+### Where it stood (25 September 2026)
 
 Phases 1 to 4 below are done, and phase 5 is under way: 1.3 has been on TestFlight for internal
 testers since 19 September, and the first build for **external testers** went to Beta App Review

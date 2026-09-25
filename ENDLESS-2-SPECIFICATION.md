@@ -2646,7 +2646,7 @@ testing." What it found and did:
 | Item | What is known |
 |---|---|
 | The game view following an iPad or Mac window | Built in round 342, tested as arithmetic and on a bare scene. Not yet seen on a device |
-| The iPad paddle-speed field in the column | Built in round 344 and not yet seen on an iPad - the iPad simulator needs James's permission in the simulator panel |
+| ~~The iPad paddle-speed field in the column~~ | **Seen working, round 348**, on an iPad Pro 11-inch (M5) simulator on iOS 26.5: the field sits in the column as a scaled model of the play area, the slider reads x2.00 a quarter of the way along, and a 100-point drag carried the paddle from the centre to near the right edge |
 | Aimed Sticky's sounds | Round 339: it already plays the sticky catch on the catch and the release on the launch, as plain Sticky does. Waiting on James to say what he hears instead |
 
 **Backlogged**
