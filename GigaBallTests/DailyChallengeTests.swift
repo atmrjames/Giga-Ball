@@ -1363,7 +1363,7 @@ final class DailyLayoutTwistTests: XCTestCase {
 
         scene.dailyTimeTrialRemaining = 89.2
         scene.showDailyClock()
-        XCTAssertEqual(scene.dailyClockLabel?.text, "90s",
+        XCTAssertEqual(scene.dailyClockLabel.map(scene.shownText(of:)), "90s",
                        "rounded up - the player is not told 89 while the 90th second runs")
         // **With its unit** (James, round 340: "the countdown timer should be to the left of
         // the multiplier, and have an 's' after the number"). It sits beside a multiplier
@@ -1371,8 +1371,32 @@ final class DailyLayoutTwistTests: XCTestCase {
 
         scene.dailyTimeTrialRemaining = 9.4
         scene.showDailyClock()
-        XCTAssertEqual(scene.dailyClockLabel?.text, "10s")
+        XCTAssertEqual(scene.dailyClockLabel.map(scene.shownText(of:)), "10s")
         XCTAssertEqual(scene.dailyClockLabel?.fontColor, .red, "urgent for the last ten")
+    }
+
+    /// James, round 348: "make the label bigger so it stands out better from the other labels
+    /// nearby. Secondly, use the same trick as the score label to enable the number to be fixed
+    /// width so it doesn't dance about as the number changes in the label."
+    func testTheClockIsBiggerThanTheMultiplierAndHoldsItsDigitsStill() throws {
+        let scene = timeTrialScene()
+        defer { DailyChallengeSession.shared.active = nil }
+        scene.multiplierLabel = SKLabelNode(fontNamed: "FugazOne-Regular")
+        scene.multiplierLabel.fontSize = 20
+        scene.setupDailyClock()
+        let clock = try XCTUnwrap(scene.dailyClockLabel)
+        XCTAssertGreaterThan(clock.fontSize, scene.multiplierLabel.fontSize)
+
+        scene.dailyTimeTrialRemaining = 88
+        scene.showDailyClock()
+        let strip = try XCTUnwrap(clock.childNode(withName: "digits") as? FixedWidthNumberNode,
+                                  "the clock draws through the score's fixed-width strip")
+        let pitch = { strip.children.compactMap { $0 as? SKLabelNode }.map(\.position.x) }
+        let eightyEight = pitch()
+        scene.dailyTimeTrialRemaining = 11
+        scene.showDailyClock()
+        XCTAssertEqual(pitch(), eightyEight, "every character sits where it sat before")
+        XCTAssertEqual(scene.shownText(of: clock), "11s")
     }
 
     /// And it sits on the multiplier's row, to its left, clear of the number beside it.

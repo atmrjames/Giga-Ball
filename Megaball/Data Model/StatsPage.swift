@@ -63,20 +63,10 @@ enum StatsPage {
         /// invisible on a modern simulator.
         let icon: String?
 
-        /// Whether the value is a score or a height, which is drawn in the game's own score
-        /// face (`UIViewController.gameScoreFont`).
-        ///
-        /// James, round 346: "Anywhere scores or heights show up in the app, they should be in the
-    /// same font style as the score and heights from the game view". Counts, times and
-        /// rates stay in the page's face: the rule is about the two numbers the game itself
-        /// draws in that font, not every number on the page.
-        let isScore: Bool
-
-        init(label: String, value: String, icon: String? = nil, isScore: Bool = false) {
+        init(label: String, value: String, icon: String? = nil) {
             self.label = label
             self.value = value
             self.icon = icon
-            self.isScore = isScore
         }
     }
 
@@ -182,8 +172,7 @@ enum StatsPage {
         let allPacks = stats.levelPackUnlockedArray.count - 2
 
         return [
-            Row(label: "Total score", value: grouped(stats.cumulativeScore), icon: "star.fill",
-                isScore: true),
+            Row(label: "Total score", value: grouped(stats.cumulativeScore), icon: "star.fill"),
             Row(label: "Packs unlocked", value: fraction(unlockedPacks, allPacks), icon: "lock.open.fill"),
             Row(label: "Packs played", value: grouped(stats.packsPlayed), icon: "square.stack.fill"),
             Row(label: "Packs completed", value: grouped(stats.packsCompleted), icon: "checkmark.seal.fill"),
@@ -206,11 +195,9 @@ enum StatsPage {
         let total = heights.reduce(0, +)
         var rows = [
             Row(label: "Runs played", value: grouped(heights.count), icon: "play.circle.fill"),
-            Row(label: "Hi-Score height", value: grouped(heights.max() ?? 0) + " m", icon: "arrow.up",
-                isScore: true),
-            Row(label: "Total height", value: grouped(total) + " m", icon: "sum", isScore: true),
-            Row(label: "Average height", value: grouped(total/heights.count) + " m",
-                icon: "chart.bar.fill", isScore: true),
+            Row(label: "Hi-Score height", value: grouped(heights.max() ?? 0) + " m", icon: "arrow.up"),
+            Row(label: "Total height", value: grouped(total) + " m", icon: "sum"),
+            Row(label: "Average height", value: grouped(total/heights.count) + " m", icon: "chart.bar.fill"),
         ]
 
         // How long the climbing took, beside how high it got (play-test round 85). Only the
@@ -281,11 +268,9 @@ enum StatsPage {
         // The counting attempt is the first one, so the best day is the best first attempt -
         // a practice score is higher more often than not and would flatter the number
         if let best = records.map({ $0.firstAttemptScore }).max(), best > 0 {
-            rows.append(Row(label: "Hi-Score day", value: grouped(best), icon: "star.fill",
-                            isScore: true))
+            rows.append(Row(label: "Hi-Score day", value: grouped(best), icon: "star.fill"))
         }
-        rows.append(Row(label: "Total posted score", value: grouped(stats.dailyTotalPostedScore),
-                        icon: "sum", isScore: true))
+        rows.append(Row(label: "Total posted score", value: grouped(stats.dailyTotalPostedScore), icon: "sum"))
 
         let streak = DailyStreak.current(records: records, today: Date())
         let longest = DailyStreak.longest(records: records)

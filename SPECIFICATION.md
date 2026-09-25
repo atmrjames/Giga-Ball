@@ -467,7 +467,7 @@ Game Center can be disabled in settings.
 
 | Setting | Values |
 |---|---|
-| App Icon | 1 of 12, subject to unlocks; the row wears the chevron of a row that opens a page |
+| App Icon | 1 of 12, subject to unlocks; the row wears the chevron of a row that opens a page, at the card's right edge with any state to its left (round 348) |
 | Ball & Paddle Theme | 1 of 12, subject to unlocks; Retro also brings its own bricks; chevron as App Icon |
 | In-Game Sound | on / off (was "Sounds") |
 | UI Sound | on / off: the button click, separately from the game (round 341) |

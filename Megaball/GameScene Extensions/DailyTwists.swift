@@ -618,7 +618,10 @@ extension GameScene {
     func setupDailyClock() {
         guard dailyTimeTrial, dailyClockLabel == nil else { return }
         let clock = SKLabelNode(fontNamed: multiplierLabel.fontName)
-        clock.fontSize = multiplierLabel.fontSize
+        clock.fontSize = (multiplierLabel.fontSize*GameScene.dailyClockScale).rounded()
+        // **Bigger than the labels beside it** (James, round 348: "make the label bigger so it
+        // stands out better from the other labels nearby"). It was the multiplier's size, and on
+        // the one day the clock is the thing to watch it read as one more HUD figure
         clock.fontColor = scoreLabel.fontColor
         clock.zPosition = 10
         addChild(clock)
@@ -626,6 +629,9 @@ extension GameScene {
         placeTheDailyClock()
         showDailyClock()
     }
+
+    /// How much bigger the Time Trial clock is than the multiplier beside it (round 348).
+    static let dailyClockScale: CGFloat = 1.4
 
     /// Puts the clock a fixed gap to the left of the multiplier, whatever the multiplier says.
     ///
@@ -705,8 +711,12 @@ extension GameScene {
     func showDailyClock() {
         guard let clock = dailyClockLabel else { return }
         let seconds = Int(dailyTimeTrialRemaining.rounded(.up))
-        clock.text = "\(seconds)s"
         clock.fontColor = seconds <= 10 ? .red : scoreLabel.fontColor
+        write("\(seconds)s", into: clock)
+        // **Every digit on the same pitch**, the score label's trick (James, round 348: "use the
+        // same trick as the score label to enable the number to be fixed width so it doesn't
+        // dance about as the number changes"). The colour is set first because the strip takes
+        // its colour from the label as it is drawn
         countDownTheLastSeconds(seconds)
         placeTheDailyClock()
         // Placed again on every tick, because the multiplier beside it changes width when it

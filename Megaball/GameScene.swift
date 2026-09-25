@@ -3067,7 +3067,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         label.childNode(withName: "digits")?.removeFromParent()
     }
 
-    private func write(_ text: String, into label: SKLabelNode) {
+    /// What a HUD label is showing, whether it drew the text itself or hangs a strip of placed
+    /// characters. A test reads this rather than `text`, which a strip leaves empty.
+    func shownText(of label: SKLabelNode) -> String {
+        (label.childNode(withName: "digits") as? FixedWidthNumberNode)?.shownText ?? label.text ?? ""
+    }
+
+    func write(_ text: String, into label: SKLabelNode) {
         guard let fontName = label.fontName else {
             label.text = text
             return

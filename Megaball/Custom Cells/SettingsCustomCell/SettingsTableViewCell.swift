@@ -377,8 +377,18 @@ class SettingsTableViewCell: UITableViewCell {
     ///   rendering would flatten every one of them to a white silhouette. There is no safe
     ///   default here, so every caller has to say which kind of image it is holding.
     func setIcon(_ image: UIImage?, recolour: Bool, roundedLikeTheCard: Bool = false) {
-        iconImage.image = (isGlass && recolour)
-            ? image?.withRenderingMode(.alwaysTemplate) : image
+        if isGlass == false, recolour, let image, image.isSymbolImage {
+            iconImage.image = image.withTintColor(
+                #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1),
+                renderingMode: .alwaysOriginal)
+            // **A symbol on a card with no glass** (found in round 348 on iOS 18.5). The other
+            // rows' icons are artwork drawn in the row's purple; UI Sound's is an SF Symbol,
+            // which draws in whatever tint it is given and was given none that showed - so
+            // below iOS 26 that row had no icon at all. Painted the purple the artwork uses
+        } else {
+            iconImage.image = (isGlass && recolour)
+                ? image?.withRenderingMode(.alwaysTemplate) : image
+        }
         applyIconCorners(concentric: roundedLikeTheCard)
     }
 
@@ -472,6 +482,28 @@ class SettingsTableViewCell: UITableViewCell {
     /// flashed the app's lime put the flat card back for as long as the touch lasted - which
     /// the Information screen was doing from the moment it went glass. A glass row shrinks and
     /// nothing else.
+    // MARK: - The arrow at the right edge (round 348)
+
+    /// How far an arrow button reaches past the card's right edge. The glyph is 20 points in a
+    /// 56-point target, so hanging the target 8 points out puts the glyph's right edge 10 in
+    /// from the card - the inset the state label has always had - while the target stays big.
+    static let arrowOverhang: CGFloat = 8
+
+    /// The state label's inset from the card's right edge: its own 10 points, or clear of an
+    /// arrow when the row has one.
+    static let stateInsetBesideAnArrow: CGFloat = 46
+
+    /// Moves the row's state ("on", "off", a speed) left of an arrow, or back to the edge.
+    /// Called for every row, because cells are reused and a row with no arrow must not keep
+    /// the gap one left behind.
+    func makeRoomForAnArrow(_ arrow: Bool) {
+        let tie = cellView2.constraints.first {
+            $0.firstItem === cellView2 && $0.firstAttribute == .trailing
+                && $0.secondItem === settingState && $0.secondAttribute == .trailing
+        }
+        tie?.constant = arrow ? Self.stateInsetBesideAnArrow : 10
+    }
+
     func setPressed(_ pressed: Bool, colour: UIColor, duration: TimeInterval) {
         UIView.animate(withDuration: duration) {
             self.cellView2.transform = pressed ? .init(scaleX: 0.98, y: 0.98) : .identity

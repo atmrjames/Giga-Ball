@@ -67,7 +67,10 @@ class ModeSelectTableViewCell: UITableViewCell {
         play.translatesAutoresizingMaskIntoConstraints = false
         play.addTarget(self, action: #selector(playPressed), for: .touchUpInside)
         play.isHidden = true
-        contentView.addSubview(play)
+        cellView1.addSubview(play)
+        // In the card rather than `contentView`, so a press that scales the card scales the
+        // button with it (James, round 348: "when I press the cell, it and its content
+        // animate, but the play button remains static")
         NSLayoutConstraint.activate([
             play.trailingAnchor.constraint(equalTo: cellView1.trailingAnchor, constant: -16),
             play.centerYAnchor.constraint(equalTo: cellView1.centerYAnchor),
@@ -98,7 +101,8 @@ class ModeSelectTableViewCell: UITableViewCell {
         dot.isAccessibilityElement = false
         dot.translatesAutoresizingMaskIntoConstraints = false
         dot.isHidden = true
-        contentView.addSubview(dot)
+        cellView1.addSubview(dot)
+        // In the card, for the same reason as the play button
         NSLayoutConstraint.activate([
             dot.widthAnchor.constraint(equalToConstant: 14),
             dot.heightAnchor.constraint(equalToConstant: 14),

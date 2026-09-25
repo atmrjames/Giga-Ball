@@ -2620,6 +2620,27 @@ testing." What it found and did:
 - **The website is live** with the game's own icons beside every new power-up and twist,
   rendered from the app rather than redrawn, and one list of what comes after 1.3.
 
+**Round 348: James's notes on round 346, and the website's screenshots.**
+
+- **The play buttons, arrows and info buttons move with their rows.** A press scales the row's
+  card (`cellView1` on the main menu, `cellView2` in settings); the buttons were added to the
+  cell's `contentView`, so they stood still while the card shrank under them. They live in the
+  card now.
+- **Settings arrows sit at the card's right edge**, with the row's state (Music's "on", Paddle
+  Speed's value) moved to their left (`SettingsTableViewCell.makeRoomForAnArrow`), reset on every
+  row because cells are reused.
+- **The score font is off the stats tables** (James: "it looks wrong when mixed in with other
+  fonts - it looks good everywhere else"): the Stats page, Run Stats and the pack's stats rows
+  are back to one face. The level rows, run history, level hi-score and daily card keep it.
+- **The Time Trial clock** is 1.4 times the multiplier's size and draws through the score's
+  fixed-width strip, so its digits hold their places as they change.
+- **Found on the way:** below iOS 26 the UI Sound row had no icon. It is an SF Symbol, which draws
+  in its tint, and a card without glass gave it none that showed. Symbols on those cards are
+  painted the row's purple now.
+- **Brick Retreat keeps its 10s** (James's call). **The website** has new screenshots, taken on
+  iOS 26 from this build, and plainer wording on both pages. The story page is James's own
+  account and was left as written.
+
 **Open after round 344:**
 
 | Item | What is known |

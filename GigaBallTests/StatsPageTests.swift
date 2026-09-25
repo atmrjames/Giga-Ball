@@ -384,48 +384,29 @@ final class StatsPageTests: XCTestCase {
 /// which the old five-step index could not express. The conversion is what these pin -
 /// a player who has been on x1.25 for years must open the new screen already on x1.25.
 /// James, round 346: "Anywhere scores or heights show up in the app, they should be in the same
-/// font style as the score and heights from the game view."
+/// font style as the score and heights from the game view." And round 348: "Remove the new score
+/// font from the stats pages as it looks wrong when mixed in with other fonts - it looks good
+/// everywhere else."
 final class ScoreFaceTests: XCTestCase {
 
     private func isScoreFace(_ font: UIFont?) -> Bool {
         font?.fontName == UIViewController.gameScoreFont(ofSize: 17).fontName
     }
 
-    /// The heights and scores on the stats page are marked, and nothing else is: a brick count
-    /// in the score's face would read as a score.
-    func testTheStatsPageMarksItsHeightsAndScoresAndNothingElse() {
-        let stats = TotalStats()
-        stats.endlessModeHeight = [120, 340]
-        stats.endlessIIModeHeight = [80]
-        let marked = StatsPage.Tab.allCases
-            .flatMap { StatsPage.rows(for: $0, stats: stats) }
-            .filter(\.isScore).map(\.label)
-        XCTAssertTrue(marked.contains("Hi-Score height"))
-        XCTAssertTrue(marked.contains("Average height"))
-        for row in StatsPage.Tab.allCases.flatMap({ StatsPage.rows(for: $0, stats: stats) })
-        where row.isScore {
-            let label = row.label.lowercased()
-            XCTAssertTrue(label.contains("score") || label.contains("height"),
-                          "\(row.label) is drawn as a score and is not one")
-        }
-    }
-
-    /// A reused cell gives the face back: these rows are recycled, and a count landing on a
-    /// cell that last showed a score must not keep the score's font.
-    func testAStatsRowTakesTheScoreFaceAndGivesItBack() throws {
+    /// The stats tables keep one face: a row's value is never the score font.
+    func testAStatsRowIsNotInTheScoreFace() throws {
         let nib = UINib(nibName: "StatsTableViewCell",
                         bundle: Bundle(for: StatsTableViewCell.self))
         let cell = try XCTUnwrap(nib.instantiate(withOwner: nil).first as? StatsTableViewCell)
-        let plainSize = try XCTUnwrap(cell.statValue.font).pointSize
-
-        cell.showValue("312 m", asScore: true)
-        XCTAssertTrue(isScoreFace(cell.statValue.font))
-        XCTAssertEqual(cell.statValue.font.pointSize, plainSize,
-                       "the same size as its neighbours, so the row is no taller")
-
-        cell.showValue("1,204", asScore: false)
         XCTAssertFalse(isScoreFace(cell.statValue.font))
-        XCTAssertEqual(cell.statValue.font.pointSize, plainSize)
+    }
+
+    /// Everywhere else keeps it: a level row's best score is the first place a player sees it.
+    func testALevelRowsBestIsInTheScoreFace() throws {
+        let nib = UINib(nibName: "LevelSelectorTableViewCell",
+                        bundle: Bundle(for: LevelSelectorTableViewCell.self))
+        let cell = try XCTUnwrap(nib.instantiate(withOwner: nil).first as? LevelSelectorTableViewCell)
+        XCTAssertTrue(isScoreFace(cell.highScoreLabel.font))
     }
 }
 

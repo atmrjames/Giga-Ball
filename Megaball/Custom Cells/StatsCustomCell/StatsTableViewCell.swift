@@ -46,22 +46,6 @@ class StatsTableViewCell: UITableViewCell {
         // divider read as a separation between two rows instead of as another edge
     }
 
-    /// Writes the value, in the game's score face when it is a score or a height.
-    ///
-    /// James, round 346: "Anywhere scores or heights show up in the app, they should be in the
-    /// same font style as the score and heights from the game view". At the nib's own size, so
-    /// a score row stands exactly as tall as the rows around it; and put back to the nib's face
-    /// on every other row, because these cells are reused and a count landing on a cell that
-    /// last showed a score would otherwise keep the score's font.
-    func showValue(_ text: String, asScore: Bool) {
-        let plain = plainValueFont ?? statValue.font ?? .systemFont(ofSize: 17)
-        plainValueFont = plain
-        statValue.font = asScore ? UIViewController.gameScoreFont(ofSize: plain.pointSize) : plain
-        statValue.text = text
-    }
-
-    private var plainValueFont: UIFont?
-
     /// Whether this row draws a line under itself. The last one in a table does not.
     func showDivider(_ show: Bool) {
         divider.isHidden = show == false

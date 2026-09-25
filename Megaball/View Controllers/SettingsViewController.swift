@@ -215,6 +215,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         
             settingsTableView.rowHeight = SettingsTableViewCell.glassRowHeight
             cell.contentView.viewWithTag(Self.swipeInfoTag)?.removeFromSuperview()
+            cell.makeRoomForAnArrow(false)
             // Every row, not just the one that adds it. Removing it only where it is
             // added meant a recycled cell carried the info button into whatever row it
             // was reused for - which is how one button became one on nearly every row
@@ -466,8 +467,12 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         // won the race the stamp was still stale, the guard passed, and the setting flipped
         // before the pop-up appeared, which is exactly what was reported. A touch-down
         // always precedes both, so the stamp is fresh whichever order the ups arrive in
-        cell.contentView.addSubview(info)
-        cell.contentView.bringSubviewToFront(info)
+        cell.cellView2.addSubview(info)
+        cell.cellView2.bringSubviewToFront(info)
+        // **Inside the card, so it moves with it** (James, round 348: "when I press the cell,
+        // it and its content animate, but the play button remains static ... The arrows and
+        // info icons on the settings view cells have the same issue"). A press scales
+        // `cellView2`; a button on `contentView` stood still while the card shrank under it
         // In front of everything else in the cell, or a touch near its edge reaches the row
         // underneath and flips the setting the player was only asking about
 
@@ -543,20 +548,22 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         chevron.translatesAutoresizingMaskIntoConstraints = false
         chevron.addTarget(self, action: action, for: .touchUpInside)
         chevron.addTarget(self, action: #selector(swipeInfoTouchedDown), for: .touchDown)
-        cell.contentView.addSubview(chevron)
-        cell.contentView.bringSubviewToFront(chevron)
-
-        let title = cell.settingDescription.text ?? ""
-        let font = cell.settingDescription.font ?? .systemFont(ofSize: 17)
-        let written = (title as NSString).size(withAttributes: [.font: font]).width
+        cell.cellView2.addSubview(chevron)
+        cell.cellView2.bringSubviewToFront(chevron)
+        // In the card, so it scales with the press as the rest of the row does (round 348)
 
         NSLayoutConstraint.activate([
-            chevron.leadingAnchor.constraint(equalTo: cell.settingDescription.leadingAnchor,
-                                             constant: written + 2),
-            chevron.centerYAnchor.constraint(equalTo: cell.settingDescription.centerYAnchor),
+            chevron.trailingAnchor.constraint(equalTo: cell.cellView2.trailingAnchor,
+                                              constant: SettingsTableViewCell.arrowOverhang),
+            chevron.centerYAnchor.constraint(equalTo: cell.cellView2.centerYAnchor),
             chevron.widthAnchor.constraint(equalToConstant: 56),
             chevron.heightAnchor.constraint(equalToConstant: 56),
         ])
+        cell.makeRoomForAnArrow(true)
+        // **At the card's right edge, with the row's state to its left** (James, round 348:
+        // "move them to the right edge of the cell, moving any setting label, like on/off to
+        // the left of the arrows"). It sat just after the row's name until now, which put
+        // Music's arrow and its "on" at opposite ends of the same row
     }
 
     /// The chevrons on the App Icon and Theme rows, which open the page the row opens.

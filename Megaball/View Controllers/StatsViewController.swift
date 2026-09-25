@@ -193,7 +193,7 @@ class StatsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         // and 12pt gaps the three parts of the screen ran into each other
         let row = rows[indexPath.row]
         cell.statDescription.text = row.label
-        cell.showValue(row.value, asScore: row.isScore)
+        cell.statValue.text = row.value
         cell.showIcon(row.icon)
         return cell
     }

@@ -28,6 +28,9 @@ final class FixedWidthNumberNode: SKNode {
     /// Derived, they cannot drift: whatever is actually hanging off this node is what gets
     /// reused. The cost is a `compactMap` per write on a handful of nodes, which is nothing
     /// beside the bug it retires.
+    /// The text last shown, which a test asks for: the label this hangs from reads empty.
+    private(set) var shownText = ""
+
     private var characters: [SKLabelNode] {
         children.compactMap { $0 as? SKLabelNode }
     }
@@ -41,6 +44,7 @@ final class FixedWidthNumberNode: SKNode {
               alignment: SKLabelHorizontalAlignmentMode,
               verticalAlignment: SKLabelVerticalAlignmentMode) {
         guard let font = UIFont(name: fontNamed, size: fontSize) else { return }
+        shownText = text
         let placed = FixedWidthDigits.layout(text, font: font)
 
         // Where the whole number starts, so it grows the way its label was aligned to grow
