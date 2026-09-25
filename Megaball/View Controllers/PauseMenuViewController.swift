@@ -1001,8 +1001,10 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
         // then shown again a moment later, because `show` decides its own visibility from the
         // count and knows nothing about which screen it is on. Three balls sat on a run that
         // was over, under the Statistics button, which had no reason to leave room for them
-        let showing = row.show(livesRemaining, on: containterView.bounds.size,
+        let unlimited = isDailyChallenge && DailyChallengeSession.shared.has(.timeTrial)
+        let showing = row.show(unlimited ? 0 : livesRemaining, on: containterView.bounds.size,
                                ball: BallRackView.chosenBall(in: defaults))
+        row.isHidden = showing == false
         livesRowCollapsed?.isActive = showing == false
     }
 
@@ -1040,6 +1042,16 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
             livesLabel.isHidden = true
             return
         }
+        if isDailyChallenge, DailyChallengeSession.shared.has(.timeTrial) {
+            livesLabel.isHidden = false
+            livesLabel.text = DailyTwist.unlimitedBallsLine
+            return
+        }
+        // **A Time Trial says "Unlimited balls", with no rack** (James, round 340: "time trial
+        // with unlimited lives doesn't need to show any spare balls or say number of balls left
+        // on the pause screen - it could say unlimited balls instead"). Round 340 changed the
+        // twist's own wording and missed this screen; the round 343 audit found it. The rack
+        // stands down in `refreshTheLivesRow`
         if isDailyChallenge {
             let balls = livesRemaining + 1
             guard endlessMode == false || balls > 1 else {

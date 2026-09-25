@@ -174,9 +174,13 @@ final class PaddleSpeedViewController: UIViewController, MenuNavigable {
         // child of Settings, which the pause menu opens
         shapeFieldToThePlayArea()
         guard sceneView.bounds.width > 0 else { return }
+        let modelScale = fieldModelScale
+        let modelSize = CGSize(width: sceneView.bounds.width*modelScale,
+                               height: sceneView.bounds.height*modelScale)
         if practice == nil {
-            let scene = PaddleSpeedScene(size: sceneView.bounds.size)
-            scene.scaleMode = .resizeFill
+            let scene = PaddleSpeedScene(size: modelSize)
+            scene.scaleMode = modelScale == 1 ? .resizeFill : .fill
+            scene.touchScale = modelScale
             scene.layout = playLayout
             scene.speedFactor = PaddleSpeed.snapped(CGFloat(slider.value))
             scene.themeIndex = defaults.integer(forKey: "ballSetting")
@@ -188,8 +192,10 @@ final class PaddleSpeedViewController: UIViewController, MenuNavigable {
             scene.backdrop = drawnBackdrop()
             sceneView.presentScene(scene)
             practice = scene
-        } else if practice?.size != sceneView.bounds.size {
-            practice?.size = sceneView.bounds.size
+        } else if practice?.size != modelSize {
+            practice?.scaleMode = modelScale == 1 ? .resizeFill : .fill
+            practice?.touchScale = modelScale
+            practice?.size = modelSize
         }
         // Only when it has actually changed: assigning the size re-lays the scene, and doing
         // that on every layout pass is half of why the first cut looked jittery
@@ -239,12 +245,38 @@ final class PaddleSpeedViewController: UIViewController, MenuNavigable {
     /// window onto the bottom of the play area rather than a picture of all of it - and the
     /// paddle inside it keeps the same clearance above the floor that it has in play.
     private func shapeFieldToThePlayArea() {
-        let wanted = min(playLayout.gameWidth, view.bounds.width)
+        let wanted = min(playLayout.gameWidth, columnWidth)
         guard abs((fieldWidth?.constant ?? 0) - wanted) > 0.5 else { return }
         fieldWidth?.isActive = false
         let width = field.widthAnchor.constraint(equalToConstant: wanted)
         width.isActive = true
         fieldWidth = width
+    }
+
+    /// The width the rest of this screen is laid out in: the menu column on an iPad, the
+    /// screen on a phone.
+    private var columnWidth: CGFloat {
+        let column = view.safeAreaLayoutGuide.layoutFrame.width
+        return column > 0 ? min(column, view.bounds.width) : view.bounds.width
+    }
+
+    /// How many game points each point of the field stands for: 1 on a phone, where the field
+    /// is the play area's own width, and more on an iPad, where the play area is wider than
+    /// the column.
+    ///
+    /// **The field sits in the column, as a model of the play area** (round 344, the decision
+    /// the open list was waiting on). James, 9 September, of the iPad: "It should really just
+    /// look like the phone app with everything centred on the larger background." A one-to-one
+    /// window onto a 660-point play area could not do that inside a 460-point column, and was
+    /// behind both "the slider and close too near the edges" and the preview's clipping. So the
+    /// scene is built at the play area's own size in game points and drawn smaller, and the
+    /// finger's travel is scaled back by the same factor (`PaddleSpeedScene.touchScale`):
+    /// crossing the field takes the same thumb travel it takes in the game, which is the thing
+    /// the speed setting decides. On a phone nothing changes.
+    private var fieldModelScale: CGFloat {
+        let width = field.bounds.width
+        guard width > 0 else { return 1 }
+        return max(1, playLayout.gameWidth/width)
     }
 
     private func buildLayout() {
@@ -522,9 +554,13 @@ final class PaddleSpeedScene: SKScene, SKPhysicsContactDelegate {
     /// already-reflected heading and sent the ball back down.
     private var arriving = CGVector.zero
 
+    /// Game points per point of screen: 1 on a phone, more on an iPad, where the field is a
+    /// scaled model of a play area wider than the column (see `fieldModelScale`).
+    var touchScale: CGFloat = 1
+
     override func didMove(to view: SKView) {
         backgroundColor = .clear
-        scaleMode = .resizeFill
+        scaleMode = touchScale == 1 ? .resizeFill : .fill
         physicsWorld.gravity = .zero
         physicsWorld.contactDelegate = self
         build()
@@ -866,7 +902,10 @@ final class PaddleSpeedScene: SKScene, SKPhysicsContactDelegate {
 
     override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
         guard let touch = touches.first else { return }
-        let travelled = touch.location(in: self).x - touch.previousLocation(in: self).x
+        let travelled = (touch.location(in: self).x - touch.previousLocation(in: self).x)
+            / max(touchScale, 1)
+        // Back to the finger's own points on an iPad, where the scene is drawn smaller than it
+        // is: a point of thumb moves the paddle as far across the field as it does in the game
         let half = paddle.size.width/2
         paddle.position.x = min(max(paddle.position.x + travelled*speedFactor, half),
                                 size.width - half)

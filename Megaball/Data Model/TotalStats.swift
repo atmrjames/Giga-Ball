@@ -862,3 +862,75 @@ extension TotalStats {
         return value + template[value.count...]
     }
 }
+
+// MARK: - Best so far on the endless milestones
+
+extension TotalStats {
+
+    /// What an endless milestone measures, and against which history.
+    enum MilestoneMeasure {
+        case height(mayhemOnly: Bool)
+        case seconds(mayhemOnly: Bool)
+    }
+
+    /// The endless milestones, by achievement index: what each counts and how far it asks for.
+    ///
+    /// Read off the award code (`showHeightLabel`'s checks and `endlessModeDurationCheck`), in
+    /// its own terms: the plain height and minute milestones are earned in *either* endless mode,
+    /// Mayhem's own only in Mayhem.
+    static let endlessMilestones: [Int: (measure: MilestoneMeasure, target: Int)] = [
+        0: (.height(mayhemOnly: false), 10),
+        1: (.height(mayhemOnly: false), 100),
+        2: (.height(mayhemOnly: false), 500),
+        3: (.height(mayhemOnly: false), 1000),
+        66: (.height(mayhemOnly: true), 10),
+        67: (.height(mayhemOnly: true), 100),
+        68: (.height(mayhemOnly: true), 500),
+        69: (.height(mayhemOnly: true), 1000),
+        17: (.seconds(mayhemOnly: false), 60),
+        18: (.seconds(mayhemOnly: false), 300),
+        19: (.seconds(mayhemOnly: false), 600),
+        20: (.seconds(mayhemOnly: false), 1800),
+        21: (.seconds(mayhemOnly: false), 3600),
+        72: (.seconds(mayhemOnly: true), 60),
+        73: (.seconds(mayhemOnly: true), 300),
+        74: (.seconds(mayhemOnly: true), 600),
+        75: (.seconds(mayhemOnly: true), 1800),
+        76: (.seconds(mayhemOnly: true), 3600),
+    ]
+
+    /// How far the best run so far got towards an endless milestone, from 0 to 1. Nil for an
+    /// achievement that is not one of them.
+    ///
+    /// James, on his old task list and made in round 344: "For achievements like 5 minutes in
+    /// endless mode, could have best so far when incomplete." **Derived, not stored**: every
+    /// run's height and length is already kept (`endlessModeHeight`, `endlessIIModeHeight` and
+    /// the two duration arrays), so a stored percentage would be a second copy of the same
+    /// fact, and one that would start empty for a player with years of runs behind them. Asked
+    /// this way, the first look at the page shows their whole history. Durations have only been
+    /// kept since round 309, so the minute milestones count from then.
+    func endlessMilestoneProgress(_ index: Int) -> Double? {
+        guard let milestone = TotalStats.endlessMilestones[index], milestone.target > 0 else {
+            return nil
+        }
+        let best: Int
+        switch milestone.measure {
+        case .height(let mayhemOnly):
+            best = ((mayhemOnly ? [] : endlessModeHeight) + endlessIIHeights).max() ?? 0
+        case .seconds(let mayhemOnly):
+            best = ((mayhemOnly ? [] : endlessModeDurations ?? [])
+                    + (endlessIIDurations ?? [])).max() ?? 0
+        }
+        return min(1, Double(best)/Double(milestone.target))
+    }
+
+    /// What the achievements pages print beside an unearned achievement: its stored percentage,
+    /// or for an endless milestone, the best run so far as one.
+    func achievementProgressText(_ index: Int) -> String {
+        if let fraction = endlessMilestoneProgress(index) {
+            return fraction > 0 ? String(format: "%.1f", fraction*100) + "%" : ""
+        }
+        guard achievementsPercentageCompleteArray.indices.contains(index) else { return "" }
+        return achievementsPercentageCompleteArray[index]
+    }
+}

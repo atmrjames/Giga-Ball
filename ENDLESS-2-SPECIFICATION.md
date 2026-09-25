@@ -2460,18 +2460,55 @@ sessions). What had been built was checked in code rather than trusted to the ro
 because this spec's wording often differs from his. What the audit found, and had not been
 built or decided, is in the table below.
 
-**Open after round 343:**
+**Round 344, on James's answers to the audit.** Built:
+
+- **Next Level and Get a Life are rare in Classic** ("make these changes"). Every other weight is
+  multiplied by `classicRarityScale` (4) and these two are left as each level wrote them, so
+  Next Level is a quarter as likely and every level keeps its own design. Get a Life is held to a
+  weight of one while two or more balls are in reserve (twelve times rarer than the default
+  table asked), and scales like everything else at one ball or none, where the old boosts still
+  make it the likely rescue. One rule (`setGetALifeWeightForTheBallsLeft`) now serves the
+  table, a lost ball and a collected life, which used to write the numbers out three times.
+  Classic only: both endless modes rewrite several weights on every row, in the unscaled
+  numbers.
+- **A single level unlocks the next** in its pack (`Progression.nextLevelInPack`). The unlock
+  only; the extra ball and the pack tallies stay with pack runs, and a daily unlocks nothing.
+- **Best so far on the endless milestones.** The height and minute achievements in both modes
+  show the best run's share of the target, worked out from the run history rather than
+  stored (`TotalStats.endlessMilestoneProgress`), so a player's whole history shows at once.
+  Game Center is told after every run.
+- **FUTURE-RELEASES' August list is settled.** What was built is named, what James descoped is
+  named, and everything never built and never cut is in its new **1.4** section.
+- **The iPad paddle-speed field sits in the column** as a scaled model of the play area, with
+  the drag scaled back so crossing the field takes the same thumb travel as the game. It was
+  the decision the open list was waiting on, and James's 9 September note answers it: "it
+  should really just look like the phone app with everything centred". The background
+  picker's preview already fitted the column.
+- **A Retro day was played in the wrong bricks.** The Theme twist copied the theme's index into
+  `brickSetting`, which is 1 for Retro's bricks and 0 otherwise, so a Retro day got ordinary
+  bricks and a 3D day got Retro's. `LevelPackSetup.brickSetting(forTheme:)` is now the one rule,
+  for the twist and the theme picker.
+- **A Retro day's card shows the level in Retro's bricks** (`DailyRetroLevelPreview`): the level
+  is built off-screen with Retro's six brick pictures swapped in, as `didMove` swaps them, and
+  drawn once per level.
+- **A Time Trial says "Unlimited balls", with no rack**, on the pause screen and the resume
+  card. James asked for it on 24 September; round 340 changed the twist's own wording and not
+  the screens, and round 343's audit passed it because it searched for the words rather than
+  looking at the screen. Found this round by playing a Time Trial on the simulator. The lesson
+  is the one CLAUDE.md already states - visual work is verified by looking - and it applies to
+  an audit as much as to a build.
+- **The single-level warning** on the mode-select screen no longer says a single level unlocks
+  nothing: it says it unlocks the next level in its pack, and that everything else still comes
+  from whole packs.
+- **Stale rows cleared:** `appOpenCount` had been fixed in round 328.
+
+**Open after round 344:**
 
 | Item | What is known |
 |---|---|
-| **Classic's drop odds, and a single level unlocking the next** | On James's 2020 list and his 2 September list, and gone from his 19 September list without being built or decided: **(1)** the Next Level power-up rarer (still weight 1 in `PowerUpAllocation`, unchanged since 2020); **(2)** Get a Life much rarer unless the player has 0 or 1 balls left (weight 3, eligible below 5 lives); **(3)** a level completed on its own unlocking the next (`InbetweenLevels` skips the unlock when `numberOfLevels == 1`). All three change Classic, whose leaderboards hold years of scores, so they are James's call and not a tidy-up |
-| Best-so-far on the endless milestones | The same history: "for achievements like 5 minutes in endless mode, could have best so far when incomplete." Eighteen achievements already print a percentage through `awardProgress`; the minute milestones (17 to 20, 72 to 75) and the height ones do not |
-| The rest of FUTURE-RELEASES' August 1.3 list | Never built and never formally cut: Dynamic Type, a colour-blind overlay, an assist mode, texture atlases, dark and light mode, the Game Center button on the achievement detail page, a points breakdown for bonuses, an image for the share sheet. Several now read as 1.4. That document's 1.3 section also still lists work finished weeks ago, and wants pruning in one sitting with James |
 | The game view following an iPad or Mac window | Built in round 342, tested as arithmetic and on a bare scene. Not yet seen on a device |
-| The paddle-speed and background previews on an iPad | The preview is a one-to-one window onto the play area, so on an iPad it is 660 points wide while the screen's own furniture is in the 460-point column. That is behind both "slider and close too near the edges" and "preview clipping"; the fix is a decision about which of the two is right |
-| A themed level preview on the daily card | The monochrome half is built. A Retro day's level in Retro means rendering the level from its brick layout with the theme's textures, which is a piece of work rather than an afternoon |
+| The iPad paddle-speed field in the column | Built in round 344 and not yet seen on an iPad - the iPad simulator needs James's permission in the simulator panel |
 | Aimed Sticky's sounds | Round 339: it already plays the sticky catch on the catch and the release on the launch, as plain Sticky does. Waiting on James to say what he hears instead |
-| `appOpenCount` written by test launches | See round 339's row above: the host menu writes it to `.standard` on every test launch. It decides when the intro shows; the review prompt is already guarded |
 
 **Backlogged**
 

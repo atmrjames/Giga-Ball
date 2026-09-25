@@ -3285,3 +3285,53 @@ final class DailyTwistMixTests: XCTestCase {
     }
 }
 
+
+/// Which bricks a theme wears, and the Retro preview on a Retro day (round 344).
+final class ThemeBrickTests: XCTestCase {
+
+    override func tearDown() {
+        DailyChallengeSession.shared.active = nil
+        super.tearDown()
+    }
+
+    func testRetroIsTheThemeWithItsOwnBricks() {
+        XCTAssertEqual(LevelPackSetup().themeNameArray.firstIndex(of: "Retro"),
+                       LevelPackSetup.retroThemeIndex)
+        for index in LevelPackSetup().themeNameArray.indices {
+            XCTAssertEqual(LevelPackSetup.brickSetting(forTheme: index),
+                           index == LevelPackSetup.retroThemeIndex ? 1 : 0, "theme \(index)")
+        }
+    }
+
+    /// The fault: a Theme day copied the theme's index into `brickSetting`, which is 1 for
+    /// Retro's bricks and 0 otherwise - so 3D (theme 1) played in Retro's bricks and Retro
+    /// (theme 11) in the ordinary ones.
+    func testAThemeDayWearsTheBricksOfTheThemeItDrew() {
+        let themes = LevelPackSetup().themeNameArray.count
+        for wanted in [1, LevelPackSetup.retroThemeIndex] {
+            guard let key = (0..<400).lazy
+                .map({ DailyDay.key(for: Date(timeIntervalSince1970: 1_780_000_000
+                                                + Double($0)*86_400)) })
+                .first(where: { DailyTwist.dailyThemeIndex(forKey: $0, themeCount: themes)
+                                == wanted })
+            else { return XCTFail("no day in 400 drew theme \(wanted)") }
+            DailyChallengeSession.shared.active = DailyChallenge(
+                dateKey: key, mode: .classic, classicLevel: 0, twists: [.dailyTheme])
+            let scene = GameScene(size: CGSize(width: 402, height: 874))
+            scene.userSettings()
+            XCTAssertEqual(scene.brickSetting,
+                           wanted == LevelPackSetup.retroThemeIndex ? 1 : 0, "theme \(wanted)")
+        }
+    }
+
+    /// "Show the level preview with the theme applied ... Same for retro."
+    func testARetroDayDrawsTheLevelInRetrosBricks() throws {
+        let image = try XCTUnwrap(DailyRetroLevelPreview.image(forLevel: 5))
+        XCTAssertEqual(image.size.width, image.size.height, accuracy: 1,
+                       "square, the shape every level picture is drawn in")
+        let file = URL(fileURLWithPath: NSTemporaryDirectory())
+            .appendingPathComponent("retro-level-5.png")
+        try XCTUnwrap(image.pngData()).write(to: file)
+        print("\n  Retro level 5: \(file.path)\n")
+    }
+}

@@ -203,3 +203,52 @@ final class AchievementAwardTests: XCTestCase {
                        "nothing new was collected, so nothing was written")
     }
 }
+
+
+/// James's old task list, made in round 344: "For achievements like 5 minutes in endless mode,
+/// could have best so far when incomplete."
+final class EndlessMilestoneProgressTests: XCTestCase {
+
+    func testTheBestHeightSoFarIsTheProgress() {
+        let stats = TotalStats()
+        stats.endlessModeHeight = [40, 312, 120]
+        XCTAssertEqual(stats.endlessMilestoneProgress(3) ?? 0, 0.312, accuracy: 0.0001,
+                       "312m of the 1,000m milestone")
+        XCTAssertEqual(stats.achievementProgressText(3), "31.2%")
+        XCTAssertEqual(stats.endlessMilestoneProgress(69) ?? 0, 0, accuracy: 0.0001,
+                       "Mayhem's own milestone counts Mayhem runs only")
+    }
+
+    func testMayhemRunsCountForTheSharedMilestones() {
+        let stats = TotalStats()
+        stats.endlessIIModeHeight = [450]
+        XCTAssertEqual(stats.endlessMilestoneProgress(2) ?? 0, 0.9, accuracy: 0.0001)
+        XCTAssertEqual(stats.endlessMilestoneProgress(68) ?? 0, 0.9, accuracy: 0.0001)
+    }
+
+    func testTheLongestRunIsTheProgressOnTheMinutes() {
+        let stats = TotalStats()
+        stats.endlessModeDurations = [90]
+        stats.endlessIIDurations = [240]
+        XCTAssertEqual(stats.endlessMilestoneProgress(18) ?? 0, 0.8, accuracy: 0.0001,
+                       "four minutes of five, from either mode")
+        XCTAssertEqual(stats.endlessMilestoneProgress(73) ?? 0, 0.8, accuracy: 0.0001)
+        XCTAssertEqual(stats.endlessMilestoneProgress(17) ?? 0, 1, accuracy: 0.0001,
+                       "never past the whole")
+    }
+
+    func testAnythingElseKeepsItsStoredFigure() {
+        let stats = TotalStats()
+        XCTAssertNil(stats.endlessMilestoneProgress(30))
+        stats.achievementsPercentageCompleteArray[30] = "12.5%"
+        XCTAssertEqual(stats.achievementProgressText(30), "12.5%")
+        XCTAssertEqual(stats.achievementProgressText(0), "", "no runs, nothing to show")
+    }
+
+    /// The table names the achievements the award code actually awards for these.
+    func testTheMilestonesAreRealAchievements() {
+        for index in TotalStats.endlessMilestones.keys {
+            XCTAssertTrue(AchievementCatalogue.identifiers.indices.contains(index), "\(index)")
+        }
+    }
+}

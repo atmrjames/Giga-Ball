@@ -126,6 +126,14 @@ enum ResumeCard {
             lines.detail = detail.joined(separator: "\n")
             lines.lives = livesRow(game, endless: challenge.mode.isEndless)
             lines.balls = ballsLeft(game, endless: challenge.mode.isEndless)
+            if challenge.twists.contains(.timeTrial) {
+                lines.lives = DailyTwist.unlimitedBallsLine
+                lines.balls = 0
+            }
+            // **A Time Trial counts no balls** (James, round 340: "time trial with unlimited
+            // lives doesn't need to show any spare balls or say number of balls left on the
+            // pause screen - it could say unlimited balls instead"). Losing one costs nothing
+            // there (`dailyLifeIsSpent`), so a rack and a count were a limit that did not apply
             // **The day's own word for what this run is** (James, round 310: "if it's a
             // competition run on a daily challenge say that in the details label"). It replaces
             // "Still your scoring attempt.", which said the same thing as a footnote under the

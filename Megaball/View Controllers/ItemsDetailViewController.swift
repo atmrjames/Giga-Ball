@@ -805,12 +805,13 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
                 cell.tickImage.isHidden = true
                 cell.setIcon(UIImage(named:"AchivementBadgeIncomplete.png")!, recolour: false)
             }
-            if totalStatsArray[0].achievementsPercentageCompleteArray[indexPath.row] != "" && totalStatsArray[0].achievementsUnlockedArray[indexPath.row] == false {
+            let progress = totalStatsArray[0].achievementProgressText(indexPath.row)
+            if progress != "" && totalStatsArray[0].achievementsUnlockedArray[indexPath.row] == false {
                 cell.decriptionFullWidthConstraint.isActive = false
                 cell.descriptionTickWidthConstraint.isActive = false
                 cell.descriptionAndStateSharedWidthConstraint.isActive = true
 
-                cell.settingState.text = totalStatsArray[0].achievementsPercentageCompleteArray[indexPath.row]
+                cell.settingState.text = progress
             }
             // Show percentage complete if achievement has percentage complete and isn't complete
         }
@@ -839,16 +840,12 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
             if totalStatsArray[0].themeUnlockedArray[indexPath.row] {
                 ballSetting = indexPath.row
                 paddleSetting = indexPath.row
-                brickSetting = 0
+                brickSetting = LevelPackSetup.brickSetting(forTheme: indexPath.row)
                 defaults.set(ballSetting, forKey: "ballSetting")
                 defaults.set(paddleSetting, forKey: "paddleSetting")
                 defaults.set(brickSetting, forKey: "brickSetting")
-
-                
-                if indexPath.row == 11 {
-                    brickSetting = 1
-                    defaults.set(brickSetting, forKey: "brickSetting")
-                }
+                // The one rule for which bricks a theme wears, shared with the daily's Theme
+                // twist since round 344 - the two had drifted apart
             }
             // Don't allow selection if theme is locked
         }

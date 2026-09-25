@@ -217,6 +217,9 @@ class InbetweenLevels: GKState {
                 scene.totalStatsArray[0].recordRunDuration(scene.levelTimerValue,
                                                            inMayhem: false)
             }
+            scene.reportEndlessMilestoneProgress()
+            // Game Center's own progress bar on the unearned milestones, from the history
+            // just written (round 344)
         } else {
             var packEndLivesBonus = 0
             if scene.levelNumber == scene.endLevelNumber && scene.gameoverStatus == false && scene.numberOfLevels != 1 {
@@ -241,6 +244,17 @@ class InbetweenLevels: GKState {
             // Unlock next level and add extra life if next level exists
             scene.totalStatsArray[0].levelsCompleted+=1
         }
+
+        if scene.gameoverStatus == false && scene.endlessMode == false
+            && scene.isDailyChallenge == false && scene.numberOfLevels == 1,
+           let next = Progression.nextLevelInPack(after: scene.levelNumber),
+           scene.totalStatsArray[0].levelUnlockedArray.indices.contains(next) {
+            scene.totalStatsArray[0].levelUnlockedArray[next] = true
+        }
+        // **A level completed on its own opens the next one** (James's 2020 list, made in
+        // round 344). Only the unlock: the extra ball and the pack's tallies above belong to a
+        // pack run. Never from a daily, which borrows a Classic level and records none of its
+        // progress (daily spec §9)
         scene.totalStatsArray[0].playTimeSecs = scene.totalStatsArray[0].playTimeSecs + scene.levelTimerValue
         scene.totalStatsArray[0].creditPlayTime(scene.levelTimerValue, mode: scene.gameMode,
                                                 isDailyChallenge: scene.isDailyChallenge)

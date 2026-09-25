@@ -217,4 +217,15 @@ final class ProgressionTests: XCTestCase {
         XCTAssertTrue(Progression.unlocksCityPack(packBestTimes: bestTimes),
                       "City must open on the third completion")
     }
+
+    /// James's 2020 list: "Single level unlocks next level if complete but no pack score."
+    func testASingleLevelOpensTheNextOneInItsPack() {
+        XCTAssertEqual(Progression.nextLevelInPack(after: 1), 2)
+        XCTAssertEqual(Progression.nextLevelInPack(after: 55), 56)
+        for reward in Progression.packRewards {
+            XCTAssertNil(Progression.nextLevelInPack(after: reward.finalLevel),
+                         "level \(reward.finalLevel) ends its pack and opens nothing")
+        }
+        XCTAssertNil(Progression.nextLevelInPack(after: 0), "endless is not a level")
+    }
 }

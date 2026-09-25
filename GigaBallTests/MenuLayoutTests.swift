@@ -23,6 +23,7 @@
 
 import XCTest
 import UIKit
+import SpriteKit
 @testable import Giga_Ball
 
 final class MenuLayoutTests: XCTestCase {
@@ -474,5 +475,43 @@ final class CodeBuiltScreenParallaxTests: XCTestCase {
                 XCTAssertTrue(subview.motionEffects.isEmpty, "\(name) is still drifting")
             }
         }
+    }
+}
+
+/// The paddle-speed field on an iPad (round 344).
+///
+/// James, round 339: "the slider and close button go all the way to the screen edges" and "the
+/// preview is clipping" - both the field being a one-to-one window onto a play area wider than
+/// the column. It is a scaled model of the play area now, inside the column.
+final class PaddleSpeedFieldOnAnIPadTests: XCTestCase {
+
+    func testTheFieldSitsInTheColumnAsAModelOfThePlayArea() throws {
+        let screen = PaddleSpeedViewController()
+        let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 1024, height: 1366))
+        window.traitOverrides.horizontalSizeClass = .regular
+        window.rootViewController = screen
+        window.isHidden = false
+        for _ in 0..<4 {
+            screen.view.setNeedsLayout()
+            screen.view.layoutIfNeeded()
+        }
+
+        let column = screen.view.safeAreaLayoutGuide.layoutFrame
+        let field = try XCTUnwrap(skViews(in: screen.view).first, "the practice field")
+        let placed = field.convert(field.bounds, to: screen.view)
+        XCTAssertLessThanOrEqual(placed.width, column.width + 1,
+                                 "the field is inside the column the rest of the screen uses")
+        XCTAssertGreaterThanOrEqual(placed.minX, column.minX - 1)
+
+        let scene = try XCTUnwrap(field.scene as? PaddleSpeedScene, "a scene was presented")
+        let play = GameSceneLayout(screen: CGSize(width: 1024, height: 1366))
+        XCTAssertEqual(scene.size.width, play.gameWidth, accuracy: 1,
+                       "the scene is the play area at the game's own size, drawn smaller")
+        XCTAssertEqual(scene.touchScale, play.gameWidth/placed.width, accuracy: 0.01,
+                       "and a point of thumb moves the paddle as far as it does in the game")
+    }
+
+    private func skViews(in view: UIView) -> [SKView] {
+        view.subviews.flatMap { ($0 as? SKView).map { [$0] } ?? skViews(in: $0) }
     }
 }

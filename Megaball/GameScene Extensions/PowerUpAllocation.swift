@@ -403,6 +403,16 @@ extension GameScene {
             powerUpProbArray[0] = 10 // Get a Life
         }
         // Increase probability of extra life if low on lives
+
+        if levelNumber != 0 && endlessMode == false {
+            powerUpProbArray = GameScene.classicOddsRebalanced(powerUpProbArray,
+                                                               livesInReserve: numberOfLives)
+        }
+        // Last, after every rule above has had its say - see the function. **Classic only**:
+        // both endless modes write several weights back on every row
+        // (`applyEndlessRowPowerUpWeights`), in the unscaled numbers, and a scaled table under
+        // them would quietly make those four times rarer than the row meant. Neither endless
+        // mode offers Next Level or Get a Life anyway
         
         // Testing
 //        powerUpProbArray[4] = 100 // Increase Paddle Size
@@ -437,8 +447,56 @@ extension GameScene {
         applyDailyEconomyTwists()
         // The day has the last word on the tables, whatever the level decided
     }
+
+    /// **Next Level and Get a Life, made rare** (James, round 344, from his old task list:
+    /// "Reduce likelihood of next level power up" and "Reduce likelihood of extra ball power-up
+    /// massively unless user has only 0 or 1 lives left" - "make these changes").
+    ///
+    /// The draw is a weighted pick across this table, so a weight only means anything next to
+    /// the others. Every other power-up's weight is multiplied by `classicRarityScale` and these
+    /// two are left as the levels wrote them, which makes each a quarter as likely as it was
+    /// without touching a single level's own design: a level that asks for more Next Levels
+    /// than another still gets more, just four times fewer of them.
+    ///
+    /// Get a Life goes further while the player has two or more balls in reserve: its weight is
+    /// held to one, so a table that asked for three is twelve times rarer. With one ball or
+    /// none left it scales with everything else, and the boosts above (7 and 10) keep it the
+    /// likely rescue it has always been at the end of a run.
+    ///
+    /// Pure, so the odds can be pinned without a scene.
+    static let classicRarityScale = 4
+    static let nextLevelIndex = 14
+    static let getALifeIndex = 0
+
+    static func classicOddsRebalanced(_ table: [Int], livesInReserve: Int) -> [Int] {
+        var rebalanced = table
+        for index in rebalanced.indices where index != nextLevelIndex && index != getALifeIndex {
+            rebalanced[index] *= classicRarityScale
+        }
+        if rebalanced.indices.contains(getALifeIndex) {
+            rebalanced[getALifeIndex] = livesInReserve >= 2
+                ? min(table[getALifeIndex], 1)
+                : table[getALifeIndex]*classicRarityScale
+        }
+        return rebalanced
+    }
+
+    /// Get a Life's weight for the balls the player has left, on the rebalanced scale.
+    ///
+    /// Asked when a ball is lost and when a life is collected, as well as when the level's table
+    /// is dealt - the three places that used to write the same numbers out by hand. Five or more
+    /// in reserve: none. Two to four: at most one, against everything else's four-times weights.
+    /// One: at least seven on the old scale. None: ten. A level that deals Get a Life nothing
+    /// keeps nothing at two or more, and is still rescued at the end, as before.
+    func setGetALifeWeightForTheBallsLeft() {
+        let index = GameScene.getALifeIndex
+        guard powerUpProbArray.indices.contains(index) else { return }
+        let scale = endlessMode ? 1 : GameScene.classicRarityScale
+        switch numberOfLives {
+        case 5...: powerUpProbArray[index] = 0
+        case 2...: powerUpProbArray[index] = min(powerUpProbArray[index], 1)
+        case 1: powerUpProbArray[index] = max(powerUpProbArray[index], 7*scale)
+        default: powerUpProbArray[index] = 10*scale
+        }
+    }
 }
-
-
-
-

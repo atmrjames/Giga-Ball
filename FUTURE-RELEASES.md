@@ -499,126 +499,67 @@ across devices would be painful.
 
 ### Player-visible improvements
 
-Cheap to build once the foundations are in, and the things players will actually notice.
+**Settled on 25 September 2026 (round 344).** This was the August plan for 1.3, drawn from the
+2020 notes, and much of it was built under other names in the rounds that followed while the
+list here went unedited. James: whatever was "never built and never cut" goes to 1.4. So this
+section now says what became of each line, and everything still open is in **1.4** below.
 
-#### Accessibility
-There is currently not a single accessibility API in the project. The first three are
-nearly free:
+**Built in 1.3:** the ring timers round the power-up icons; in-game recents on the pause
+screen; tables that only scroll when their content needs it, with edge fades; Reduce Motion and
+VoiceOver on the menus (round 328); the table selection animation, the short tables and the
+sticky bar on resume (the live bugs above); lasers in flight surviving a resume (they are in
+the save); the menu redesign, the logo clear of the notifications and the column on an iPad;
+Next Level made rarer, Get a Life made rarer until the last ball or two, and a single level
+unlocking the next (round 344); the restart option on the Home pop-up (round 330).
 
-- **Reduce Motion.** Parallax is applied on essentially every view, plus blur and
-  animated transitions, and `isReduceMotionEnabled` is never consulted.
-- **Dynamic Type** on stats, settings and items — all fixed fonts today.
-- **VoiceOver on the menus.** Gameplay cannot reasonably be made VoiceOver-playable;
-  everything around it can.
-- **Colour-blindness.** Brick *type* is encoded purely in colour — multi-hit,
-  indestructible, inert. Players who can't distinguish them face an unfair game rather
-  than a harder one. An optional pattern or symbol overlay fixes it.
-- **Assist mode** — slower ball, wider paddle, optional no-life-loss. Doubles as
-  accessibility, widens the audience, and shares its difficulty-options plumbing with
-  speed-run mode.
+**Descoped by James on 2 September:** the multiplier animation at 2.0x and the shadows on the
+paddle, ball, bricks, power-ups and lasers. **Removed by James on 8 August:** the play button on
+the pack selection view.
 
-#### Texture atlases
-There are no atlases in the project at all, so every sprite is its own draw call.
-Batching via `.spriteatlas` is the standard SpriteKit optimisation and is a plausible
-shared cause of two known issues listed separately: iPad stuttering and iPad graphics
-looking pixelated.
+---
 
-#### Live bugs worth fixing
-- ✅ Table view selection animation appears on the wrong cell. Noted back in 2020 and
-  confirmed still present in August 2026. Fixed in 1.3: no cell class implemented
-  `prepareForReuse`, so the highlight scale and colour travelled with the reused cell
-- ✅ Table views in the menus stop short of the screen edge rather than filling it. The
-  guess was right — same fixed-layout cause. Every menu screen pinned its container to
-  414×736; it now fills the safe area
-- ✅ Sticky paddle icon bar not filling correctly when resuming. `CGFloat(catches/total)`
-  with both sides `Int` — integer division truncated every state except a full bar to
-  zero. The total was also hardcoded to 6 on resume when it is really 5, 6 or 7; it is
-  saved now
-- Paddle grows after resuming from pause; sticky texture behaves, paddle does not. The
-  resume path was scaling the retro paddle art by the paddle's own factor rather than the
-  reduced one the normal path uses (1.5 → 1.42, 2.0 → 1.82, 2.5 → 2.24), which is fixed —
-  but the report was never reproduced end-to-end, so treat this as a candidate cause
-  rather than a confirmed fix
-- Lasers in flight are not in the save format at all, which is why they vanish on resume.
-  Restoring them needs new fields for their positions — a decision, not just a fix
-- Ball and paddle textures move independently when the paddle is slammed into the frame
-  (iPhone X-style devices) — likely the same root cause as being able to nudge the ball
-  while it rests on the paddle
-- Ball stuttering on iPad, and iPad graphics looking pixelated — probably the same
-  underlying scale/texture issue, worth investigating together
-- Ball can hit the paddle after hitting the backstop
-- Floating-point precision on physics bodies; ball speed below ~150 px/s causes bounce
-  gliding
+## 1.4
 
-#### Liquid Glass across the rest of the UI
-The app icons adopted Icon Composer and Liquid Glass in 1.3. The interface has not.
+Moved here from the 1.3 plan (James, round 344: "never built and never cut - push these out to
+1.4"), alongside what his own lists already put in 1.4: the widget, iCloud game saves, the
+daily's notifications and share card, Mayhem Rules in the other modes, and the daily's
+"a newer version exists" flag (build it before the first pool addition, not after).
 
-- In-app icons updated to Liquid Glass versions
-- UI elements adopt standard system controls and Liquid Glass rather than the current
-  custom-drawn styling
-- Menu items and table view cell backgrounds adopt Liquid Glass materials
-
-Sits naturally alongside menu modernisation, and after the safe-area work for the same
-reason: restyling components on top of a layout that is about to be rewritten means
-doing it twice. That ordering still holds now they are in one release.
-
-#### Menu modernisation
-Best done *after* the safe-area work, not before — several of these are symptoms of the
-old fixed layout, and redesigning around a broken foundation wastes the effort. The
-container sizing is now fixed, so this is unblocked.
-
-- Bring the menus up to current design language
-- **The Giga-Ball logo on the main menu is clipped by incoming notifications.** It sits
-  too close to the top with no safe-area awareness, so banners overlap it. Moving it down
-  is the immediate fix; respecting the safe area is the real one
-- Reposition content to make use of larger screens rather than centring a phone-sized
-  column
-- Game modes become squares or boxes rather than full-width rows
-- Streamline the level and pack selection menus
-
-#### UI
-- Power-up timing bars become circles around the power-up icons
-- Only show timed power-up icons while actually in use; fade in and out
-- Show active power-ups in the pause menu
-- Table views only scroll when content exceeds the view
-- Animate the multiplier label at 2.0×
-- Show the points calculation for level and life bonuses
-- Dark and light mode
-- Shadows on paddle, ball, bricks, power-ups and lasers
-- Add an image to the share sheet
+- **Accessibility, the rest of it.** Dynamic Type on stats, settings and items; a colour-blind
+  overlay, since brick type is still carried by colour alone; an assist mode (slower ball,
+  wider paddle, optional no-life-loss), which shares its plumbing with a speed-run mode.
+- **Texture atlases.** Still none; every sprite is its own draw call. Also the likeliest shared
+  cause of the iPad stutter and pixelation reports.
+- **Liquid Glass across the rest of the UI.** The round buttons wear it; the in-app icons,
+  standard controls and cell backgrounds do not.
+- **Dark and light mode.**
+- **A Game Center button on the achievement detail page.**
+- **A points breakdown** for the level and life bonuses.
+- **An image on the share sheet.**
+- **Drop the "m" from endless heights**, in the app and in the Game Center achievements - James's
+  2020 note, never decided. Mayhem was built with the "m", so this is a question now as well as
+  a change.
+- **The live bugs never reproduced:** the paddle growing after a resume from pause (a candidate
+  cause was fixed and never confirmed); textures parting from the paddle when it is slammed
+  into the frame; iPad stutter and pixelation; a ball hitting the paddle straight after the
+  backstop; low-speed bounce gliding.
+- **The slow and fast ball power-ups reaching the other timers and the drop rate** - see
+  "Power-up interactions" below for why they were deferred.
 
 #### Power-up interactions — deferred, and why
 Two of three requested interactions between the ball-speed power-ups and everything else
 are **not built**. The third is: slow ball makes lasers fire faster, fast ball slower
 (slow ball is the good one, which is the opposite of what the names suggest).
 
-Not done, and the reason:
-
 - **Slow ball should make good power-ups drain slower and bad ones faster; fast ball the
-  reverse.** Mechanically possible — every timed power-up runs a keyed `SKAction`, and a
-  running action's `speed` can be changed, so one helper could scale all of them plus
-  their icon bars whenever the ball speed changes. What stops it being a small change is
-  the save format: remaining time is reconstructed as `duration × iconBar.xScale`, and
-  once an action's speed has been altered, `duration` is no longer wall-clock. Resume
-  would restore the wrong remaining times. Needs the timers to record real elapsed time
-  rather than inferring it, which is a change to how every power-up is saved.
-- **Slow ball should slow the power-up drop rate, fast ball raise it.** Small in itself,
-  and only left out because it belongs with the item above.
-
-Both are balance changes that want playtesting to tune, and they land in the least-tested
-part of the codebase. Worth doing after the power-up system is table-driven rather than
-eleven near-identical switch cases — see the refactor note below.
+  reverse.** Every timed power-up runs a keyed `SKAction`, and a running action's `speed` can
+  be changed - but the save reconstructs remaining time as `duration × iconBar.xScale`, and an
+  action whose speed has changed is no longer on wall-clock time, so a resume would restore the
+  wrong times. It needs the timers to record real elapsed time first.
+- **Slow ball should slow the power-up drop rate, fast ball raise it.** Small in itself, and
+  left with the item above.
 
 Green power-ups are the good ones and award points; red ones deduct.
-
-#### Gameplay
-- Single level completion unlocks the next level even without a pack score (plus the
-  intro and warning text changes that go with it)
-- Add a play button to the pack selection view
-- Reduce the likelihood of the "next level" power-up
-- Drop the "m" suffix in endless mode (also needs changing in Game Center achievements)
-- Button to reach Game Center achievements from the achievement detail view
-- Restart option in the return-home menu
 
 ---
 

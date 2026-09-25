@@ -71,8 +71,11 @@ final class PowerUpAllocationTests: XCTestCase {
         let scene = makeScene(stats: fullyUnlockedStats())
         for level in 0...110 {
             scene.powerUpProbAllocation(levelNumber: level)
-            XCTAssertLessThanOrEqual(scene.powerUpProbArray.max() ?? 0, 10,
+            XCTAssertLessThanOrEqual(scene.powerUpProbArray.max() ?? 0,
+                                     10*GameScene.classicRarityScale,
                                      "Level \(level) has a debug-sized weight: \(scene.powerUpProbArray)")
+            // Round 344 multiplied Classic's weights by the rarity scale, so the ceiling moved
+            // with them; the debug block's 100 is still well above it
         }
     }
 
@@ -115,8 +118,66 @@ final class PowerUpAllocationTests: XCTestCase {
         let none = makeScene(stats: fullyUnlockedStats(), lives: 0)
         none.powerUpProbAllocation(levelNumber: 1)
 
-        XCTAssertEqual(none.powerUpProbArray[0], 10)
+        XCTAssertEqual(none.powerUpProbArray[0], 10*GameScene.classicRarityScale)
         XCTAssertGreaterThan(none.powerUpProbArray[0], atFullLives)
+    }
+
+    // MARK: - Round 344: Next Level and Get a Life, rare
+
+    /// James's old task list: "Reduce likelihood of next level power up." A quarter as likely,
+    /// against everything else, as each level asked for.
+    func testNextLevelIsAQuarterAsLikelyAsTheLevelAskedFor() {
+        let table = defaultTable
+        let rebalanced = GameScene.classicOddsRebalanced(table, livesInReserve: 3)
+        let before = Double(table[14])/Double(table.reduce(0, +))
+        let after = Double(rebalanced[14])/Double(rebalanced.reduce(0, +))
+        XCTAssertLessThan(after, before/3.5, "Next Level went from \(before) to \(after)")
+        for index in table.indices where index != 14 && index != 0 {
+            XCTAssertEqual(rebalanced[index], table[index]*GameScene.classicRarityScale,
+                           "\(index): everything else keeps its proportions to everything else")
+        }
+    }
+
+    /// "Reduce likelihood of extra ball power-up massively unless user has only 0 or 1 lives
+    /// left."
+    func testGetALifeIsMassivelyRarerWithTwoOrMoreBallsLeft() {
+        for lives in 2...4 {
+            let scene = makeScene(stats: fullyUnlockedStats(), lives: lives)
+            scene.powerUpProbAllocation(levelNumber: 25)
+            XCTAssertLessThanOrEqual(scene.powerUpProbArray[0], 1, "\(lives) balls left")
+            let share = Double(scene.powerUpProbArray[0])/Double(scene.powerUpProbSum)
+            XCTAssertLessThan(share, 0.01, "\(lives) balls left: under one drop in a hundred")
+        }
+        for lives in 0...1 {
+            let scene = makeScene(stats: fullyUnlockedStats(), lives: lives)
+            scene.powerUpProbAllocation(levelNumber: 25)
+            XCTAssertGreaterThanOrEqual(scene.powerUpProbArray[0], 7*GameScene.classicRarityScale,
+                                        "\(lives) left: still the likely rescue it always was")
+        }
+    }
+
+    /// And the weight follows the balls as they are lost and won mid-level, on the same scale.
+    func testTheWeightFollowsTheBallsLeftMidLevel() {
+        let scene = makeScene(stats: fullyUnlockedStats(), lives: 3)
+        scene.powerUpProbAllocation(levelNumber: 25)
+        scene.numberOfLives = 1
+        scene.setGetALifeWeightForTheBallsLeft()
+        XCTAssertEqual(scene.powerUpProbArray[0], 7*GameScene.classicRarityScale)
+        scene.numberOfLives = 2
+        scene.setGetALifeWeightForTheBallsLeft()
+        XCTAssertEqual(scene.powerUpProbArray[0], 1)
+        scene.numberOfLives = 5
+        scene.setGetALifeWeightForTheBallsLeft()
+        XCTAssertEqual(scene.powerUpProbArray[0], 0)
+    }
+
+    /// Both endless modes are left exactly as they were: their rows write weights back in the
+    /// unscaled numbers.
+    func testEndlessIsNotRebalanced() {
+        let scene = makeScene(stats: fullyUnlockedStats(), lives: 0)
+        scene.endlessMode = true
+        scene.powerUpProbAllocation(levelNumber: 0)
+        XCTAssertLessThanOrEqual(scene.powerUpProbArray.max() ?? 0, 10)
     }
 
     // MARK: - Determinism

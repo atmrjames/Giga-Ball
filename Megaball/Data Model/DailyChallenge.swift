@@ -618,6 +618,10 @@ enum DailyTwist: String, CaseIterable, Codable {
     /// always forced its own ball; the rack read the player's `ballSetting` straight out of the
     /// defaults, so the screen that pauses a Classic-and-grey run showed three orange retro
     /// balls under it. The answer lived on `GameScene`, where a view controller cannot ask it.
+    /// What the pause screen and the resume card say about balls on a Time Trial, where losing
+    /// one costs nothing (James, round 340).
+    static let unlimitedBallsLine = "Unlimited balls"
+
     static func forcedTheme(for challenge: DailyChallenge?) -> Int? {
         guard let challenge else { return nil }
         if challenge.twists.contains(.monochromatic) { return 0 }

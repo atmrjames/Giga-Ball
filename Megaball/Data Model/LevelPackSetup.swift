@@ -107,6 +107,19 @@ class LevelPackSetup {
         "Complete Challenge Pack to unlock" // Retro
     ]
     
+    /// The theme whose bricks are drawn differently: Retro. A constant rather than a lookup,
+    /// because building a `LevelPackSetup` loads every level's picture; `ThemeBrickTests` pins
+    /// it to the name, so a reordered list fails there rather than dressing the wrong theme.
+    static let retroThemeIndex = 11
+
+    /// Which bricks a theme wears, as the stored `brickSetting`: 1 for Retro's own, 0 for the
+    /// ordinary ones every other theme shares. The theme picker and the daily's Theme twist
+    /// both ask this, because the setting is not a theme index and treating it as one is how
+    /// a Retro day came to be played in ordinary bricks (round 344).
+    static func brickSetting(forTheme index: Int) -> Int {
+        index == retroThemeIndex ? 1 : 0
+    }
+
     let themeNameArray: [String] = [
         "Classic",
         "3D",

@@ -248,10 +248,14 @@ class ItemsStatsViewController: UIViewController, UITableViewDelegate, UITableVi
         } else {
             cell.statDescription.text = "Incomplete"
             cell.statValue.text = ""
-            if totalStatsArray[0].achievementsPercentageCompleteArray[passedIndex!] != "" {
-                cell.statDescription.text = "Percentage complete"
-                cell.statValue.text = totalStatsArray[0].achievementsPercentageCompleteArray[passedIndex!]
+            let progress = totalStatsArray[0].achievementProgressText(passedIndex!)
+            if progress != "" {
+                cell.statDescription.text = TotalStats.endlessMilestones[passedIndex!] == nil
+                    ? "Percentage complete" : "Best so far"
+                cell.statValue.text = progress
             }
+            // An endless milestone's figure is the best run so far against it (round 344),
+            // worked out from the run history rather than stored
             if totalStatsArray[0].achievementsUnlockedArray[passedIndex!] {
                 cell.statDescription.text = "Date completed"
                 formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"

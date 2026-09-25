@@ -127,7 +127,9 @@ this; view controllers read and write `UserDefaults` directly.
 Level 0 is the tutorial, level 999 is endless mode's generated field.
 
 A player can play a **whole pack** from the start, or a **single level** in isolation.
-Single-level play does not unlock content — the app warns about this before starting.
+Completing a single level unlocks the next level in its pack (since 1.3, round 344), and
+nothing else: power-ups, packs, themes and icons still come from whole packs. The mode-select
+screen says so before starting.
 
 The player starts with **3 lives** per pack run. Score and multiplier carry across levels
 within a run.
@@ -281,6 +283,13 @@ store and the drop table all count in it.
 default table overridden per level. A `powerUpProbFactor` (default 10) scales the overall
 drop rate. Weights adapt during play — for example, the chance of an extra life rises as
 the player's lives fall.
+
+**Next Level and Get a Life are rare in Classic (1.3, round 344).** After the level's table
+is dealt, every other weight is multiplied by `classicRarityScale` (4) and these two are left
+as written, so Next Level is a quarter as likely as the level asked. Get a Life is held to a
+weight of one while two or more balls are in reserve, and scales with the rest at one ball or
+none. Both endless modes are left unscaled, because their rows rewrite weights in the
+unscaled numbers.
 
 ---
 

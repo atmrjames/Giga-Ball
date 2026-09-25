@@ -16,6 +16,7 @@
 //
 
 import UIKit
+import SpriteKit
 
 final class DailyCardView: UIView {
 
@@ -196,8 +197,15 @@ final class DailyCardView: UIView {
             let number = DailyChallengeGenerator.levelNumber(forClassicLevel: level)
             let pack = DailyChallengeGenerator.pack(forClassicLevel: level)
             let setup = LevelPackSetup()
-            levelImageView.image = DailyTwist.presented(setup.levelImageArray[number],
-                                                        under: challenge.twists)
+            let retroDay = DailyTwist.forcedTheme(for: challenge) == LevelPackSetup.retroThemeIndex
+            let picture = retroDay
+                ? DailyRetroLevelPreview.image(forLevel: number) ?? setup.levelImageArray[number]
+                : setup.levelImageArray[number]
+            levelImageView.image = DailyTwist.presented(picture, under: challenge.twists)
+            // **A Retro day shows the level in Retro's bricks** (James, round 340: "show the
+            // level preview with the theme applied ... same for retro"), built once per level
+            // (`DailyRetroLevelPreview`). Every other theme only dresses the ball and paddle,
+            // which the picture does not show, so theirs is already the right picture
             levelLabel.attributedText = DailyCardView.levelLine(
                 level: setup.levelNameArray[number],
                 pack: setup.levelPackNameArray[pack],
@@ -502,4 +510,87 @@ final class DailyCardCell: UICollectionViewCell {
     }
 
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+}
+
+/// A Classic level's preview in Retro's bricks, for a Theme day that drew Retro.
+///
+/// James, round 340: "Daily twist monochromatic - show the level preview with the theme
+/// applied. Same for retro." The monochrome half is a filter over the picture
+/// (`DailyTwist.presented`). Retro cannot be: the level pictures are drawn assets in the
+/// ordinary bricks, and Retro's are different art rather than a different colour. It is the
+/// only theme with bricks of its own - every other theme dresses the ball and the paddle,
+/// which the preview does not show - so it is the only one that needs this.
+///
+/// **The level is built, not re-drawn.** The levels are a hundred and ten functions placing
+/// bricks with `if` statements, and building one is the only way to read it (`loadLevel`
+/// says why, and `DailyLayoutFlipTests` does the same). A scene is made with Retro's bricks
+/// swapped in exactly as `didMove` swaps them, the level is built into it, and its bricks are
+/// copied - picture, colour, place - into a small scene of their own and rendered. Each level
+/// is drawn once and kept.
+enum DailyRetroLevelPreview {
+
+    private static var drawn: [Int: UIImage] = [:]
+
+    static func image(forLevel number: Int) -> UIImage? {
+        if let kept = drawn[number] { return kept }
+        guard let made = render(level: number) else { return nil }
+        drawn[number] = made
+        return made
+    }
+
+    private static func render(level number: Int) -> UIImage? {
+        let session = DailyChallengeSession.shared
+        let held = session.active
+        session.active = nil
+        defer { session.active = held }
+        // Built as a level, not as a daily: with a daily active the build would turn the level
+        // over itself, and the card turns the picture over again afterwards (`presented`)
+
+        let screen = CGSize(width: 402, height: 874)
+        let layout = GameSceneLayout(screen: screen)
+        let scene = GameScene(size: screen)
+        scene.gameMode = .classic
+        scene.totalStatsArray = [TotalStats()]
+        scene.numberOfBrickRows = GameSceneLayout.brickRows
+        scene.numberOfBrickColumns = GameSceneLayout.brickColumns
+        scene.brickWidth = layout.brickWidth
+        scene.brickHeight = layout.brickHeight
+        scene.gameWidth = layout.gameWidth
+        scene.yBrickOffset = 0
+        scene.brickNormalTexture = scene.retroBrickNormalTexture
+        scene.brickInvisibleTexture = scene.retroBrickInvisibleTexture
+        scene.brickMultiHit1Texture = scene.retroBrickMultiHit1Texture
+        scene.brickMultiHit2Texture = scene.retroBrickMultiHit2Texture
+        scene.brickMultiHit3Texture = scene.retroBrickMultiHit3Texture
+        scene.brickMultiHit4Texture = scene.retroBrickMultiHit4Texture
+        // The six `didMove` swaps for `brickSetting == 1`, and only those
+        scene.levelNumber = number
+        scene.loadLevel(number)
+
+        let side = layout.gameWidth
+        let brick = CGSize(width: layout.brickWidth, height: layout.brickHeight)
+        let picture = SKNode()
+        scene.enumerateChildNodes(withName: BrickCategoryName) { node, _ in
+            guard let placed = node as? SKSpriteNode, placed.isHidden == false,
+                  let texture = placed.texture, texture != scene.brickNullTexture else { return }
+            let copy = SKSpriteNode(texture: texture, size: brick)
+            copy.color = placed.color
+            copy.colorBlendFactor = placed.colorBlendFactor
+            copy.position = CGPoint(x: placed.position.x + side/2,
+                                    y: placed.position.y + side - brick.height/2)
+            picture.addChild(copy)
+        }
+        // The grid is twenty-two rows of half-width bricks, so the whole field is square -
+        // which is the shape every level picture is drawn in. Row 0's centre sits at
+        // `yBrickOffset`, so its top is half a brick above it and at the square's top edge
+        guard picture.children.isEmpty == false else { return nil }
+
+        let margin = brick.height
+        let frame = CGRect(x: -margin, y: -margin, width: side + margin*2, height: side + margin*2)
+        let view = SKView(frame: CGRect(origin: .zero, size: frame.size))
+        guard let texture = view.texture(from: picture, crop: frame) else { return nil }
+        // A brick's height of margin all round, which is how the drawn level pictures are
+        // framed - measured off Level05Image, whose first brick starts one row in from the edge
+        return UIImage(cgImage: texture.cgImage())
+    }
 }

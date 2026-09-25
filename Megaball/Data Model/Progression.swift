@@ -92,4 +92,18 @@ enum Progression {
     static func nextLevelIndex(after levelNumber: Int, endLevelNumber: Int) -> Int? {
         levelNumber == endLevelNumber ? nil : levelNumber + 1
     }
+
+    /// The level that finishing `levelNumber` on its own opens: the next one in its pack, or
+    /// nothing if it is the pack's last.
+    ///
+    /// **Single Level Mode unlocks too** (James's 2020 list: "Single level unlocks next level if
+    /// complete but no pack score", made in round 344). A single level has no end level of its
+    /// own to compare with - it starts and ends on itself - so the pack's last level is read
+    /// off `packRewards` instead. A pack's last level opens nothing here, exactly as it opens
+    /// nothing in a pack run: packs are unlocked by their own rules, never by a level.
+    static func nextLevelInPack(after levelNumber: Int) -> Int? {
+        guard levelNumber >= 1, let last = packRewards.map(\.finalLevel).max(),
+              levelNumber < last else { return nil }
+        return reward(forLevel: levelNumber) == nil ? levelNumber + 1 : nil
+    }
 }

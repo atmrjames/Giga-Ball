@@ -3978,6 +3978,34 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         }
     }
 
+    /// Tells Game Center how far the best run has got towards each unearned endless milestone,
+    /// so its own page shows the same progress the app's does (round 344). Game Center keeps the
+    /// highest figure it has been told, so reporting after every run is safe. No banner: nothing
+    /// has been earned.
+    func reportEndlessMilestoneProgress() {
+        guard GameCenterHandler.isRunningTests == false, totalStatsArray.isEmpty == false,
+              gameCenterSetting else { return }
+        let stats = totalStatsArray[0]
+        var progress: [GKAchievement] = []
+        for index in TotalStats.endlessMilestones.keys.sorted()
+        where stats.achievementsUnlockedArray.indices.contains(index)
+            && stats.achievementsUnlockedArray[index] == false
+            && AchievementCatalogue.identifiers.indices.contains(index) {
+            guard let fraction = stats.endlessMilestoneProgress(index), fraction > 0,
+                  fraction < 1 else { continue }
+            let achievement = GKAchievement(identifier: AchievementCatalogue.identifiers[index])
+            achievement.percentComplete = fraction*100
+            achievement.showsCompletionBanner = false
+            progress.append(achievement)
+        }
+        guard progress.isEmpty == false else { return }
+        GKAchievement.report(progress) { error in
+            if let error {
+                Log.gameCenter.error("\(error.localizedDescription, privacy: .public)")
+            }
+        }
+    }
+
     func ballLost() {
 		if endlessMode, InGameRecents.shared.bricksDestroyedThisRun == 0 {
 			_ = award(95)
@@ -4087,24 +4115,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		setMultiplierColour(#colorLiteral(red: 1, green: 1, blue: 1, alpha: 1))
 		// Reset score multiplier
 		
-		if numberOfLives >= 5 {
-			powerUpProbArray[0] = 0 // Get a Life
-		}
-		if numberOfLives <= 2 {
-            if powerUpProbArray[0] < 5 {
-                powerUpProbArray[0] = 5 // Get a Life
-            }
-        }
-        if numberOfLives <= 1 {
-            if powerUpProbArray[0] < 7 {
-                powerUpProbArray[0] = 7 // Get a Life
-            }
-        }
-        if numberOfLives <= 0 {
-            powerUpProbArray[0] = 10 // Get a Life
-        }
+		setGetALifeWeightForTheBallsLeft()
 		powerUpProbSum = powerUpProbArray.reduce(0, +)
-		// Increase probability of extra life if low on lives
+		// Increase probability of extra life if low on lives - on the rebalanced scale since
+		// round 344, which is why it is one function now rather than a copy here
 
 		applyDailyEconomyTwists()
 		// The bump above runs on every ball lost, after the allocation tables were dealt
@@ -6005,25 +6019,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			powerUpMultiplierScore = 0.1
 			totalStatsArray[0].powerupsCollected[0]+=1
 			
-			if numberOfLives >= 5 {
-				powerUpProbArray[0] = 0 // Get a Life
-			}
-			if numberOfLives > 2 {
-				powerUpProbArray[0] = 3 // Get a Life
-			}
-			if numberOfLives <= 2 {
-				if powerUpProbArray[0] < 5 {
-					powerUpProbArray[0] = 5 // Get a Life
-				}
-			}
-			if numberOfLives <= 1 {
-				if powerUpProbArray[0] < 7 {
-					powerUpProbArray[0] = 7 // Get a Life
-				}
-			}
-			if numberOfLives <= 0 {
-				powerUpProbArray[0] = 10 // Get a Life
-			}
+			setGetALifeWeightForTheBallsLeft()
 			powerUpProbSum = powerUpProbArray.reduce(0, +)
 			// Increase probability of extra life if low on lives
 
@@ -8204,8 +8200,13 @@ laserTimer?.invalidate()
 		if let forced = dailyForcedTheme {
 			ballSetting = forced
 			paddleSetting = forced
-			brickSetting = forced
+			brickSetting = LevelPackSetup.brickSetting(forTheme: forced)
 		}
+		// **The brick setting is not a theme number** (round 344). It is 1 for retro bricks and
+		// 0 for everything else - the theme picker writes it that way - and this line used to
+		// copy the theme's own index into it. So a Retro day (theme 11) was played in ordinary
+		// bricks, and a 3D day (theme 1) in retro ones: found while building the Retro preview
+		// James asked for on the daily card
 		// **A theme is three settings, and a theme twist owns all three** (round 229).
 		// Monochromatic forces Classic and Theme draws one from the date. Applied here rather
 		// than at each use, because this is the one place the three are read, and a twist that
