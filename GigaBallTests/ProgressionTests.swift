@@ -228,4 +228,17 @@ final class ProgressionTests: XCTestCase {
         }
         XCTAssertNil(Progression.nextLevelInPack(after: 0), "endless is not a level")
     }
+
+    /// Round 345's mutation run: `> 0` could have been `>= 0` for either of the first two packs
+    /// and nothing would have noticed, because no test left exactly one of the three unfinished.
+    /// City waits for all three, so any one of them still at zero keeps it shut.
+    func testCityWaitsForEachOfTheFirstThreePacks() {
+        for unfinished in 0..<3 {
+            var times = [90, 120, 150]
+            times[unfinished] = 0
+            XCTAssertFalse(Progression.unlocksCityPack(packBestTimes: times),
+                           "pack \(unfinished + 1) is not finished")
+        }
+        XCTAssertTrue(Progression.unlocksCityPack(packBestTimes: [90, 120, 150]))
+    }
 }

@@ -3984,7 +3984,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     /// has been earned.
     func reportEndlessMilestoneProgress() {
         guard GameCenterHandler.isRunningTests == false, totalStatsArray.isEmpty == false,
-              gameCenterSetting else { return }
+              gameCenterSetting, GameCenterHandler.isAuthenticated else { return }
+        // Signed in, as well as switched on (round 345): a signed-out player's reports only come
+        // back as "local player has not been authenticated" in the log, one per milestone
         let stats = totalStatsArray[0]
         var progress: [GKAchievement] = []
         for index in TotalStats.endlessMilestones.keys.sorted()

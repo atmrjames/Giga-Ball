@@ -32,6 +32,7 @@
 
 import XCTest
 import UIKit
+import SpriteKit
 @testable import Giga_Ball
 
 final class WindowSizeTests: XCTestCase {
@@ -481,6 +482,72 @@ final class GameViewFollowsTheWindowTests: XCTestCase {
 
         scene.fitTheWindow(CGSize(width: 1024, height: 1366))
         XCTAssertEqual(scene.size, laidOut, "dragged back, it is the scene it was built as")
+    }
+
+    /// Round 345's mutation run: nothing asked what happens with a size of zero anywhere, so the
+    /// guard could have been `>=` and nothing would have noticed - and past it lies a division
+    /// by the window's height.
+    func testAZeroSizedWindowOrSceneChangesNothing() {
+        let narrowest: CGFloat = 656
+        for (laid, view) in [(CGSize(width: 0, height: 1366), CGSize(width: 700, height: 1366)),
+                             (CGSize(width: 1024, height: 0), CGSize(width: 700, height: 1366)),
+                             (laidOut, CGSize(width: 0, height: 1366)),
+                             (laidOut, CGSize(width: 700, height: 0))] {
+            XCTAssertEqual(GameScene.sizeFilling(view, laidOut: laid, narrowest: narrowest), laid,
+                           "\(laid) in \(view): left as it was laid out")
+        }
+    }
+
+    /// And a scene that has not been laid out yet is not reshaped - its size is not yet the size
+    /// anything was placed against.
+    func testASceneNotYetLaidOutIsLeftAlone() {
+        let scene = GameScene(size: laidOut)
+        scene.gameWidth = playWidth
+        scene.fitTheWindow(CGSize(width: 700, height: 1366))
+        XCTAssertEqual(scene.size, laidOut)
+    }
+
+    /// A change of under half a point is not a change: layout passes that agree with themselves
+    /// must not keep rewriting the size.
+    func testLessThanHalfAPointIsNotAResize() {
+        let scene = GameScene(size: laidOut)
+        scene.gameWidth = playWidth
+        scene.laidOutSceneSize = laidOut
+        scene.fitTheWindow(CGSize(width: 1024.3, height: 1366))
+        XCTAssertEqual(scene.size, laidOut, "not reshaped by a fraction of a point")
+    }
+
+    /// The HUD's backdrop and Mayhem's scrolling backdrop run the whole width, or a widened
+    /// window shows a step at the height of the HUD and the edge of the backdrop.
+    func testTheBackdropsWidenWithTheWindow() {
+        let scene = GameScene(size: laidOut)
+        scene.gameWidth = playWidth
+        scene.laidOutSceneSize = laidOut
+        scene.topScreenBlock.size = CGSize(width: laidOut.width, height: 100)
+        let tile = SKSpriteNode(color: .clear, size: CGSize(width: laidOut.width, height: 1366))
+        scene.endlessIIBackdropTiles = [tile]
+
+        scene.fitTheWindow(CGSize(width: 1366, height: 1024))
+        XCTAssertEqual(scene.topScreenBlock.size.width, scene.size.width, accuracy: 0.5)
+        XCTAssertEqual(tile.size.width, scene.size.width, accuracy: 0.5)
+    }
+
+    /// The score, hung off the right edge on a compact layout, limits the narrowing as the pause
+    /// button does on the left.
+    func testTheScoreIsNeverCutOff() {
+        let scene = GameScene(size: CGSize(width: 402, height: 874))
+        scene.gameWidth = 300
+        scene.labelSpacing = 10
+        scene.laidOutSceneSize = scene.size
+        scene.scoreLabel.text = "12,345"
+        scene.scoreLabel.fontSize = 20
+        scene.scoreLabel.horizontalAlignmentMode = .right
+        scene.scoreLabel.position.x = 201 - 20
+        scene.addChild(scene.scoreLabel)
+
+        scene.fitTheWindow(CGSize(width: 250, height: 874))
+        XCTAssertGreaterThanOrEqual(scene.size.width/2, scene.scoreLabel.frame.maxX + 20 - 0.5,
+                                    "the score keeps the margin it was built with")
     }
 
     /// The HUD sets the limit when it was hung off the screen's edges (a compact width).

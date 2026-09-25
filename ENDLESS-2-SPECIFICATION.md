@@ -2,8 +2,10 @@
 
 **Status: built.** Every mechanic in this document exists - the phases in §12 are all
 complete, and §12.0 records what each one turned into, including where play-testing
-overruled the design written here. What remains is §8.5's asset list, which is not code; the
-Quick Start Guide's 1.3 pages arrived in round 322. This began as a design document, unlike
+overruled the design written here. §8.5's asset list is settled for 1.3: James ships the
+brick-style art as it is (21 September: "Drawn artwork for the brick styles - ship it as it
+is"), and no more sound effects are coming for now (19 September); the Quick Start Guide's
+1.3 pages arrived in round 322. This began as a design document, unlike
 [SPECIFICATION.md](SPECIFICATION.md), which describes the app as it stands; it is now
 equal parts design record and build log, and the sections written to stop mistakes being
 repeated (§8.6, §12.0's play-test notes) are the ones that keep earning their place.
@@ -834,9 +836,14 @@ and backgrounds, which are also tables.
 
 ## 8.5 Art and audio still to make
 
-Everything new is currently wearing a placeholder that reads correctly, which was the right
-order: the mechanics have all changed shape at least once since they were drawn. With phase
-8 complete this section is now the shopping list, slot by slot, for the real assets.
+**Settled for 1.3 (September 2026).** James drew the art that mattered - the power-up and HUD
+icons, the shaped and portal bricks, the glows, the halo, the twist icons - and chose to ship the
+per-style brick placeholders as they are; the sounds he recorded are in, and no more are coming
+for now. What follows is kept as the record of how each slot was decided, and as the list to
+start from if 1.4 revisits any of it.
+
+Everything new was first built wearing a placeholder that reads correctly, which was the right
+order: the mechanics have all changed shape at least once since they were drawn.
 
 ### Which way a shaped brick faces
 

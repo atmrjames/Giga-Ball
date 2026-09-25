@@ -24,6 +24,7 @@ import argparse
 import os
 import re
 import shutil
+import signal
 import subprocess
 import sys
 import time
@@ -64,18 +65,49 @@ def mutants(lines, first, last):
 
 
 def run_tests(args):
+    """Runs the chosen tests and returns killed, survived, stillborn or timeout.
+
+    **Decided from the output as it streams, not from the exit.** Round 345 found that when a
+    test fails, `xcodebuild` goes on running for minutes after the tests themselves have finished
+    - a failing class that took sixteen seconds held the process for over ten minutes - so every
+    killed mutant looked like a hang. The suite's own summary line says the answer the moment the
+    tests end, and the process is stopped there.
+    """
     command = ["xcodebuild", "-project", "Megaball.xcodeproj", "-scheme", "Megaball",
                "-destination", args.destination, "-derivedDataPath", args.derived_data, "test"]
     for name in args.tests.split(","):
         command += ["-only-testing:GigaBallTests/" + name.strip()]
     env = dict(os.environ, DEVELOPER_DIR="/Applications/Xcode-beta.app/Contents/Developer")
-    result = subprocess.run(command, capture_output=True, text=True, env=env)
-    output = result.stdout + result.stderr
-    if "** TEST SUCCEEDED **" in output:
-        return "survived"
-    if "error:" in output and "Testing started" not in output:
-        return "stillborn"
-    return "killed"
+    process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                               text=True, env=env, start_new_session=True)
+    started, verdict, compile_error, testing = time.time(), None, False, False
+    try:
+        for line in process.stdout:
+            if "Testing started" in line or "Test Suite '" in line:
+                testing = True
+            if ": error:" in line and not testing and "-[" not in line:
+                compile_error = True
+            if "Test Suite 'Selected tests' failed" in line or "** TEST FAILED **" in line:
+                verdict = "killed" if testing else "stillborn"
+                break
+            if "Test Suite 'Selected tests' passed" in line or "** TEST SUCCEEDED **" in line:
+                verdict = "survived"
+                break
+            if "** BUILD FAILED **" in line or "** TEST BUILD FAILED **" in line:
+                verdict = "stillborn"
+                break
+            if time.time() - started > args.timeout:
+                verdict = "timeout"
+                break
+    finally:
+        try:
+            os.killpg(process.pid, signal.SIGTERM)
+        except ProcessLookupError:
+            pass
+        process.wait()
+    if verdict is None:
+        verdict = "stillborn" if compile_error else "timeout"
+    return verdict
 
 
 def main():
@@ -86,6 +118,8 @@ def main():
     parser.add_argument("--max", type=int, default=30)
     parser.add_argument("--destination", default="id=6C4F510D-FAC7-42B0-98CE-258809ABA4B7")
     parser.add_argument("--derived-data", default="build/mutation")
+    parser.add_argument("--timeout", type=int, default=240,
+                        help="seconds before a run counts as hung, and so as killed")
     args = parser.parse_args()
 
     with open(args.file, encoding="utf-8") as handle:
@@ -94,12 +128,23 @@ def main():
     first, last = 1, len(lines)
     if args.lines:
         first, last = (int(x) for x in args.lines.split("-"))
+        first, last = max(1, first), min(last, len(lines))
+        # Clamped: a range written against an older copy of the file must not walk off its end
 
     backup = args.file + ".mutation-backup"
     shutil.copyfile(args.file, backup)
-    results = {"killed": [], "survived": [], "stillborn": []}
+    for sig in (signal.SIGTERM, signal.SIGHUP):
+        signal.signal(sig, lambda *_: sys.exit(1))
+    # So `kill`, or the terminal closing, still runs the `finally` below. Round 345's first run
+    # was stopped from outside and left a mutant in the working tree until it was put back by
+    # hand from the backup - which is what the backup is for, but not what it should need
+    results = {"killed": [], "survived": [], "stillborn": [], "timeout": []}
     try:
-        print("baseline:", run_tests(args), flush=True)
+        baseline = run_tests(args)
+        if baseline != "survived":
+            print(f"baseline: the tests do not pass unmutated ({baseline}); nothing to measure")
+            return 1
+        print("baseline: the tests pass unmutated", flush=True)
         for index, (number, before, after, label) in enumerate(mutants(lines, first, last)):
             if index >= args.max:
                 break
@@ -121,9 +166,12 @@ def main():
     counted = len(results["killed"]) + len(results["survived"])
     score = 100.0 * len(results["killed"]) / counted if counted else 0
     print(f"\nkilled {len(results['killed'])}, survived {len(results['survived'])}, "
-          f"stillborn {len(results['stillborn'])}; mutation score {score:.0f}%")
+          f"stillborn {len(results['stillborn'])}, timed out {len(results['timeout'])}; "
+          f"mutation score {score:.0f}%")
     for number, label, before in results["survived"]:
         print(f"  SURVIVED line {number}: {label}   {before[:90]}")
+    for number, label, before in results["timeout"]:
+        print(f"  TIMED OUT line {number}: {label}   {before[:90]}")
     print("file restored" + ("" if not diff else " - BUT git sees a change: " + diff))
 
 

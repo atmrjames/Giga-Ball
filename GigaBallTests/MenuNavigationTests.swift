@@ -1647,3 +1647,112 @@ final class MainMenuButtonRowResizeTests: XCTestCase {
         }
     }
 }
+
+
+/// The settings rows, tapped (round 345).
+///
+/// The CRAP pass ranked `SettingsViewController.tableView(_:didSelectRowAt:)` second in the app:
+/// thirty-one decisions and not one line run by a test. Each switch is tapped here against a
+/// settings store of the test's own, and what it wrote is read back.
+final class SettingsRowTapTests: XCTestCase {
+
+    private let suiteName = "SettingsRowTapTests"
+
+    override func setUp() {
+        super.setUp()
+        UserDefaults().removePersistentDomain(forName: suiteName)
+    }
+
+    override func tearDown() {
+        UserDefaults().removePersistentDomain(forName: suiteName)
+        try? FileManager.default.removeItem(at: FileManager.default.temporaryDirectory
+            .appendingPathComponent(suiteName + ".plist"))
+        super.tearDown()
+    }
+
+    private func settings() throws -> (SettingsViewController, UserDefaults) {
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suiteName))
+        for key in ["soundsSetting", "musicSetting", "hapticsSetting", "parallaxSetting",
+                    "swipeUpPause", InterfaceSound.settingKey] {
+            defaults.set(true, forKey: key)
+        }
+        let board = UIStoryboard(name: "Main", bundle: Bundle(for: SettingsViewController.self))
+        let screen = try XCTUnwrap(board.instantiateViewController(withIdentifier: "settingsVC")
+                                    as? SettingsViewController)
+        screen.defaults = defaults
+        screen.totalStatsStore = FileManager.default.temporaryDirectory
+            .appendingPathComponent(suiteName + ".plist")
+        screen.navigatedFrom = "MainMenu"
+        screen.loadViewIfNeeded()
+        return (screen, defaults)
+    }
+
+    private func tap(_ row: SettingsViewController.SettingRow,
+                     on screen: SettingsViewController) throws {
+        let index = try XCTUnwrap(screen.settingRows.firstIndex(of: row), "\(row) is offered")
+        screen.tableView(screen.settingsTableView, didSelectRowAt: IndexPath(row: index, section: 0))
+    }
+
+    func testInGameSoundTurnsOffAndOn() throws {
+        let (screen, defaults) = try settings()
+        try tap(.sounds, on: screen)
+        XCTAssertFalse(defaults.bool(forKey: "soundsSetting"))
+        try tap(.sounds, on: screen)
+        XCTAssertTrue(defaults.bool(forKey: "soundsSetting"))
+    }
+
+    /// James, round 341: "a new on/off setting for UI Sound ... separately from the game sounds."
+    func testUISoundIsItsOwnSwitch() throws {
+        let (screen, defaults) = try settings()
+        try tap(.interfaceSound, on: screen)
+        XCTAssertFalse(InterfaceSound.isOn(in: defaults))
+        XCTAssertTrue(defaults.bool(forKey: "soundsSetting"), "the game's sound is untouched")
+        try tap(.interfaceSound, on: screen)
+        XCTAssertTrue(InterfaceSound.isOn(in: defaults))
+    }
+
+    /// James, round 342: "When turning the UI sound off via the settings screen it shouldn't
+    /// make a UI sound button click. When turning it on, it should." The row lights up before it
+    /// flips, so it is the one row that does not click on the way down.
+    func testOnlyTheUISoundRowStaysQuietAsItLightsUp() {
+        typealias Row = SettingsViewController.SettingRow
+        XCTAssertFalse(SettingsViewController.clicksAsItLightsUp(Row.interfaceSound.rawValue))
+        for row in [Row.appIcon, .theme, .sounds, .music, .haptics, .background, .perspective,
+                    .paddleSpeed, .swipeUpToPause, .reset] {
+            XCTAssertTrue(SettingsViewController.clicksAsItLightsUp(row.rawValue), "\(row)")
+        }
+    }
+
+    func testPerspectiveZoomTurnsOffAndOn() throws {
+        let (screen, defaults) = try settings()
+        try tap(.perspective, on: screen)
+        XCTAssertFalse(defaults.bool(forKey: "parallaxSetting"))
+        try tap(.perspective, on: screen)
+        XCTAssertTrue(defaults.bool(forKey: "parallaxSetting"))
+    }
+
+    func testSwipeUpToPauseTurnsOff() throws {
+        let (screen, defaults) = try settings()
+        try tap(.swipeUpToPause, on: screen)
+        XCTAssertFalse(defaults.bool(forKey: "swipeUpPause"))
+    }
+
+    /// The row itself cycles the speed, as it always has; the chevron opens the practice field.
+    func testThePaddleSpeedRowCyclesTheSpeed() throws {
+        let (screen, defaults) = try settings()
+        let before = PaddleSpeed.stored(defaults)
+        try tap(.paddleSpeed, on: screen)
+        XCTAssertNotEqual(PaddleSpeed.stored(defaults), before)
+    }
+
+    /// From the main menu there is no Reset row at all - Reset Game Data was never built - and
+    /// from the pause menu it is Reset Ball.
+    func testResetIsOnlyOfferedMidGame() throws {
+        let (screen, _) = try settings()
+        XCTAssertFalse(screen.settingRows.contains(.reset))
+        screen.navigatedFrom = "PauseMenu"
+        XCTAssertTrue(screen.settingRows.contains(.reset))
+        XCTAssertFalse(screen.settingRows.contains(.appIcon), "nothing that restyles a live game")
+        XCTAssertFalse(screen.settingRows.contains(.theme))
+    }
+}

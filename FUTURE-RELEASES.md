@@ -71,6 +71,15 @@ held back for a release that would follow immediately after. The foundations sti
 first within it, for the reason argued above: the player-visible work lands on top of
 them.
 
+### Where it stands (25 September 2026)
+
+Phases 1 to 4 below are done, and phase 5 is under way: 1.3 has been on TestFlight for internal
+testers since 19 September, and the first build for **external testers** went to Beta App Review
+on 25 September. What remains before submission is James's play-testing of that build and the
+three items still open in ENDLESS-2 §12.0 (the iPad window resize and the paddle-speed field seen
+on a device, and Aimed Sticky's sounds). Everything not built for 1.3 is listed in **1.4** below.
+The plan that follows is kept as it was written.
+
 ### The road to release (planned 13 August 2026, ~5-6 weeks out)
 
 Target: submit alongside iOS 27, late September. Phases in order, each with an exit

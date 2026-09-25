@@ -837,6 +837,26 @@ final class EndlessIINeighbourTests: XCTestCase {
                        "the armour alone is still armour")
     }
 
+    /// Round 345's mutation run: every face test put the brick at the origin, where
+    /// `ball.x - brick.x` and `ball.x + brick.x` are the same number - so the sign could have
+    /// been wrong and nothing would have said so. A brick out in the field, and the ball on each
+    /// of its four sides.
+    func testFacesAreMeasuredFromWhereTheBrickIs() {
+        let centre = CGPoint(x: 120, y: -80)
+        let rect = CGRect(x: centre.x - 20, y: centre.y - 10, width: 40, height: 20)
+        let cases: [(CGPoint, EndlessIISide)] = [
+            (CGPoint(x: centre.x, y: centre.y + 16), .top),
+            (CGPoint(x: centre.x, y: centre.y - 16), .bottom),
+            (CGPoint(x: centre.x - 26, y: centre.y), .left),
+            (CGPoint(x: centre.x + 26, y: centre.y), .right),
+        ]
+        for (ball, side) in cases {
+            XCTAssertEqual(EndlessIIImpact.side(ballAt: ball, brickAt: centre,
+                                                brickSize: rect.size), side, "\(side)")
+            XCTAssertEqual(EndlessIIImpact.faces(ballAt: ball, brick: rect), [side], "\(side)")
+        }
+    }
+
     /// "For the portal animation, remove the purple circle that shows up where the ball
     /// contacts the brick."
     func testAPortalJumpDrawsNoRings() {

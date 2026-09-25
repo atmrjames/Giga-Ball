@@ -164,6 +164,14 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         // Last, so every row that already existed keeps the number the switches below read
     }
 
+    /// Whether a row clicks the moment it lights up, before the tap has changed anything.
+    ///
+    /// Every row but UI Sound, which clicks in `didSelect` once it has flipped - so it is heard
+    /// turning on and not turning off (James, round 342). Named so the rule can be tested.
+    static func clicksAsItLightsUp(_ row: Int) -> Bool {
+        row != SettingRow.interfaceSound.rawValue
+    }
+
     var settingRows: [SettingRow] {
         var rows: [SettingRow] = [.appIcon, .theme]
         if navigatedFrom == "PauseMenu" { rows = [] }
@@ -866,7 +874,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         if hapticsSetting {
             interfaceHaptic.impactOccurred()
         }
-        if settingRow(for: indexPath) != SettingRow.interfaceSound.rawValue {
+        if SettingsViewController.clicksAsItLightsUp(settingRow(for: indexPath)) {
             InterfaceSound.click()
         }
         // **Except the UI Sound row, which speaks for itself in didSelect** (James, round 342:

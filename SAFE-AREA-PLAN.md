@@ -1,5 +1,10 @@
 # Safe-area layout rewrite — plan
 
+**Status: done, and historical (August 2026).** The rewrite landed early in 1.3 and has been
+built on since; `GameSceneLayout` is where the geometry lives now, and SPECIFICATION.md §4 is
+where it is described as it stands - including the window-following game view of round 342,
+which this plan did not foresee. Kept for the reasoning, and for the measured baselines.
+
 Design note for the 1.3 layout work. Written before any code so the geometry is
 agreed in plain English first.
 
