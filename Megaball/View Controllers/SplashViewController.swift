@@ -109,7 +109,7 @@ enum ResumeCard {
             let challenge = DailyChallengeGenerator.challenge(forKey: key)
             lines.mode = GameMode.daily.name + "\n" + session.displayName(forKey: key).capitalized
             lines.badge = .daily
-            var detail = [challenge.mode == .classic
+            let detail = [challenge.mode == .classic
                           ? packs.levelNameArray[game.levelNumber]
                           : challenge.mode.name]
             // **"Daily Challenge" and the day, then what is being played** (round 341), which
