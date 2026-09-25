@@ -484,14 +484,21 @@ class SettingsTableViewCell: UITableViewCell {
     /// nothing else.
     // MARK: - The arrow at the right edge (round 348)
 
-    /// How far an arrow button reaches past the card's right edge. The glyph is 20 points in a
-    /// 56-point target, so hanging the target 8 points out puts the glyph's right edge 10 in
-    /// from the card - the inset the state label has always had - while the target stays big.
-    static let arrowOverhang: CGFloat = 8
+    /// How far in from the card's right edge the settings screen's right-hand column sits: the
+    /// arrows, and the on/off states under them, on one line.
+    ///
+    /// **Twenty points** (James, round 349: "arrows in settings are too close to the right edge,
+    /// add larger padding"). Round 348 put the arrows ten in, the inset the state label had always
+    /// had; the states moved in with them so the column still lines up.
+    static let rightColumnInset: CGFloat = 20
 
-    /// The state label's inset from the card's right edge: its own 10 points, or clear of an
-    /// arrow when the row has one.
-    static let stateInsetBesideAnArrow: CGFloat = 46
+    /// How far an arrow button reaches past the card's right edge. The glyph is about 20 points
+    /// in a 56-point target, so its right edge sits 18 in from the target's; this puts it at
+    /// `rightColumnInset` while the target stays big. Negative: the target sits inside the card.
+    static let arrowOverhang: CGFloat = 18 - rightColumnInset
+
+    /// The state label's inset beside an arrow: clear of the glyph, with a gap.
+    static let stateInsetBesideAnArrow: CGFloat = rightColumnInset + 30
 
     /// Moves the row's state ("on", "off", a speed) left of an arrow, or back to the edge.
     /// Called for every row, because cells are reused and a row with no arrow must not keep
@@ -501,7 +508,7 @@ class SettingsTableViewCell: UITableViewCell {
             $0.firstItem === cellView2 && $0.firstAttribute == .trailing
                 && $0.secondItem === settingState && $0.secondAttribute == .trailing
         }
-        tie?.constant = arrow ? Self.stateInsetBesideAnArrow : 10
+        tie?.constant = arrow ? Self.stateInsetBesideAnArrow : Self.rightColumnInset
     }
 
     func setPressed(_ pressed: Bool, colour: UIColor, duration: TimeInterval) {
