@@ -112,11 +112,18 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
     /// **James, round 339: "reduce the size of the game mode logo as needed to allow content
     /// to fit better when the window is small."** On a 320 by 568 phone this badge was 190
     /// points of a 568-point screen and the card under it was clipped to its own icon.
+    /// **Two thirds of the other mode menus' badge** (James, round 351: "reduce the size of the
+    /// Daily Challenge icon at the top"). This screen has a card, a date row and a play row
+    /// under its badge where the others have a list that scrolls under theirs, so it has the
+    /// least room of the four to give a picture.
+    static let logoShare: CGFloat = 2.0/3
+
     private func sizeTheModeLogoForTheScreen() {
         let height = view.safeAreaLayoutGuide.layoutFrame.height
         guard height > 0, abs(height - modeLogoHeightSeen) > 0.5 else { return }
         modeLogoHeightSeen = height
-        let side = UIViewController.menuModeLogoSize(forHeight: height)
+        let side = (UIViewController.menuModeLogoSize(forHeight: height)
+                    * DailyChallengeViewController.logoShare).rounded()
         for constraint in modeLogoSize where abs(constraint.constant - side) > 0.5 {
             constraint.constant = side
         }
@@ -410,9 +417,9 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
         // narrower than the window on an iPad.
 
         let modeLogoWidth = modeIcon.widthAnchor.constraint(
-            equalToConstant: UIViewController.menuModeLogoSize)
+            equalToConstant: UIViewController.menuModeLogoSize*DailyChallengeViewController.logoShare)
         let modeLogoHeight = modeIcon.heightAnchor.constraint(
-            equalToConstant: UIViewController.menuModeLogoSize)
+            equalToConstant: UIViewController.menuModeLogoSize*DailyChallengeViewController.logoShare)
         modeLogoSize = [modeLogoWidth, modeLogoHeight]
         // Held so the badge can shrink on a screen with no room for it - see
         // `sizeTheModeLogoForTheScreen`
@@ -609,6 +616,19 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
     /// been played show the current high score from the game centre leaderboard in the container
     /// just above the play button. Once it has been played, show the player's score and rank like
     /// now and add the game centre leaderboard hi score").
+    /// Writes a closed day's top score onto its record, the one time it can be asked for.
+    ///
+    /// Only a closed day - today's board is still moving - and only a day the player has a
+    /// record for, so looking at a day does not invent a day played (round 351).
+    private func keepTheClosingBest(_ best: Int, forKey key: String) {
+        guard key != DailyChallengeSession.shared.todayKey,
+              var record = totalStatsArray[0].dailyRecord(forKey: key),
+              record.closingBoardBest != best else { return }
+        record.closingBoardBest = best
+        totalStatsArray[0].upsertDailyRecord(record)
+        saveData()
+    }
+
     private func askForTheBoardsBest() {
         let key = viewedKey
         guard boardBestsRequested.contains(key) == false,
@@ -619,6 +639,7 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
         GameCenterHandler().loadDailyBoardBest(forKey: key) { [weak self] best in
             guard let self, let best else { return }
             self.boardBests[key] = best
+            self.keepTheClosingBest(best, forKey: key)
             self.days.reloadData()
         }
     }
@@ -837,7 +858,8 @@ extension DailyChallengeViewController: UICollectionViewDataSource,
         cell.card.show(key: key, isToday: isToday,
                        record: totalStatsArray[0].dailyRecord(forKey: key),
                        standing: isToday ? todayStanding : nil,
-                       boardBest: boardBests[key])
+                       boardBest: boardBests[key]
+                           ?? totalStatsArray[0].dailyRecord(forKey: key)?.closingBoardBest)
         cell.card.twistTapped = { [weak self] twist in self?.explain(twist) }
         cell.card.twistsExplainerTapped = { [weak self] in self?.explainTheDaysTwists(on: key) }
         // The card lists the day's twists by icon and name only since round 308, so the block

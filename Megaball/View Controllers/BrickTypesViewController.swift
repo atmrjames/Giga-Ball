@@ -123,7 +123,19 @@ class BrickTypesViewController: UIViewController, UITableViewDelegate, UITableVi
         limitMenuContentSize()
         alignCloseButtonWithReturnToGame(backButtonCollectionView)
         // In to the narrow position when the big play is here (round 176) - see the helper
+        if let grid, abs(grid.bounds.width - gridLaidOutAt) > 0.5 {
+            gridLaidOutAt = grid.bounds.width
+            grid.collectionViewLayout.invalidateLayout()
+        }
+        // **The squares follow the window** (James, round 351, from an iPad: "gap between grid
+        // cells when app is at certain widths"). Their size is worked out from the grid's
+        // width, and a flow layout keeps the sizes it was given until it is told otherwise - so
+        // a window dragged narrower kept three squares too wide to sit three across, and the
+        // layout put two on each line and spread them to the edges
     }
+
+    /// The grid width the squares were last sized for.
+    private var gridLaidOutAt: CGFloat = 0
 
     // MARK: - The list
 

@@ -83,7 +83,7 @@ final class GameBackgroundTests: XCTestCase {
                 XCTAssertNotEqual(background, .classic)
                 XCTAssertNotNil(UIImage(named: named),
                                 "\(background.name) names an asset that is not in the bundle")
-            case .solid, .gradient, .glow, .clouds, .greenGradient, .sunsetGradient:
+            case .solid, .gradient, .glow, .clouds, .greenGradient:
                 XCTAssertNotEqual(background, .classic)
             }
         }
@@ -212,103 +212,14 @@ final class GameBackgroundTests: XCTestCase {
     }
 }
 
-/// The sunset, and the one thing it has to get right.
-///
-/// **James, round 334: "new sunset game background that goes from dark purple to dark blue to
-/// lighter blue to white to orange, pink and red, just like a sunset."** The order is his. What
-/// the game adds is where the bright part falls: the bricks are white and the field fills the
-/// upper two thirds, so a sky that turns pale up there is a sky that hides the bricks.
+/// James, round 351: "New sunset background in File Sharing." His artwork replaces the seven
+/// stops round 334 drew from his description of one.
 final class SunsetBackgroundTests: XCTestCase {
 
-    private func luminance(_ colour: UIColor) -> CGFloat {
-        var red: CGFloat = 0, green: CGFloat = 0, blue: CGFloat = 0, alpha: CGFloat = 0
-        colour.getRed(&red, green: &green, blue: &blue, alpha: &alpha)
-        return 0.2126*red + 0.7152*green + 0.0722*blue
-    }
-
-    func testTheStopsAreSevenAndInOrder() {
-        let stops = GameBackground.sunsetStops(paddleFraction: 0.22)
-        XCTAssertEqual(stops.colours.count, 7, "purple, two blues, the haze, orange, pink, red")
-        XCTAssertEqual(stops.locations.count, stops.colours.count)
-        XCTAssertEqual(stops.locations, stops.locations.sorted(),
-                       "a gradient given locations out of order draws nothing at all")
-        XCTAssertEqual(stops.locations.first, 0)
-        XCTAssertEqual(stops.locations.last, 1)
-    }
-
-    /// Everything the field is drawn against holds a white brick at three to one or better.
-    ///
-    /// Three to one is the bar for large shapes, and a brick is a large shape. Measured as a
-    /// contrast ratio rather than against a brightness somebody picked: the question is whether
-    /// a white brick reads, and that is what a ratio answers.
-    func testTheSkyBehindTheBricksHoldsAWhiteBrick() {
-        for fraction in [0.14, 0.22, 0.3] as [CGFloat] {
-            let stops = GameBackground.sunsetStops(paddleFraction: fraction)
-            let paddle = 1 - fraction
-            for (colour, location) in zip(stops.colours, stops.locations)
-            where location < paddle - 0.14 {
-                let ratio = (1 + 0.05)/(luminance(colour) + 0.05)
-                XCTAssertGreaterThanOrEqual(ratio, 3,
-                    "a white brick \(location) of the way down is drawn against this, at "
-                    + String(format: "%.2f", ratio) + " to one")
-            }
+    func testTheSunsetIsJamessPicture() {
+        guard case .picture(let named) = GameBackground.sunset.paint else {
+            return XCTFail("the sunset is drawn rather than James's artwork")
         }
-    }
-
-    /// And the glare sits above the paddle rather than behind it.
-    func testTheBrightestBandIsAboveThePaddle() {
-        let fraction: CGFloat = 0.22
-        let stops = GameBackground.sunsetStops(paddleFraction: fraction)
-        let paddle = 1 - fraction
-        guard let brightest = zip(stops.colours, stops.locations)
-            .max(by: { luminance($0.0) < luminance($1.0) }) else {
-            return XCTFail("no stops")
-        }
-        XCTAssertLessThan(brightest.1, paddle,
-                          "the paddle is white, and a white paddle on the palest band of the "
-                          + "sky is the one thing here that has to be read at a glance")
-    }
-
-    /// What the white ball costs at the horizon, written down on purpose.
-    ///
-    /// The paddle has a test of its own above: the glare never sits behind it. The ball has no
-    /// such guarantee - it goes wherever it is hit - so it crosses the palest band of the sky
-    /// several times a run, and for those moments a white ball is a white ball on light sand.
-    ///
-    /// That is why the haze is 214, 193, 160 rather than the white James named: pure white
-    /// would be a ratio of 1.00, which is not low contrast but no contrast. This pins the
-    /// number the compromise landed on, so the day somebody brightens the sunset they find out
-    /// here rather than in a play test.
-    func testTheHazeKeepsTheBallVisibleCrossingIt() {
-        func contrast(_ a: UIColor, _ b: UIColor) -> CGFloat {
-            func channel(_ c: CGFloat) -> CGFloat {
-                c <= 0.03928 ? c/12.92 : pow((c + 0.055)/1.055, 2.4)
-            }
-            func relative(_ colour: UIColor) -> CGFloat {
-                var r: CGFloat = 0, g: CGFloat = 0, bl: CGFloat = 0, al: CGFloat = 0
-                colour.getRed(&r, green: &g, blue: &bl, alpha: &al)
-                return 0.2126*channel(r) + 0.7152*channel(g) + 0.0722*channel(bl)
-            }
-            let one = relative(a), two = relative(b)
-            return (max(one, two) + 0.05) / (min(one, two) + 0.05)
-        }
-
-        let ratio = contrast(.white, GameBackground.sunsetHaze)
-        XCTAssertGreaterThan(ratio, 1.6,
-                             "the ball would be invisible crossing the horizon")
-        XCTAssertLessThan(ratio, 2.2,
-                          "if this has risen, the haze is no longer the warm glare James asked "
-                          + "for and the sunset has lost its sun")
-    }
-
-    /// A short screen still gets a gradient rather than a black rectangle.
-    func testAnUnusuallyShortScreenStillDraws() {
-        for fraction in [0.0, 0.5, 0.9, 1.0] as [CGFloat] {
-            let stops = GameBackground.sunsetStops(paddleFraction: fraction)
-            XCTAssertEqual(stops.locations, stops.locations.sorted(), "\(fraction)")
-            XCTAssertNotNil(GameBackground.gradientImage(size: CGSize(width: 40, height: 80),
-                                                         paddleFraction: fraction,
-                                                         flavour: .sunset))
-        }
+        XCTAssertNotNil(UIImage(named: named))
     }
 }

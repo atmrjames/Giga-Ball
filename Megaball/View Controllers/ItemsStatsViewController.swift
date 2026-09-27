@@ -78,7 +78,39 @@ class ItemsStatsViewController: UIViewController, UITableViewDelegate, UITableVi
 
         installReturnToGameButton()
         // The way back into a paused run, from wherever this screen was reached
+        letTheTableGiveWay()
         showAnimate()
+    }
+
+    /// Makes the rows the part of the page that gives way in a short window.
+    ///
+    /// **James, round 351, from an iPad: "when expanding window tall and then back down to short
+    /// on the individual item views, the UI can disappear - the only way out is to restart the
+    /// app".** The page is a column pinned top and bottom - picture, name, description, rows,
+    /// close button - and nothing in it was allowed to be shorter than it wanted, so a window
+    /// too short for all of it had to break a constraint, and which one it broke was up to
+    /// Auto Layout: the name shrank to a sliver, the description to nothing, and sometimes the
+    /// close button went off the bottom and took the way out with it. Now the name and the
+    /// description hold their size, the picture may give up a third of its own, and the table
+    /// takes what is left and scrolls when that is not enough.
+    private func letTheTableGiveWay() {
+        for label in [titleLabel, descriptionLabel] {
+            label?.setContentCompressionResistancePriority(.required, for: .vertical)
+        }
+        statsTableView.setContentCompressionResistancePriority(.defaultLow, for: .vertical)
+        statsTableView.isScrollEnabled = true
+        if let pictureHeight = powerUpImage.constraints.first(where: {
+            $0.firstAttribute == .height && $0.secondItem == nil
+        }) {
+            pictureHeight.isActive = false
+            let wanted = powerUpImage.heightAnchor.constraint(equalToConstant: pictureHeight.constant)
+            wanted.priority = .defaultHigh
+            NSLayoutConstraint.activate([
+                wanted,
+                powerUpImage.heightAnchor.constraint(
+                    greaterThanOrEqualToConstant: pictureHeight.constant*2/3),
+            ])
+        }
     }
 
     override func viewDidLayoutSubviews() {
@@ -152,13 +184,31 @@ class ItemsStatsViewController: UIViewController, UITableViewDelegate, UITableVi
             // about a rule
         }
         if sender == "Power-Ups" {
-            return mayhemOnlyPowerUp ? 6 : 5
-            // The sixth row is the "Found in" line, and it only exists for the power-ups that
-            // are not found everywhere. Counted rather than added and hidden, because a hidden
-            // row on this screen works by zeroing the whole table's row height
+            return powerUpRows.count
         } else {
             return 1
         }
+    }
+
+    /// The power-up page's rows that have something to say, by their numbers in `cellForRowAt`.
+    ///
+    /// **Left out rather than hidden** (James, round 351: "individual item views - some empty
+    /// cells appear and various sizes"). A row with nothing to show - no multiplier, no
+    /// duration, a power-up never released - used to be built and then hidden by setting the
+    /// *whole table's* row height to nothing, while every other row set it back to forty-two.
+    /// Whichever cell was drawn last decided the height of all of them, so a blank row stood
+    /// at full height above the real ones, or the real ones collapsed, depending on scrolling
+    /// and on the window's size.
+    private var powerUpRows: [Int] {
+        guard let index = passedIndex, totalStatsArray.isEmpty == false else { return [] }
+        let setup = LevelPackSetup()
+        var rows: [Int] = []
+        if setup.powerUpMultiplierArray[index].isEmpty == false { rows.append(0) }
+        if setup.powerUpTimerArray[index].isEmpty == false { rows.append(1) }
+        rows += [2, 3]
+        if totalStatsArray[0].powerupsGenerated[index] > 0 { rows.append(4) }
+        if mayhemOnlyPowerUp { rows.append(5) }
+        return rows
     }
 
     /// Whether the power-up being shown only exists in Endless Mayhem.
@@ -185,7 +235,9 @@ class ItemsStatsViewController: UIViewController, UITableViewDelegate, UITableVi
         // guard that says so rather than a branch that builds something
 
         if sender == "Power-Ups" {
-            switch indexPath.row {
+            let rows = powerUpRows
+            guard rows.indices.contains(indexPath.row) else { return cell }
+            switch rows[indexPath.row] {
             case 0:
                 if LevelPackSetup().powerUpMultiplierArray[passedIndex!] == "" {
                     hideCell(cell: cell)
@@ -320,8 +372,9 @@ class ItemsStatsViewController: UIViewController, UITableViewDelegate, UITableVi
     func hideCell(cell: StatsTableViewCell) {
         cell.statValue.text = ""
         cell.statDescription.text = ""
-        statsTableView.rowHeight = 0.0
     }
+    // No longer reached for a power-up (`powerUpRows` leaves those rows out), and it no longer
+    // touches the table's row height, which is the whole table's and not this cell's
     
     func userSettings() {
         soundsSetting = defaults.bool(forKey: "soundsSetting")

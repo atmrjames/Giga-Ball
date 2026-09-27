@@ -2678,6 +2678,39 @@ testing." What it found and did:
   touches its play arrow on the main menu, and the daily pause loses its FREE PLAY line; a first
   run in a mode reads New Hi-Score 0m over Previous Hi-Score 0m.
 
+**Round 351: James's notes on round 350, the website review, and the iPad in a window.**
+
+- **Settings:** UI Sound, In-Game Sound, Music, in that order, with James's own icons for both
+  sound rows. **No Breaks** shows his struck-through pause button rather than hiding the button.
+  **Sunset** is his picture now, and the seven drawn stops of round 334 are gone with their tests.
+  **Infill and Spawner** (one recording) are 8 dB louder, peaking at -3.9 dBFS.
+- **Glow and Clouds** are drawn by a shader rather than a stretched 256-pixel picture: a gaussian
+  that reaches nothing at its rim, grain hashed per screen pixel, each blob fading in and out on
+  its own period, and more of them scattered more widely. The picker's still gets the same grain
+  from a seeded tile.
+- **Smaller things:** "Level 3" in the pack's rows wears the Level Hi-Score caption's style; the
+  daily's date lines are drawn at 0.85 of their label; the GAME CENTER caption is held clear of
+  the balls or time line while that line shows; the lime daily card letters its posted badge in
+  purple too, and turns lime on a closed day the player led, judged against the day's top score
+  kept on the record (`closingBoardBest`) because Game Center forgets a day after two; the pale
+  pop-up buttons are lettered off-white on glass, where the dark purple vanished on an iPhone 17.
+- **iPad in a window:** the game view narrows to the play zone however narrow the window, the
+  HUD following the edges (`placeTheHUDAcross`), and the pause button steps past the window's
+  controls, measured through iPadOS 26's corner-adapted safe area. The main menu's gaps give way
+  together in a short window, with equal room above and below the rows, and the cards shrink to
+  54 points before any is clipped; the names stop at the play arrow. The Bricks grid resizes with
+  its window. An item page leaves out rows it has nothing for, rather than zeroing the whole
+  table's row height, and a glass panel's fitted bottom is only wanted now - as a requirement it
+  held the table at a tall window's height when the window shrank, and crushed the page's name,
+  description and close button to nothing. The background preview keeps the play zone's shape,
+  sitting by the dots and the close button. The paddle-speed field is never taller than the play
+  area and its scene is rebuilt when the play area changes size. The daily's badge is two thirds
+  of the other menus', and each day's card scrolls inside its page instead of being squeezed -
+  which is also why the iPhone SE's card had been dropping its level line and twists.
+- **The website:** James's wording throughout, the TestFlight link live, bricks and power-ups
+  above the daily, the neutral power-ups out of Helpful and Harmful, shorter Other Changes and
+  What Comes After, a Classic Mode shot for the iPad. Committed in the site's clone, not pushed.
+
 **Open after round 344:**
 
 | Item | What is known |

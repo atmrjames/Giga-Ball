@@ -38,12 +38,15 @@ class StatsTableViewCell: UITableViewCell {
         contentView.addSubview(divider)
         NSLayoutConstraint.activate([
             divider.leadingAnchor.constraint(equalTo: statDescription.leadingAnchor),
-            divider.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
+            divider.trailingAnchor.constraint(equalTo: statValue.trailingAnchor),
             divider.bottomAnchor.constraint(equalTo: contentView.bottomAnchor),
             divider.heightAnchor.constraint(equalToConstant: 1),
         ])
         // Inset to where the words start rather than run wall to wall, which is what makes a
-        // divider read as a separation between two rows instead of as another edge
+        // divider read as a separation between two rows instead of as another edge. **And it
+        // ends where the figures end** (James, round 351: "cell divider lines appear to extend
+        // beyond the right edge of the table view"): it stopped sixteen points from the cell's
+        // edge, and the glass panel behind the table stops twenty in
     }
 
     /// Whether this row draws a line under itself. The last one in a table does not.

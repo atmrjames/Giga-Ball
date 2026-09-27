@@ -123,8 +123,6 @@ enum GameBackground: Int, CaseIterable {
         case glow
         /// A vertical fade like `gradient`, in Giga-Ball green rather than purple.
         case greenGradient
-        /// The sky at sunset: night at the top, the last of the light at the paddle line.
-        case sunsetGradient
         /// The fade with cloud drifting across it - two layers at two speeds.
         ///
         /// The only background that moves, which is the whole of it: everything else here is
@@ -145,7 +143,10 @@ enum GameBackground: Int, CaseIterable {
         case .clouds: return .clouds
         case .prism: return .picture("backgroundPrism")
         case .deepGreen: return .greenGradient
-        case .sunset: return .sunsetGradient
+        case .sunset: return .picture("backgroundSunset")
+        // **James's own artwork since round 351**, replacing the seven stops round 334 drew
+        // from his description. A picture like Deep Blue, so it scales to the field the way
+        // Deep Blue does
         }
     }
 
@@ -167,57 +168,6 @@ enum GameBackground: Int, CaseIterable {
         let fraction = min(max(paddleFraction, 0), 1)
         return ([borderPurple, purple, deepPurple], [0, 1 - fraction, 1])
     }
-
-    /// The sunset's seven stops, pinned to the paddle the way the other two gradients are.
-    ///
-    /// **James, round 334: "new sunset game background that goes from dark purple to dark blue
-    /// to lighter blue to white to orange, pink and red, just like a sunset."** That order is
-    /// his, top to bottom, and the only decision left is *where* the light band falls.
-    ///
-    /// **It falls at the paddle, and it has to.** The bricks in this game are white, and the
-    /// field fills the upper two thirds of the screen: a sky that turns pale up there is a sky
-    /// that hides the bricks. So everything above the paddle line is night - the purple, then
-    /// the two blues, each dark enough to leave a white brick reading as a white brick - and
-    /// the horizon's glare sits just above the paddle, where no brick ever reaches. Below it,
-    /// the orange and the pink fall away to a deep red, so the white paddle still has
-    /// something dark to sit against.
-    ///
-    /// Pinning the band to `paddleFraction` rather than to a fixed fraction is the same trick
-    /// the purple gradient has used since it was drawn: the paddle is in a different place on
-    /// every screen shape, and a horizon that drifted up into the field on a short phone would
-    /// take the bricks with it.
-    ///
-    /// **The glare sits a little above the paddle rather than behind it**, which the first
-    /// version got wrong and a screenshot showed: a white paddle on the palest band of the sky
-    /// is the one piece of this that has to be read at a glance, so the haze is pulled up into
-    /// the empty strip under the field and the paddle is left sitting against the orange.
-    static func sunsetStops(paddleFraction: CGFloat) -> (colours: [UIColor],
-                                                         locations: [CGFloat]) {
-        let paddle = min(max(1 - paddleFraction, 0.35), 0.95)
-        let colours = [sunsetNight, sunsetDeepBlue, sunsetBlue, sunsetHaze,
-                       sunsetOrange, sunsetPink, sunsetRed]
-        let locations: [CGFloat] = [0,
-                                    paddle*0.42,
-                                    paddle*0.74,
-                                    max(0, paddle - 0.12),
-                                    max(0, paddle - 0.02),
-                                    min(1, paddle + 0.09),
-                                    1]
-        return (colours, locations.sorted())
-        // Sorted because the two clamps above can cross on an unusually short screen, and a
-        // `CGGradient` given locations out of order draws nothing at all
-    }
-
-    static let sunsetNight = UIColor(red: 20/255, green: 10/255, blue: 40/255, alpha: 1)
-    static let sunsetDeepBlue = UIColor(red: 16/255, green: 32/255, blue: 63/255, alpha: 1)
-    static let sunsetBlue = UIColor(red: 36/255, green: 71/255, blue: 110/255, alpha: 1)
-    static let sunsetHaze = UIColor(red: 214/255, green: 193/255, blue: 160/255, alpha: 1)
-    static let sunsetOrange = UIColor(red: 196/255, green: 86/255, blue: 31/255, alpha: 1)
-    static let sunsetPink = UIColor(red: 142/255, green: 34/255, blue: 70/255, alpha: 1)
-    static let sunsetRed = UIColor(red: 42/255, green: 7/255, blue: 16/255, alpha: 1)
-    // The haze is a warm off-white rather than white: the ball is white, the paddle is white
-    // and the bricks are white, and the one place this background is bright is the one place
-    // all three of them meet
 
     /// The Giga-Ball green, which the glow is made of.
     static let glowGreen = UIColor(red: 210/255, green: 1, blue: 0, alpha: 1)
@@ -308,9 +258,11 @@ enum GameBackground: Int, CaseIterable {
     /// A background that can be *watched* moving is a background competing with the game.
     static let hazeDrift: [(x: CGFloat, y: CGFloat, across: TimeInterval,
                             down: TimeInterval, swell: TimeInterval)] = [
-        (0.055, 0.045, 37, 53, 61),
-        (0.075, 0.035, 43, 29, 47),
+        (0.09, 0.07, 37, 53, 61),
+        (0.10, 0.06, 43, 29, 47),
     ]
+    // Wider than round 299's 0.055 and 0.075 (James, round 351: "make them a bit more random
+    // and disperse within the backgrounds"). Still most of a minute each way
 
     static func hazeImage(size: CGSize, only: Int? = nil) -> UIImage? {
         guard size.width > 0, size.height > 0 else { return nil }
@@ -417,8 +369,93 @@ enum GameBackground: Int, CaseIterable {
     /// Five is enough for the gaps between them to keep making new shapes and few enough that
     /// the pool still reads as one light rather than as a handful of spots. They are drawn
     /// wider than the spacing between them on purpose - a lamp is blobs that overlap.
-    static let hazeBlobsPerPool = 5
+    static let hazeBlobsPerPool = 7
     static let hazeBlobShare: CGFloat = 1.15
+
+    /// How far from its pool's centre a blob may start, as a share of the pool's reach.
+    static let hazeBlobScatter: CGFloat = 0.9
+
+    /// Where each of a pool's blobs starts, how big it is and how much of the light it carries.
+    ///
+    /// **Scattered rather than set round a ring** (James, round 351: "make them a bit more
+    /// random and disperse within the backgrounds"). Round 299 put five blobs evenly round a
+    /// circle, which is a shape an eye finds; seven at seeded random places and sizes read as
+    /// weather. Seeded, so a pool is the same pool every time it is built - a background that
+    /// reshuffled on a rotation would twinkle.
+    static func hazeBlobs(seed: UInt64) -> [(offset: CGPoint, scale: CGFloat, share: CGFloat)] {
+        var state = seed ^ 0x5851F42D4C957F2D
+        func next() -> CGFloat {
+            state = state &* 6364136223846793005 &+ 1442695040888963407
+            return CGFloat((state >> 33) % 100_000)/100_000
+        }
+        return (0..<hazeBlobsPerPool).map { _ in
+            let angle = next()*2*CGFloat.pi
+            let distance = hazeBlobScatter*sqrt(next())
+            return (CGPoint(x: cos(angle)*distance, y: sin(angle)*distance*0.8),
+                    0.6 + next()*0.7,
+                    0.6 + next()*0.8)
+        }
+        // The share averages one, so `hazeBlobStrength` still sets the pool's brightness
+    }
+
+    /// How soft the drawn blobs are, and how much grain runs through them (round 351).
+    ///
+    /// **James: "make the glow and cloud backgrounds higher quality. They look a bit bad. Make
+    /// the glow and clouds sections in the background more diffuse so they fade in and out.
+    /// Add a noise texture to the colour on top of the purple to give it a grainy effect."**
+    /// The blobs were a 256-pixel picture stretched to half a screen, at an alpha of about a
+    /// tenth: an 8-bit channel has perhaps thirty steps left at that strength, and stretched
+    /// that far each step is a visible ring. They are drawn by a shader now - a gaussian that
+    /// falls smoothly to nothing, so there is no edge to find - and the grain is the other half
+    /// of the cure: a light scatter of per-pixel noise breaks up whatever banding is left, which
+    /// is what film grain is for.
+    ///
+    /// `blobSoftness` is the gaussian's rate over the unit disc: at three and a half the light
+    /// is half gone a third of the way out, so a blob is mostly haze and hardly any core.
+    /// `blobGrain` is how far each pixel may stray either side of the smooth value.
+    static let blobSoftness: CGFloat = 3.5
+    static let blobGrain: CGFloat = 0.4
+
+    /// How far a blob fades on its own slow cycle: down to this share of its brightness.
+    static let blobFadeLow: CGFloat = 0.3
+
+    /// A tile of the same grain, for the still pictures the picker draws (round 351).
+    ///
+    /// The scene draws its grain on the GPU, per pixel; a still picture has no shader, so the
+    /// grain is a small seeded tile laid over it with `destinationIn` - each pixel keeps some
+    /// share of its light, which is the same effect as the shader's, drawn once.
+    static let grainTile: UIImage? = {
+        let side = 96
+        var state: UInt64 = 0xA0761D6478BD642F
+        var alpha = [UInt8](repeating: 255, count: side*side)
+        for index in alpha.indices {
+            state = state &* 6364136223846793005 &+ 1442695040888963407
+            let unit = CGFloat((state >> 33) % 100_000)/100_000
+            alpha[index] = UInt8(255*(1 - blobGrain*unit))
+        }
+        guard let provider = CGDataProvider(data: Data(alpha) as CFData),
+              let image = CGImage(width: side, height: side, bitsPerComponent: 8,
+                                  bitsPerPixel: 8, bytesPerRow: side,
+                                  space: CGColorSpaceCreateDeviceGray(),
+                                  bitmapInfo: CGBitmapInfo(rawValue: CGImageAlphaInfo.alphaOnly.rawValue),
+                                  provider: provider, decode: nil, shouldInterpolate: false,
+                                  intent: .defaultIntent) else { return nil }
+        return UIImage(cgImage: image, scale: 3, orientation: .up)
+    }()
+
+    /// A still layer with the grain run through it.
+    static func grained(_ image: UIImage) -> UIImage {
+        guard let tile = grainTile else { return image }
+        let format = UIGraphicsImageRendererFormat.default()
+        format.opaque = false
+        format.scale = image.scale
+        return UIGraphicsImageRenderer(size: image.size, format: format).image { context in
+            image.draw(at: .zero)
+            context.cgContext.setBlendMode(.destinationIn)
+            UIColor(patternImage: tile).setFill()
+            context.cgContext.fill(CGRect(origin: .zero, size: image.size))
+        }
+    }
     /// Each blob carries a share of the pool's strength, since several overlap everywhere.
     ///
     /// **A share, not a multiple.** The blobs blend additively, so three or four of them
@@ -432,17 +469,21 @@ enum GameBackground: Int, CaseIterable {
     /// changing everything about how it moves. 3.4 was tried first and made a bright green
     /// mass, then 0.36 and made nothing at all - two guesses that the measurement would have
     /// saved.
-    static let hazeBlobStrength: CGFloat = 1.55
+    static let hazeBlobStrength: CGFloat = 1.55*5/7
+    // Five blobs' worth of light shared among seven (round 351), so the scatter spreads the
+    // haze rather than brightening it
 
     static func blobDrift(index: Int, seed: UInt64) -> (across: TimeInterval, down: TimeInterval,
-                                                        swell: TimeInterval, phase: TimeInterval) {
+                                                        swell: TimeInterval, phase: TimeInterval,
+                                                        fade: TimeInterval) {
         var state = seed &+ UInt64(index) &* 0x9E3779B97F4A7C15
         func next(_ range: ClosedRange<Double>) -> Double {
             state = state &* 6364136223846793005 &+ 1442695040888963407
             let unit = Double((state >> 33) % 100_000)/100_000
             return range.lowerBound + unit*(range.upperBound - range.lowerBound)
         }
-        return (next(29...53), next(31...61), next(37...67), next(0...20))
+        return (next(29...53), next(31...61), next(37...67), next(0...20), next(17...41))
+        // `fade` (round 351) is how long each blob takes to dim to `blobFadeLow` and come back
     }
 
     /// The pools the haze is made of: where each sits, how far it reaches, and how strong.
@@ -468,7 +509,7 @@ enum GameBackground: Int, CaseIterable {
         guard let base = gradientImage(size: size, paddleFraction: paddleFraction) else {
             return nil
         }
-        guard let haze = hazeImage(size: size) else { return base }
+        guard let haze = hazeImage(size: size).map(grained) else { return base }
 
         return UIGraphicsImageRenderer(size: size).image { _ in
             base.draw(in: CGRect(origin: .zero, size: size))
@@ -538,11 +579,13 @@ enum GameBackground: Int, CaseIterable {
     static let cloudLayers: [(seed: UInt64, blobs: Int, strength: CGFloat,
                               crossing: TimeInterval, evolving: TimeInterval,
                               colour: UIColor)] = [
-        (0xD1B54A32D192ED03, 16, 0.26, 210, 67,
+        (0xD1B54A32D192ED03, 22, 0.21, 210, 67,
          UIColor(red: 120/255, green: 70/255, blue: 165/255, alpha: 1)),
-        (0x2545F4914F6CDD1D, 10, 0.13, 130, 41,
+        (0x2545F4914F6CDD1D, 14, 0.10, 130, 41,
          UIColor(red: 165/255, green: 120/255, blue: 1, alpha: 1)),
     ]
+    // More clouds, each fainter (round 351: "more random and disperse"), so the same amount of
+    // weather is spread over more of the field rather than gathered in a few banks
     // `evolving` is how long each layer takes to swell and thin once (round 297). Neither
     // divides into its own crossing time or into the other's, so the two layers are never in
     // the same state twice in a run - which is what stops a drift on a loop reading as a loop
@@ -559,7 +602,8 @@ enum GameBackground: Int, CaseIterable {
             base.draw(in: CGRect(origin: .zero, size: size))
             for layer in cloudLayers {
                 cloudImage(size: size, seed: layer.seed, blobs: layer.blobs,
-                           tint: layer.colour, strength: layer.strength)?
+                           tint: layer.colour, strength: layer.strength)
+                    .map(grained)?
                     .draw(in: CGRect(origin: .zero, size: size))
             }
         }
@@ -569,8 +613,8 @@ enum GameBackground: Int, CaseIterable {
     ///
     /// UIKit's y runs down the image, so the stops above - measured from the top - are used
     /// as they are, and the paddle's fraction is what gets flipped.
-    /// Which of the three fades to draw. Was a `green: Bool` until the sunset made it three.
-    enum Flavour { case purple, green, sunset }
+    /// Which of the two fades to draw.
+    enum Flavour { case purple, green }
 
     static func gradientImage(size: CGSize, paddleFraction: CGFloat,
                               flavour: Flavour = .purple) -> UIImage? {
@@ -580,7 +624,6 @@ enum GameBackground: Int, CaseIterable {
         switch flavour {
         case .purple: stops = gradientStops(paddleFraction: paddleFraction)
         case .green: stops = greenGradientStops(paddleFraction: paddleFraction)
-        case .sunset: stops = sunsetStops(paddleFraction: paddleFraction)
         }
         // One builder for both, because they are the same picture in two colours - a second
         // copy would be a second place to fix the day the stops move

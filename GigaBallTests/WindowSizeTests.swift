@@ -461,6 +461,40 @@ final class GameViewFollowsTheWindowTests: XCTestCase {
         XCTAssertEqual(size.height, laidOut.height, "and the height every body was built at")
     }
 
+    /// James, round 351: "Still getting black bars at the top and bottom of the game view on
+    /// iPad when it's not necessary. Reduce the width of the purple side bars as needed." A
+    /// narrow window lays out with a compact width, and the HUD it hung off the screen's edges
+    /// used to stop the scene narrowing - purple bars and bands at once.
+    func testACompactLayoutNarrowsAllTheWayToThePlayZone() {
+        let scene = GameScene(size: laidOut)
+        scene.gameWidth = playWidth
+        scene.laidOutSceneSize = laidOut
+        scene.labelSpacing = 10
+        scene.hudHangsOnThePlayZone = false
+        scene.pauseButton.size = CGSize(width: 30, height: 30)
+        XCTAssertEqual(scene.narrowestTheSceneCanBe, playWidth)
+
+        scene.fitTheWindow(CGSize(width: 700, height: 1366))
+        XCTAssertEqual(scene.pauseButton.position.x, -350 + 20 + 15, accuracy: 0.5,
+                       "the pause button comes in with the window's edge")
+        XCTAssertEqual(scene.scoreLabel.position.x, 350 - 20, accuracy: 0.5, "and so does the score")
+        XCTAssertEqual(scene.pauseButtonTouch.position.x, scene.pauseButton.position.x)
+    }
+
+    /// A regular-width layout keeps its HUD on the play zone, however wide the window gets.
+    func testARegularLayoutKeepsItsHUDOnThePlayZone() {
+        let scene = GameScene(size: laidOut)
+        scene.gameWidth = playWidth
+        scene.laidOutSceneSize = laidOut
+        scene.labelSpacing = 10
+        scene.hudHangsOnThePlayZone = true
+        scene.layoutUnit = 30
+        scene.pauseButton.size = CGSize(width: 45, height: 45)
+        scene.fitTheWindow(CGSize(width: 1366, height: 1024))
+        XCTAssertGreaterThan(scene.pauseButton.position.x, -playWidth/2)
+        XCTAssertLessThan(scene.scoreLabel.position.x, playWidth/2)
+    }
+
     /// The scene itself: its size changes, its height and play zone never do.
     func testTheSceneFollowsTheWindowAndBackAgain() {
         let scene = GameScene(size: laidOut)
@@ -550,10 +584,12 @@ final class GameViewFollowsTheWindowTests: XCTestCase {
                                     "the score keeps the margin it was built with")
     }
 
-    /// The HUD sets the limit when it was hung off the screen's edges (a compact width).
+    /// A HUD hung off the screen's edges (a compact width) comes in with them, so it is never
+    /// cut off and never stops the scene narrowing (round 351: "reduce the width of the purple
+    /// side bars as needed to always make the game view as tall as possible").
     func testTheHUDIsNeverCutOff() {
         let scene = GameScene(size: CGSize(width: 402, height: 874))
-        scene.gameWidth = 380
+        scene.gameWidth = 280
         scene.labelSpacing = 10
         scene.laidOutSceneSize = scene.size
         scene.pauseButton.size = CGSize(width: 30, height: 30)
@@ -561,7 +597,8 @@ final class GameViewFollowsTheWindowTests: XCTestCase {
         scene.addChild(scene.pauseButton)
 
         scene.fitTheWindow(CGSize(width: 300, height: 874))
-        XCTAssertGreaterThanOrEqual(scene.size.width/2, 201 - 20 + 20 - 0.5,
+        XCTAssertEqual(scene.size.width, 300, accuracy: 0.5, "narrowed to the window")
+        XCTAssertGreaterThanOrEqual(scene.pauseButton.frame.minX, -scene.size.width/2 + 20 - 0.5,
                                     "the pause button keeps the margin it was built with")
         XCTAssertLessThanOrEqual(scene.size.width, 402, "never wider than it was built")
     }

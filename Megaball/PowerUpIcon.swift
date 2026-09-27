@@ -1416,7 +1416,13 @@ extension DailyTwist {
     /// as a date."** One builder for the level intro, the pause and game-over screens and the
     /// resume card, so the four say it the same way. The symbol takes the line's own colour and
     /// size, so it reads as part of the text rather than as a badge.
-    static func dateLines(forKey key: String, font: UIFont, colour: UIColor) -> NSAttributedString {
+    static func dateLines(forKey key: String, font labelFont: UIFont,
+                          colour: UIColor) -> NSAttributedString {
+        let font = labelFont.withSize((labelFont.pointSize*dateLineScale).rounded())
+        // **A touch smaller than the label it replaces** (James, round 351: "for the daily
+        // challenge date labels, make the font on the in-game views slightly smaller"). Two
+        // lines where the pack's name used to be one, and the level's name below is what
+        // should lead
         let lines = NSMutableAttributedString(
             string: GameMode.daily.name + "\n",
             attributes: [.font: font, .foregroundColor: colour])
@@ -1435,6 +1441,9 @@ extension DailyTwist {
             attributes: [.font: font, .foregroundColor: colour]))
         return lines
     }
+
+    /// How much smaller the date lines are drawn than the label they sit in.
+    static let dateLineScale: CGFloat = 0.85
 
     /// What a day with no twists is called, and its badge.
     ///

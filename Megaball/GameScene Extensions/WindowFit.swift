@@ -57,15 +57,61 @@ extension GameScene {
     /// with the same margin it was given, so the pause button is never left touching the
     /// window's edge. Never wider than the level was laid out, which by definition fitted.
     var narrowestTheSceneCanBe: CGFloat {
-        var half = gameWidth/2
+        min(gameWidth, laidOutSceneSize.width)
+    }
+    // **The play zone alone, on every layout** (James, round 351: "still getting black bars at
+    // the top and bottom of the game view on iPad when it's not necessary. Reduce the width of
+    // the purple side bars as needed to always make the game view as tall as possible").
+    // A narrow iPad window lays out with a compact width, which hangs the pause button and the
+    // score off the *screen's* edges - and this used to stop narrowing there, so a window
+    // thinner than the one the level was built in kept its purple bars and banded top and
+    // bottom instead. The HUD follows the edges now (`placeTheHUDAcross`), so nothing but the
+    // play zone itself sets the limit.
+
+    /// Puts the pause button and the score across the HUD row for the scene's width now.
+    ///
+    /// A regular-width layout hangs them off the play zone, which does not move. A compact one
+    /// hangs them off the scene's edges - so as a window narrows they come in with it, at the
+    /// margin they were first given, rather than being left out past an edge that has moved.
+    ///
+    /// **And the pause button keeps clear of the window's own controls** (James, round 351:
+    /// "pause button in the top left can overlap with the window controls. Shift the pause
+    /// button in to the right a bit when running in multitasking / windowed mode on iPad").
+    /// iPadOS 26 reports how far its controls reach through a corner-adapted safe area; the
+    /// difference from the plain one is their width, and it is zero on a phone and on a
+    /// full-screen iPad, where there are no controls to avoid.
+    func placeTheHUDAcross() {
+        guard laidOutSceneSize.width > 0 else { return }
+        let half = size.width/2
         let margin = labelSpacing*2
-        if pauseButton.parent != nil {
-            half = max(half, -pauseButton.frame.minX + margin)
+        var pauseX: CGFloat
+        let scoreX: CGFloat
+        if hudHangsOnThePlayZone {
+            pauseX = -gameWidth/2 + pauseButton.size.width/2 + layoutUnit/2
+            scoreX = gameWidth/2 - layoutUnit/2
+        } else {
+            pauseX = -half + margin + pauseButton.size.width/2
+            scoreX = half - margin
         }
-        if scoreLabel.parent != nil {
-            half = max(half, scoreLabel.frame.maxX + margin)
+        if let controls = windowControlsEdge {
+            pauseX = max(pauseX, controls + labelSpacing + pauseButton.size.width/2)
         }
-        return min(half*2, laidOutSceneSize.width)
+        pauseButton.position.x = pauseX
+        pauseButtonTouch.position.x = pauseX
+        let scoreShift = scoreX - scoreLabel.position.x
+        scoreLabel.position.x = scoreX
+        multiplierLabel.position.x += scoreShift
+        if dailyClockLabel != nil { showDailyClock() }
+        // The clock is placed against the score and the multiplier every time it is drawn
+    }
+
+    /// Where the window's controls end, in scene coordinates, or nil when there are none.
+    var windowControlsEdge: CGFloat? {
+        guard #available(iOS 26.0, *), let view else { return nil }
+        let adapted = view.edgeInsets(for: .safeArea(cornerAdaptation: .horizontal)).left
+        let plain = view.safeAreaInsets.left
+        guard adapted - plain > 1 else { return nil }
+        return convertPoint(fromView: CGPoint(x: adapted, y: 0)).x
     }
 
     /// Reshapes the scene to a window of `viewSize`, keeping the level as it was built.
@@ -76,6 +122,9 @@ extension GameScene {
         guard laidOutSceneSize.width > 0 else { return }
         let target = GameScene.sizeFilling(viewSize, laidOut: laidOutSceneSize,
                                            narrowest: narrowestTheSceneCanBe)
+        defer { placeTheHUDAcross() }
+        // Every layout, resized or not: the window's controls come and go with windowing, and
+        // a window moved between full screen and a window can keep the same shape
         guard abs(target.width - size.width) > 0.5 || abs(target.height - size.height) > 0.5
         else { return }
 

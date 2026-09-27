@@ -165,6 +165,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	/// The size the scene was when the level was laid out - the height every node and body was
 	/// placed against, which `fitTheWindow` never changes (WindowFit.swift). Zero until then.
 	var laidOutSceneSize: CGSize = .zero
+	/// Whether the pause button and score were hung off the play zone's edges (a regular-width
+	/// layout) or the screen's, decided once when the level was laid out - see `placeTheHUDAcross`.
+	var hudHangsOnThePlayZone = false
 
 	/// The paddle's top overlay (sticky, aimed sticky, grip) and retro's paddle dress. Distinct
 	/// planes, the overlay above - see where they are assigned in `didMove`.
@@ -1111,6 +1114,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     
     let pauseHighlightedTexture: SKTexture = SKTexture(imageNamed: "ButtonPauseHighlighted")
     let pauseTexture: SKTexture = SKTexture(imageNamed: "ButtonPause")
+    let pauseDisabledTexture: SKTexture = SKTexture(imageNamed: "ButtonPauseDisabled")
+    /// The button at rest: the ordinary one, or James's struck-through one on a No Breaks day.
+    var pauseRestingTexture: SKTexture { dailyNoPausing ? pauseDisabledTexture : pauseTexture }
     // Play/pause button textures
 	
 	let iconIncreasePaddleSizeTexture: SKTexture = SKTexture(imageNamed: "ExpandPaddleIcon")
@@ -2141,7 +2147,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 
         pauseButton.size.width = pauseButtonSize
         pauseButton.size.height = pauseButtonSize
-        pauseButton.texture = pauseTexture
+        pauseButton.texture = pauseRestingTexture
 		pauseButton.position.x = -frame.size.width/2 + labelSpacing*2 + pauseButton.size.width/2
 		pauseButton.position.y = frame.size.height/2 - labelSpacing*0.75 - pauseButton.size.height*1.25
 
@@ -2214,6 +2220,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		// borders are wide, so it does not drift out into the border
 
 		laidOutSceneSize = size
+		hudHangsOnThePlayZone = isRegularWidth
 		// Everything above was placed against this size, and the window may change shape
 		// under it from here on - see WindowFit.swift
 
@@ -2246,16 +2253,20 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		pauseButtonTouch.size.height = pauseButtonSize*2.75
 		pauseButtonTouch.position.y = pauseButton.position.y
 		pauseButtonTouch.position.x = pauseButton.position.x
+		placeTheHUDAcross()
+		// The same placement a window resize makes, so a level that starts in a window clears
+		// the window's controls from its first frame
 		pauseButtonTouch.zPosition = 10
         pauseButtonTouch.isUserInteractionEnabled = false
 		// Pause button size and position
 
-		pauseButton.isHidden = dailyNoPausing
 		setupDailyClock()
-		// **Taken off the screen, not merely made inert.** A button that is still drawn and
-		// does nothing reads as a bug, and the twist is announced on the briefing screen
-		// before the run starts - so its absence is a rule the player already knows about
-		// rather than something broken
+		// **On a No Breaks day the button is drawn struck through** (James, round 351: "new
+		// pause button graphic for no breaks twist"). Round 195 took it off the screen, on the
+		// grounds that a control drawn and doing nothing reads as a bug; a control drawn
+		// *disabled* is the other answer, and it says why there is no pause in the one place a
+		// player looks for one. `pauseRestingTexture` picks it; the touch still asks
+		// `dailyPausingIsAllowed` and does nothing
 		
 		endlessGameIcon.isHidden = true
 		// Authored visible in GameScene.sks, so it needs hiding explicitly. It sat in the
@@ -7488,7 +7499,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         isPaused = false
         enumerateChildNodes(withName: "//*") { node, _ in node.isPaused = false }
         iconTimerArray.forEach { $0.isPaused = false }
-        pauseButton.texture = pauseTexture
+        pauseButton.texture = pauseRestingTexture
         pauseButton.size.width = pauseButtonSize
         pauseButton.size.height = pauseButtonSize
         directionMarker.isHidden = true
@@ -9896,11 +9907,6 @@ laserTimer?.invalidate()
 			overlay.colorBlendFactor = 0
 			overlay.color = .clear
 			overlay.texture = gradientBackgroundTexture(size: overlay.size, flavour: .green)
-		case .sunsetGradient:
-			overlay.isHidden = false
-			overlay.colorBlendFactor = 0
-			overlay.color = .clear
-			overlay.texture = gradientBackgroundTexture(size: overlay.size, flavour: .sunset)
 		}
 		background.isHidden = setting != .classic
 	}
@@ -9933,26 +9939,23 @@ laserTimer?.invalidate()
 		for (pool, drift) in zip(GameBackground.glowPools, GameBackground.hazeDrift) {
 			let reach = overlay.size.width*pool.radius
 			let diameter = reach*GameBackground.hazeBlobShare
-			guard let image = GameBackground.softBlobImage(diameter: 256,
-														   colour: pool.colour) else { continue }
-			let texture = SKTexture(image: image)
-			// One texture per pool, scaled per blob - see `softBlobImage`
+			let shader = GameScene.backgroundBlobShader(colour: pool.colour)
+			// One shader per pool, shared by its blobs - see `backgroundBlobShader`
 
 			let centre = CGPoint(
 				x: overlay.position.x - overlay.size.width*(overlay.anchorPoint.x - pool.centre.x),
 				y: overlay.position.y - overlay.size.height*(overlay.anchorPoint.y - pool.centre.y))
 
-			for index in 0..<GameBackground.hazeBlobsPerPool {
+			for (index, placed) in GameBackground.hazeBlobs(seed: pool.seed).enumerated() {
 				let own = GameBackground.blobDrift(index: index, seed: pool.seed)
-				let angle = CGFloat(index)/CGFloat(GameBackground.hazeBlobsPerPool)*2*CGFloat.pi
-				let spread = reach*0.42
 
-				let blob = SKSpriteNode(texture: texture)
-				blob.size = CGSize(width: diameter, height: diameter*0.78)
+				let blob = backgroundBlob(shader: shader)
+				blob.size = CGSize(width: diameter*placed.scale, height: diameter*0.78*placed.scale)
 				// Squashed, so a pool lies across the field rather than sitting in it as a ball
-				blob.position = CGPoint(x: centre.x + cos(angle)*spread,
-										y: centre.y + sin(angle)*spread*0.72)
-				blob.alpha = pool.strength*GameBackground.hazeBlobStrength
+				blob.position = CGPoint(x: centre.x + placed.offset.x*reach,
+										y: centre.y - placed.offset.y*reach)
+				let strength = pool.strength*GameBackground.hazeBlobStrength*placed.share
+				blob.alpha = strength
 				blob.blendMode = .add
 				blob.zPosition = overlay.zPosition + 0.01
 				addChild(blob)
@@ -9974,11 +9977,12 @@ laserTimer?.invalidate()
 				let swell = SKAction.sequence([
 					.scale(to: 1.35, duration: own.swell),
 					.scale(to: 0.8, duration: own.swell)])
+				let fade = GameScene.blobFade(from: strength, over: own.fade)
 				for action in [across, down, swell] { action.timingMode = .easeInEaseOut }
 
 				blob.run(.sequence([.wait(forDuration: own.phase),
 									.group([.repeatForever(across), .repeatForever(down),
-											.repeatForever(swell)])]))
+											.repeatForever(swell), .repeatForever(fade)])]))
 				// Started at its own offset into the cycle, or every blob in a pool would set
 				// off in the same direction at the same moment and the pool would breathe as
 				// one thing again - which is the fault being fixed
@@ -9994,9 +9998,7 @@ laserTimer?.invalidate()
 	/// picture read as depth.
 	private func addBackgroundClouds(over overlay: SKSpriteNode) {
 		for layer in GameBackground.cloudLayers {
-			guard let image = GameBackground.softBlobImage(diameter: 256,
-														   colour: layer.colour) else { continue }
-			let texture = SKTexture(image: image)
+			let shader = GameScene.backgroundBlobShader(colour: layer.colour)
 
 			for index in 0..<layer.blobs {
 				let own = GameBackground.blobDrift(index: index, seed: layer.seed)
@@ -10007,9 +10009,10 @@ laserTimer?.invalidate()
 				}
 
 				let width = overlay.size.width*(0.34 + next()*0.42)
-				let cloud = SKSpriteNode(texture: texture)
+				let cloud = backgroundBlob(shader: shader)
 				cloud.size = CGSize(width: width, height: width*(0.34 + next()*0.20))
-				cloud.alpha = layer.strength*(0.55 + next()*0.6)
+				let strength = layer.strength*(0.55 + next()*0.6)
+				cloud.alpha = strength
 				cloud.blendMode = .add
 				cloud.zPosition = overlay.zPosition + 0.01
 
@@ -10041,15 +10044,77 @@ laserTimer?.invalidate()
 				let bob = SKAction.sequence([
 					.moveBy(x: 0, y: overlay.size.height*0.05, duration: own.down),
 					.moveBy(x: 0, y: -overlay.size.height*0.05, duration: own.down)])
+				let fade = GameScene.blobFade(from: strength, over: own.fade)
 				for action in [swell, bob] { action.timingMode = .easeInEaseOut }
 				cloud.run(.sequence([.wait(forDuration: own.phase),
-									 .group([.repeatForever(swell), .repeatForever(bob)])]))
+									 .group([.repeatForever(swell), .repeatForever(bob),
+											 .repeatForever(fade)])]))
 				// The stretch is on both axes and in opposite directions, so a blob widens as
 				// it flattens: that is a cloud being drawn out by the wind rather than a circle
 				// getting bigger
 			}
 		}
 	}
+
+	/// One drifting blob, drawn by the shader rather than by its picture.
+	///
+	/// The texture is a few pixels of nothing in particular: the shader draws the whole shape,
+	/// and a texture is only there because a sprite's texture coordinates come with one.
+	private func backgroundBlob(shader: SKShader) -> SKSpriteNode {
+		let blob = SKSpriteNode(texture: GameScene.backgroundBlobCarrier)
+		blob.shader = shader
+		return blob
+	}
+
+	private static let backgroundBlobCarrier = SKTexture(
+		image: GameBackground.softBlobImage(diameter: 4, colour: .white) ?? UIImage())
+
+	/// A blob dimming to `blobFadeLow` of its strength and coming back, on its own period
+	/// (James, round 351: "more diffuse so they fade in and out").
+	static func blobFade(from strength: CGFloat, over period: TimeInterval) -> SKAction {
+		let fade = SKAction.sequence([
+			.fadeAlpha(to: strength*GameBackground.blobFadeLow, duration: period),
+			.fadeAlpha(to: strength, duration: period)])
+		fade.timingMode = .easeInEaseOut
+		return fade
+	}
+
+	/// The shader both moving backgrounds draw their blobs with (round 351).
+	///
+	/// A gaussian over the sprite's unit disc, eased to exactly nothing at the rim, times a
+	/// per-pixel grain hashed from the screen position - so the grain is the same fine size
+	/// however large the blob is drawn, and stays put on the screen while the light moves
+	/// through it, which is how grain on a film behaves. See `GameBackground.blobSoftness`
+	/// for why this replaced a stretched picture.
+	///
+	/// The node's own alpha arrives in `v_color_mix.a`, so the fade and the strengths set on
+	/// the node still work exactly as they did with a texture.
+	static func backgroundBlobShader(colour: UIColor) -> SKShader {
+		var red: CGFloat = 0, green: CGFloat = 0, blue: CGFloat = 0, alpha: CGFloat = 0
+		colour.getRed(&red, green: &green, blue: &blue, alpha: &alpha)
+		return SKShader(source: backgroundBlobShaderSource, uniforms: [
+			SKUniform(name: "u_colour",
+					  vectorFloat3: vector_float3(Float(red), Float(green), Float(blue))),
+			SKUniform(name: "u_softness", float: Float(GameBackground.blobSoftness)),
+			SKUniform(name: "u_grain", float: Float(GameBackground.blobGrain)),
+		])
+	}
+
+	static let backgroundBlobShaderSource = """
+		float grainAt(vec2 p) {
+		    vec3 p3 = fract(vec3(p.xyx) * 0.1031);
+		    p3 += dot(p3, p3.yzx + 33.33);
+		    return fract((p3.x + p3.y) * p3.z);
+		}
+		void main() {
+		    vec2 p = v_tex_coord * 2.0 - 1.0;
+		    float d = dot(p, p);
+		    float body = exp(-d * u_softness) * (1.0 - smoothstep(0.55, 1.0, d));
+		    float grain = 1.0 + u_grain * (grainAt(floor(gl_FragCoord.xy)) * 2.0 - 1.0);
+		    float a = clamp(body * grain, 0.0, 1.0) * v_color_mix.a;
+		    gl_FragColor = vec4(u_colour * a, a);
+		}
+		"""
 
 	/// The borders' purple at the top, the Classic background's purple by the paddle, then
 	/// away to near black at the bottom of the playfield.
@@ -10714,7 +10779,7 @@ laserTimer?.invalidate()
 		countdownStarted = false
 		iconTimerArray.forEach { $0.isPaused = false }
 		// Started again at the moment play does, not at the moment the countdown does
-		pauseButton.texture = pauseTexture
+		pauseButton.texture = pauseRestingTexture
 		pauseButton.size.width = pauseButtonSize
         pauseButton.size.height = pauseButtonSize
 		directionMarker.isHidden = true

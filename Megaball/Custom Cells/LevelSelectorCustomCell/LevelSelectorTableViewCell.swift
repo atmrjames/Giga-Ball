@@ -50,16 +50,24 @@ class LevelSelectorTableViewCell: UITableViewCell {
         // heights show up in the app, they should be in the same font style as the score and
         // heights from the game view")
 
+        levelLabel.font = highScoreTitleLabel.font
+        // **"Level 3" in the caption's style** (James, round 351: "make the Level # text less
+        // prominent so the level name and score stand out better. Use the same style as the
+        // Level Hi-Score label"). Same face and size; the colour follows below
+
         isGlass = SettingsTableViewCell.addGlass(behind: cellView3, cornerRadius: 14) != nil
         if isGlass {
             cellView3.layer.shadowOpacity = 0
-            for label in [levelLabel, levelNameLabel, highScoreLabel] {
+            for label in [levelNameLabel, highScoreLabel] {
                 label?.textColor = SettingsTableViewCell.glassForeground
             }
-            highScoreTitleLabel?.textColor =
-                SettingsTableViewCell.glassForeground.withAlphaComponent(0.6)
-            // The "high score" caption was already the quieter of the pair and stays quieter.
-            // The level thumbnail is a picture of the level and is left alone
+            for caption in [levelLabel, highScoreTitleLabel] {
+                caption?.textColor = SettingsTableViewCell.glassForeground.withAlphaComponent(0.6)
+            }
+            // The two captions quieter than what they label. The level thumbnail is a picture
+            // of the level and is left alone
+        } else {
+            levelLabel.textColor = highScoreTitleLabel.textColor
         }
     }
 

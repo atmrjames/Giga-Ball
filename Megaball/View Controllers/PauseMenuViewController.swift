@@ -1044,10 +1044,21 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
     private weak var livesRow: BallRackView?
     private var livesRowCollapsed: NSLayoutConstraint?
 
+    /// The GAME CENTER caption held clear of the balls line, while there is one.
+    ///
+    /// **James, round 351, with a screenshot: "the time left label overlaps with the game centre
+    /// label".** Only the result line under the caption was held clear of the balls, so the
+    /// caption two points above it was free to slide up underneath them. Not while the line is
+    /// hidden: a hidden line still sits just above the buttons, and holding the caption below
+    /// that left it no room at all.
+    private lazy var captionClearOfTheLives = leaderboardTitle.topAnchor.constraint(
+        greaterThanOrEqualTo: livesLabel.bottomAnchor, constant: 8)
+
     private func collapseLivesLineWhileHidden() {
         if livesCollapsed == nil {
             livesCollapsed = livesLabel.heightAnchor.constraint(equalToConstant: 0)
         }
+        captionClearOfTheLives.isActive = livesLabel.isHidden == false
         livesCollapsed.isActive = livesLabel.isHidden
         livesRow?.isHidden = livesLabel.isHidden
         livesRowCollapsed?.isActive = livesLabel.isHidden

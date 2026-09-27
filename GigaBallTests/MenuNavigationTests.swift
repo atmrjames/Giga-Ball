@@ -1755,6 +1755,15 @@ final class SettingsRowTapTests: XCTestCase {
         XCTAssertFalse(screen.settingRows.contains(.appIcon), "nothing that restyles a live game")
         XCTAssertFalse(screen.settingRows.contains(.theme))
     }
+
+    /// James, round 351: "Re-order settings: In-Game Sound, UI Sound, Music to UI Sound, In-Game
+    /// Sound, Music."
+    func testTheSoundRowsReadUISoundThenInGameSoundThenMusic() throws {
+        let (screen, _) = try settings()
+        let rows = screen.settingRows
+        let sound = try XCTUnwrap(rows.firstIndex(of: .interfaceSound))
+        XCTAssertEqual(Array(rows[sound..<(sound + 3)]), [.interfaceSound, .sounds, .music])
+    }
 }
 
 /// **James, round 346: "Pausing the game, closing the app (not quitting) then re-entering the

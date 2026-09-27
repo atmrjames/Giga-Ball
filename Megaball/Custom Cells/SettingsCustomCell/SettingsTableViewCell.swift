@@ -193,8 +193,9 @@ class SettingsTableViewCell: UITableViewCell {
             $0 is UIVisualEffectView && $0.tag == glassPanelTag
         }) else { return }
         guard let bottom = parent.constraints.first(where: {
-            $0.firstItem === glass && $0.firstAttribute == .bottom
+            $0.firstItem === glass && $0.firstAttribute == .bottom && $0.relation == .equal
         }) else { return }
+        // The equality, not the ceiling this adds below
 
         view.layoutIfNeeded()
         // Content size is stale until the table has laid out the rows it was just given -
@@ -210,6 +211,23 @@ class SettingsTableViewCell: UITableViewCell {
         // bar or the title sits just above it. The padding is for the plain lists (round 76)
         // Counting the padding keeps the panel wrapped around the rows rather than cutting
         // the last one off - and it gives the card a little air inside its own edges
+        if bottom.priority == .required {
+            bottom.isActive = false
+            bottom.priority = .defaultHigh
+            bottom.isActive = true
+            glass.bottomAnchor.constraint(lessThanOrEqualTo: view.bottomAnchor).isActive = true
+        }
+        // **Wanted, not required, and never below the table** (James, round 351, from an iPad:
+        // "when expanding window tall and then back down to short on the individual item views,
+        // the UI can disappear - the only way out is to restart the app"). The slack measured in
+        // a tall window is hundreds of points, and as a required constant it held the table at
+        // least that tall once the window shrank - so the page's name, description and close
+        // button were crushed to nothing to make room, and the next measurement, taken from a
+        // table that could not shrink, found the same slack again. A wanted constant gives way
+        // for that one pass and is corrected on the next; the ceiling keeps the panel inside its
+        // table meanwhile. A priority cannot cross the required boundary on an active constraint,
+        // which is why it is switched off for the change; once changed it is never required
+        // again, so the ceiling is only ever added the once
         guard abs(bottom.constant + slack) > 0.5 else { return }
         // Only when it actually moves. This runs on every layout pass, and changing a
         // constant unconditionally would ask for another one straight back

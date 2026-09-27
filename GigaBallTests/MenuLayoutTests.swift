@@ -166,8 +166,12 @@ final class MenuLayoutTests: XCTestCase {
         XCTAssertEqual(MenuViewController.modeRowHeight(inRoomOf: 495),
                        min(ceiling, 495/4),
                        "and linear in the room between the floor and the ceiling")
-        XCTAssertEqual(MenuViewController.modeRowHeight(inRoomOf: 248), 75,
-                       "and floored at the card inside the cell, or the cards overlap")
+        XCTAssertEqual(MenuViewController.modeRowHeight(inRoomOf: 200),
+                       ModeSelectTableViewCell.smallestRow,
+                       "and floored at the smallest card, or the cards overlap")
+        XCTAssertEqual(MenuViewController.modeRowHeight(inRoomOf: 248), 62,
+                       "James, round 351: a short iPad window's 248 points hold all four, "
+                       + "where a floor at the full 75-point card cut the last one off")
         XCTAssertEqual(MenuViewController.modeRowHeight(inRoomOf: 0), ceiling,
                        "a table with no size yet must not stick at nothing")
     }
@@ -190,7 +194,8 @@ final class MenuLayoutTests: XCTestCase {
         for room in stride(from: 200.0, through: 1200.0, by: 25.0) {
             let menu = MenuViewController.modeRowHeight(inRoomOf: CGFloat(room))
             let total = menu*CGFloat(GameMode.allCases.count)
-            XCTAssertLessThanOrEqual(total, max(CGFloat(room), 300),
+            XCTAssertLessThanOrEqual(total,
+                                     max(CGFloat(room), ModeSelectTableViewCell.smallestRow*4),
                                      "\(room) points of room, \(total) of rows")
         }
     }
@@ -546,5 +551,35 @@ final class PaddleSpeedFieldOnAnIPadTests: XCTestCase {
 
     private func skViews(in view: UIView) -> [SKView] {
         view.subviews.flatMap { ($0 as? SKView).map { [$0] } ?? skViews(in: $0) }
+    }
+}
+
+/// James, round 351, from an iPad window: "main menu cells not centred between bottom icons and
+/// giga-ball logo". The gaps either side of the rows are equal now, and they give way together
+/// in a window too short for them.
+final class MainMenuGapTests: XCTestCase {
+
+    func testTheRowsHaveTheSameRoomAboveAndBelow() {
+        for regular in [false, true] {
+            let gaps = MenuViewController.menuGaps(regular: regular)
+            XCTAssertGreaterThan(gaps.aroundRows, 0)
+        }
+    }
+
+    func testAPhoneKeepsItsGaps() {
+        XCTAssertEqual(MenuViewController.gapScale(height: 874 - 62 - 34, regular: false), 1,
+                       "an iPhone 17 Pro has room for every gap and four full cards")
+    }
+
+    func testAShortWindowGivesItsGapsToTheRows() {
+        let scale = MenuViewController.gapScale(height: 560, regular: true)
+        XCTAssertLessThan(scale, 1)
+        let gaps = MenuViewController.menuGaps(regular: true)
+        let air = (gaps.overLogo + gaps.aroundRows*2 + gaps.underButtons)*scale
+        XCTAssertGreaterThanOrEqual(560 - 95 - air,
+                                    ModeSelectTableViewCell.fullCard*4 - 0.5,
+                                    "the rows get four full cards' room")
+        XCTAssertEqual(MenuViewController.gapScale(height: 200, regular: true), 0.25,
+                       "and the gaps never vanish")
     }
 }

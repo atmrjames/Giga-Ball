@@ -77,10 +77,9 @@ class Playing: GKState {
             guard let self else { return }
             self.scene.scoreLabel.isHidden = false
             self.scene.multiplierLabel.isHidden = false
-            self.scene.pauseButton.isHidden = self.scene.dailyNoPausing
-            // **Not on a No Breaks day** (round 350, seen on the simulator). The scene takes the
-            // button off at setup, and this line put it straight back a third of a second into
-            // the run - drawn and inert, the exact look the twist was built to avoid
+            self.scene.pauseButton.isHidden = false
+            // Shown on a No Breaks day too, wearing the disabled artwork (round 351,
+            // `pauseRestingTexture`)
             self.scene.setLivesRowHidden(false)
             if self.scene.endlessMode {
                 self.scene.showEndlessIIBest()

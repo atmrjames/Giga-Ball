@@ -352,7 +352,7 @@ final class DailyCardView: UIView {
             // **The day's leader before you have played** (James, round 350): the number to
             // beat, where Game Center can say - today and yesterday - and nothing otherwise
         }
-        let leading = standing?.rank == 1
+        let leading = record.leads(rank: isToday ? standing?.rank : nil, boardBest: boardBest)
         dressTheResultCard(leading: leading)
         // **Posted, or nothing** (James, round 306: "for a Daily Challenge where a score is set
         // but not posted, just treat it as if no score was set").
@@ -397,7 +397,11 @@ final class DailyCardView: UIView {
         let line = NSMutableAttributedString()
         let badge = NSTextAttachment()
         badge.image = UIImage(systemName: symbol)?
-            .withTintColor(tint, renderingMode: .alwaysOriginal)
+            .withTintColor(leading ? DailyCardView.onLime : tint, renderingMode: .alwaysOriginal)
+        // **Purple on the lime card too** (James, round 351, with a screenshot: "the posted
+        // score icon is the wrong colour"). An attachment is a picture with its colour baked
+        // in, so the recolouring of the whole line further down never reached it: the badge
+        // stayed lime on lime
         badge.bounds = CGRect(x: 0, y: -3, width: 18, height: 16)
         line.append(NSAttributedString(attachment: badge))
         line.append(NSAttributedString(
@@ -569,14 +573,37 @@ final class DailyCardCell: UICollectionViewCell {
     static let reuseID = "dailyCard"
     let card = DailyCardView()
 
+    /// The page's own scroll, for a window too short to show the whole card.
+    ///
+    /// **James, round 351, from an iPad: "the daily challenge menu struggles when being resized.
+    /// Elements shift around, disappear, move partially off the screen, get truncated ... allow
+    /// page to scroll similar to the other game mode menu views if needed to fit content".** The
+    /// card hung from the top of its page and could be no taller than it, so a short window had
+    /// to squeeze it - and a stack squeezed drops whatever gives first, which on an iPhone SE was
+    /// the level line and both twists. Now the card is always its full height and the page
+    /// scrolls when that is more than it has. It scrolls vertically inside a pager that pages
+    /// sideways, and the two never compete for a drag.
+    let scroll = UIScrollView()
+
     override init(frame: CGRect) {
         super.init(frame: frame)
-        contentView.addSubview(card)
+        scroll.translatesAutoresizingMaskIntoConstraints = false
+        scroll.showsVerticalScrollIndicator = false
+        scroll.alwaysBounceVertical = false
+        scroll.contentInsetAdjustmentBehavior = .never
+        contentView.addSubview(scroll)
+        scroll.addSubview(card)
+        let content = scroll.contentLayoutGuide
         NSLayoutConstraint.activate([
-            card.topAnchor.constraint(equalTo: contentView.topAnchor),
-            card.bottomAnchor.constraint(lessThanOrEqualTo: contentView.bottomAnchor),
-            card.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 26),
-            card.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -26),
+            scroll.topAnchor.constraint(equalTo: contentView.topAnchor),
+            scroll.bottomAnchor.constraint(equalTo: contentView.bottomAnchor),
+            scroll.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
+            scroll.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
+            content.widthAnchor.constraint(equalTo: scroll.frameLayoutGuide.widthAnchor),
+            card.topAnchor.constraint(equalTo: content.topAnchor),
+            card.bottomAnchor.constraint(equalTo: content.bottomAnchor),
+            card.leadingAnchor.constraint(equalTo: content.leadingAnchor, constant: 26),
+            card.trailingAnchor.constraint(equalTo: content.trailingAnchor, constant: -26),
         ])
         // Hugging the top rather than filling the page: pinned top *and* bottom, the card
         // stretched to whatever height the page had and spread its contents down the
@@ -584,6 +611,12 @@ final class DailyCardCell: UICollectionViewCell {
         // The inset lives on the cell rather than on the collection view, so each page is
         // a full screen wide - which is what makes paging land on whole days - while the
         // card inside it keeps the margins the screen has always had
+    }
+
+    override func prepareForReuse() {
+        super.prepareForReuse()
+        scroll.contentOffset = .zero
+        // A day scrolled to its foot does not hand that scroll to the next day shown
     }
 
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }

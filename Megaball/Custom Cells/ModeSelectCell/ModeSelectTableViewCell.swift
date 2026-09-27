@@ -33,6 +33,57 @@ class ModeSelectTableViewCell: UITableViewCell {
         }
         // The mode icons are pictures - a purple ball, a lime infinity, a calendar - so they
         // are left exactly as they are. Only the name has to move off the app's dark purple
+
+        centreTheCardInItsRow()
+    }
+
+    /// The card's full height, and the least it may shrink to in a short window.
+    static let fullCard: CGFloat = 75
+    static let smallestCard: CGFloat = 54
+    /// The least room a row takes: the smallest card and a gap under it.
+    static let smallestRow: CGFloat = smallestCard + 6
+
+    private var cardHeight: NSLayoutConstraint?
+    private var iconWidth: NSLayoutConstraint?
+
+    /// **Centred in its row, not hung from the top of it** (James, round 351: "main menu cells
+    /// not centred between bottom icons and giga-ball logo"). The nib pins the card to the top
+    /// of the cell, so every row's spare height gathered under its card and the four read as a
+    /// block sitting high in the room they were given - by half a gap, which on an iPad is
+    /// twenty points.
+    private func centreTheCardInItsRow() {
+        for constraint in contentView.constraints
+        where (constraint.firstItem === cellView1 && constraint.firstAttribute == .top)
+            || (constraint.secondItem === cellView1 && constraint.secondAttribute == .top) {
+            constraint.isActive = false
+        }
+        cellView1.centerYAnchor.constraint(equalTo: contentView.centerYAnchor).isActive = true
+        cardHeight = cellView1.constraints.first {
+            $0.firstAttribute == .height && $0.secondItem == nil
+        }
+        iconWidth = modeImageIcon.constraints.first {
+            $0.firstAttribute == .width && $0.secondItem == nil
+        }
+    }
+
+    /// Shrinks the card, and the icon inside it, to the row it has been given.
+    ///
+    /// **A short window could not hold four full cards** (James, round 351, with an iPad
+    /// window: the rows bunched and the last was cut off above the buttons). The rows could
+    /// crowd no closer than the card itself, seventy-five points, so four needed three hundred;
+    /// now the card gives up to twenty of its own before anything is lost.
+    func fitCard(toRow rowHeight: CGFloat) {
+        let card = min(ModeSelectTableViewCell.fullCard,
+                       max(ModeSelectTableViewCell.smallestCard, rowHeight - 6))
+        cardHeight?.constant = card
+        iconWidth?.constant = card - 15
+        cellView1.layer.cornerRadius = card/2
+        (cellView1.subviews.first { $0 is UIVisualEffectView } as? UIVisualEffectView)
+            .map { glass in
+                if #available(iOS 26.0, *) {
+                    glass.cornerConfiguration = .corners(radius: .fixed(card/2))
+                }
+            }
     }
 
     /// Whether this cell wears glass, which the menu's press feedback has to ask.
@@ -76,7 +127,20 @@ class ModeSelectTableViewCell: UITableViewCell {
             play.centerYAnchor.constraint(equalTo: cellView1.centerYAnchor),
             play.widthAnchor.constraint(equalToConstant: 44),
             play.heightAnchor.constraint(equalToConstant: 44),
+            modeTextLabel.trailingAnchor.constraint(lessThanOrEqualTo: play.leadingAnchor,
+                                                    constant: -4),
         ])
+        for constraint in cellView1.constraints
+        where constraint.secondItem === modeTextLabel && constraint.secondAttribute == .trailing {
+            constraint.isActive = false
+        }
+        modeTextLabel.numberOfLines = 1
+        modeTextLabel.adjustsFontSizeToFitWidth = true
+        modeTextLabel.minimumScaleFactor = 0.6
+        // **The name stops at the arrow** (James, round 351: "play button encroaching on text
+        // at narrowest size"). The nib ends the label ten points from the card's edge, which
+        // was right before the card had a button there; now it ends at the button and shrinks
+        // its type rather than run underneath it
         return play
     }()
 

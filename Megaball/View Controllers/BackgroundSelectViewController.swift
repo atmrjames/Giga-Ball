@@ -166,10 +166,22 @@ class BackgroundSelectViewController: UIViewController, UICollectionViewDelegate
 
         NSLayoutConstraint.activate([
             card.centerXAnchor.constraint(equalTo: mockContainer.centerXAnchor),
-            card.centerYAnchor.constraint(equalTo: mockContainer.centerYAnchor),
-            card.topAnchor.constraint(equalTo: mockContainer.topAnchor),
             card.bottomAnchor.constraint(equalTo: mockContainer.bottomAnchor),
+            card.heightAnchor.constraint(lessThanOrEqualTo: mockContainer.heightAnchor),
             card.widthAnchor.constraint(lessThanOrEqualTo: mockContainer.widthAnchor),
+            {
+                let fill = card.heightAnchor.constraint(equalTo: mockContainer.heightAnchor)
+                fill.priority = .defaultHigh
+                return fill
+            }(),
+            // **The shape always, the size where there is room** (James, round 351: "background
+            // preview should maintain game view ratio of height and width" and "in certain sizes
+            // a large gap can appear between the preview, page dots and close button"). The
+            // card filled its container top to bottom as a requirement and kept its shape as
+            // another, and a container narrower than that shape could not have both - so the
+            // shape was the one broken. Now the height is only wanted, and the card sits on the
+            // container's floor, next to the dots and the close button below it, so any room
+            // it cannot use gathers above it rather than between the three
 
             backgrounds.topAnchor.constraint(equalTo: card.topAnchor),
             backgrounds.bottomAnchor.constraint(equalTo: card.bottomAnchor),
@@ -200,8 +212,15 @@ class BackgroundSelectViewController: UIViewController, UICollectionViewDelegate
     /// The picture is the device's own play area, so the card is that shape rather than the
     /// card being a shape and the picture sitting letterboxed inside it.
     private func refreshMockShape() {
-        let screen = view.window?.bounds.size ?? view.bounds.size
+        let window = view.window?.bounds.size ?? view.bounds.size
         let inset = view.window?.safeAreaInsets.bottom ?? view.safeAreaInsets.bottom
+        let screen = CGSize(width: min(window.width,
+                                       GameSceneLayout(screen: window, bottomInset: inset).gameWidth),
+                            height: window.height)
+        // **The play zone, not the window** (round 351). The model is of the game, and the game
+        // keeps its shape whatever the window does - a wide iPad window only adds purple either
+        // side (WindowFit.swift). Modelling the whole window drew a short, wide card on a wide
+        // one; the play zone's own column is the shape the player will actually play in
 
         mock.screen = screen
         mock.bottomInset = inset

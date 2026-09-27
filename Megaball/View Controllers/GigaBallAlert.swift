@@ -409,9 +409,17 @@ final class GigaBallAlertViewController: UIViewController {
         // takes. Where there are two, this one is the step-back and stays pale, or the pair
         // would be two shouts rather than a choice (round 91)
         if SettingsTableViewCell.addGlass(behind: button, cornerRadius: 22) != nil {
-            button.setTitleColor(UIColor(red: 0.16, green: 0, blue: 0.24, alpha: 1),
+            button.setTitleColor(confirmTitle == nil
+                                    ? UIColor(red: 0.16, green: 0, blue: 0.24, alpha: 1)
+                                    : SettingsTableViewCell.glassForeground,
                                  for: .normal)
         }
+        // **Off-white on the pale glass, purple only on lime** (James, round 351, from an
+        // iPhone 17 on iOS 26: "the cancel text cannot be seen"). The dark purple is the colour
+        // this button wore when it was a solid white pill. Glass takes its brightness from what
+        // is behind it, and behind it here is the pop-up's own dark card, so the pill came out
+        // dark and the purple title vanished into it - the same reason every glass settings row
+        // is lettered in `glassForeground`
         // Only the pale one. The green button is the one that does the thing, and its colour
         // is how the pop-up says so - putting both behind the same material would make a
         // choice out of two identical shapes
@@ -425,7 +433,10 @@ final class GigaBallAlertViewController: UIViewController {
             extra.setTitleColor(UIColor(red: 0.16, green: 0, blue: 0.24, alpha: 1), for: .normal)
             extra.backgroundColor = UIColor(white: 0.92, alpha: 1)
             extra.layer.cornerRadius = 22
-            _ = SettingsTableViewCell.addGlass(behind: extra, cornerRadius: 22)
+            if SettingsTableViewCell.addGlass(behind: extra, cornerRadius: 22) != nil {
+                extra.setTitleColor(SettingsTableViewCell.glassForeground, for: .normal)
+            }
+            // Lettered like the step-back beside it, for the same reason
             extra.addTarget(self, action: #selector(otherTapped), for: .touchUpInside)
             third = extra
         }

@@ -1117,8 +1117,25 @@ struct DailyChallengeRecord: Codable, Equatable {
     /// the window is open; a window that closes first makes this a miss, and `posted`
     /// stays false for ever. Optional so older records decode.
     var pendingPost: Bool?
+    /// The day's top score on the daily board once the day had closed (round 351).
+    ///
+    /// Kept because Game Center can only be asked about today's and yesterday's boards: seen
+    /// once while the day is yesterday, it is the day's final answer, and without it a day the
+    /// player led could only be shown as led for the one day after it closed. Optional so older
+    /// records decode.
+    var closingBoardBest: Int?
 
     var isPending: Bool { pendingPost ?? false }
+
+    /// Whether the player's posted score leads the day (James, round 351: "make the score
+    /// container giga-ball yellow/green on past daily challenge days where the current user is
+    /// the top scorer"). The board's own rank when there is one - today's - and otherwise the
+    /// posted score against the board's top score, which on a closed day is final.
+    func leads(rank: Int?, boardBest: Int?) -> Bool {
+        if rank == 1 { return true }
+        guard posted, let boardBest, boardBest > 0 else { return false }
+        return firstAttemptScore >= boardBest
+    }
 }
 
 extension DailyChallengeRecord {
@@ -1144,6 +1161,9 @@ extension DailyChallengeRecord {
             kept.postedNormalisedScore = max(kept.postedNormalisedScore,
                                              record.postedNormalisedScore)
             kept.pendingPost = (kept.isPending || record.isPending) && kept.posted == false
+            if let theirs = record.closingBoardBest {
+                kept.closingBoardBest = max(kept.closingBoardBest ?? 0, theirs)
+            }
             // A pending post survives the merge unless either side already landed it
             byDate[record.dateKey] = kept
         }

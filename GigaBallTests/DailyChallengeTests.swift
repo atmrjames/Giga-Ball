@@ -1951,6 +1951,17 @@ final class DailyNoRepeatsTests: XCTestCase {
                        + "one and left the other open would be no twist at all")
     }
 
+    /// James, round 351: "New pause button graphic for no breaks twist." The button stays on the
+    /// screen, struck through, rather than vanishing.
+    func testNoBreaksWearsTheDisabledPauseButton() {
+        let scene = GameScene()
+        DailyChallengeSession.shared.active = DailyChallenge(
+            dateKey: "2026-10-02", mode: .endlessII, classicLevel: nil, twists: [.noPausing])
+        XCTAssertTrue(scene.pauseRestingTexture === scene.pauseDisabledTexture)
+        DailyChallengeSession.shared.active = nil
+        XCTAssertTrue(scene.pauseRestingTexture === scene.pauseTexture)
+    }
+
     func testAnOrdinaryDayCanStillPause() {
         let scene = GameScene()
         DailyChallengeSession.shared.active = DailyChallenge(
@@ -3534,5 +3545,46 @@ final class DailyComparisonTests: XCTestCase {
         XCTAssertEqual(DailyCardView.hiScoreLine(3_400, unit: "", onLime: false).string
                         .trimmingCharacters(in: .whitespaces).hasSuffix("Global Hi-Score:  3,400"),
                        true)
+    }
+}
+
+/// James, round 351: "Make the score container giga-ball yellow/green on past daily challenge
+/// days where the current user is the top scorer."
+final class DailyLeaderCardTests: XCTestCase {
+
+    private func posted(_ score: Int) -> DailyChallengeRecord {
+        var record = DailyChallengeRecord(dateKey: "2026-09-20")
+        record.posted = true
+        record.firstAttemptScore = score
+        return record
+    }
+
+    func testTodayGoesByTheBoardsOwnRank() {
+        XCTAssertTrue(posted(10).leads(rank: 1, boardBest: nil))
+        XCTAssertFalse(posted(10).leads(rank: 2, boardBest: nil))
+    }
+
+    func testAClosedDayGoesByTheBoardsTopScore() {
+        XCTAssertTrue(posted(190).leads(rank: nil, boardBest: 190), "a tie at the top is the top")
+        XCTAssertFalse(posted(150).leads(rank: nil, boardBest: 190))
+        XCTAssertFalse(posted(150).leads(rank: nil, boardBest: nil),
+                       "a day whose board was never seen is not claimed")
+    }
+
+    func testAScoreThatNeverPostedLeadsNothing() {
+        var practice = DailyChallengeRecord(dateKey: "2026-09-20")
+        practice.bestPracticeScore = 900
+        XCTAssertFalse(practice.leads(rank: nil, boardBest: 10))
+    }
+
+    /// The closing best is the day's final answer, and a second device's copy of it survives
+    /// the sync.
+    func testTheClosingBestSurvivesTheMerge() {
+        var mine = posted(10)
+        var theirs = posted(10)
+        theirs.closingBoardBest = 40
+        XCTAssertEqual(DailyChallengeRecord.merged([mine], [theirs]).first?.closingBoardBest, 40)
+        mine.closingBoardBest = 55
+        XCTAssertEqual(DailyChallengeRecord.merged([mine], [theirs]).first?.closingBoardBest, 55)
     }
 }

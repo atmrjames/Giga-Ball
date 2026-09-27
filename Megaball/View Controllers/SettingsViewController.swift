@@ -183,9 +183,9 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         // above it: all three are what the game *looks* like, and it had been sitting among
         // the rows that decide how it plays
 
-        rows += [.sounds, .interfaceSound, .music]
-        // **UI Sound under In-Game Sound** (James, round 341): the two sound switches together,
-        // then the music
+        rows += [.interfaceSound, .sounds, .music]
+        // **UI Sound, then In-Game Sound, then Music** (James, round 351). The two sound
+        // switches have sat together since round 341; the menus' own sound now comes first
         if SettingsViewController.deviceHasHaptics { rows.append(.haptics) }
         rows += [.perspective, .paddleSpeed, .swipeUpToPause]
 
@@ -274,8 +274,8 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
                 let on = InterfaceSound.isOn(in: defaults)
                 cell.settingDescription.text = "UI Sound"
                 cell.centreLabel.text = ""
-                cell.setIcon(UIImage(systemName: on ? "hand.tap.fill" : "hand.raised.slash.fill")!,
-                             recolour: true)
+                cell.setIcon(UIImage(named: on ? "iconUISound" : "iconUISoundOff")!, recolour: true)
+                // James's own artwork (round 351), in place of two SF Symbols
                 cell.settingState.text = on ? "on" : "off"
                 cell.setStateColour(on ? #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1)
                                        : #colorLiteral(red: 0.6000000238, green: 0.6000000238, blue: 0.6000000238, alpha: 1))
@@ -283,7 +283,10 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
             // Sounds
                 cell.settingDescription.text = "In-Game Sound"
                 cell.centreLabel.text = ""
-                cell.setIcon(UIImage(named: soundsSetting ? "iconSound" : "iconSoundOff")!, recolour: true)
+                cell.setIcon(UIImage(named: soundsSetting ? "iconGameSoundOn" : "iconGameSoundOff")!,
+                             recolour: true)
+                // James's artwork, round 351. The off state's bars are drawn faint through their
+                // transparency, so a template render keeps both tones
                 if soundsSetting {
                     cell.settingState.text = "on"
                     cell.setStateColour(#colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1))

@@ -146,6 +146,8 @@ final class PaddleSpeedViewController: UIViewController, MenuNavigable {
     private let field = UIView()
     private var practice: PaddleSpeedScene?
     private var fieldWidth: NSLayoutConstraint?
+    /// The play area's width the practice scene was built for.
+    private var practiceBuiltFor: CGFloat = 0
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -183,6 +185,14 @@ final class PaddleSpeedViewController: UIViewController, MenuNavigable {
         // In to the narrow position when the big play is here (round 176) - this screen is a
         // child of Settings, which the pause menu opens
         shapeFieldToThePlayArea()
+        if practice != nil, abs(playLayout.gameWidth - practiceBuiltFor) > 0.5 {
+            sceneView.presentScene(nil)
+            practice = nil
+        }
+        // **Rebuilt when the play area changes size** (round 351). The scene is laid out from the
+        // play area and draws its backdrop once, both from the window it was opened in, and a
+        // resize only rescaled that - so after a drag the ball and the paddle were playing in
+        // one layout over a picture of another, part of it off the edge of the backdrop
         guard sceneView.bounds.width > 0 else { return }
         let modelScale = fieldModelScale
         let modelSize = CGSize(width: sceneView.bounds.width*modelScale,
@@ -202,6 +212,7 @@ final class PaddleSpeedViewController: UIViewController, MenuNavigable {
             scene.backdrop = drawnBackdrop()
             sceneView.presentScene(scene)
             practice = scene
+            practiceBuiltFor = playLayout.gameWidth
         } else if practice?.size != modelSize {
             practice?.scaleMode = modelScale == 1 ? .resizeFill : .fill
             practice?.touchScale = modelScale
@@ -392,6 +403,13 @@ final class PaddleSpeedViewController: UIViewController, MenuNavigable {
             field.bottomAnchor.constraint(lessThanOrEqualTo: valueLabel.topAnchor,
                                           constant: -20),
             fillsTheRoom,
+            field.heightAnchor.constraint(lessThanOrEqualTo: field.widthAnchor,
+                                          multiplier: GameSceneLayout.playRatio),
+            // **Never taller than the play area it is a window onto** (James, round 351: "paddle
+            // speed view can still get distorted too much when being resized. Make sure its
+            // ratio is preserved regardless of window size"). The field grew to fill whatever
+            // height the window had, and in a tall narrow window that was more than the play
+            // area itself, so the model ran out of game above the bricks
             // Centred, as tall as the room allows and as wide as that height makes it - the
             // shape comes from `shapeFieldToThePlayArea`, so these only say where it sits.
             // `fillsTheRoom` is the one that makes it *grow*: with only a top, a maximum

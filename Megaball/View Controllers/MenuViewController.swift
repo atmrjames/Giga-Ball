@@ -199,6 +199,84 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
                            symbol: "sparkles")
     }
 
+    override func viewWillLayoutSubviews() {
+        super.viewWillLayoutSubviews()
+        fitTheMenuToTheWindow()
+    }
+
+    /// The storyboard's four vertical gaps: over the logo, under it, under the rows and under
+    /// the button row.
+    ///
+    /// Looked up on every pass rather than kept: a size-class change swaps which of the
+    /// storyboard's constraints are active, and an inactive constraint is not in the list.
+    private var menuGaps: (overLogo: [NSLayoutConstraint], underLogo: [NSLayoutConstraint],
+                           underRows: [NSLayoutConstraint],
+                           underButtons: [NSLayoutConstraint]) {
+        let all = view.constraints
+        func find(_ test: (NSLayoutConstraint) -> Bool) -> [NSLayoutConstraint] {
+            all.filter(test)
+        }
+        return (
+            find { $0.firstItem === self.logoImage && $0.firstAttribute == .top },
+            find { $0.firstItem === self.tableViewContainer && $0.firstAttribute == .top
+                && $0.secondItem === self.logoImage },
+            find { $0.firstItem === self.iconCollectionView && $0.firstAttribute == .top
+                && $0.secondItem === self.tableViewContainer },
+            find { $0.secondItem === self.iconCollectionView && $0.secondAttribute == .bottom }
+        )
+    }
+
+    /// Sets the menu's vertical gaps for the room the window gives it.
+    ///
+    /// **James, round 351, from an iPad in a window: "main menu cells not centred between bottom
+    /// icons and giga-ball logo".** The storyboard fixes the gaps - 140 over the logo on an
+    /// iPad, 90 under it, 50 under the rows and 85 under the buttons - which is 365 points of
+    /// air before a row is drawn, and a short window has not got it: the rows were squeezed to
+    /// two and a half. And 90 above against 50 below put the rows low in whatever room was left.
+    ///
+    /// Now the space above and below the rows is the same, and every gap gives way together,
+    /// down to a quarter of itself, once the window cannot hold the four rows at a phone's
+    /// spacing. A constant, not a new constraint: UIKit re-applies a size-class variation's
+    /// constraints on every trait change (see `StoryboardConstraintChoices`), and a constant
+    /// set on those same constraints survives that where a replacement would not.
+    func fitTheMenuToTheWindow() {
+        let regular = traitCollection.horizontalSizeClass == .regular
+        let base = MenuViewController.menuGaps(regular: regular)
+        let height = view.bounds.height - view.safeAreaInsets.top - view.safeAreaInsets.bottom
+        let scale = MenuViewController.gapScale(height: height, regular: regular)
+        let gaps = menuGaps
+        for (constraints, wanted) in [(gaps.overLogo, base.overLogo),
+                                      (gaps.underLogo, base.aroundRows),
+                                      (gaps.underRows, base.aroundRows),
+                                      (gaps.underButtons, base.underButtons)] {
+            for constraint in constraints where abs(constraint.constant - wanted*scale) > 0.5 {
+                constraint.constant = wanted*scale
+            }
+        }
+        // Only when it has changed: assigning a constant marks the layout dirty, and this runs
+        // inside a layout pass
+    }
+
+    /// The gaps at full size: the storyboard's, with the two either side of the rows evened out.
+    static func menuGaps(regular: Bool) -> (overLogo: CGFloat, aroundRows: CGFloat,
+                                            underButtons: CGFloat) {
+        regular ? (140, 70, 85) : (62, 57.5, 85)
+    }
+
+    /// How much of their full size the gaps keep in a window this tall.
+    ///
+    /// Full size while the four rows still get a full card each; below that the gaps give up
+    /// what the rows need, and never go under a quarter. A phone keeps its gaps.
+    static func gapScale(height: CGFloat, regular: Bool) -> CGFloat {
+        let gaps = menuGaps(regular: regular)
+        let full = gaps.overLogo + gaps.aroundRows*2 + gaps.underButtons
+        let fixed: CGFloat = 45 + 50
+        // The logo and the button row, which do not shrink
+        let rows = ModeSelectTableViewCell.fullCard*CGFloat(GameMode.allCases.count)
+        guard full > 0 else { return 1 }
+        return min(1, max(0.25, (height - fixed - rows)/full))
+    }
+
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
         capMenuContentSize()
@@ -284,9 +362,11 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
     /// and the gap between the cards is what gives.
     static func modeRowHeight(inRoomOf room: CGFloat) -> CGFloat {
         guard room > 0 else { return tallestModeRow }
-        return max(75, min(tallestModeRow, room/CGFloat(GameMode.allCases.count)))
-        // Never below the card itself, or the cards start overlapping each other instead -
-        // a window short enough to force that is one the rows should crowd in, not stack
+        return max(ModeSelectTableViewCell.smallestRow,
+                   min(tallestModeRow, room/CGFloat(GameMode.allCases.count)))
+        // Never below the smallest the card can be, or the cards start overlapping each other
+        // instead. Below a full card's height the card shrinks with its row (round 351,
+        // `ModeSelectTableViewCell.fitCard`)
     }
 
     /// The most room a mode row may take, however tall the window is.
@@ -377,6 +457,7 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         // The same rule as the layout pass, from the same place. Asked here too because the
         // first cells can be built before any layout has happened
 
+        cell.fitCard(toRow: modeSelectTableView.rowHeight)
         let mode = GameMode(rawValue: indexPath.row) ?? .classic
         cell.modeTextLabel.text = mode.name
         cell.modeImageIcon.image = GameMode.menuIcon(for: mode)
@@ -480,9 +561,16 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
 
         let measured = iconCollectionView.bounds.width > 0 ? iconCollectionView.bounds.width
                                                            : rowWidth
-        let spacing = max(0, (measured - 50*3)/2)
+        let spacing = max(0, ((measured - 50*3)/2).rounded(.down))
+        layout.itemSize = CGSize(width: 50, height: 50)
         layout.minimumInteritemSpacing = spacing
         layout.minimumLineSpacing = spacing
+        let spare = max(0, measured - 50*3 - spacing*2)
+        layout.sectionInset = UIEdgeInsets(top: 0, left: spare/2, bottom: 0, right: spare/2)
+        // **Centred, to the point** (James, round 351: "info and settings buttons not always
+        // centred horizontally on screen"). The spacing is rounded down so the three always fit
+        // one line, and whatever the rounding leaves is shared either side rather than left
+        // at the end
         buttonRowLaidOutAt = measured
 
         iconCollectionView!.collectionViewLayout = layout
