@@ -173,8 +173,10 @@ final class PowerUpArrayTests: XCTestCase {
     func testEveryPowerUpHasAHalo() {
         for index in 0..<count {
             let colour = GameScene.powerUpGlowColour(forIndex: index)
-            XCTAssertTrue(colour == PowerUpIcon.harmful || colour == PowerUpIcon.beneficial,
-                          "power-up \(index) glows in neither colour")
+            XCTAssertTrue(colour == PowerUpIcon.harmful || colour == PowerUpIcon.beneficial
+                            || colour == PowerUpIcon.neutral,
+                          "power-up \(index) glows in none of the three colours")
+            // Three since round 350: the neutral power-ups glow the yellow their icons wear
         }
     }
 }
@@ -329,6 +331,20 @@ final class PowerUpDurationTextTests: XCTestCase {
     func testEveryPackUnlockLineSaysPack() {
         for line in setup.powerUpUnlockedDescriptionArray where line.hasPrefix("Complete ") {
             XCTAssertTrue(line.contains(" Pack "), line)
+        }
+    }
+
+    /// James, round 350: "Remove the 'neutral' power-up multipliers. They should be set to 0 as
+    /// they aren't necessarily good or bad. This is the yellow power ups - drift left, drift
+    /// right, wrap around, key, lock, wipe."
+    func testTheYellowPowerUpsAreNeitherGoodNorBad() {
+        for name in ["Drift Left", "Drift Right", "Wrap-Around", "Key", "Lock", "Wipe"] {
+            let i = index(name)
+            XCTAssertEqual(setup.powerUpMultiplierArray[i], "", "\(name) still shows a multiplier")
+            XCTAssertTrue(GameScene.endlessIINeutralPowerUps.contains(i), name)
+            XCTAssertFalse(GameScene.endlessIIHarmfulPowerUps.contains(i), name)
+            XCTAssertFalse(GameScene.endlessIIBeneficialPowerUps.contains(i), name)
+            XCTAssertEqual(GameScene.powerUpGlowColour(forIndex: i), PowerUpIcon.neutral, name)
         }
     }
 

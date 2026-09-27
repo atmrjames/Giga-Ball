@@ -2388,6 +2388,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 //MARK: - Score Database Setup
 		
 		loadGameData()
+		prepareDailyComparison()
+		// The day's earlier scores and its board's leader, for the pause and end screens
+		// (round 350)
 		
 		NotificationCenter.default.addObserver(self, selector: #selector(self.leavingTheRunNotificationKeyReceived), name: .returnFromGameNotification, object: nil)
 		// **Every way out of a run posts this**, and until round 332 nothing in the scene
@@ -2396,6 +2399,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		// they post the return notifications and leave the scene to whoever holds it. So the
 		// scene listens for the one message all three send and ends itself
         NotificationCenter.default.addObserver(self, selector: #selector(self.pauseNotificationKeyReceived), name: Notification.Name.pauseNotificationKey, object: nil)
+		NotificationCenter.default.addObserver(self, selector: #selector(self.backgroundNotificationKeyReceived), name: .backgroundNotification, object: nil)
+		// The app really leaving, rather than only resigning active - what ends a No Breaks run
+		// (round 350)
         // Sets up an observer to watch for notifications from AppDelegate to check if the app has quit
 		
 		NotificationCenter.default.addObserver(self, selector: #selector(self.restartGameNotificiationKeyReceived), name: .restartGameNotificiation, object: nil)
@@ -3793,6 +3799,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		// every frame, because the bars animate every frame
 
 		tickEndlessIIBuildIn(currentTime)
+		tickEndlessFieldSettle(frameDelta)
 		// Outside the Mayhem branch: every mode has an opening field now, and each waits
 		// here for the splash screen to get out of its way (play-test round 9)
 
@@ -4136,7 +4143,15 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		// - on a One Life daily it was quietly re-arming the Get a Life the day excluded,
 		// so the day repeats its word here
 		
-        if numberOfLives > 0 {
+        let ballComesBack = GameScene.ballComesBack(livesLeft: numberOfLives,
+                                                    onTimeTrial: dailyTimeTrial)
+        // **A Time Trial always has a ball to come back** (James, round 350: "when I lost a ball
+        // on a daily challenge with a time trial twist, the game ended. It should've given me a
+        // new ball seeing as there are unlimited balls in this twist"). A Time Trial spends no
+        // lives, but the check asked whether any were *left* - and an endless run starts with a
+        // rack of none, so in Endless and Mayhem the first lost ball ended the run. Classic,
+        // with its rack of three that never went down, was the only mode it worked in
+        if ballComesBack {
 
             let spendsALife = GameScene.dailyLifeIsSpent(onTimeTrial: dailyTimeTrial)
 			if spendsALife {
@@ -4186,7 +4201,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             // Animate ball back onto paddle and loss of a life
         }
 		
-        if numberOfLives <= 0 {
+        if ballComesBack == false {
             gameoverStatus = true
 			self.removeAction(forKey: "gameTimer")
 			// Stop the level timer
@@ -5045,6 +5060,54 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	func brickHasReachedTheBottomZone(_ sprite: SKSpriteNode) -> Bool {
 		if sprite.position.y <= finalBrickRowHeight + brickHeight/2 { return true }
 		return endlessIIFieldRect(of: sprite).minY <= finalBrickRowHeight - brickHeight/2 + 1
+	}
+
+	/// How often the endless field is asked whether it has settled to the bottom brick line.
+	static let endlessFieldSettleInterval: TimeInterval = 0.25
+	var endlessFieldSettleElapsed: TimeInterval = 0
+
+	/// Whether this run's field is on the board yet - set where every endless field is laid out,
+	/// fresh or resumed (`prepEndlessMode`), and cleared as each run begins (`PreGame`).
+	///
+	/// **Found on the simulator the day the clock went in.** A daily replayed from its end screen
+	/// opened at 21m. `Playing` loads the level a tenth of a second after it is entered, and in
+	/// that tenth the old field had been cleared and the new one did not exist - an empty bottom
+	/// zone, which is exactly what the clock is there to answer. One step followed, and every
+	/// step asks again 0.075s later, so it kept stepping through the new field's held build-in
+	/// bricks, which never count as a bottom row, until they had been walked all the way down.
+	var endlessFieldIsLaidOut = false
+
+	/// Asks the field, four times a second, whether it should step down.
+	///
+	/// **James, round 350: "Bricks in endless mode and mayhem don't reliably drop to the lowest
+	/// brick level. They can get stuck too high, then when breaking a brick not on the lowest
+	/// level they then drop. Can the game check more frequently."** The step is decided in
+	/// `countBricks`, and that only ran when something happened to a brick. A bottom row that
+	/// emptied while a step was already animating, or while Brick Retreat or a field shift held
+	/// the field, was seen once, refused for a good reason, and never looked at again until the
+	/// next brick broke. Asking on a clock closes every such gap without finding each one.
+	///
+	/// Not while the opening field is still building in, when bricks are between their start
+	/// and their place and an empty bottom zone means nothing yet.
+	func tickEndlessFieldSettle(_ delta: TimeInterval) {
+		guard GameScene.fieldSettleIsDue(endless: endlessMode,
+										 inPlay: gameState.currentState is Playing,
+										 fieldIsLaidOut: endlessFieldIsLaidOut,
+										 buildingIn: endlessIIBuildInWaiting
+											|| endlessIIBuildInFinalY.isEmpty == false,
+										 elapsed: endlessFieldSettleElapsed + delta) else {
+			if endlessMode { endlessFieldSettleElapsed += delta }
+			return
+		}
+		endlessFieldSettleElapsed = 0
+		countBricks()
+	}
+
+	/// The clock's decision on its own, for a test.
+	static func fieldSettleIsDue(endless: Bool, inPlay: Bool, fieldIsLaidOut: Bool,
+								 buildingIn: Bool, elapsed: TimeInterval) -> Bool {
+		endless && inPlay && fieldIsLaidOut && buildingIn == false
+			&& elapsed >= endlessFieldSettleInterval
 	}
 
 	func countBricks() {
@@ -6982,25 +7045,25 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		case powerUpWrapAround:
 		// 47 - Wrap-Around
 			endlessIICollectWrapAround()
-			powerUpMultiplierScore = 0.1
+			powerUpMultiplierScore = 0
 			totalStatsArray[0].powerupsCollected[47] += 1
 
 		case powerUpLock:
 		// 48 - Lock
 			endlessIICollectLock()
-			powerUpMultiplierScore = 0.1
+			powerUpMultiplierScore = 0
 			totalStatsArray[0].powerupsCollected[48] += 1
 
 		case powerUpKey:
 		// 49 - Key
 			endlessIITurnKey()
-			powerUpMultiplierScore = 0.1
+			powerUpMultiplierScore = 0
 			totalStatsArray[0].powerupsCollected[49] += 1
 
 		case powerUpWipe:
 		// 50 - Wipe
 			endlessIIWipe()
-			powerUpMultiplierScore = -0.1
+			powerUpMultiplierScore = 0
 			totalStatsArray[0].powerupsCollected[50] += 1
 
 		case powerUpRandomisedBounce:
@@ -7024,7 +7087,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		case powerUpDrift:
 		// 54 - Drift Right. Bad
 			endlessIICollectDrift(direction: 1)
-			powerUpMultiplierScore = -0.1
+			powerUpMultiplierScore = 0
 			totalStatsArray[0].powerupsCollected[54] += 1
 
 		case powerUpConvexPaddle:
@@ -7078,7 +7141,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		case powerUpDriftLeft:
 		// 63 - Drift Left. Bad
 			endlessIICollectDrift(direction: -1)
-			powerUpMultiplierScore = -0.1
+			powerUpMultiplierScore = 0
 			totalStatsArray[0].powerupsCollected[63] += 1
 
 		case powerUpWedgeLeftPaddle:
@@ -8182,6 +8245,8 @@ laserTimer?.invalidate()
 			// Hide UI
 		}
 				
+		DailyChallengeSession.shared.timeTrialRemaining = dailyTimeTrial ? dailyTimeTrialRemaining : nil
+		// What the pause screen shows in place of the balls on a Time Trial (round 350)
 		gameViewControllerDelegate?.showPauseMenu(levelNumber: levelNumber, numberOfLevels: numberOfLevels, score: score, packNumber: packNumber, height: endlessHeight, sender: sender, gameoverBool: gameoverStatus, newItemsBool: newItemsBool, previousHighscore: previousHighscore, livesRemaining: numberOfLives, levelScore: levelScore, levelTimerBonus: levelTimerBonus)
 		// The two halves of a completed level's score, so a daily's Complete screen can show
 		// the same breakdown a pack's end does (round 210). Passed always and used where it
@@ -8848,17 +8913,18 @@ laserTimer?.invalidate()
 		// player's statistics and ears are concerned, however many barrels it left from
 	}
     
+    @objc func backgroundNotificationKeyReceived() {
+		endTheRunForLeaving()
+	}
+
     @objc func pauseNotificationKeyReceived() {
 
 		if dailyNoPausing {
-			dailyForfeitByLeaving()
 			return
 		}
-		// **The one notification a No Breaks day must not act on.** This is what pauses a run
-		// when the app goes to the background, and pausing here would hand the player exactly
-		// what the twist takes away - switch apps, come back, carry on. The attempt is given up
-		// instead and the run carries on: ending somebody's game from the outside is worse than
-		// not scoring it
+		// **The one notification a No Breaks day must not act on.** This pauses a run when the app
+		// resigns active, and pausing would hand the player exactly what the twist takes away.
+		// Going to the background ends the run instead (`endTheRunForLeaving`, round 350)
 
 		if self.gameState.currentState is Paused {
 			// do nothing
@@ -8917,6 +8983,9 @@ laserTimer?.invalidate()
 		//
 		// The milestone watermarks go with it, or the first thousand of the new run passes
 		// unremarked because the old run had already passed it
+
+		if isDailyChallenge { beginDailyReplay() }
+		// A daily replayed from its end screen is another free-play attempt (round 350)
 
         gameState.enter(PreGame.self)
     }
@@ -10056,6 +10125,12 @@ laserTimer?.invalidate()
 			// being in the save rather than only in the scene (round 320)
 			if let remaining = savedGame.dailyTimeTrialRemaining {
 				dailyTimeTrialRemaining = remaining
+				showDailyClock()
+				// **Drawn now, not at the first tick of play** (James, round 350: "on resuming a
+				// daily challenge with a time trial twist after quitting mid way through, the
+				// countdown label briefly shows 90s before switching over to the actual time
+				// remaining"). The label was built at setup with a fresh ninety and only redrawn
+				// once the clock ran, which it does not do until the ball is served again
 			}
 			if let driftDirection = savedGame.endlessIIDriftDirection {
 				endlessIIDriftDirection = driftDirection

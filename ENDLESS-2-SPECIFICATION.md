@@ -2641,6 +2641,43 @@ testing." What it found and did:
   iOS 26 from this build, and plainer wording on both pages. The story page is James's own
   account and was left as written.
 
+**Round 350: James's list after the TestFlight build, and a screen report.**
+
+- **Time Trial:** a lost ball always comes back (an Endless daily's rack is empty, so the old
+  lives check ended the run); the pause and resume screens show the time left where the balls
+  line was, and "Unlimited balls" is gone; a resumed run shows its saved time from the first
+  frame. In Endless the clock sits on the height's row, left of it, in the wordmark's lime.
+  **Found on the simulator:** the served-or-not flag is not in the save, so a run resumed with
+  the ball on the paddle held its clock for as long as the player waited. A clock under the
+  full ninety now always runs (`timeTrialUnderway(already:ballOnPaddle:remaining:)`).
+- **No Breaks ends the run when the app goes to the background.** It used to carry on and
+  forfeit only the posting, and reopening simply resumed it: a pause by another name. Found
+  on the way: `Playing.reloadUI` and `Paused` put the pause button back on screen on a No
+  Breaks day, drawn and inert.
+- **The daily in the game:** a calendar symbol before the date, both twists on the level intro,
+  "Rainbow Theme" rather than "Theme - Rainbow", room above COMPETITION RUN / FREE PLAY, and on
+  a replay a Previous Best or Posted Score row, with the posted score and the board's leader
+  underneath (`DailyComparison`, `loadDailyBoardBest`). A free-play end screen offers a replay
+  button, mirroring the leaderboard button. The daily card shows the board's hi-score before
+  you have played and beside your result after, and turns lime when you lead the day.
+- **Neutral power-ups multiply by nothing** and glow yellow: Wrap-Around, Lock, Key, Wipe and
+  both Drifts.
+- **The endless field is asked four times a second whether it should step**, rather than only
+  when a brick changes. **Found on the simulator:** a daily replayed from its end screen opened
+  at 21m. In the tenth of a second between the old field clearing and the new one being built,
+  the clock saw an empty bottom row, stepped, and each step's recount carried it through the
+  held build-in bricks. It now waits for `endlessFieldIsLaidOut`.
+- **Smaller things:** a larger dot on the daily's menu icon; the swipe-to-pause info button in
+  the arrow column; the main menu re-fits after an iPad rotation (not reproducible on the
+  simulator, so to be seen on a device); "This challenge closed yesterday"; the "This run"
+  power-up tiles keep a two-line name above MISSED.
+- **The 13-inch App Store screenshots**, the same nine as the 6.9-inch set, and a screen report
+  across the iPhone SE, 17 Pro, 17 Pro Max and iPad Pro 11-inch for James to review. Open from
+  it, waiting on James: the pause screen counts the reserve rack while the resume card adds the
+  ball on the paddle; on iOS 18 the daily card drops the level line and twists, Endless Mayhem
+  touches its play arrow on the main menu, and the daily pause loses its FREE PLAY line; a first
+  run in a mode reads New Hi-Score 0m over Previous Hi-Score 0m.
+
 **Open after round 344:**
 
 | Item | What is known |

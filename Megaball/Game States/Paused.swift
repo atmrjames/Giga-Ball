@@ -82,7 +82,8 @@ class Paused: GKState {
         
         scene.scoreLabel.isHidden = false
         scene.multiplierLabel.isHidden = false
-        scene.pauseButton.isHidden = false
+        scene.pauseButton.isHidden = scene.dailyNoPausing
+        // As in `Playing.reloadUI`: a No Breaks day never shows it
         scene.setLivesRowHidden(false)
         if scene.endlessMode {
             scene.showEndlessIIBest()

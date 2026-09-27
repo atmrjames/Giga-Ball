@@ -476,24 +476,20 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         // In front of everything else in the cell, or a touch near its edge reaches the row
         // underneath and flips the setting the player was only asking about
 
-        let title = cell.settingDescription.text ?? ""
-        let font = cell.settingDescription.font ?? .systemFont(ofSize: 17)
-        let written = (title as NSString).size(withAttributes: [.font: font]).width
-        // Measured rather than anchored: the description and state labels share a width
-        // constraint, so the description's *frame* ends near the middle of the row while
-        // its words end wherever they end. Anchoring to either edge put the button in
-        // open space (play-test round 16's screenshot); measuring the text puts it
-        // immediately after the last letter, which is where a footnote belongs
-
         NSLayoutConstraint.activate([
-            info.leadingAnchor.constraint(equalTo: cell.settingDescription.leadingAnchor,
-                                          constant: written + 2),
-            info.centerYAnchor.constraint(equalTo: cell.settingDescription.centerYAnchor),
+            info.trailingAnchor.constraint(equalTo: cell.cellView2.trailingAnchor,
+                                           constant: SettingsTableViewCell.arrowOverhang),
+            info.centerYAnchor.constraint(equalTo: cell.cellView2.centerYAnchor),
             info.widthAnchor.constraint(equalToConstant: 56),
             info.heightAnchor.constraint(equalToConstant: 56),
             // Wider than Apple's 44 (play-test round 21: still too easy to miss). The glyph
             // inside is unchanged, so it looks the same and simply catches more
         ])
+        cell.makeRoomForAnArrow(true)
+        // **Where the arrows are, with the on/off to its left** (James, round 350: "put the info
+        // icon on the swipe up to pause setting cell to the right of the on/off label to match
+        // the position of the arrows on the other settings cells"). It sat just after the row's
+        // name, measured off the words, since round 16
     }
 
     /// The chevron beside a row's name: the door to the screen behind it.

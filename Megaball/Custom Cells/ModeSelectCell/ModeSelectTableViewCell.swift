@@ -94,8 +94,8 @@ class ModeSelectTableViewCell: UITableViewCell {
     private lazy var notificationDot: UIView = {
         let dot = UIView()
         dot.backgroundColor = .systemRed
-        dot.layer.cornerRadius = 7
-        dot.layer.borderWidth = 2
+        dot.layer.cornerRadius = 10
+        dot.layer.borderWidth = 2.5
         dot.layer.borderColor = UIColor.white.cgColor
         dot.isUserInteractionEnabled = false
         dot.isAccessibilityElement = false
@@ -104,10 +104,12 @@ class ModeSelectTableViewCell: UITableViewCell {
         cellView1.addSubview(dot)
         // In the card, for the same reason as the play button
         NSLayoutConstraint.activate([
-            dot.widthAnchor.constraint(equalToConstant: 14),
-            dot.heightAnchor.constraint(equalToConstant: 14),
-            dot.centerXAnchor.constraint(equalTo: modeImageIcon.trailingAnchor, constant: -8),
-            dot.centerYAnchor.constraint(equalTo: modeImageIcon.topAnchor, constant: 8),
+            dot.widthAnchor.constraint(equalToConstant: 20),
+            dot.heightAnchor.constraint(equalToConstant: 20),
+            // Twenty rather than fourteen (James, round 350: "make the notification dot on daily
+            // challenge larger")
+            dot.centerXAnchor.constraint(equalTo: modeImageIcon.trailingAnchor, constant: -9),
+            dot.centerYAnchor.constraint(equalTo: modeImageIcon.topAnchor, constant: 9),
         ])
         // The badge place on an app icon: the top right, sitting on the circle's edge rather
         // than inside it. White-ringed so it reads against the lime icon it overlaps

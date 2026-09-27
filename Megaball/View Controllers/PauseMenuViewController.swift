@@ -162,6 +162,13 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
     /// A finished daily: no replay, no restart, one way out - so Home takes the middle.
     var dailyGameOver: Bool { isDailyChallenge && sender != "Pause" }
 
+    /// A daily's end screen after a free-play run, which offers another go (round 350). A run
+    /// that has just posted does not: the day's number is set, and the leaderboard is the next
+    /// thing to look at.
+    var dailyReplayIsOffered: Bool {
+        dailyGameOver && DailyChallengeSession.shared.lastRunPosted == false
+    }
+
     /// A finished endless run outside the daily: the one screen with a stats button
     /// (§12.0's game-over stats), in the centre slot a game over otherwise leaves empty.
     var endlessGameOver: Bool {
@@ -389,6 +396,19 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
         // is the pass that knows what size the rows actually are
         containterView.setNeedsLayout()
     }
+
+    /// The row under the score on a daily: the posted score or the previous best, or nothing for
+    /// a day with nothing before this run (round 350, `DailyComparison.row`).
+    private func showDailyComparisonRow(unit: String) {
+        let session = DailyChallengeSession.shared
+        let row = DailyComparison(posted: session.comparisonPosted,
+                                  previousBest: session.comparisonPreviousBest).row(unit: unit)
+        highscoreLabelTitle.text = row?.title ?? ""
+        highscoreLabel.text = row?.value ?? ""
+    }
+
+    /// The gap above a daily's COMPETITION RUN or FREE PLAY line (round 350).
+    static let runKindGap: CGFloat = 10
 
     private var titleBlockScale: CGFloat = 1
     private var titleBlockBaseSize: [ObjectIdentifier: CGFloat] = [:]
@@ -1057,9 +1077,15 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
         }
         if isDailyChallenge, DailyChallengeSession.shared.has(.timeTrial) {
             livesLabel.isHidden = false
-            livesLabel.text = DailyTwist.unlimitedBallsLine
+            livesLabel.text = DailyTwist.timeLeftLine(
+                seconds: DailyChallengeSession.shared.timeTrialRemaining)
             return
         }
+        // **The time left, where the balls would be** (James, round 350: "Remove the unlimited
+        // balls label from the in game views and resume screen on a time trial", and "show the
+        // time remaining for a daily challenge with a time trial twist on the pause and resume
+        // views in the place of the balls remaining info"). On a Time Trial the clock is the
+        // one limit, so it is the one worth reading while paused
         // **A Time Trial says "Unlimited balls", with no rack** (James, round 340: "time trial
         // with unlimited lives doesn't need to show any spare balls or say number of balls left
         // on the pause screen - it could say unlimited balls instead"). Round 340 changed the
@@ -1164,34 +1190,28 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
     /// every other mode says nothing at all - there the line *is* the placing, and a line
     /// that appears empty and then fills reads as a glitch.
     func updateResultLine() {
-        guard sender != "Pause" else {
-            resultLabel.isHidden = true
-            leaderboardTitle.isHidden = true
+        if isDailyChallenge {
+            let session = DailyChallengeSession.shared
+            let unit = session.active?.mode.isEndless == true ? "m" : ""
+            var lines = DailyComparison(posted: session.comparisonPosted,
+                                        previousBest: session.comparisonPreviousBest)
+                .lines(boardBest: session.boardBest ?? standing?.best, unit: unit)
+            // **The day's points of comparison, on every face of the screen** (James, round 350,
+            // `DailyComparison`): the posted score when a better free-play run has taken the row
+            // above, and the board's leader - in the pause as well as at the end
+            if sender != "Pause", session.lastRunPosted {
+                lines.insert(standing.map { "\($0.text) on today's leaderboard" }
+                                ?? "Submitted to today's leaderboard", at: 0)
+            }
+            resultLabel.isHidden = lines.isEmpty
+            leaderboardTitle.isHidden = lines.isEmpty
+            resultLabel.text = lines.joined(separator: "\n")
             return
         }
 
-        if isDailyChallenge {
-            resultLabel.isHidden = false
-            leaderboardTitle.isHidden = false
-            if DailyChallengeSession.shared.lastRunPosted {
-                resultLabel.text = standing.map { "\($0.text) on today's leaderboard" }
-                // **The placing is the line** (James, round 308: it "should read: 1/100 on
-                // today's leaderboard"). "Posted," led it, which repeated what the screen has
-                // already said by showing a score at all, and pushed the two numbers a player
-                // came back for into the middle of the sentence. Same figures, same place as
-                // the briefing screen (play-test round 126); fewer words in front of them
-                    ?? "Submitted to today's leaderboard"
-                // The placing arrives asynchronously when Game Center answers. Until
-                // then "submitted" is the honest word (§12.5): the score is on its way,
-                // and if it cannot land - signed out, offline, board not yet in App
-                // Store Connect - the retry loop carries it and the briefing screen's
-                // badge tells the truth of where it got to
-            } else {
-                resultLabel.isHidden = true
-                leaderboardTitle.isHidden = true
-                // Nothing to place, and the kind of run is said under the twists now, which
-                // is where James asked for it (round 320) - see `updateDailySummary`
-            }
+        guard sender != "Pause" else {
+            resultLabel.isHidden = true
+            leaderboardTitle.isHidden = true
             return
         }
 
@@ -1253,8 +1273,10 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
         }
 
         packNameLabel.numberOfLines = 2
-        packNameLabel.text = "Daily Challenge\n"
-            + DailyChallengeSession.shared.displayName(forKey: challenge.dateKey).capitalized
+        packNameLabel.attributedText = DailyTwist.dateLines(
+            forKey: challenge.dateKey, font: packNameLabel.font ?? .systemFont(ofSize: 17),
+            colour: packNameLabel.textColor ?? .white)
+        // With a calendar before the date (round 350, `DailyTwist.dateLines`)
         // **The date goes on its own line** (James, round 332's layout notes, written against
         // five of the seven screens: "put the date on the line below Daily Challenge to avoid
         // any clipping on smaller devices"). "Daily Challenge, Yesterday" is a long line for a
@@ -1286,6 +1308,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
             ? DailyChallengeSession.shared.isScoringAttempt
             : DailyChallengeSession.shared.lastRunPosted
         summary.append(NSAttributedString(string: "\n"))
+        let runKindStart = summary.length
         summary.append(NSAttributedString(
             string: scoring ? "COMPETITION RUN" : "FREE PLAY",
             attributes: [.font: UIFont.boldSystemFont(ofSize: 13),
@@ -1304,6 +1327,16 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
         paragraph.lineSpacing = 4
         summary.addAttribute(.paragraphStyle, value: paragraph,
                              range: NSRange(location: 0, length: summary.length))
+        let runKind = NSMutableParagraphStyle()
+        runKind.setParagraphStyle(paragraph)
+        runKind.paragraphSpacingBefore = PauseMenuViewController.runKindGap
+        summary.addAttribute(.paragraphStyle, value: runKind,
+                             range: NSRange(location: runKindStart,
+                                            length: summary.length - runKindStart))
+        // **Air above COMPETITION RUN or FREE PLAY** (James, round 350: "add more of a gap on the
+        // in game views between the twists and competition run / free play label, they look a
+        // bit squished in"). It was one more line of the list at the list's own spacing, and it
+        // is a different kind of fact - what kind of run this is, not a rule of the day
         dailySummaryLabel.attributedText = summary
     }
 
@@ -1365,6 +1398,13 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
         case 0:
             if self.sender == "Pause" {
                 cell.setButton("ButtonInfo.png")
+            } else if dailyReplayIsOffered {
+                cell.setButton("ButtonRestart")
+                // **Replay, on a free-play run** (James, round 350: "on the complete / game over
+                // view show a replay level button to the left of the home button. Make its
+                // position symmetrical to the game centre leaderboard button on the right and
+                // style and size the same as that button"): the small left slot, mirroring the
+                // leaderboard's small right one
             } else if isDailyChallenge {
                 cell.setButton("ButtonNull.png")
             } else {
@@ -1440,7 +1480,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
                 openInformation()
             } else if endlessGameOver {
                 goHomeFromGameOver()
-            } else if isDailyChallenge == false {
+            } else if isDailyChallenge == false || dailyReplayIsOffered {
                 removeAnimate(nextAction: .restartGameNotificiation)
             }
             // A daily's game over has no restart - the slot is a null button there
@@ -1649,8 +1689,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
             highscoreLabelTitle.text = "Hi-Score"
 
             if isDailyChallenge {
-                highscoreLabelTitle.text = ""
-                highscoreLabel.text = ""
+                showDailyComparisonRow(unit: "m")
                 // The endless modes' best heights are a different game's numbers (play-test
                 // note): a daily is measured against today's board, not against a best set
                 // under different rules. §9 keeps the daily out of those arrays; this keeps
@@ -1768,10 +1807,10 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
                 // The row a daily leaves empty is exactly the row the breakdown needs, and it
                 // is already sitting under the score where the second line belongs
             } else if isDailyChallenge {
-                highscoreLabelTitle.text = ""
-                highscoreLabel.text = ""
+                showDailyComparisonRow(unit: "")
                 // The level's campaign high score belongs to the campaign - a daily on
-                // that level is a different game with today's board to answer to
+                // that level is a different game with today's board to answer to, and its own
+                // earlier runs (round 350)
             } else {
                 highscoreLabelTitle.text = "Hi-Score"
                 // Get current highscore from level or pack

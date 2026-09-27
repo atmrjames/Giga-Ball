@@ -114,7 +114,7 @@ extension GameScene {
     /// yes: it runs the same recording a run's natural end runs, which is the whole point -
     /// a partial score is a score, and routing it through the one recorder means it lands in
     /// the record, on the board and in the practice best by exactly the rules a finished run
-    /// obeys, including the ones about closed days and forfeits.
+    /// obeys, including the one about closed days.
     ///
     /// Nothing here decides anything. The deciding was done on the pop-up, and a run whose
     /// player said no simply never sends this.
@@ -136,18 +136,6 @@ extension GameScene {
             ?? DailyChallengeRecord(dateKey: challenge.dateKey)
 
         session.lastRunPosted = false
-        if session.forfeitedByLeaving {
-            session.isScoringAttempt = false
-            record.bestPracticeScore = max(record.bestPracticeScore, score)
-            totalStatsArray[0].upsertDailyRecord(record)
-            session.forfeitedByLeaving = false
-            return
-        }
-        // **No Breaks, forfeited** (§4): "backgrounding the app forfeits posting". The score
-        // is kept as practice rather than thrown away - the run was really played - but it is
-        // not the attempt any more, and the attempt itself was already spent when play was
-        // pressed. Cleared here because a forfeit belongs to the run that earned it and the
-        // next one starts clean
 
         if session.isScoringAttempt {
             session.isScoringAttempt = false
@@ -509,8 +497,8 @@ extension GameScene {
 
     /// Whether the day takes the pause button away.
     ///
-    /// §4's nerve twist: "The pause button is disabled for the run. Backgrounding the app
-    /// forfeits posting."
+    /// §4's nerve twist: "The pause button is disabled for the run." Leaving the app ends the
+    /// run (round 350, `endTheRunForLeaving`); it used to forfeit the posting instead.
     var dailyNoPausing: Bool {
         isDailyChallenge && DailyChallengeSession.shared.has(.noPausing)
     }
@@ -522,20 +510,68 @@ extension GameScene {
     /// checks are three hundred lines apart.
     var dailyPausingIsAllowed: Bool { dailyNoPausing == false }
 
-    /// Gives up the day's attempt because the player left the app.
+    /// Another go at the day, from the replay button on a free-play run's end screen.
     ///
-    /// **The run carries on.** Ending somebody's game from the outside is worse than not
-    /// scoring it, and the twist is about nerve rather than punishment - so the ball stays in
-    /// play and what is lost is the posting. Called from the same notification that pauses
-    /// every other run when the app goes to the background: on a No Breaks day that
-    /// notification cannot be allowed to pause, because the app pausing itself would hand the
-    /// player exactly what the twist withholds.
+    /// **James, round 350: "On a free play run of a daily challenge level, on the complete / game
+    /// over view show a replay level button."** The restart path rebuilds the run in this scene,
+    /// and a daily's session outlives it, so the replay is that path plus what starting a daily
+    /// from its screen does: the attempt is counted - in this scene's copy of the stats, which is
+    /// the copy the run's result will be saved from - it is free play, because the day's scoring
+    /// attempt was spent the first time, and a Time Trial's clock starts again at ninety.
+    func beginDailyReplay() {
+        guard let challenge = DailyChallengeSession.shared.active,
+              totalStatsArray.isEmpty == false else { return }
+        var record = totalStatsArray[0].dailyRecord(forKey: challenge.dateKey)
+            ?? DailyChallengeRecord(dateKey: challenge.dateKey)
+        record.attemptCount += 1
+        totalStatsArray[0].upsertDailyRecord(record)
+        DailyChallengeSession.shared.isScoringAttempt = false
+        DailyChallengeSession.shared.lastRunPosted = false
+        dailyTimeTrialRemaining = DailyTwist.timeTrialSeconds
+        dailyTimeTrialUnderway = false
+        dailyCountdownShown = -1
+        showDailyClock()
+        prepareDailyComparison()
+    }
+
+    /// Takes the day's comparison figures as the run starts, and asks Game Center for the day's
+    /// top score once (round 350, `DailyComparison`).
+    func prepareDailyComparison() {
+        guard isDailyChallenge, let challenge = DailyChallengeSession.shared.active,
+              totalStatsArray.isEmpty == false else { return }
+        let session = DailyChallengeSession.shared
+        session.captureComparison(from: totalStatsArray[0].dailyRecord(forKey: challenge.dateKey))
+        let key = challenge.dateKey
+        GameCenterHandler().loadDailyBoardBest(forKey: key) { best in
+            guard session.active?.dateKey == key else { return }
+            session.boardBest = best
+        }
+    }
+
+    /// Whether leaving the app ends the run: on a No Breaks day, while a run is in play.
     ///
-    /// Nothing to undo. A forfeited attempt stays forfeited for the rest of the run, which is
-    /// the point - coming back does not give it back.
-    func dailyForfeitByLeaving() {
-        guard dailyNoPausing else { return }
-        DailyChallengeSession.shared.forfeitedByLeaving = true
+    /// **James, round 350: "No breaks twist should end the run if the user closes the app. Right
+    /// now the game just carries on where it left off if the user closes and reopens the app,
+    /// effectively allowing them to pause."** The old answer kept the run going and gave up the
+    /// posting instead, and the gap was that the run *itself* sat still in the background - a
+    /// pause in everything but name. So the run ends, with the score it had, exactly as a lost
+    /// last ball ends it: it posts if it was the scoring attempt, because the player gained
+    /// nothing by leaving. Only a real trip to the background counts; pulling down Control
+    /// Centre resigns active without leaving, and costs nothing.
+    static func leavingEndsTheRun(noBreaks: Bool, inPlay: Bool) -> Bool {
+        noBreaks && inPlay
+    }
+
+    /// Ends the run because the player left the app on a No Breaks day (see above).
+    func endTheRunForLeaving() {
+        guard GameScene.leavingEndsTheRun(noBreaks: dailyNoPausing,
+                                          inPlay: gameState.currentState is Playing) else { return }
+        gameoverStatus = true
+        removeAction(forKey: "gameTimer")
+        levelTimerBonus = 0
+        gameState.enter(InbetweenLevels.self)
+        // The same three steps a lost last ball takes, so the result, the record and the
+        // game-over card all see a run that finished rather than a special case
     }
 
     /// Which way the day turns the level over, if it does.
@@ -602,6 +638,12 @@ extension GameScene {
     /// be stood up in a test and this is the part worth pinning.
     static func dailyLifeIsSpent(onTimeTrial timeTrial: Bool) -> Bool { timeTrial == false }
 
+    /// Whether a lost ball is replaced rather than ending the run: a ball left in the rack, or a
+    /// Time Trial, whose balls are unlimited in every mode (round 350).
+    static func ballComesBack(livesLeft: Int, onTimeTrial timeTrial: Bool) -> Bool {
+        livesLeft > 0 || timeTrial
+    }
+
     /// Builds the countdown into the HUD, on the multiplier's row and to its left.
     ///
     /// **James, round 340: "in the time trial, the countdown timer should be to the left of
@@ -618,7 +660,10 @@ extension GameScene {
     func setupDailyClock() {
         guard dailyTimeTrial, dailyClockLabel == nil else { return }
         let clock = SKLabelNode(fontNamed: multiplierLabel.fontName)
-        clock.fontSize = (multiplierLabel.fontSize*GameScene.dailyClockScale).rounded()
+        clock.fontSize = endlessMode
+            ? scoreLabel.fontSize
+            : (multiplierLabel.fontSize*GameScene.dailyClockScale).rounded()
+        // In the endless modes it shares the height's row, so it takes the height's size
         // **Bigger than the labels beside it** (James, round 348: "make the label bigger so it
         // stands out better from the other labels nearby"). It was the multiplier's size, and on
         // the one day the clock is the thing to watch it read as one more HUD figure
@@ -633,6 +678,22 @@ extension GameScene {
     /// How much bigger the Time Trial clock is than the multiplier beside it (round 348).
     static let dailyClockScale: CGFloat = 1.4
 
+    /// The clock's colour while there is time to spare (round 350).
+    static let dailyClockColour = #colorLiteral(red: 0.8235294118, green: 1, blue: 0, alpha: 1)
+
+    /// The gap before the height, in label spacings, in the endless modes (round 350).
+    static let dailyClockGapBeforeHeight: CGFloat = 3
+
+    /// Where a HUD label's drawn text starts, given where the label sits and how it aligns.
+    static func leftEdge(ofLabelAt x: CGFloat, drawn: CGFloat,
+                         alignment: SKLabelHorizontalAlignmentMode) -> CGFloat {
+        switch alignment {
+        case .left: return x
+        case .right: return x - drawn
+        default: return x - drawn/2
+        }
+    }
+
     /// Puts the clock a fixed gap to the left of the multiplier, whatever the multiplier says.
     ///
     /// The multiplier is drawn as a strip of placed characters rather than as the label's own
@@ -643,6 +704,26 @@ extension GameScene {
     func placeTheDailyClock() {
         guard let clock = dailyClockLabel else { return }
         clock.horizontalAlignmentMode = .right
+        if endlessMode {
+            clock.verticalAlignmentMode = scoreLabel.verticalAlignmentMode
+            let height = shownText(of: scoreLabel)
+            let drawn = UIFont(name: scoreLabel.fontName ?? "", size: scoreLabel.fontSize)
+                .map { FixedWidthDigits.layout(height.isEmpty ? "0m" : height, font: $0).width } ?? 0
+            let left = GameScene.leftEdge(ofLabelAt: scoreLabel.position.x, drawn: drawn,
+                                          alignment: scoreLabel.horizontalAlignmentMode)
+            let gap = max(labelSpacing*GameScene.dailyClockGapBeforeHeight,
+                          scoreLabel.fontSize*0.5)
+            clock.position = CGPoint(x: left - gap, y: scoreLabel.position.y)
+            // Never less than half the height's own size, so the clearance holds on any screen
+            // whatever the HUD's spacing works out to
+            return
+        }
+        // **On the height's row in the endless modes** (James, round 350: "for an endless mode
+        // or endless mayhem time trial, align the countdown timer with the height. Make sure
+        // there's enough clearance between them as the height gets bigger"). The row below the
+        // height is not a multiplier there, so a clock placed as if beside "x1.0" sat under the
+        // height at no particular place. It is measured from what the height label is actually
+        // drawing, on every tick, so a height that gains a digit pushes the clock along with it
         clock.verticalAlignmentMode = multiplierLabel.verticalAlignmentMode
         // Set here rather than where the label is built, because the geometry below only means
         // anything if the clock grows leftwards: its right edge is what is being placed
@@ -672,7 +753,8 @@ extension GameScene {
         guard dailyTimeTrial, gameoverStatus == false,
               gameState.currentState is Playing, isPaused == false else { return }
         dailyTimeTrialUnderway = GameScene.timeTrialUnderway(already: dailyTimeTrialUnderway,
-                                                            ballOnPaddle: ballIsOnPaddle)
+                                                            ballOnPaddle: ballIsOnPaddle,
+                                                            remaining: dailyTimeTrialRemaining)
         guard dailyTimeTrialUnderway else { return }
         guard spendDailyTimeTrial(delta) else { return }
 
@@ -689,8 +771,16 @@ extension GameScene {
     /// Whether the Time Trial's clock is running, given whether it already was and where the
     /// ball is: from the first moment the ball leaves the paddle, for good (round 346). A ball
     /// caught on a sticky paddle afterwards does not stop it.
-    static func timeTrialUnderway(already: Bool, ballOnPaddle: Bool) -> Bool {
-        already || ballOnPaddle == false
+    ///
+    /// **And a clock that has already spent anything is running** (round 350, seen on the
+    /// simulator). The flag is not in the save, so a run resumed with the ball on the paddle -
+    /// just after a lost ball came back, say - read as a run not yet served, and the clock sat
+    /// at 87s for as long as the player cared to wait: a pause, on the twist that gives none.
+    /// What the save does carry is the time left, and anything under the full ninety says the
+    /// first serve has happened.
+    static func timeTrialUnderway(already: Bool, ballOnPaddle: Bool,
+                                  remaining: TimeInterval) -> Bool {
+        already || ballOnPaddle == false || remaining < DailyTwist.timeTrialSeconds
     }
 
     /// Spends flight time off the clock, and reports whether the whistle blew.
@@ -711,7 +801,9 @@ extension GameScene {
     func showDailyClock() {
         guard let clock = dailyClockLabel else { return }
         let seconds = Int(dailyTimeTrialRemaining.rounded(.up))
-        clock.fontColor = seconds <= 10 ? .red : scoreLabel.fontColor
+        clock.fontColor = seconds <= 10 ? .red : GameScene.dailyClockColour
+        // **Giga-Ball's lime** (James, round 350: "make the timer countdown label giga-ball
+        // yellow/green"), red for the last ten as before
         write("\(seconds)s", into: clock)
         // **Every digit on the same pitch**, the score label's trick (James, round 348: "use the
         // same trick as the score label to enable the number to be fixed width so it doesn't

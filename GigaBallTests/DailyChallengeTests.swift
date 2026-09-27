@@ -133,7 +133,8 @@ final class DailyChallengeTests: XCTestCase {
 
         let names = LevelPackSetup().themeNameArray
         let expected = names[DailyTwist.dailyThemeIndex(forKey: key, themeCount: names.count)]
-        XCTAssertEqual(DailyTwist.dailyTheme.displayName(forKey: key), "Theme - " + expected)
+        XCTAssertEqual(DailyTwist.dailyTheme.displayName(forKey: key), expected + " Theme",
+                       "James, round 350: 'say Rainbow Theme instead of Theme - Rainbow'")
         XCTAssertTrue(DailyTwist.dailyTheme.blurb(forKey: key).contains(expected))
         XCTAssertEqual(DailyTwist.oneLife.displayName(forKey: key), DailyTwist.oneLife.displayName,
                        "a twist with nothing to name reads as it always has")
@@ -567,6 +568,13 @@ final class DailyChallengeTests: XCTestCase {
             "This challenge closed on 3 MARCH. Playing won't post a score.",
             "and it names the day when the screen has told it one - which is what somebody "
             + "browsing back through a fortnight wants to know (round 306)")
+
+        XCTAssertEqual(
+            DailyChallengePosting.practiceNotice(record: nil, isToday: false,
+                                                 mode: .classic, closedOn: "Yesterday"),
+            "This challenge closed yesterday. Playing won't post a score.",
+            "the pop-up read \"closed on Yesterday\" (round 350): a relative day takes no "
+            + "\"on\", and it is not a name, so it is not capitalised mid-sentence")
 
         var spent = DailyChallengeRecord(dateKey: "t")
         spent.attemptCount = 1
@@ -1323,12 +1331,24 @@ final class DailyLayoutTwistTests: XCTestCase {
     /// James, round 346: "the countdown clock stops when the ball is caught by a sticky paddle
     /// - it should always continue to count down unless the game is paused."
     func testOnceTheFirstBallIsServedACatchDoesNotStopTheClock() {
-        XCTAssertFalse(GameScene.timeTrialUnderway(already: false, ballOnPaddle: true),
+        let full = DailyTwist.timeTrialSeconds
+        XCTAssertFalse(GameScene.timeTrialUnderway(already: false, ballOnPaddle: true,
+                                                   remaining: full),
                        "before the first serve, reading the field is free")
-        XCTAssertTrue(GameScene.timeTrialUnderway(already: false, ballOnPaddle: false),
+        XCTAssertTrue(GameScene.timeTrialUnderway(already: false, ballOnPaddle: false,
+                                                  remaining: full),
                       "the serve starts it")
-        XCTAssertTrue(GameScene.timeTrialUnderway(already: true, ballOnPaddle: true),
+        XCTAssertTrue(GameScene.timeTrialUnderway(already: true, ballOnPaddle: true,
+                                                  remaining: full - 10),
                       "and a ball caught on a sticky paddle afterwards does not stop it")
+    }
+
+    /// Seen on the simulator, round 350: a Time Trial resumed with the ball on the paddle sat at
+    /// 87s for a minute and a half. The save keeps the time left and not whether the ball had
+    /// been served, and a resumed scene starts with the flag down.
+    func testAResumedClockThatHasAlreadyRunKeepsRunning() {
+        XCTAssertTrue(GameScene.timeTrialUnderway(already: false, ballOnPaddle: true,
+                                                  remaining: 87))
     }
 
     /// "Still shows balls as lives in the game even though it's unlimited lives - no need to
@@ -1397,6 +1417,33 @@ final class DailyLayoutTwistTests: XCTestCase {
         scene.showDailyClock()
         XCTAssertEqual(pitch(), eightyEight, "every character sits where it sat before")
         XCTAssertEqual(scene.shownText(of: clock), "11s")
+    }
+
+    /// James, round 350: "For an endless mode or endless mayhem time trial, align the countdown
+    /// timer with the height. Make sure there's enough clearance between them as the height gets
+    /// bigger. Make the timer countdown label giga-ball yellow/green."
+    func testAnEndlessClockSitsOnTheHeightsRowAndKeepsClearOfItAsItGrows() throws {
+        let scene = timeTrialScene()
+        defer { DailyChallengeSession.shared.active = nil }
+        scene.endlessMode = true
+        scene.scoreLabel = SKLabelNode(fontNamed: "FugazOne-Regular")
+        scene.scoreLabel.fontSize = 28
+        scene.scoreLabel.horizontalAlignmentMode = .right
+        scene.scoreLabel.position = CGPoint(x: 180, y: 380)
+        scene.dailyClockLabel = SKLabelNode(fontNamed: "FugazOne-Regular")
+        let font = try XCTUnwrap(UIFont(name: "FugazOne-Regular", size: 28))
+
+        for height in ["8m", "1234m"] {
+            scene.write(height, into: scene.scoreLabel)
+            scene.dailyTimeTrialRemaining = 60
+            scene.showDailyClock()
+            let clock = try XCTUnwrap(scene.dailyClockLabel)
+            XCTAssertEqual(clock.position.y, scene.scoreLabel.position.y, "on the height's row")
+            let heightStarts = 180 - FixedWidthDigits.layout(height, font: font).width
+            XCTAssertLessThan(clock.position.x, heightStarts,
+                              "the clock runs into \(height)")
+            XCTAssertEqual(clock.fontColor, GameScene.dailyClockColour, "lime, not white")
+        }
     }
 
     /// And it sits on the multiplier's row, to its left, clear of the number beside it.
@@ -1921,30 +1968,15 @@ final class DailyNoRepeatsTests: XCTestCase {
         XCTAssertTrue(scene.dailyPausingIsAllowed)
     }
 
-    func testLeavingTheAppForfeitsTheAttemptOnANoPausingDay() {
-        let scene = GameScene()
-        let session = DailyChallengeSession.shared
-        session.active = DailyChallenge(dateKey: "2026-10-02", mode: .endlessII,
-                                        classicLevel: nil, twists: [.noPausing])
-        session.forfeitedByLeaving = false
-        defer { session.active = nil; session.forfeitedByLeaving = false }
-
-        scene.dailyForfeitByLeaving()
-        XCTAssertTrue(session.forfeitedByLeaving,
-                      "the app pausing itself in the background would hand the player exactly "
-                      + "what the twist takes away")
-    }
-
-    func testLeavingTheAppCostsNothingOnAnyOtherDay() {
-        let scene = GameScene()
-        let session = DailyChallengeSession.shared
-        session.active = DailyChallenge(dateKey: "2026-10-02", mode: .endlessII,
-                                        classicLevel: nil, twists: [.drought])
-        session.forfeitedByLeaving = false
-        defer { session.active = nil; session.forfeitedByLeaving = false }
-
-        scene.dailyForfeitByLeaving()
-        XCTAssertFalse(session.forfeitedByLeaving)
+    /// James, round 350: "No breaks twist should end the run if the user closes the app. Right
+    /// now the game just carries on where it left off if the user closes and reopens the app,
+    /// effectively allowing them to pause."
+    func testLeavingTheAppEndsTheRunOnANoBreaksDayAndOnlyThen() {
+        XCTAssertTrue(GameScene.leavingEndsTheRun(noBreaks: true, inPlay: true))
+        XCTAssertFalse(GameScene.leavingEndsTheRun(noBreaks: false, inPlay: true),
+                       "on any other day the app pauses the run, as it always has")
+        XCTAssertFalse(GameScene.leavingEndsTheRun(noBreaks: true, inPlay: false),
+                       "a run already over, or not yet started, has nothing to end")
     }
 
     func testNoPausingIsItsOwnCategorySoItCanLandWithAnything() {
@@ -2656,6 +2688,18 @@ final class TwistNamesMatchTheWorkbookTests: XCTestCase {
     /// The workbook's Details column asks for "unlimited lives" and the game was taking them:
     /// ninety seconds *and* three balls is two limits where the design asks for one, and a bad
     /// start ended the attempt with a minute of it still on the board.
+    /// James, round 350: "When I lost a ball on a daily challenge with a time trial twist, the
+    /// game ended. It should've given me a new ball seeing as there are unlimited balls in this
+    /// twist." An endless run's rack is empty, and the check asked what was left.
+    func testATimeTrialGivesANewBallInEveryModeEvenWithAnEmptyRack() {
+        XCTAssertTrue(GameScene.ballComesBack(livesLeft: 0, onTimeTrial: true),
+                      "an endless Time Trial starts with no rack and must still get the ball back")
+        XCTAssertTrue(GameScene.ballComesBack(livesLeft: 3, onTimeTrial: true))
+        XCTAssertFalse(GameScene.ballComesBack(livesLeft: 0, onTimeTrial: false),
+                       "on any other day, an empty rack still ends the run")
+        XCTAssertTrue(GameScene.ballComesBack(livesLeft: 1, onTimeTrial: false))
+    }
+
     func testATimeTrialSpendsNoLives() {
         XCTAssertFalse(GameScene.dailyLifeIsSpent(onTimeTrial: true))
         XCTAssertTrue(GameScene.dailyLifeIsSpent(onTimeTrial: false),
@@ -3388,5 +3432,107 @@ final class ThemeBrickTests: XCTestCase {
             .appendingPathComponent("retro-level-5.png")
         try XCTUnwrap(image.pngData()).write(to: file)
         print("\n  Retro level 5: \(file.path)\n")
+    }
+}
+
+/// James, round 350: "Bricks in endless mode and mayhem don't reliably drop to the lowest brick
+/// level. They can get stuck too high, then when breaking a brick not on the lowest level they
+/// then drop. Can the game check more frequently that the bricks are at the lowest level and if
+/// not move them down."
+final class EndlessFieldSettleTests: XCTestCase {
+
+    func testTheFieldIsAskedOnAClockWhileAnEndlessRunIsInPlay() {
+        let every = GameScene.endlessFieldSettleInterval
+        XCTAssertTrue(GameScene.fieldSettleIsDue(endless: true, inPlay: true,
+                                                 fieldIsLaidOut: true, buildingIn: false,
+                                                 elapsed: every))
+        XCTAssertFalse(GameScene.fieldSettleIsDue(endless: true, inPlay: true,
+                                                  fieldIsLaidOut: true, buildingIn: false,
+                                                  elapsed: every/2), "not every frame")
+        XCTAssertLessThanOrEqual(every, 0.5, "often enough that a gap never sits there visibly")
+    }
+
+    func testNotInClassicNotWhilePausedAndNotWhileTheFieldBuildsIn() {
+        XCTAssertFalse(GameScene.fieldSettleIsDue(endless: false, inPlay: true,
+                                                  fieldIsLaidOut: true, buildingIn: false,
+                                                  elapsed: 1))
+        XCTAssertFalse(GameScene.fieldSettleIsDue(endless: true, inPlay: false,
+                                                  fieldIsLaidOut: true, buildingIn: false,
+                                                  elapsed: 1))
+        XCTAssertFalse(GameScene.fieldSettleIsDue(endless: true, inPlay: true,
+                                                  fieldIsLaidOut: true, buildingIn: true,
+                                                  elapsed: 1),
+                       "an empty bottom zone means nothing while the opening field is arriving")
+    }
+
+    /// Found on the simulator, round 350: a daily replayed from its end screen opened at 21m,
+    /// before the ball was served. The clock read the gap between the old field being cleared
+    /// and the new one being built as a bottom row to close, and the step's own recount carried
+    /// it on through the whole new field.
+    func testNotBeforeTheRunsFieldIsOnTheBoard() {
+        XCTAssertFalse(GameScene.fieldSettleIsDue(endless: true, inPlay: true,
+                                                  fieldIsLaidOut: false, buildingIn: false,
+                                                  elapsed: 1))
+    }
+}
+
+/// James, round 350: "When playing a daily challenge level again, in the pause view, complete /
+/// game over view, show what score was posted if there was one posted when the daily challenge
+/// was live. Also show the previous best score for that daily challenge." And: "For a daily
+/// challenge run either a competition run or free play, show the high score posted on the global
+/// leaderboard."
+final class DailyComparisonTests: XCTestCase {
+
+    private func record(first: Int, practice: Int, posted: Bool) -> DailyChallengeRecord {
+        var record = DailyChallengeRecord(dateKey: "2026-09-22")
+        record.firstAttemptScore = first
+        record.bestPracticeScore = practice
+        record.posted = posted
+        record.attemptCount = 2
+        return record
+    }
+
+    func testAFirstGoAtTheDayHasNothingToCompareWith() {
+        let comparison = DailyComparison(record: nil)
+        XCTAssertNil(comparison.row(unit: ""))
+        XCTAssertEqual(comparison.lines(boardBest: nil, unit: ""), [])
+    }
+
+    func testThePostedScoreIsTheRowWhileNothingHasBeatenIt() {
+        let comparison = DailyComparison(record: record(first: 1_867, practice: 1_200, posted: true))
+        XCTAssertEqual(comparison.row(unit: "")?.title, "Posted Score")
+        XCTAssertEqual(comparison.row(unit: "")?.value, "1867")
+        XCTAssertEqual(comparison.lines(boardBest: nil, unit: ""), [],
+                       "the posted score is already the row, so it is not said twice")
+    }
+
+    func testABetterFreePlayRunTakesTheRowAndThePostedScoreMovesToTheLine() {
+        let comparison = DailyComparison(record: record(first: 1_200, practice: 1_867, posted: true))
+        XCTAssertEqual(comparison.row(unit: "")?.title, "Previous Best")
+        XCTAssertEqual(comparison.row(unit: "")?.value, "1867")
+        XCTAssertEqual(comparison.lines(boardBest: 3_400, unit: ""),
+                       ["Posted score 1,200", "Global hi-score 3,400"])
+    }
+
+    func testADayThatNeverPostedStillHasAPreviousBest() {
+        let comparison = DailyComparison(record: record(first: 0, practice: 95, posted: false))
+        XCTAssertEqual(comparison.row(unit: "m")?.title, "Previous Best")
+        XCTAssertEqual(comparison.row(unit: "m")?.value, "95m")
+    }
+
+    /// Game Center keeps only the open occurrence of a recurring board and the one that closed
+    /// last, so only today and yesterday have a leader to show.
+    func testOnlyTodayAndYesterdayHaveABoardToAsk() {
+        let today = "2026-09-26"
+        XCTAssertEqual(DailyChallengeSession.boardOccurrence(forKey: today, todayKey: today), .current)
+        XCTAssertEqual(DailyChallengeSession.boardOccurrence(forKey: "2026-09-25", todayKey: today),
+                       .previous)
+        XCTAssertNil(DailyChallengeSession.boardOccurrence(forKey: "2026-09-24", todayKey: today))
+    }
+
+    func testTheCardsHiScoreLineReadsAsTheBoardsFigure() {
+        XCTAssertEqual(DailyCardView.hiScoreLine(3_400, unit: "", onLime: false).string
+                        .trimmingCharacters(in: .whitespaces).hasSuffix("Global Hi-Score:  3,400"),
+                       true)
     }
 }

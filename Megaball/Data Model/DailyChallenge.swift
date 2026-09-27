@@ -239,12 +239,13 @@ enum DailyTwist: String, CaseIterable, Codable {
         return names.indices.contains(index) ? names[index] : ""
     }
 
-    /// The twist's name for a particular day: "Theme - Ice" on a Theme day, the plain name
+    /// The twist's name for a particular day: "Ice Theme" on a Theme day, the plain name
     /// otherwise (round 321).
     func displayName(forKey key: String) -> String {
         guard self == .dailyTheme else { return displayName }
         let theme = DailyTwist.themeName(forKey: key)
-        return theme.isEmpty ? displayName : displayName + " - " + theme
+        return theme.isEmpty ? displayName : theme + " Theme"
+        // **"Rainbow Theme", not "Theme - Rainbow"** (James, round 350)
     }
 
     /// And its blurb for that day, which names the theme rather than promising "one".
@@ -601,7 +602,12 @@ enum DailyTwist: String, CaseIterable, Codable {
     /// balls under it. The answer lived on `GameScene`, where a view controller cannot ask it.
     /// What the pause screen and the resume card say about balls on a Time Trial, where losing
     /// one costs nothing (James, round 340).
-    static let unlimitedBallsLine = "Unlimited balls"
+    /// What a Time Trial shows where the balls would be: the time left (round 350). Nil is a run
+    /// whose clock has not been saved yet, which is a fresh ninety.
+    static func timeLeftLine(seconds: Double?) -> String {
+        let left = Int((seconds ?? DailyTwist.timeTrialSeconds).rounded(.up))
+        return "\(max(0, left))s left"
+    }
 
     static func forcedTheme(for challenge: DailyChallenge?) -> Int? {
         guard let challenge else { return nil }
@@ -1157,7 +1163,10 @@ enum DailyChallengePosting {
     static func practiceNotice(record: DailyChallengeRecord?, isToday: Bool,
                                mode: GameMode, closedOn: String? = nil) -> String? {
         guard isToday else {
-            let when = closedOn.map { " on " + $0 } ?? ""
+            let when = closedOn.map { $0.lowercased() == "yesterday" ? " yesterday" : " on " + $0 } ?? ""
+            // **"Closed yesterday", not "closed on Yesterday"** (round 350, seen on the
+            // simulator): the screen spells yesterday's date as the word, and a relative day
+            // takes no "on"
             return "This challenge closed\(when). Playing won't post a score."
         }
         guard let record, record.attemptCount > 0 else { return nil }
@@ -1429,20 +1438,44 @@ final class DailyChallengeSession {
     /// the first press is practice, labelled as such.
     var isScoringAttempt = false
 
+    /// A Time Trial's clock as the run was paused or ended, for the pause screen to show where
+    /// the balls line would be (round 350). Set by the scene just before it shows that screen.
+    var timeTrialRemaining: Double?
+
+    /// What this day had scored before the run in play: the posted score, if there was one, and
+    /// the best of every earlier run. Taken as the run starts (`captureComparison`), because by
+    /// the time the game-over screen is up the record already holds this run (round 350).
+    var comparisonPosted: Int?
+    var comparisonPreviousBest: Int?
+
+    /// The top score on Game Center's board for the day in play, where it can be known (today's
+    /// board, or yesterday's closed one) and has been asked for.
+    var boardBest: Int?
+
+    /// Takes the day's figures from its record as a run begins or resumes. The record's scores do
+    /// not yet include the run in play: a result is written when a run ends.
+    func captureComparison(from record: DailyChallengeRecord?) {
+        let comparison = DailyComparison(record: record)
+        comparisonPosted = comparison.posted
+        comparisonPreviousBest = comparison.previousBest
+        boardBest = nil
+    }
+
+    /// Which occurrence of the recurring daily board holds a day: today's is the open one,
+    /// yesterday's the one that closed last. Game Center keeps no older occurrence to ask.
+    enum BoardOccurrence { case current, previous }
+    static func boardOccurrence(forKey key: String, todayKey: String) -> BoardOccurrence? {
+        if key == todayKey { return .current }
+        guard let today = DailyDay.date(forKey: todayKey),
+              let yesterday = DailyDay.utcCalendar.date(byAdding: .day, value: -1, to: today)
+        else { return nil }
+        return key == DailyDay.key(for: yesterday) ? .previous : nil
+    }
+
     /// Whether the run that just ended posted to today's board - the game-over screen's
     /// question. Written by `recordDailyResult` as it settles the run, so the screen
     /// never has to re-derive what the scene already decided.
     var lastRunPosted = false
-
-    /// Whether the run in play has forfeited its attempt by leaving the app.
-    ///
-    /// The No Breaks twist's second half (§4): "the pause button is disabled for the run.
-    /// Backgrounding the app forfeits posting." Taking the pause button away and leaving the
-    /// background route open would make the twist a suggestion - the app pauses itself when it
-    /// goes to the background, so a player could get exactly what the twist withholds by
-    /// switching apps. The run is not ended, because ending somebody's run from the outside is
-    /// worse than not scoring it; it simply stops being the attempt.
-    var forfeitedByLeaving = false
 
     /// Whether the run in play was resumed after its scoring window had closed.
     ///
@@ -1591,5 +1624,55 @@ final class DailyChallengeSession {
             return display.string(from: date).uppercased()
         }
         return key
+    }
+}
+
+/// A daily's own points of comparison, for a player playing it again.
+///
+/// **James, round 350: "When playing a daily challenge level again, in the pause view, complete /
+/// game over view, show what score was posted if there was one posted when the daily challenge
+/// was live. Also show the previous best score for that daily challenge. These are good points of
+/// comparison for the player if they are playing the level again." And: "For a daily challenge
+/// run either a competition run or free play, show the high score posted on the global
+/// leaderboard."**
+///
+/// One row under the score and a line below it. The row is the figure a player measures this run
+/// against: the posted score while nothing has beaten it, the previous best once a free-play run
+/// has - and then the posted score moves to the line, so neither is lost and neither is said twice.
+struct DailyComparison: Equatable {
+    let posted: Int?
+    let previousBest: Int?
+
+    init(posted: Int?, previousBest: Int?) {
+        self.posted = posted
+        self.previousBest = previousBest
+    }
+
+    init(record: DailyChallengeRecord?) {
+        let posted = record?.posted == true ? record?.firstAttemptScore : nil
+        let best = max(record?.firstAttemptScore ?? 0, record?.bestPracticeScore ?? 0)
+        self.init(posted: posted, previousBest: best > 0 ? best : nil)
+    }
+
+    /// The row under the score: its title and figure, or nil for a day with nothing before it.
+    func row(unit: String) -> (title: String, value: String)? {
+        if let posted, (previousBest ?? 0) <= posted {
+            return ("Posted Score", "\(posted)\(unit)")
+        }
+        if let previousBest { return ("Previous Best", "\(previousBest)\(unit)") }
+        return nil
+    }
+
+    /// The lines under the run's numbers: the posted score when the row is busy with a better
+    /// one, and the board's leader when it is known.
+    func lines(boardBest: Int?, unit: String) -> [String] {
+        var lines: [String] = []
+        if let posted, let previousBest, previousBest > posted {
+            lines.append("Posted score \(StatsPage.grouped(posted))\(unit)")
+        }
+        if let boardBest, boardBest > 0 {
+            lines.append("Global hi-score \(StatsPage.grouped(boardBest))\(unit)")
+        }
+        return lines
     }
 }

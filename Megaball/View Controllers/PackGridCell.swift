@@ -44,6 +44,12 @@ final class PackGridCell: UICollectionViewCell {
     /// What became of one appearance of a power-up: ACTIVE, FALLING, BRICK, COLLECTED,
     /// MISSED. Empty on every other grid, which is every grid but the in-game recents
     private let status = UILabel()
+
+    /// The icon-and-name block, centred - and, while a status line is showing, kept above it.
+    private lazy var blockCentre = block.centerYAnchor.constraint(equalTo: card.centerYAnchor,
+                                                                  constant: 5)
+    private lazy var blockAboveStatus = block.bottomAnchor.constraint(
+        lessThanOrEqualTo: status.topAnchor, constant: -2)
     /// Opens the pack's level list. Named for where it sits rather than for what it was.
     private let play = UIButton(type: .system)
 
@@ -143,6 +149,11 @@ final class PackGridCell: UICollectionViewCell {
                                                             constant: -namePadding)
         self.blockLeading = blockLeading
         self.blockTrailing = blockTrailing
+        blockCentre.priority = .defaultHigh
+        blockAboveStatus.priority = .required
+        // The centring gives way to the status line (round 350, seen on an iPad: "Increase
+        // Ball Speed" on two lines ran straight through MISSED under it). The block is centred
+        // a little low, and the status sits on the card's foot, so any name that wraps met it
 
         NSLayoutConstraint.activate([
             card.topAnchor.constraint(equalTo: contentView.topAnchor),
@@ -157,7 +168,7 @@ final class PackGridCell: UICollectionViewCell {
             // height. Sized as a fraction of the card rather than in points, because the grid
             // works its cell size out from the screen it finds itself on
             block.centerXAnchor.constraint(equalTo: card.centerXAnchor),
-            block.centerYAnchor.constraint(equalTo: card.centerYAnchor, constant: 5),
+            blockCentre,
             // Nudged down off dead centre (play-test round 37): the two corner marks now sit
             // along the top edge, so true centre reads as slightly high against them
             blockLeading, blockTrailing,
@@ -261,6 +272,7 @@ final class PackGridCell: UICollectionViewCell {
               nameSize: CGFloat = 13, status statusNote: String = "") {
         status.text = statusNote
         status.isHidden = statusNote.isEmpty
+        blockAboveStatus.isActive = statusNote.isEmpty == false
         status.textColor = mark(0.6)
         // What became of this appearance (James, round 185: "this run power ups in the in
         // game info screen are missing the details from the game like, active, missed,

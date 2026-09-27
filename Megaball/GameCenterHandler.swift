@@ -166,6 +166,44 @@ final class GameCenterHandler: NSObject {
         }
     }
 
+    /// The top score on the daily board for a day, where Game Center can still say (round 350).
+    ///
+    /// The daily board recurs, so only two occurrences exist to ask: today's, which is open, and
+    /// the one that closed last - yesterday's. Any older day answers nil, as does a player who is
+    /// signed out or offline, or a board with nobody on it yet. The top place is read whether or
+    /// not the local player has an entry, which `loadRank` cannot do: it answers only for a
+    /// player on the board.
+    func loadDailyBoardBest(forKey key: String, completion: @escaping (Int?) -> Void) {
+        let session = DailyChallengeSession.shared
+        guard GKLocalPlayer.local.isAuthenticated,
+              let occurrence = DailyChallengeSession.boardOccurrence(forKey: key,
+                                                                    todayKey: session.todayKey)
+        else { completion(nil); return }
+        func top(of board: GKLeaderboard) {
+            board.loadEntries(for: .global, timeScope: .allTime,
+                              range: NSRange(location: 1, length: 1)) { _, entries, _, _ in
+                DispatchQueue.main.async { completion(entries?.first?.score) }
+            }
+        }
+        GKLeaderboard.loadLeaderboards(IDs: [DailyChallengeBoards.daily]) { boards, _ in
+            guard let board = boards?.first else {
+                DispatchQueue.main.async { completion(nil) }
+                return
+            }
+            switch occurrence {
+            case .current: top(of: board)
+            case .previous:
+                board.loadPreviousOccurrence { previous, _ in
+                    guard let previous else {
+                        DispatchQueue.main.async { completion(nil) }
+                        return
+                    }
+                    top(of: previous)
+                }
+            }
+        }
+    }
+
     /// The overall board's running total (§7), submitted whole after a day's post is
     /// confirmed. Always the whole total, so it is safe to resubmit and self-heals: a
     /// day that lands late still reaches it.

@@ -27,6 +27,8 @@ enum PowerUpIcon {
     /// The green every beneficial power-up wears, and the red every harmful one does.
     static let beneficial = #colorLiteral(red: 0.2039215686, green: 0.7803921569, blue: 0.3490196078, alpha: 1)
     static let harmful = #colorLiteral(red: 0.9098039216, green: 0.2666666667, blue: 0.2666666667, alpha: 1)
+    /// The neutral power-ups' yellow ground (round 332's Drift icons, round 350's glow).
+    static let neutral = #colorLiteral(red: 1, green: 0.8, blue: 0, alpha: 1)
 
     /// Multi-Ball: three balls where there was one.
     ///
@@ -1405,6 +1407,33 @@ extension DailyTwist {
     func titleLine(font: UIFont, colour: UIColor, dateKey: String) -> NSAttributedString {
         DailyTwist.badgedLine(icon: icon, name: displayName(forKey: dateKey), font: font,
                               colour: colour)
+    }
+
+    /// "Daily Challenge" over the day, with a calendar before the date.
+    ///
+    /// **James, round 350: "for a daily challenge, on the in game view screens, add a little
+    /// calendar icon before the date of the daily challenge so it's easier for the user to parse
+    /// as a date."** One builder for the level intro, the pause and game-over screens and the
+    /// resume card, so the four say it the same way. The symbol takes the line's own colour and
+    /// size, so it reads as part of the text rather than as a badge.
+    static func dateLines(forKey key: String, font: UIFont, colour: UIColor) -> NSAttributedString {
+        let lines = NSMutableAttributedString(
+            string: GameMode.daily.name + "\n",
+            attributes: [.font: font, .foregroundColor: colour])
+        let symbol = UIImage(systemName: "calendar",
+                             withConfiguration: UIImage.SymbolConfiguration(font: font))?
+            .withTintColor(colour, renderingMode: .alwaysOriginal)
+        if let symbol {
+            let attachment = NSTextAttachment(image: symbol)
+            attachment.bounds = CGRect(x: 0, y: font.descender*0.6,
+                                       width: symbol.size.width, height: symbol.size.height)
+            lines.append(NSAttributedString(attachment: attachment))
+            lines.append(NSAttributedString(string: " ", attributes: [.font: font]))
+        }
+        lines.append(NSAttributedString(
+            string: DailyChallengeSession.shared.displayName(forKey: key).capitalized,
+            attributes: [.font: font, .foregroundColor: colour]))
+        return lines
     }
 
     /// What a day with no twists is called, and its badge.

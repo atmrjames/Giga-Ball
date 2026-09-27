@@ -631,9 +631,10 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
 
         if let challenge = DailyChallengeSession.shared.active {
             packNameLabel.numberOfLines = 2
-            packNameLabel.text = "Daily Challenge\n"
-                + DailyChallengeSession.shared.displayName(forKey: challenge.dateKey)
-                    .capitalized
+            packNameLabel.attributedText = DailyTwist.dateLines(
+                forKey: challenge.dateKey, font: packNameLabel.font ?? .systemFont(ofSize: 17),
+                colour: packNameLabel.textColor ?? .white)
+            // With a calendar before the date (round 350, `DailyTwist.dateLines`)
             // **The date goes on its own line** (James, round 332's layout notes, written
             // against five of the seven screens: "put the date on the line below Daily
             // Challenge to avoid any clipping on smaller devices"). "Daily Challenge,
@@ -668,6 +669,8 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
             levelNameLabel.numberOfLines = 0
             levelNameLabel.adjustsFontSizeToFitWidth = true
             levelNameLabel.attributedText = lines
+            view.setNeedsLayout()
+            // So a measuring pass always follows the text (round 350)
             // One twist per line, the same as the pause summary (play-test round 3), and
             // a no-twist day says Vanilla with its own badge rather than saying nothing
 
@@ -884,12 +887,21 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
             resultBandBaseSize[key] = base
             label.font = font.withSize((base*scale).rounded())
 
-            for constraint in label.constraints where constraint.firstAttribute == .height {
+            let measuredElsewhere = label === levelNameLabel
+                && DailyChallengeSession.shared.active != nil
+            for constraint in label.constraints where constraint.firstAttribute == .height
+                && measuredElsewhere == false {
                 let tie = ObjectIdentifier(constraint)
                 let baseHeight = resultBandBaseHeight[tie] ?? constraint.constant
                 resultBandBaseHeight[tie] = baseHeight
                 constraint.constant = (baseHeight*scale).rounded()
             }
+            // **Not a daily's twist list** (James, round 350: "daily challenge with a theme and
+            // time trial failed to show both twists on the level intro splash screen"). That box
+            // is measured to its lines by `giveTheTwistsTheRoomTheyNeed`, and scaling it from a
+            // height remembered on an earlier pass - which could be the one-line storyboard box,
+            // or an estimate short of two lines that lead with an icon each - put it back to one
+            // line, and a label one line short drops its last line
             // The heights come with the fonts: every one of these labels is given a fixed one
             // in the storyboard, and type inside a box that did not shrink with it is how the
             // twists came to be drawn outside their own label in round 333.
@@ -1019,14 +1031,15 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
     private var header = UIViewController.InGameHeader()
 
     private func giveTheTwistsTheRoomTheyNeed() {
-        guard let label = levelNameLabel, label.attributedText != nil,
-              label.bounds.width > 0 else { return }
+        guard let label = levelNameLabel, label.attributedText != nil else { return }
+        let width = label.bounds.width > 0 ? label.bounds.width : view.bounds.width - 20
+        guard width > 0 else { return }
 
         centreTheTwistsLikeTheDailyCard()
         giveTheTwistsAirAboveThem()
 
         let needed = ceil(label.textRect(
-            forBounds: CGRect(x: 0, y: 0, width: label.bounds.width,
+            forBounds: CGRect(x: 0, y: 0, width: width,
                               height: .greatestFiniteMagnitude),
             limitedToNumberOfLines: 0).height)
 

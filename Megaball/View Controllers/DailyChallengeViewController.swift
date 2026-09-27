@@ -52,6 +52,11 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
 
     var todayStanding: LeaderboardStanding?
     var todayRankRequested = false
+
+    /// The top score on the board for each day Game Center can still answer for - today and
+    /// yesterday - asked once per visit (round 350).
+    var boardBests: [String: Int] = [:]
+    var boardBestsRequested: Set<String> = []
     // Where today's posted score stands, once Game Center has answered - asked for at
     // most once per visit to the screen, because the answer barely moves and the ask
     // is a network round trip
@@ -559,6 +564,7 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
 
         refreshCountdown()
         askForTodaysRank()
+        askForTheBoardsBest()
     }
 
     /// Every day the pager can reach, oldest first, ending with today.
@@ -597,6 +603,24 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
         // content size lands the pager between two days, which is the thing round 313 fixed.
         // The misalignment James reported in round 339 turned out to be a layout pass split in
         // two (see `viewWillLayoutSubviews`); the arithmetic here was never the fault.
+    }
+
+    /// The day's top score, for today's and yesterday's cards (James, round 350: "before it has
+    /// been played show the current high score from the game centre leaderboard in the container
+    /// just above the play button. Once it has been played, show the player's score and rank like
+    /// now and add the game centre leaderboard hi score").
+    private func askForTheBoardsBest() {
+        let key = viewedKey
+        guard boardBestsRequested.contains(key) == false,
+              DailyChallengeSession.boardOccurrence(
+                forKey: key, todayKey: DailyChallengeSession.shared.todayKey) != nil
+        else { return }
+        boardBestsRequested.insert(key)
+        GameCenterHandler().loadDailyBoardBest(forKey: key) { [weak self] best in
+            guard let self, let best else { return }
+            self.boardBests[key] = best
+            self.days.reloadData()
+        }
     }
 
     /// The rank of today's posted score, asked of Game Center at most once per visit.
@@ -812,7 +836,8 @@ extension DailyChallengeViewController: UICollectionViewDataSource,
         let isToday = key == DailyChallengeSession.shared.todayKey
         cell.card.show(key: key, isToday: isToday,
                        record: totalStatsArray[0].dailyRecord(forKey: key),
-                       standing: isToday ? todayStanding : nil)
+                       standing: isToday ? todayStanding : nil,
+                       boardBest: boardBests[key])
         cell.card.twistTapped = { [weak self] twist in self?.explain(twist) }
         cell.card.twistsExplainerTapped = { [weak self] in self?.explainTheDaysTwists(on: key) }
         // The card lists the day's twists by icon and name only since round 308, so the block
@@ -892,10 +917,6 @@ extension DailyChallengeSession {
 
         var record = stats.dailyRecord(forKey: key) ?? DailyChallengeRecord(dateKey: key)
         isScoringAttempt = isToday && record.attemptCount == 0
-        forfeitedByLeaving = false
-        // A forfeit belongs to the run that earned it. Cleared as a run starts as well as as
-        // one ends, because the session outlives both and a stale one would quietly unpost a
-        // run that never left the app
         record.attemptCount += 1
         stats.upsertDailyRecord(record)
         // The press is what spends the attempt (§7): the record exists from this moment, so a

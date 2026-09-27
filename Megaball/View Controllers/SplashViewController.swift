@@ -127,9 +127,10 @@ enum ResumeCard {
             lines.lives = livesRow(game, endless: challenge.mode.isEndless)
             lines.balls = ballsLeft(game, endless: challenge.mode.isEndless)
             if challenge.twists.contains(.timeTrial) {
-                lines.lives = DailyTwist.unlimitedBallsLine
+                lines.lives = DailyTwist.timeLeftLine(seconds: game.dailyTimeTrialRemaining)
                 lines.balls = 0
             }
+            // The clock where the balls would be, as on the pause screen (round 350)
             // **A Time Trial counts no balls** (James, round 340: "time trial with unlimited
             // lives doesn't need to show any spare balls or say number of balls left on the
             // pause screen - it could say unlimited balls instead"). Losing one costs nothing
@@ -352,6 +353,12 @@ class SplashViewController: UIViewController {
             // know which mode that is before it builds it
             resumingLabel.text = lines.heading
             modeLabel.text = lines.mode
+            if let key = savedGame.dailyDateKey {
+                modeLabel.attributedText = DailyTwist.dateLines(
+                    forKey: key, font: modeLabel.font ?? .systemFont(ofSize: 17),
+                    colour: modeLabel.textColor ?? .white)
+            }
+            // With a calendar before the date (round 350); `lines.mode` keeps the plain words
             detailLabel.text = lines.detail
             detailLabel.isHidden = lines.detail.isEmpty
             resumeStack?.setCustomSpacing(

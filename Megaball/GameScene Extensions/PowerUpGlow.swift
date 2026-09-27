@@ -48,6 +48,12 @@ extension GameScene {
     static func powerUpGlowColour(forIndex index: Int) -> UIColor {
         let multipliers = LevelPackSetup().powerUpMultiplierArray
         guard multipliers.indices.contains(index) else { return PowerUpIcon.beneficial }
+        let names = LevelPackSetup().powerUpNameArray
+        if names.indices.contains(index), GameScene.neutralPowerUpNames.contains(names[index]) {
+            return PowerUpIcon.neutral
+        }
+        // The yellow power-ups glow yellow (round 350), rather than whichever colour their old
+        // multiplier sign gave them
         return multipliers[index].hasPrefix("-") ? PowerUpIcon.harmful : PowerUpIcon.beneficial
     }
 

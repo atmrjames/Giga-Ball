@@ -48,7 +48,8 @@ final class DailyCardView: UIView {
         for card in [detailsCard, resultCard] {
             card.backgroundColor = UIColor(white: 1, alpha: 0.07)
             card.layer.cornerRadius = 18
-            SettingsTableViewCell.addGlass(behind: card, cornerRadius: 18)
+            let glass = SettingsTableViewCell.addGlass(behind: card, cornerRadius: 18)
+            if card === resultCard { resultGlass = glass }
             // These two were already translucent rather than light cards, so glass is a
             // change of material and not of scheme - the labels on them are white already
         }
@@ -189,7 +190,7 @@ final class DailyCardView: UIView {
     /// Shows a day. Everything the card draws comes from these arguments, so the same card
     /// can be reused for any day the pager scrolls to.
     func show(key: String, isToday: Bool, record: DailyChallengeRecord?,
-              standing: LeaderboardStanding?) {
+              standing: LeaderboardStanding?, boardBest: Int? = nil) {
         let challenge = DailyChallengeGenerator.challenge(forKey: key)
 
         modeLabel.text = challenge.mode.name.uppercased()
@@ -243,8 +244,36 @@ final class DailyCardView: UIView {
         }
 
         showTwists(challenge)
-        showResult(record, mode: challenge.mode, isToday: isToday, standing: standing)
+        showResult(record, mode: challenge.mode, isToday: isToday, standing: standing,
+                   boardBest: boardBest)
     }
+
+    /// The result container's glass, kept so it can wear lime for a day the player leads.
+    private var resultGlass: UIVisualEffectView?
+
+    /// The result container's two looks: the ordinary one, and lime for the day's leader.
+    ///
+    /// **James, round 350: "If it happens that the player is the hi scorer for the day, colour
+    /// that container giga-ball yellow/green and keep the glassy Liquid Glass style to the
+    /// container - make the text within the dark purple colour so it is still legible."** The
+    /// glass is tinted rather than replaced, so it stays glass; without glass (before iOS 26)
+    /// the card itself is filled.
+    private func dressTheResultCard(leading: Bool) {
+        let lime = #colorLiteral(red: 0.8235294118, green: 1, blue: 0, alpha: 1)
+        if #available(iOS 26.0, *), let resultGlass {
+            let effect = UIGlassEffect(style: .regular)
+            effect.isInteractive = false
+            effect.tintColor = leading ? lime.withAlphaComponent(0.85)
+                                       : SettingsTableViewCell.glassTint
+            resultGlass.effect = effect
+            resultCard.backgroundColor = .clear
+        } else {
+            resultCard.backgroundColor = leading ? lime : UIColor(white: 1, alpha: 0.07)
+        }
+    }
+
+    /// The dark purple the lime card's words are set in.
+    static let onLime = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1)
 
     private func showTwists(_ challenge: DailyChallenge) {
         twistsStack.arrangedSubviews.forEach { $0.removeFromSuperview() }
@@ -301,12 +330,30 @@ final class DailyCardView: UIView {
     /// Three states, because there are three: posted, played but not posted (free play, or
     /// a scoring run that could not reach Game Center), and not played at all.
     private func showResult(_ record: DailyChallengeRecord?, mode: GameMode,
-                            isToday: Bool, standing: LeaderboardStanding?) {
+                            isToday: Bool, standing: LeaderboardStanding?,
+                            boardBest: Int? = nil) {
+        let unit = mode == .classic ? "" : "m"
         guard let record, record.posted else {
-            resultLabel.attributedText = nil
-            resultCard.isHidden = true
+            dressTheResultCard(leading: false)
+            guard let boardBest, boardBest > 0 else {
+                resultLabel.attributedText = nil
+                resultCard.isHidden = true
+                return
+            }
+            resultCard.isHidden = false
+            resultLabel.attributedText = DailyCardView.hiScoreLine(boardBest, unit: unit,
+                                                                  onLime: false)
+            resultCard.isUserInteractionEnabled = true
+            if resultCard.gestureRecognizers?.isEmpty ?? true {
+                resultCard.addGestureRecognizer(
+                    UITapGestureRecognizer(target: self, action: #selector(resultWasTapped)))
+            }
             return
+            // **The day's leader before you have played** (James, round 350): the number to
+            // beat, where Game Center can say - today and yesterday - and nothing otherwise
         }
+        let leading = standing?.rank == 1
+        dressTheResultCard(leading: leading)
         // **Posted, or nothing** (James, round 306: "for a Daily Challenge where a score is set
         // but not posted, just treat it as if no score was set").
         //
@@ -318,7 +365,6 @@ final class DailyCardView: UIView {
         // to show
         resultCard.isHidden = false
 
-        let unit = mode == .classic ? "" : "m"
         let score = record.posted
             ? record.firstAttemptScore
             : max(record.firstAttemptScore, record.bestPracticeScore)
@@ -393,6 +439,18 @@ final class DailyCardView: UIView {
         // clause of it: "free play attempts played after the post get listed in the same
         // container"). A second line under the day's own number, quieter than it, because a
         // free-play score is not on any board and must never read as though it might be
+        if let boardBest, boardBest > 0 {
+            line.append(NSAttributedString(string: "\n"))
+            line.append(DailyCardView.hiScoreLine(boardBest, unit: unit, onLime: leading))
+        }
+        // **And the day's leader under it** (round 350), so a posted score is read against the
+        // number at the top of the board as well as its place on it
+        if leading {
+            line.addAttribute(.foregroundColor, value: DailyCardView.onLime,
+                              range: NSRange(location: 0, length: line.length))
+        }
+        // Dark purple on lime throughout, the leaderboard badge included, so every word stays
+        // legible on the lime card
         resultLabel.numberOfLines = 0
         resultLabel.attributedText = line
 
@@ -403,6 +461,25 @@ final class DailyCardView: UIView {
             resultCard.addGestureRecognizer(
                 UITapGestureRecognizer(target: self, action: #selector(resultWasTapped)))
         }
+    }
+
+    /// "Global Hi-Score: 3,400", with the leaderboard's own mark in front (round 350).
+    static func hiScoreLine(_ best: Int, unit: String, onLime: Bool) -> NSAttributedString {
+        let tint = onLime ? DailyCardView.onLime : UIColor(white: 1, alpha: 0.6)
+        let line = NSMutableAttributedString()
+        let badge = NSTextAttachment()
+        badge.image = UIImage(systemName: "trophy.fill")?
+            .withTintColor(tint, renderingMode: .alwaysOriginal)
+        badge.bounds = CGRect(x: 0, y: -3, width: 17, height: 16)
+        line.append(NSAttributedString(attachment: badge))
+        line.append(NSAttributedString(string: "  Global Hi-Score:  ",
+                                       attributes: [.font: UIFont.systemFont(ofSize: 14),
+                                                    .foregroundColor: tint]))
+        line.append(NSAttributedString(
+            string: StatsPage.grouped(best) + unit,
+            attributes: [.font: UIViewController.gameScoreFont(ofSize: 16),
+                         .foregroundColor: onLime ? DailyCardView.onLime : UIColor.white]))
+        return line
     }
 
     /// "Tunnel - Space Pack", with the pack's own badge in front of its name.

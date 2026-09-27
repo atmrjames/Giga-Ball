@@ -176,11 +176,12 @@ final class ResumeCardTests: XCTestCase {
 
     // MARK: - The daily
 
-    /// James, round 340: "time trial with unlimited lives doesn't need to show any spare balls
-    /// or say number of balls left on the pause screen - it could say unlimited balls instead."
-    /// Missed in round 340 and found by the round 343 audit.
-    func testATimeTrialSaysUnlimitedBallsAndDrawsNoRack() throws {
+    /// James, round 340: no spare balls on a Time Trial. And round 350: "Remove the unlimited
+    /// balls label from the in game views and resume screen on a time trial", "show the time
+    /// remaining ... on the pause and resume views in the place of the balls remaining info".
+    func testATimeTrialShowsItsTimeLeftAndDrawsNoRack() throws {
         var game = classicGame()
+        game.dailyTimeTrialRemaining = 41.2
         let start = Date(timeIntervalSince1970: 1_780_000_000)
         let key = try XCTUnwrap((0..<400).lazy
             .map { DailyDay.key(for: start.addingTimeInterval(Double($0)*86_400)) }
@@ -189,7 +190,7 @@ final class ResumeCardTests: XCTestCase {
         game.dailyDateKey = key
 
         let lines = ResumeCard.lines(for: game, fallbackMode: .classic)
-        XCTAssertEqual(lines.lives, DailyTwist.unlimitedBallsLine)
+        XCTAssertEqual(lines.lives, "42s left", "rounded up, as the clock in the game is")
         XCTAssertEqual(lines.balls, 0, "no rack: a lost ball costs nothing")
     }
 

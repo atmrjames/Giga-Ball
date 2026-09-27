@@ -83,6 +83,9 @@ class PreGame: GKState {
         scene.background.texture = scene.gameBackground
         // Set the background texture
         
+        scene.endlessFieldIsLaidOut = false
+        // Until the new run's field is built, an empty board is the old run's, cleared, and the
+        // settle clock must not read it as a gap to close (round 350, `endlessFieldIsLaidOut`)
         scene.totalScore = 0
         scene.endlessBestBeaten = false
         // A new run has not beaten anything yet - see `refreshEndlessIIBest`, where the flag is

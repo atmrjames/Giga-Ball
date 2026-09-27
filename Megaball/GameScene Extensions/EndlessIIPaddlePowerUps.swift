@@ -689,9 +689,21 @@ extension GameScene {
         neutral.remove(1)
         // Lose A Ball's blank chip is not neutrality, it is the game declining to put a
         // number on it
-        if let wipe = names.firstIndex(of: "Wipe") { neutral.insert(wipe) }
+        for name in GameScene.neutralPowerUpNames {
+            if let index = names.firstIndex(of: name) { neutral.insert(index) }
+        }
         return neutral
     }()
+
+    /// **The yellow power-ups** (James, round 350: "Remove the 'neutral' power-up multipliers.
+    /// They should be set to 0 as they aren't necessarily good or bad. This is the yellow power
+    /// ups - drift left, drift right, wrap around, key, lock, wipe"). Named, because their chips
+    /// are blank like several others that are not neutral at all - Lose A Ball, Complete Level -
+    /// and a blank chip alone cannot say which is which. Collecting one changes the multiplier
+    /// by nothing, they fall on a No Good News day and a No Bad News day alike, as Wipe already
+    /// did, and their glow is the yellow their icons wear.
+    static let neutralPowerUpNames = ["Wrap-Around", "Lock", "Key", "Wipe", "Drift Right",
+                                      "Drift Left"]
 
     /// The brick an Auto-Aim bounce goes for: the lowest on the field, nearest first among
     /// equals - the one that is threatening the run, which is the one worth a free shot.

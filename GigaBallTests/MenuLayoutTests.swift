@@ -95,6 +95,39 @@ final class MenuLayoutTests: XCTestCase {
         }
     }
 
+    /// James, round 350, with two iPad screenshots: "iPad landscape layout of main menu changes
+    /// when going to portrait and back." Afterwards only Classic and Endless were showing, a
+    /// table two rows tall with the other two below its edge.
+    func testAllFourModesShowAfterTurningToPortraitAndBack() {
+        let landscape = CGSize(width: 1376, height: 1032)
+        let window = UIWindow(frame: CGRect(origin: .zero, size: landscape))
+        let board = UIStoryboard(name: "Main", bundle: Bundle(for: MenuViewController.self))
+        let menu = board.instantiateViewController(withIdentifier: "menuView") as! MenuViewController
+        window.rootViewController = menu
+        window.isHidden = false
+        func settle() {
+            for _ in 0..<4 {
+                menu.view.setNeedsLayout()
+                menu.view.layoutIfNeeded()
+            }
+        }
+        settle()
+        let before = menu.modeSelectTableView.bounds.height
+        window.frame = CGRect(origin: .zero, size: CGSize(width: 1032, height: 1376))
+        settle()
+        window.frame = CGRect(origin: .zero, size: landscape)
+        settle()
+
+        let table = menu.modeSelectTableView!
+        XCTAssertEqual(table.bounds.height, before, accuracy: 0.5,
+                       "the table was \(before) tall and came back \(table.bounds.height)")
+        XCTAssertGreaterThanOrEqual(table.bounds.height + 0.5,
+                                    table.rowHeight*CGFloat(GameMode.allCases.count),
+                                    "not every mode's row fits in the table")
+        XCTAssertEqual(table.contentOffset.y, 0, accuracy: 0.5, "the rows have scrolled")
+        window.isHidden = true
+    }
+
     /// And every mode is reachable without scrolling, which is the menu's own rule.
     func testTheMenuNeverScrolls() {
         for (name, size) in shapes {

@@ -224,6 +224,11 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         if let modeRowsHeight, abs(modeRowsHeight.constant - wanted) > 0.5 {
             modeRowsHeight.constant = wanted
         }
+        if modeSelectTableView.contentOffset != .zero {
+            modeSelectTableView.contentOffset = .zero
+        }
+        // The menu never scrolls, so its rows always start at the top - whatever a rotation or
+        // a resize left the offset at (round 350, below)
         // The first cells can be asked for before the table has its size, and a row height
         // computed from a zero-height table would stick. Re-fitted here once the layout is
         // real, and only when it actually changed - reloadData in a layout pass loops, and so
@@ -250,6 +255,27 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
     /// The container's height is the room that actually exists, and it is not defined in terms
     /// of the answer, so there is nothing circular left.
     private var menuRoomForModeRows: CGFloat { tableViewContainer.bounds.height }
+
+    /// Re-fits the mode rows once a rotation or a window resize has finished.
+    ///
+    /// **James, round 350, with two iPad screenshots: "iPad landscape layout of main menu changes
+    /// when going to portrait and back."** Back in landscape the table was two rows tall, with
+    /// Mayhem and the Daily Challenge gone below its edge. The rows are fitted in
+    /// `viewDidLayoutSubviews` from the room they have, and a pass taken part-way through the
+    /// rotation's animation measures a room that is neither the old window nor the new one. A
+    /// window resize on the simulator lands correctly every time (`MenuLayoutTests`); the
+    /// rotation's in-between pass is the one thing a test here cannot make, so the fit is taken
+    /// again once the rotation has finished, from the window it finished in.
+    override func viewWillTransition(to size: CGSize,
+                                     with coordinator: UIViewControllerTransitionCoordinator) {
+        super.viewWillTransition(to: size, with: coordinator)
+        coordinator.animate(alongsideTransition: nil) { [weak self] _ in
+            guard let self else { return }
+            self.view.setNeedsLayout()
+            self.view.layoutIfNeeded()
+            self.modeSelectTableView.reloadData()
+        }
+    }
 
     /// Every mode fits on screen at once - the main menu never scrolls (play-test rule).
     ///

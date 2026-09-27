@@ -16,6 +16,8 @@ extension GameScene {
         endlessMoveInProgress = false
         resetEndlessIIBricks()
         endlessHeight = height
+        endlessFieldIsLaidOut = true
+        // The field is laid out in this same call, so the settle clock may watch it from here
 
         setLivesRowHidden(true)
         multiplierLabel.isHidden = true
