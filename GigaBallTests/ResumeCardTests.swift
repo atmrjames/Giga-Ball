@@ -89,8 +89,8 @@ final class ResumeCardTests: XCTestCase {
         XCTAssertEqual(lines.badge, .classic)
         XCTAssertEqual(lines.scoreTitle, "Score")
         XCTAssertEqual(lines.scoreValue, "3400")
-        XCTAssertEqual(lines.lives, "3 balls left",
-                       "two in the rack and the one on the paddle")
+        XCTAssertEqual(lines.lives, BallRackView.line(for: classicGame().numberOfLives),
+                       "the rack, as the dots and the pause screen count it (round 352)")
     }
 
     /// "For the classic mode level, can it also show the name of the level, maybe on another
@@ -103,14 +103,14 @@ final class ResumeCardTests: XCTestCase {
     }
 
     /// "The number of lives could come back underneath the score" (James, round 311).
-    func testTheRackIsCountedWithTheBallOnThePaddle() {
-        XCTAssertEqual(ResumeCard.livesLine(1), "Last ball")
-        XCTAssertEqual(ResumeCard.livesLine(3), "3 balls left")
-
+    /// James, round 352: the same run said "3 balls left" paused and "4 balls left" here, and
+    /// he chose the rack for both.
+    func testTheRackIsCountedAsThePauseScreenCountsIt() {
         var game = classicGame()
-        game.numberOfLives = 0
-        XCTAssertEqual(ResumeCard.lines(for: game, fallbackMode: .classic).lives, "Last ball",
-                       "an empty rack still has the ball about to be served")
+        game.numberOfLives = 3
+        XCTAssertEqual(ResumeCard.lines(for: game, fallbackMode: .classic).lives,
+                       BallRackView.line(for: 3))
+        XCTAssertEqual(ResumeCard.lines(for: game, fallbackMode: .classic).lives, "3 balls left")
     }
 
     /// An endless run says nothing about its single life, the rule the pause screen follows.
@@ -122,7 +122,7 @@ final class ResumeCardTests: XCTestCase {
 
         game.numberOfLives = 2
         XCTAssertEqual(ResumeCard.lines(for: game, fallbackMode: .endlessII).lives,
-                       "3 balls left",
+                       "2 balls left",
                        "and it is news when a twist has granted more")
     }
 

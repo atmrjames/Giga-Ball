@@ -971,6 +971,9 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
 
     override func viewWillLayoutSubviews() {
         super.viewWillLayoutSubviews()
+        UIViewController.spaceTheTitleLines(pack: packNameLabel, number: levelNumberLabel,
+                                            name: levelNameLabel)
+        // Round 352's air between the title lines - see there
         storyboardChoices.reassert()
         // What this card overruled in the storyboard, overruled again if a trait change put
         // it back (round 346)

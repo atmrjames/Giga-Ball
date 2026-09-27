@@ -2711,6 +2711,28 @@ testing." What it found and did:
   above the daily, the neutral power-ups out of Helpful and Harmful, shorter Other Changes and
   What Comes After, a Classic Mode shot for the iPad. Committed in the site's clone, not pushed.
 
+**Round 352: James's comments on the screen report.**
+
+- **The in-game headers breathe:** ten points under the mode's badge rather than four, six
+  between the title lines (pack and "Level 3 of 10", or the daily's date and the level's name),
+  and the date drawn at 0.85 of the "Daily Challenge" line above it with four points between
+  them. On the pause, end, level intro, between-levels and resume screens, Classic included.
+  Round 351's shrinking of both date lines is undone: on an iPhone SE's own scaling it left the
+  day at nine points.
+- **Nothing in the header is squeezed.** On an iPhone SE the pause screen dropped the second
+  twist and FREE PLAY: the screen is hung from both ends and the rules list was what gave. The
+  list and the title lines resist compression now, so PAUSED and the scores move down instead.
+- **The classic daily's clock** is centred on the score and the multiplier as a pair, clear of
+  the wider of the two.
+- **Balls are counted as the rack everywhere**, the resume card and the daily's pause included,
+  which is what the dots in the game show. A first run in a mode, or a first play of a level,
+  shows its score or height alone rather than a new hi-score over a previous one of nought.
+- **A pack's first level is open whenever the pack is.** Unlocking a pack only ever set the
+  pack's flag, so from the City Pack on an earned pack listed its first level as locked, asking
+  for "Level 0" to be completed. If the pack itself is locked the line says to complete the
+  previous pack.
+- **What's New** is in James's words. The website is live with round 351's changes.
+
 **Open after round 344:**
 
 | Item | What is known |

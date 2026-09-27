@@ -1418,32 +1418,46 @@ extension DailyTwist {
     /// size, so it reads as part of the text rather than as a badge.
     static func dateLines(forKey key: String, font labelFont: UIFont,
                           colour: UIColor) -> NSAttributedString {
-        let font = labelFont.withSize((labelFont.pointSize*dateLineScale).rounded())
-        // **A touch smaller than the label it replaces** (James, round 351: "for the daily
-        // challenge date labels, make the font on the in-game views slightly smaller"). Two
-        // lines where the pack's name used to be one, and the level's name below is what
-        // should lead
+        let font = labelFont
+        let dateFont = labelFont.withSize((labelFont.pointSize*dateScale).rounded())
+        // **The date smaller than the line above it** (James, round 351: "make the font on the
+        // in-game views slightly smaller", then round 352: "with the date label font being a
+        // little bit smaller"). Round 351 shrank both lines, and on top of an iPhone SE's own
+        // scaling that left the day at nine points; the heading keeps the label's size now and
+        // only the date steps down
+        let heading = NSMutableParagraphStyle()
+        heading.alignment = .center
+        heading.paragraphSpacing = dateGap
+        // **Air between "Daily Challenge" and the day** (James, round 352: "add more of a gap
+        // between the Daily Challenge label and date label")
         let lines = NSMutableAttributedString(
             string: GameMode.daily.name + "\n",
-            attributes: [.font: font, .foregroundColor: colour])
+            attributes: [.font: font, .foregroundColor: colour, .paragraphStyle: heading])
         let symbol = UIImage(systemName: "calendar",
-                             withConfiguration: UIImage.SymbolConfiguration(font: font))?
+                             withConfiguration: UIImage.SymbolConfiguration(font: dateFont))?
             .withTintColor(colour, renderingMode: .alwaysOriginal)
+        let dateStart = lines.length
         if let symbol {
             let attachment = NSTextAttachment(image: symbol)
-            attachment.bounds = CGRect(x: 0, y: font.descender*0.6,
+            attachment.bounds = CGRect(x: 0, y: dateFont.descender*0.6,
                                        width: symbol.size.width, height: symbol.size.height)
             lines.append(NSAttributedString(attachment: attachment))
-            lines.append(NSAttributedString(string: " ", attributes: [.font: font]))
+            lines.append(NSAttributedString(string: " ", attributes: [.font: dateFont]))
         }
         lines.append(NSAttributedString(
             string: DailyChallengeSession.shared.displayName(forKey: key).capitalized,
-            attributes: [.font: font, .foregroundColor: colour]))
+            attributes: [.font: dateFont, .foregroundColor: colour]))
+        let body = NSMutableParagraphStyle()
+        body.alignment = .center
+        lines.addAttribute(.paragraphStyle, value: body,
+                           range: NSRange(location: dateStart, length: lines.length - dateStart))
         return lines
     }
 
-    /// How much smaller the date lines are drawn than the label they sit in.
-    static let dateLineScale: CGFloat = 0.85
+    /// How much smaller the date is drawn than the "Daily Challenge" line above it.
+    static let dateScale: CGFloat = 0.85
+    /// The air between the two lines.
+    static let dateGap: CGFloat = 4
 
     /// What a day with no twists is called, and its badge.
     ///

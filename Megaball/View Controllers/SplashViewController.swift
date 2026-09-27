@@ -71,7 +71,7 @@ enum ResumeCard {
 
     /// How the rack is spoken about, which is the pause screen's own wording.
     static func livesLine(_ balls: Int) -> String {
-        balls == 1 ? "Last ball" : "\(balls) balls left"
+        BallRackView.line(for: balls)
     }
 
     /// What the rack has left, or nothing at all.
@@ -86,15 +86,16 @@ enum ResumeCard {
     /// The number behind `livesRow`'s words, so the rack and the line cannot disagree.
     private static func ballsLeft(_ game: SavedGame, endless: Bool) -> Int {
         if endless, game.numberOfLives <= 0 { return 0 }
-        return game.numberOfLives + 1
+        return game.numberOfLives
     }
 
     private static func livesRow(_ game: SavedGame, endless: Bool) -> String {
         if endless, game.numberOfLives <= 0 { return "" }
-        return livesLine(game.numberOfLives + 1)
-        // Plus the one on the paddle: `numberOfLives` is the *rack*, and a player counting
-        // their balls counts the one they are about to serve as well (round 228's lesson,
-        // written down in `dailyStartingLives`)
+        return livesLine(game.numberOfLives)
+        // **The rack, the same count the game's dots and the pause screen show** (James, round
+        // 352: the same run read "3 balls left" paused and "4 balls left" here, and he chose the
+        // rack). Round 228 counted the ball on the paddle too; the dots never did, so this card
+        // was the one place a number and the dots above it disagreed
     }
 
     /// - Parameter fallbackMode: the remembered mode, for saves written before `gameMode`
@@ -362,7 +363,8 @@ class SplashViewController: UIViewController {
             detailLabel.text = lines.detail
             detailLabel.isHidden = lines.detail.isEmpty
             resumeStack?.setCustomSpacing(
-                lines.detail.isEmpty ? SplashViewController.groupGap : 0, after: modeLabel)
+                lines.detail.isEmpty ? SplashViewController.groupGap
+                                     : UIViewController.inGameTitleLineGap, after: modeLabel)
             // **The gap goes under whatever ends the title block** (round 341). The block is
             // the mode's name and the detail under it, and RESUMING follows it the way PAUSED
             // follows the pause screen's; with no detail line - an endless run - the air has
@@ -797,7 +799,9 @@ class SplashViewController: UIViewController {
             badge.topAnchor.constraint(equalTo: badgeRow.topAnchor,
                                        constant: SplashViewController.badgeRowInset),
             badgeRow.bottomAnchor.constraint(equalTo: badge.bottomAnchor,
-                                             constant: SplashViewController.badgeRowInset),
+                                             constant: SplashViewController.badgeRowInset
+                                                + UIViewController.inGameModeIconGap - 4),
+            // The in-game screens' wider gap under the badge (round 352)
             badgeWidth, badgeHeight,
         ])
         sizeTheResumeHeader()
@@ -889,7 +893,7 @@ class SplashViewController: UIViewController {
         stack.setCustomSpacing(gap, after: runKindLabel)
         stack.setCustomSpacing(gap, after: resumingLabel)
         stack.setCustomSpacing(gap, after: scoreLabel)
-        if stack.customSpacing(after: modeLabel) > 0 {
+        if stack.customSpacing(after: modeLabel) > UIViewController.inGameTitleLineGap {
             stack.setCustomSpacing(gap, after: modeLabel)
         }
         // The name carries the group's air only when there is no detail under it

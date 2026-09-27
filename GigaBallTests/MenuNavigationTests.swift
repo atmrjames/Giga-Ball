@@ -1882,3 +1882,23 @@ final class InGameScreensAfterTheAppSwitcherTests: XCTestCase {
         XCTAssertTrue(tie.isActive)
     }
 }
+
+/// James, round 352: "A locked pack's first level shouldn't say anything about unlocking - it
+/// should be unlocked or say Complete the previous pack to unlock." It said "Complete Level 0".
+final class LevelUnlockHintTests: XCTestCase {
+
+    func testAPacksFirstLevelPointsAtThePreviousPack() {
+        XCTAssertEqual(LevelSelectorViewController.unlockHint(row: 0, previousLevelOpen: false,
+                                                             previousLevelName: "X"),
+                       "Complete the previous pack to unlock")
+    }
+
+    func testALaterLevelNamesTheOneBeforeIt() {
+        XCTAssertEqual(LevelSelectorViewController.unlockHint(row: 3, previousLevelOpen: true,
+                                                             previousLevelName: "Star"),
+                       "Complete Star level to unlock")
+        XCTAssertEqual(LevelSelectorViewController.unlockHint(row: 3, previousLevelOpen: false,
+                                                             previousLevelName: "Star"),
+                       "Complete Level 3 to unlock")
+    }
+}

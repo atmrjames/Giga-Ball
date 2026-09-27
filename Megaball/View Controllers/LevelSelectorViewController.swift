@@ -175,7 +175,7 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
             cell.setNameColour(#colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1))
             // Setup cell buttons
 
-            if totalStatsArray[0].levelUnlockedArray[startLevel!+indexPath.row] {
+            if levelIsOpen(startLevel!+indexPath.row) {
                 installLevelPlayButton(on: cell)
             } else {
                 cell.contentView.viewWithTag(9901)?.removeFromSuperview()
@@ -195,13 +195,12 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
                 cell.highScoreLabel.text = ""
             }
 
-            if totalStatsArray[0].levelUnlockedArray[startLevel!+indexPath.row] == false {
+            if levelIsOpen(startLevel!+indexPath.row) == false {
                 cell.setNameColour(#colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 0.25))
-                if totalStatsArray[0].levelUnlockedArray[startLevel!+indexPath.row-1] {
-                    cell.levelNameLabel.text = "Complete \(LevelPackSetup().levelNameArray[startLevel!+indexPath.row-1]) level to unlock"
-                } else {
-                    cell.levelNameLabel.text = "Complete Level \(indexPath.row) to unlock"
-                }
+                cell.levelNameLabel.text = LevelSelectorViewController.unlockHint(
+                    row: indexPath.row,
+                    previousLevelOpen: levelIsOpen(startLevel!+indexPath.row-1),
+                    previousLevelName: LevelPackSetup().levelNameArray[startLevel!+indexPath.row-1])
                 cell.highScoreTitleLabel.text = ""
                 cell.highScoreLabel.text = ""
                 cell.blurView.isHidden = false
@@ -233,7 +232,7 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
                 }
             }
             
-            if totalStatsArray[0].levelUnlockedArray[startLevel!+indexPath.row] {
+            if levelIsOpen(startLevel!+indexPath.row) {
                 moveToLevelStatsSetup(sender: indexPath.row)
             }
             // Don't allow selection if level is locked
@@ -598,13 +597,37 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
         moveToLevelStats(startLevel: startLevel!, levelNumber: levelNumber, packNumber: packNumber!)
     }
     
+    /// Whether a level in this pack can be played.
+    ///
+    /// **A pack's first level is open whenever the pack is** (James, round 352: "a locked pack's
+    /// first level shouldn't say anything about unlocking - it should be unlocked or say Complete
+    /// the previous pack to unlock"). Unlocking a pack has only ever set the pack's own flag, and
+    /// the first levels of the first three packs are the only ones the stats file starts open -
+    /// so from the City Pack on, a pack you had earned listed its first level as locked, with a
+    /// line asking you to complete "Level 0".
+    func levelIsOpen(_ index: Int) -> Bool {
+        let stats = totalStatsArray[0]
+        guard stats.levelUnlockedArray.indices.contains(index) else { return false }
+        if stats.levelUnlockedArray[index] { return true }
+        guard let pack = packNumber, index == startLevel,
+              stats.levelPackUnlockedArray.indices.contains(pack) else { return false }
+        return stats.levelPackUnlockedArray[pack]
+    }
+
+    /// What a locked level's row says instead of its name.
+    static func unlockHint(row: Int, previousLevelOpen: Bool, previousLevelName: String) -> String {
+        guard row > 0 else { return "Complete the previous pack to unlock" }
+        return previousLevelOpen ? "Complete \(previousLevelName) level to unlock"
+                                 : "Complete Level \(row) to unlock"
+    }
+
     func updateLabels() {
         titleLabel.text = LevelPackSetup().levelPackNameArray[packNumber!].uppercased()
         var numberOfUnlockedLevels = 0
         let packFirstLevel = LevelPackSetup().startLevelNumber[packNumber!]
         var levelIndex = packFirstLevel
         while levelIndex-packFirstLevel <= numberOfLevels!-1 {
-            if totalStatsArray[0].levelUnlockedArray[levelIndex] {
+            if levelIsOpen(levelIndex) {
                 numberOfUnlockedLevels+=1
             }
             levelIndex+=1

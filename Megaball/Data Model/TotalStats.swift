@@ -46,13 +46,17 @@ enum WhatsNew {
     /// What it says.
     static let title = "What's New in 1.3"
     static let message = """
-        Endless Mayhem, a second endless mode with \(mayhemPowerUpCount) power-ups of its own and bricks \
-        that move, spin, explode and send the ball elsewhere.
+        Endless Mayhem, a new endless mode with \(mayhemPowerUpCount) new power-ups and many new brick \
+        types and combinations.
 
-        A Daily Challenge that changes every day, with its own leaderboard.
+        Daily Challenge, a new set of twists every day with a global leaderboard.
 
-        Statistics worth reading, split by mode, and a new look throughout.
+        Classic Mode and Endless Mode remain as they were.
+
+        General app improvements across the board from a more polished UI, improved \
+        statistics and information, more settings and new achievements.
         """
+    // James's own words (round 352)
 
     /// How many power-ups are Endless Mayhem's own, read off the catalogue (round 325).
     ///

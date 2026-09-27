@@ -168,7 +168,7 @@ final class WhatsNewCopyTests: XCTestCase {
     func testTheMayhemPowerUpCountComesFromTheCatalogue() {
         let mayhem = PowerUpCatalogue.endlessII.filter { $0.availability == .endlessII }.count
         XCTAssertGreaterThan(mayhem, 30, "the catalogue's Mayhem list is where the number lives")
-        XCTAssertTrue(WhatsNew.message.contains("\(mayhem) power-ups"),
+        XCTAssertTrue(WhatsNew.message.contains("\(mayhem) new power-ups"),
                       "the pop-up should say \(mayhem): \(WhatsNew.message)")
         XCTAssertFalse(WhatsNew.message.contains("twenty-three"), "not the number from before")
     }

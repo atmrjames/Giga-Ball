@@ -1461,13 +1461,21 @@ final class DailyLayoutTwistTests: XCTestCase {
         scene.multiplierLabel.fontSize = 20
         scene.multiplierLabel.position = CGPoint(x: 120, y: 260)
         scene.multiplierShown = "x1.0"
+        scene.scoreLabel.fontSize = 20
+        scene.scoreLabel.position = CGPoint(x: 120, y: 285)
+        scene.multiplierLabel.horizontalAlignmentMode = .right
+        scene.scoreLabel.horizontalAlignmentMode = .right
+        // Right-aligned, as GameScene.sks draws them
+        // The HUD's arrangement: the score's row above the multiplier's
         scene.dailyClockLabel = SKLabelNode(fontNamed: "FugazOne-Regular")
         scene.dailyTimeTrialRemaining = 90
         scene.showDailyClock()
 
         let clock = try XCTUnwrap(scene.dailyClockLabel)
-        XCTAssertEqual(clock.position.y, scene.multiplierLabel.position.y,
-                       "the clock is on the multiplier's row")
+        XCTAssertGreaterThan(clock.position.y, scene.multiplierLabel.position.y,
+                             "James, round 352: centred on the score and the multiplier as a "
+                             + "pair, so above the multiplier's baseline")
+        XCTAssertEqual(clock.verticalAlignmentMode, .center)
 
         let font = try XCTUnwrap(UIFont(name: "FugazOne-Regular", size: 20))
         let multiplier = FixedWidthDigits.layout("x1.0", font: font).width

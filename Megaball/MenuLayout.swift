@@ -205,7 +205,37 @@ extension UIViewController {
     /// is here: round 233 found the same badge at 56 on one screen and 42 on the other.
     static let inGameLogoTopInset: CGFloat = 46
     static let inGameLogoHeight: CGFloat = 36
-    static let inGameModeIconGap: CGFloat = 4
+    static let inGameModeIconGap: CGFloat = 10
+    // **Ten, up from four** (James, round 352: "add more of a gap between the game mode icon and
+    // game mode label"), on the pause, end, level intro and between-levels screens alike
+
+    /// The air between the title lines under the badge: the pack and "Level 3 of 10", and
+    /// "Level 3 of 10" (or the daily's date) and the level's name. The storyboard had none.
+    static let inGameTitleLineGap: CGFloat = 6
+
+    /// Opens the storyboard's two ties between the title lines to `inGameTitleLineGap`.
+    ///
+    /// **James, round 352, of the daily's pause screen: "add more of a gap between the Daily
+    /// Challenge label and date label ... add more of a gap between the date label and level
+    /// name label", and of Classic: "use the same spacing".** The three lines were stacked
+    /// touching. The ties are the storyboard's, so they are found and given a constant rather
+    /// than replaced; what is below them hangs from them, so PAUSED and the scores move down
+    /// with the extra room rather than being overlapped by it.
+    static func spaceTheTitleLines(pack: UILabel, number: UILabel, name: UILabel) {
+        guard let parent = pack.superview else { return }
+        for constraint in parent.constraints where constraint.relation == .equal {
+            let pair = (constraint.firstItem as? UIView, constraint.secondItem as? UIView)
+            if (pair.0 === number && constraint.firstAttribute == .top
+                    && pair.1 === pack && constraint.secondAttribute == .bottom)
+                || (pair.0 === name && constraint.firstAttribute == .top
+                    && pair.1 === number && constraint.secondAttribute == .bottom) {
+                if constraint.constant != inGameTitleLineGap {
+                    constraint.constant = inGameTitleLineGap
+                }
+                // Only when it differs: this runs before every layout pass
+            }
+        }
+    }
 
     /// The air between the wordmark and the mode's badge, on every screen the game shows.
     ///

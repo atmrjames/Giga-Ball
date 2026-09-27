@@ -537,6 +537,9 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
         storyboardChoices.reassert()
         // Before the pass: a trait change puts the storyboard's constraints back, and this
         // takes them off again before anything is placed by them (round 346)
+        UIViewController.spaceTheTitleLines(pack: packNameLabel, number: levelNumberLabel,
+                                            name: levelNameLabel)
+        // Round 352's air between the title lines - see there
     }
 
     override func viewDidLayoutSubviews() {
@@ -966,6 +969,14 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
 
         titleUnderTheRules = titleLabel.topAnchor.constraint(
             equalTo: dailySummaryLabel.bottomAnchor, constant: 16)
+        for label in [dailySummaryLabel, packNameLabel, levelNumberLabel, levelNameLabel] {
+            label?.setContentCompressionResistancePriority(.required, for: .vertical)
+        }
+        // **The day's rules are never squeezed** (James, round 352, from an iPhone SE, where the
+        // second twist and FREE PLAY were cut off: "shuffle the paused and below items down to
+        // accommodate the space for these items"). The screen is hung from both ends, and the
+        // list was the one thing below the header that would give; it holds its height now and
+        // the room comes from the gaps lower down
         // Switched on with the summary itself, in `updateDailySummary`, because they
         // replace the storyboard's own "title under the level name" - and outside the daily
         // that is still the right answer. One below required, like the storyboard's own
@@ -1103,8 +1114,8 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
         // twist's own wording and missed this screen; the round 343 audit found it. The rack
         // stands down in `refreshTheLivesRow`
         if isDailyChallenge {
-            let balls = livesRemaining + 1
-            guard endlessMode == false || balls > 1 else {
+            let balls = livesRemaining
+            guard endlessMode == false || balls > 0 else {
                 livesLabel.isHidden = true
                 return
             }
@@ -1114,10 +1125,10 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
             // news that an endless run has one ball; it is only news when a twist has granted
             // more, which is exactly when this line survives
             livesLabel.isHidden = false
-            livesLabel.text = balls == 1 ? "Last ball" : "\(balls) balls left"
-            // The daily counts balls, not the rack: the one in play plus the reserves.
-            // "1 life left" while holding the only ball read as one more to come - the
-            // play test counted lives the twist did not grant
+            livesLabel.text = BallRackView.line(for: balls)
+            // **The rack, as every other screen counts it** (James, round 352). The daily
+            // counted the ball in play as well, so a daily and a pack run with the same dots
+            // said different numbers
             return
         }
         guard !endlessMode else {
@@ -1705,6 +1716,10 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
                 // note): a daily is measured against today's board, not against a best set
                 // under different rules. §9 keeps the daily out of those arrays; this keeps
                 // their figures out of the daily
+            } else if sender == "Pause" && runs.isEmpty {
+                highscoreLabelTitle.text = ""
+                highscoreLabel.text = ""
+                // A first run has no best to show yet - see below
             } else if sender == "Pause" {
                 let heightBest = runs.max() ?? 0
                 if height > heightBest {
@@ -1716,9 +1731,11 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
                 let heightBest = runs.max() ?? 0
                 highscoreLabel.text = String(heightBest) + "m"
                 if runs.count <= 1 {
-                    scoreLabelTitle.text = "New Hi-Score"
-                    highscoreLabelTitle.text = "Previous Hi-Score"
-                    highscoreLabel.text = "0m"
+                    highscoreLabelTitle.text = ""
+                    highscoreLabel.text = ""
+                    // **A first run shows its height and nothing else** (James, round 352: "the
+                    // first run should just show height"). It read "New Hi-Score 0m" over
+                    // "Previous Hi-Score 0m", a record set against a best that never existed
                 } else {
                     var heightsArray = runs
                     heightsArray.sort(by: >)
@@ -1827,7 +1844,13 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
                 // Get current highscore from level or pack
 
                 highscoreLabel.text = String(previousHighscore)
-                if score > previousHighscore {
+                if previousHighscore == 0 {
+                    highscoreLabelTitle.text = ""
+                    highscoreLabel.text = ""
+                    // **A first play shows its score and nothing else**, the endless modes' rule
+                    // (James, round 352: "the first run should just show height") - "New
+                    // Hi-Score" over "Previous Hi-Score 0" was a record against nothing
+                } else if score > previousHighscore {
                     scoreLabelTitle.text = "New Hi-Score"
                     highscoreLabelTitle.text = "Previous Hi-Score"
                 }

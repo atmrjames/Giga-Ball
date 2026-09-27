@@ -724,14 +724,29 @@ extension GameScene {
         // height is not a multiplier there, so a clock placed as if beside "x1.0" sat under the
         // height at no particular place. It is measured from what the height label is actually
         // drawing, on every tick, so a height that gains a digit pushes the clock along with it
-        clock.verticalAlignmentMode = multiplierLabel.verticalAlignmentMode
-        // Set here rather than where the label is built, because the geometry below only means
-        // anything if the clock grows leftwards: its right edge is what is being placed
-        let drawn = UIFont(name: multiplierLabel.fontName ?? "", size: multiplierLabel.fontSize)
-            .map { FixedWidthDigits.layout(multiplierShown.isEmpty ? "x1.0" : multiplierShown,
-                                           font: $0).width } ?? 0
-        clock.position = CGPoint(x: multiplierLabel.position.x - drawn - labelSpacing*2,
-                                 y: multiplierLabel.position.y)
+        clock.verticalAlignmentMode = .center
+        let multiplierFont = UIFont(name: multiplierLabel.fontName ?? "",
+                                    size: multiplierLabel.fontSize)
+        let scoreFont = UIFont(name: scoreLabel.fontName ?? "", size: scoreLabel.fontSize)
+        let multiplierWidth = multiplierFont.map {
+            FixedWidthDigits.layout(multiplierShown.isEmpty ? "x1.0" : multiplierShown,
+                                    font: $0).width } ?? 0
+        let score = shownText(of: scoreLabel)
+        let scoreWidth = scoreFont.map {
+            FixedWidthDigits.layout(score.isEmpty ? "0" : score, font: $0).width } ?? 0
+        let left = min(GameScene.leftEdge(ofLabelAt: multiplierLabel.position.x,
+                                          drawn: multiplierWidth,
+                                          alignment: multiplierLabel.horizontalAlignmentMode),
+                       GameScene.leftEdge(ofLabelAt: scoreLabel.position.x, drawn: scoreWidth,
+                                          alignment: scoreLabel.horizontalAlignmentMode))
+        let top = scoreLabel.position.y + (scoreFont?.capHeight ?? scoreLabel.fontSize*0.7)
+        let bottom = multiplierLabel.position.y
+        clock.position = CGPoint(x: left - labelSpacing*2, y: (top + bottom)/2)
+        // **Centred on the score and the multiplier as a pair** (James, round 352: "align the
+        // countdown clock so it's centered vertically with the points and multiplier labels").
+        // It sat on the multiplier's baseline, beside the lower of the two. Both labels stand on
+        // their baselines, so the pair runs from the score's cap height down to the multiplier's
+        // baseline, and the clock is centred on that. It clears whichever of the two is wider
         // Twice the label spacing, which is the gap the HUD keeps between the pause button and
         // the score on the row above: near enough to read as one row, far enough that a
         // two-figure clock and a rising multiplier never touch
