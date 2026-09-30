@@ -236,8 +236,15 @@ final class PaddleSpeedViewController: UIViewController, MenuNavigable {
     /// is what made the field stutter. Drawn once, it is a texture like any other and the SKView
     /// can be opaque.
     private func drawnBackdrop() -> UIImage? {
-        let screen = view.window?.bounds.size ?? view.bounds.size
-        guard screen.width > 0, screen.height > 0 else { return nil }
+        let window = view.window?.bounds.size ?? view.bounds.size
+        guard window.width > 0, window.height > 0 else { return nil }
+        let screen = CGSize(width: min(window.width, playLayout.gameWidth), height: window.height)
+        // **The play zone's own column, not the window** (round 353). The field is a window onto
+        // the play zone, and a backdrop drawn for the whole window was centred behind it - so
+        // any difference between the two layouts, a safe-area inset or a rounding, showed as a
+        // dark strip down one side of the field. Drawn for the play zone alone, the picture is
+        // the field's width by construction. The background preview made the same change in
+        // round 351
 
         let source = GameBackgroundView(frame: CGRect(origin: .zero, size: screen))
         source.background = GameBackground.stored(defaults.integer(forKey: "backgroundSetting"))

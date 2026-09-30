@@ -2733,6 +2733,20 @@ testing." What it found and did:
   previous pack.
 - **What's New** is in James's words. The website is live with round 351's changes.
 
+**Round 353: the date under "Daily Challenge", the paddle-speed strip, and the website's iPad shots.**
+
+- **The date is smaller than its heading on every in-game screen and the resume card** (James:
+  "Daily challenge date should be smaller than Daily Challenge header on all in game and resume
+  views"). Round 352 drew it smaller and the screens undid it: each rescales its labels for the
+  screen after the text is set, and setting a label's `font` restyles its whole attributed
+  string. The label now remembers the day (`UILabel.showDailyDate`) and the heading is drawn
+  again after every rescale (`redrawDailyDate`), the date at 0.78 of the heading.
+- **The paddle-speed field's dark strip** was its backdrop drawn for the whole window and
+  centred behind a field the play zone's width. It is drawn for the play zone alone now, as the
+  background preview has been since round 351, and stays clean through a resize.
+- **The website's iPad gallery** shows the 13-inch App Store captures in a 3:4 frame with an
+  iPad's bezel, rather than 11-inch captures cropped to a phone's proportions.
+
 **Open after round 344:**
 
 | Item | What is known |

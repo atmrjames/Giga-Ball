@@ -630,10 +630,7 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
         }
 
         if let challenge = DailyChallengeSession.shared.active {
-            packNameLabel.numberOfLines = 2
-            packNameLabel.attributedText = DailyTwist.dateLines(
-                forKey: challenge.dateKey, font: packNameLabel.font ?? .systemFont(ofSize: 17),
-                colour: packNameLabel.textColor ?? .white)
+            packNameLabel.showDailyDate(forKey: challenge.dateKey)
             // With a calendar before the date (round 350, `DailyTwist.dateLines`)
             // **The date goes on its own line** (James, round 332's layout notes, written
             // against five of the seven screens: "put the date on the line below Daily
@@ -886,6 +883,7 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
             let base = resultBandBaseSize[key] ?? font.pointSize
             resultBandBaseSize[key] = base
             label.font = font.withSize((base*scale).rounded())
+            label.redrawDailyDate()
 
             let measuredElsewhere = label === levelNameLabel
                 && DailyChallengeSession.shared.active != nil

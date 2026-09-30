@@ -1455,7 +1455,7 @@ extension DailyTwist {
     }
 
     /// How much smaller the date is drawn than the "Daily Challenge" line above it.
-    static let dateScale: CGFloat = 0.85
+    static let dateScale: CGFloat = 0.78
     /// The air between the two lines.
     static let dateGap: CGFloat = 4
 
@@ -1501,5 +1501,43 @@ extension DailyTwist {
                                        attributes: [.font: font,
                                                     .foregroundColor: colour]))
         return line
+    }
+}
+
+
+/// The two-line "Daily Challenge" and date heading, kept on the label so it can be drawn again.
+///
+/// **James, round 353: "Daily challenge date should be smaller than Daily Challenge header on
+/// all in game and resume views".** It was drawn smaller, and then undone: every one of these
+/// screens rescales its labels for the screen it finds itself on after the text is set, and
+/// setting a label's `font` replaces the font of every run in its attributed text - so the
+/// date came back at the heading's size. The screens now call `redrawDailyDate()` after any
+/// font change, and the heading is built again from the key at the label's new size.
+extension UILabel {
+    private static var dailyDateKeyTag = 0
+
+    /// The day this label is showing the heading for, or nil when it shows something else.
+    var dailyDateKey: String? {
+        get { objc_getAssociatedObject(self, &UILabel.dailyDateKeyTag) as? String }
+        set { objc_setAssociatedObject(self, &UILabel.dailyDateKeyTag, newValue,
+                                       .OBJC_ASSOCIATION_COPY_NONATOMIC) }
+    }
+
+    /// Shows the heading for a day, at the label's own font and colour.
+    func showDailyDate(forKey key: String) {
+        dailyDateKey = key
+        numberOfLines = 2
+        redrawDailyDate()
+    }
+
+    /// Draws the heading again at the label's current font, if it is showing one.
+    func redrawDailyDate() {
+        guard let key = dailyDateKey else { return }
+        let base = font ?? .systemFont(ofSize: 17)
+        attributedText = DailyTwist.dateLines(forKey: key, font: base,
+                                              colour: textColor ?? .white)
+        // Not followed by `font = base`: setting a label's font restyles its whole attributed
+        // string, which is the very thing this exists to undo. The label's `font` already reads
+        // the first run's, the heading's, so the next rescale starts from the right size
     }
 }

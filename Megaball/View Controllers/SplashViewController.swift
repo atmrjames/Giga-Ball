@@ -355,9 +355,7 @@ class SplashViewController: UIViewController {
             resumingLabel.text = lines.heading
             modeLabel.text = lines.mode
             if let key = savedGame.dailyDateKey {
-                modeLabel.attributedText = DailyTwist.dateLines(
-                    forKey: key, font: modeLabel.font ?? .systemFont(ofSize: 17),
-                    colour: modeLabel.textColor ?? .white)
+                modeLabel.showDailyDate(forKey: key)
             }
             // With a calendar before the date (round 350); `lines.mode` keeps the plain words
             detailLabel.text = lines.detail
@@ -473,6 +471,7 @@ class SplashViewController: UIViewController {
         let smallColour = UIColor(white: 0.667, alpha: 1)
         modeLabel.font = resumeHasDetail ? small : lead
         modeLabel.textColor = resumeHasDetail ? smallColour : leadColour
+        modeLabel.redrawDailyDate()
         modeLabel.adjustsFontSizeToFitWidth = true
         modeLabel.minimumScaleFactor = 0.6
         detailLabel.font = lead
@@ -863,6 +862,7 @@ class SplashViewController: UIViewController {
             let base = resumeBaseSize[key] ?? font.pointSize
             resumeBaseSize[key] = base
             label.font = font.withSize((base*scale).rounded())
+            label.redrawDailyDate()
         }
         if let attributed = scoreLabel.attributedText, attributed.length > 0 {
             var faces: [(NSRange, UIFont)] = []
