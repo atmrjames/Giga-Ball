@@ -2869,12 +2869,39 @@ testing." What it found and did:
   Igloo, Chandelier, Snowflake, Ghost Ship, Accordion. Appended, so a run's saved schedule keeps
   its indices.
 
+**Round 358: Glow and Clouds open on new light every game, and the picker shows them as they are.**
+
+James on round 357's report: the settings list holds its place on his phone and iPad, the game
+view follows an iPad window "perfectly", Brick Descent's "descend continuously" stays, and
+scores stay without commas. Then: "the images in the game backgrounds selection screen are of
+the previous version, the starting point of the backgrounds in the game is the same each time,
+is it possible to randomise the size and position of the blobs at the start?"
+
+- **One layout, read by both.** `GameBackground.glowBlobs` and `cloudBlobs` say where every
+  blob starts, how big, how bright and on what rhythm; the scene makes its nodes from them and
+  the picker draws them with `stillPicture`, which runs the shader's own fade (`blobBody`) on
+  the CPU. The picker had been drawing round 144's baked haze and round 126's cloud strips, and
+  **its Glow was upside down**: the picture measured a pool's height from the top and the scene
+  from the bottom, so the preview's green sat high where the game's sits low. The two old
+  drawings are gone, so there is nothing left for the picker to fall behind.
+- **A game's shuffle.** `GameScene.backgroundShuffle` is picked when the scene is made and again
+  on a restart, and mixed into every seed: each pool's centre wanders up to 12% of the field
+  and its size 0.85 to 1.2 times, and every blob's place, size and rhythm follow from the mixed
+  seed. It is per game, not per drawing, because `applyBackgroundSetting` runs again on every
+  resize, and a layout that reshuffled then would jump while an iPad window is dragged. The
+  pools never swap sides (`testTheShuffleNeverSwapsThePoolsOver`, sixty shuffles): the
+  diagonal is the composition. The picker keeps one fixed shuffle so its preview is steady.
+- James also noted they move "very slowly". That is round 299's design (most of a minute each
+  way) and was left alone; `hazeDrift` and `cloudLayers.crossing` are the figures if he wants
+  it livelier.
+
 **Open after round 344:**
 
 | Item | What is known |
 |---|---|
-| The game view following an iPad or Mac window | Built in round 342, tested as arithmetic and on a bare scene. **James is checking it on his iPad** (round 357): start a level, drag the window wider, narrower, taller and shorter, and the field should never stretch, crop or jump |
-| The settings list keeping its place | Round 356. Not reproduced on the simulator; every reload now restores the offset. James to confirm on his phone |
+| ~~The game view following an iPad or Mac window~~ | **Seen working, 2 October** - James on his iPad: "it's working perfectly" |
+| ~~The settings list keeping its place~~ | **Seen fixed, 2 October**, on his phone and his iPad |
+| Descent's pace | Round 357's three seconds a row. James is playing it: "maybe a bit slow, let's see". `endlessIIDescentStep` is the one figure to change |
 | ~~The iPad paddle-speed field in the column~~ | **Seen working, round 348**, on an iPad Pro 11-inch (M5) simulator on iOS 26.5: the field sits in the column as a scaled model of the play area, the slider reads x2.00 a quarter of the way along, and a 100-point drag carried the paddle from the centre to near the right edge |
 | ~~Aimed Sticky's sounds~~ | **Answered, round 356** ("aimed sticky sounds should use the sticky paddle sound"). It did, and the ordinary bounce played under it - see round 356 |
 | ~~Portal Paddle with Auto-Aim~~ | **Answered, round 356**: "Portal Paddle and auto-aim should not run together". The pair is back in the matrix |

@@ -2073,9 +2073,6 @@ final class EndlessIIFrameCostTests: XCTestCase {
         // strength is matched rather than guessed at. Round 299 tried 3.4 (a bright green
         // mass) and 0.36 (invisible) before measuring, which is two guesses more than the
         // measurement cost.
-        if let baked = GameBackground.hazeImage(size: panel) {
-            print(String(format: "  BAKED haze mean alpha %.4f", meanAlpha(baked)))
-        }
         let stack = UIGraphicsImageRenderer(size: panel).image { context in
             for (pool, _) in zip(GameBackground.glowPools, GameBackground.hazeDrift) {
                 let reach = panel.width*pool.radius

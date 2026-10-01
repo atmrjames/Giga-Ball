@@ -139,7 +139,8 @@ final class GameBackgroundTests: XCTestCase {
     func testTheGlowIsTwoPoolsOnADiagonal() {
         // Play-test round 126 asked for the Glow to be improved. One pool lit a corner and
         // left the rest flat; two put a diagonal across the field, the way the Classic
-        // artwork does - so the second must be on the other side and lower, and quieter
+        // artwork does - so the second must be on the other side, at the other height
+        // (measured from the bottom, as the scene measures it), and quieter
         XCTAssertEqual(GameBackground.glowPools.count, 2)
         let (near, far) = (GameBackground.glowPools[0], GameBackground.glowPools[1])
         XCTAssertGreaterThan(far.centre.x, near.centre.x)
@@ -147,11 +148,13 @@ final class GameBackgroundTests: XCTestCase {
         XCTAssertLessThan(far.strength, near.strength)
     }
 
-    func testTheHazeIsDrawnOnItsOwnSoItCanBreathe() {
-        // Split from the gradient in round 144: on a node of its own the scene can swell and
-        // settle it, which a baked picture cannot do
-        XCTAssertNotNil(GameBackground.hazeImage(size: CGSize(width: 60, height: 100)))
-        XCTAssertNil(GameBackground.hazeImage(size: .zero))
+    func testTheHazeIsLaidOutAsBlobsSoItCanBreathe() {
+        // Split from the gradient in round 144, and into blobs of its own in round 299: on
+        // nodes of their own the scene can swell and drift them, which a baked picture cannot
+        let blobs = GameBackground.glowBlobs(in: CGSize(width: 60, height: 100), shuffle: 1)
+        XCTAssertEqual(blobs.count,
+                       GameBackground.glowPools.count*GameBackground.hazeBlobsPerPool)
+        XCTAssertTrue(GameBackground.glowBlobs(in: .zero, shuffle: 1).isEmpty)
         XCTAssertGreaterThan(GameBackground.glowBreath, 4,
                              "slow enough to be felt rather than watched")
         XCTAssertLessThan(GameBackground.glowBreathDepth, 0.35, "and shallow")
@@ -170,21 +173,15 @@ final class GameBackgroundTests: XCTestCase {
         XCTAssertLessThan(near.strength, far.strength)
     }
 
-    func testACloudLayerIsTheSameStripEveryTime() {
-        // Seeded, like the haze: a background that reshuffled itself on a resize would
-        // change shape when the phone is rotated
+    func testTheCloudsAreTheSameCloudsForTheSameGame() {
+        // Seeded by the game's own shuffle: a background that reshuffled itself on a resize
+        // would change shape when the phone is rotated or an iPad window is dragged
         let size = CGSize(width: 70, height: 120)
-        let layer = GameBackground.cloudLayers[0]
-        let first = GameBackground.cloudImage(size: size, seed: layer.seed,
-                                              blobs: layer.blobs, tint: layer.colour,
-                                              strength: layer.strength)
-        let again = GameBackground.cloudImage(size: size, seed: layer.seed,
-                                              blobs: layer.blobs, tint: layer.colour,
-                                              strength: layer.strength)
-        XCTAssertEqual(first?.pngData(), again?.pngData())
-        XCTAssertNil(GameBackground.cloudImage(size: .zero, seed: layer.seed,
-                                               blobs: layer.blobs, tint: layer.colour,
-                                               strength: layer.strength))
+        let first = GameBackground.cloudBlobs(in: size, shuffle: 42).map(\.centre)
+        let again = GameBackground.cloudBlobs(in: size, shuffle: 42).map(\.centre)
+        XCTAssertEqual(first, again)
+        XCTAssertEqual(first.count, GameBackground.cloudLayers.map(\.blobs).reduce(0, +))
+        XCTAssertTrue(GameBackground.cloudBlobs(in: .zero, shuffle: 42).isEmpty)
     }
 
     func testCloudsHaveAStillPictureForThePicker() {
@@ -232,5 +229,91 @@ final class BackgroundDotsTests: XCTestCase {
         let dots = GameBackground.inDisplayOrder.map(BackgroundSelectViewController.dot(for:))
         XCTAssertEqual(dots, Array(0..<GameBackground.inDisplayOrder.count),
                        "each page lights the next dot along, not its raw value's")
+    }
+}
+
+/// James, round 358: "Glow and clouds backgrounds look much better and they do move in-game
+/// all be it very slowly, the images in the game backgrounds selection screen are of the
+/// previous version, the starting point of the backgrounds in the game is the same each time,
+/// is it possible to randomise the size and position of the blobs at the start?"
+final class MovingBackgroundStartTests: XCTestCase {
+
+    func testEachGameOpensOnADifferentGlow() {
+        let size = CGSize(width: 300, height: 540)
+        let one = GameBackground.glowBlobs(in: size, shuffle: 1)
+        let two = GameBackground.glowBlobs(in: size, shuffle: 2)
+        XCTAssertNotEqual(one.map(\.centre), two.map(\.centre), "the blobs start elsewhere")
+        XCTAssertNotEqual(one.map(\.size.width), two.map(\.size.width), "and at other sizes")
+    }
+
+    func testEachGameOpensOnDifferentClouds() {
+        let size = CGSize(width: 300, height: 540)
+        let one = GameBackground.cloudBlobs(in: size, shuffle: 1)
+        let two = GameBackground.cloudBlobs(in: size, shuffle: 2)
+        XCTAssertNotEqual(one.map(\.centre), two.map(\.centre))
+        XCTAssertNotEqual(one.map(\.size.width), two.map(\.size.width))
+    }
+
+    func testTheShuffleNeverSwapsThePoolsOver() {
+        // The diagonal is the composition (round 144): whatever a game's shuffle, the green
+        // stays on the left and below the violet
+        let size = CGSize(width: 300, height: 540)
+        for shuffle in UInt64(1)...60 {
+            let blobs = GameBackground.glowBlobs(in: size, shuffle: shuffle)
+            func middle(_ group: Int) -> CGPoint {
+                let own = blobs.filter { $0.group == group }
+                return CGPoint(x: own.map(\.centre.x).reduce(0, +)/CGFloat(own.count),
+                               y: own.map(\.centre.y).reduce(0, +)/CGFloat(own.count))
+            }
+            XCTAssertLessThan(middle(0).x, middle(1).x, "shuffle \(shuffle)")
+            XCTAssertLessThan(middle(0).y, middle(1).y, "shuffle \(shuffle)")
+        }
+    }
+
+    func testThePickerShowsTheGreenWhereTheGameDoes() throws {
+        // "The images in the game backgrounds selection screen are of the previous version":
+        // the picker drew the old speckled haze, and measured the pools from the top while the
+        // scene measures them from the bottom, so its green sat at the top of the preview and
+        // the game's at the bottom. The scene's green pool is the lower one, so the picker's
+        // extra green over the plain gradient has to be mostly in the lower half too
+        let size = CGSize(width: 120, height: 216)
+        let glow = try XCTUnwrap(GameBackground.glowImage(size: size, paddleFraction: 0.2))
+        let plain = try XCTUnwrap(GameBackground.gradientImage(size: size, paddleFraction: 0.2))
+        let added = zip(greens(glow), greens(plain)).map { Int($0) - Int($1) }
+        let half = added.count/2
+        let upper = added[..<half].reduce(0, +)
+        let lower = added[half...].reduce(0, +)
+        XCTAssertGreaterThan(lower, upper)
+    }
+
+    func testThePickerIsTheSamePictureEveryTime() {
+        let size = CGSize(width: 60, height: 108)
+        XCTAssertEqual(GameBackground.cloudsImage(size: size, paddleFraction: 0.2)?.pngData(),
+                       GameBackground.cloudsImage(size: size, paddleFraction: 0.2)?.pngData())
+    }
+
+    func testTheStillBlobFadesAsTheShaderDoes() {
+        // The picture draws `blobBody`, the scene's shader does the same sum on the GPU: full
+        // at the middle, falling, and exactly nothing at the rim so there is no edge to find
+        XCTAssertEqual(GameBackground.blobBody(at: 0), 1, accuracy: 0.0001)
+        XCTAssertEqual(GameBackground.blobBody(at: 1), 0, accuracy: 0.0001)
+        XCTAssertGreaterThan(GameBackground.blobBody(at: 0.3), GameBackground.blobBody(at: 0.6))
+        XCTAssertEqual(GameBackground.blobBody(at: 0.5),
+                       exp(-0.25*GameBackground.blobSoftness), accuracy: 0.0001,
+                       "untouched by the rim's fade inside d = 0.55")
+    }
+
+    /// Each pixel's green channel, top row first.
+    private func greens(_ image: UIImage) -> [UInt8] {
+        let width = Int(image.size.width), height = Int(image.size.height)
+        var pixels = [UInt8](repeating: 0, count: width*height*4)
+        guard let cg = image.cgImage,
+              let context = CGContext(data: &pixels, width: width, height: height,
+                                      bitsPerComponent: 8, bytesPerRow: width*4,
+                                      space: CGColorSpaceCreateDeviceRGB(),
+                                      bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)
+        else { return [] }
+        context.draw(cg, in: CGRect(x: 0, y: 0, width: width, height: height))
+        return stride(from: 1, to: pixels.count, by: 4).map { pixels[$0] }
     }
 }

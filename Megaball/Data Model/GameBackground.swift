@@ -222,27 +222,18 @@ enum GameBackground: Int, CaseIterable {
     // equally, which is the one thing it must not do - it is there to give the field some
     // depth, not to light it.
 
-    /// The haze on its own, on a transparent ground.
-    ///
-    /// Split out of `glowImage` in round 144 so the scene can put it on a node of its own and
-    /// breathe it - a haze that swells and settles over about eight seconds, which is slow
-    /// enough to be felt rather than watched. The still picture below still composites the
-    /// two, because the picker draws one image and nothing there moves.
-    ///
-    /// Speckle rather than a clean radial fade: a smooth circle of green over a smooth purple
-    /// gradient bands badly on an OLED screen at these very low alphas. Scattering it into a
-    /// few hundred soft dots breaks the bands up, and at this size and blur they read as one
-    /// hazy cloud rather than as dots.
-    ///
-    /// The scatter is generated from a fixed seed, so the same background is the same picture
-    /// every time it is drawn. A background that reshuffled itself whenever the scene resized
-    /// would be a background that twinkles when you rotate the phone.
-    ///
-    /// **Two pools since round 144** (play-test round 126: "improve existing glow
-    /// background"). One green and high on the left as before, and a second, smaller and
-    /// cooler one low on the right - the single pool lit one corner and left the rest of the
-    /// field flat, and a picture with one bright corner reads as a mistake rather than as
-    /// light. The pair gives the field a diagonal, which is what the Classic artwork has.
+    // **Two pools since round 144** (play-test round 126: "improve existing glow
+    // background"): one green, one smaller and cooler on the other side of the field. The
+    // single pool lit one corner and left the rest flat, and a picture with one bright corner
+    // reads as a mistake rather than as light. The pair gives the field a diagonal, which is
+    // what the Classic artwork has.
+    //
+    // The baked haze of a few hundred speckled dots that this used to be went in round 358:
+    // the scene had drawn the glow from drifting blobs since round 299, and the picker was
+    // still showing the old picture - upside down, too, because the picture measured a pool's
+    // height from the top and the scene measures it from the bottom. Both now read
+    // `glowBlobs`, so they cannot disagree again.
+
     /// How each pool drifts, once it is a node of its own.
     ///
     /// James, round 297: "is it possible to make the giga-ball yellow/green fuzzy hue dynamic,
@@ -263,59 +254,6 @@ enum GameBackground: Int, CaseIterable {
     ]
     // Wider than round 299's 0.055 and 0.075 (James, round 351: "make them a bit more random
     // and disperse within the backgrounds"). Still most of a minute each way
-
-    static func hazeImage(size: CGSize, only: Int? = nil) -> UIImage? {
-        guard size.width > 0, size.height > 0 else { return nil }
-
-        let format = UIGraphicsImageRendererFormat.default()
-        format.opaque = false
-        return UIGraphicsImageRenderer(size: size, format: format).image { context in
-            let cg = context.cgContext
-            cg.setBlendMode(.plusLighter)
-            // Added to what is beneath rather than painted over it, so the purple still shows
-            // through and the haze lifts it instead of covering it
-
-            var seed: UInt64 = 0x9E3779B97F4A7C15
-            func next() -> CGFloat {
-                seed = seed &* 6364136223846793005 &+ 1442695040888963407
-                return CGFloat((seed >> 33) % 100_000)/100_000
-            }
-
-            for (index, pool) in glowPools.enumerated() {
-                if let only, index != only { continue }
-                // One pool per node when the scene asks for them separately, so each can drift
-                // on its own path - as one baked picture they could only move together, which
-                // is a picture sliding about rather than two lights in a lamp
-                let centre = CGPoint(x: size.width*pool.centre.x,
-                                     y: size.height*pool.centre.y)
-                let reach = size.width*pool.radius
-
-                for _ in 0..<pool.dots {
-                    // Polar, with the radius square-rooted so the dots do not bunch in the
-                    // middle
-                    let angle = next()*2*CGFloat.pi
-                    let distance = reach*sqrt(next())
-                    let spot = CGPoint(x: centre.x + cos(angle)*distance,
-                                       y: centre.y + sin(angle)*distance*0.72)
-                    // Squashed vertically, so a pool lies across the field rather than
-                    // sitting in it as a ball
-
-                    let fade = 1 - distance/reach
-                    let alpha = pool.strength*fade*fade*(0.4 + next()*0.6)
-                    let dot = reach*(0.10 + next()*0.22)
-
-                    let colours = [pool.colour.withAlphaComponent(alpha).cgColor,
-                                   pool.colour.withAlphaComponent(0).cgColor] as CFArray
-                    guard let haze = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(),
-                                                colors: colours,
-                                                locations: [0, 1]) else { continue }
-                    cg.drawRadialGradient(haze, startCenter: spot, startRadius: 0,
-                                          endCenter: spot, endRadius: dot,
-                                          options: [])
-                }
-            }
-        }
-    }
 
     /// One soft blob: a radial fade from the colour at its middle to nothing at its edge.
     ///
@@ -506,69 +444,8 @@ enum GameBackground: Int, CaseIterable {
 
     /// The gradient with the haze over it: one still picture, for the picker and the mock-up.
     static func glowImage(size: CGSize, paddleFraction: CGFloat) -> UIImage? {
-        guard let base = gradientImage(size: size, paddleFraction: paddleFraction) else {
-            return nil
-        }
-        guard let haze = hazeImage(size: size).map(grained) else { return base }
-
-        return UIGraphicsImageRenderer(size: size).image { _ in
-            base.draw(in: CGRect(origin: .zero, size: size))
-            haze.draw(in: CGRect(origin: .zero, size: size))
-        }
-    }
-
-    /// One layer of cloud, on a transparent ground, tileable left to right.
-    ///
-    /// Drawn twice as wide as the field and moved by the scene, so a layer can travel a whole
-    /// field's width and start again without a seam: every blob that crosses the right-hand
-    /// edge is drawn again on the left, which is what makes the two halves identical at the
-    /// join.
-    ///
-    /// Soft, wide and very faint. Cloud in this game is weather behind a field of bricks, not
-    /// a picture of the sky - anything with an edge on it would compete with the ball.
-    static func cloudImage(size: CGSize, seed startingSeed: UInt64, blobs: Int,
-                           tint: UIColor, strength: CGFloat) -> UIImage? {
-        guard size.width > 0, size.height > 0 else { return nil }
-
-        let format = UIGraphicsImageRendererFormat.default()
-        format.opaque = false
-        return UIGraphicsImageRenderer(size: size, format: format).image { context in
-            let cg = context.cgContext
-            cg.setBlendMode(.plusLighter)
-
-            var seed = startingSeed
-            func next() -> CGFloat {
-                seed = seed &* 6364136223846793005 &+ 1442695040888963407
-                return CGFloat((seed >> 33) % 100_000)/100_000
-            }
-
-            for _ in 0..<blobs {
-                let x = next()*size.width
-                let y = next()*size.height
-                let width = size.width*(0.18 + next()*0.26)
-                let height = width*(0.22 + next()*0.18)
-                // Wider than they are tall, like weather
-
-                let alpha = strength*(0.35 + next()*0.65)
-                let colours = [tint.withAlphaComponent(alpha).cgColor,
-                               tint.withAlphaComponent(0).cgColor] as CFArray
-                guard let puff = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(),
-                                            colors: colours, locations: [0, 1]) else { continue }
-
-                for wrap in [CGFloat(0), -size.width, size.width] {
-                    cg.saveGState()
-                    cg.translateBy(x: x + wrap, y: y)
-                    cg.scaleBy(x: 1, y: height/width)
-                    cg.drawRadialGradient(puff, startCenter: .zero, startRadius: 0,
-                                          endCenter: .zero, endRadius: width,
-                                          options: [])
-                    cg.restoreGState()
-                }
-                // Three passes: where it is, and a copy either side. A blob near an edge is
-                // then whole on both sides of the join, which is the whole trick to a strip
-                // that can be scrolled for ever
-            }
-        }
+        stillPicture(size: size, paddleFraction: paddleFraction,
+                     blobs: glowBlobs(in: size, shuffle: stillShuffle))
     }
 
     /// The two cloud layers: how fast each crosses the field, and what it is made of.
@@ -595,17 +472,155 @@ enum GameBackground: Int, CaseIterable {
 
     /// The still picture of it, for the picker and the mock-up - one frame of the drift.
     static func cloudsImage(size: CGSize, paddleFraction: CGFloat) -> UIImage? {
+        stillPicture(size: size, paddleFraction: paddleFraction,
+                     blobs: cloudBlobs(in: size, shuffle: stillShuffle))
+    }
+
+    // MARK: - One layout for the scene and the picker
+
+    /// One blob of a moving background, where it starts and how it moves.
+    ///
+    /// **Measured from the background's bottom-left corner, in points, the scene's way up.**
+    /// The scene is what James plays against, so the scene's convention wins; the still
+    /// picture flips it once, in `stillPicture`.
+    struct PlacedBlob {
+        let centre: CGPoint
+        let size: CGSize
+        let alpha: CGFloat
+        let colour: UIColor
+        /// Which pool or cloud layer it belongs to, for the drift that goes with it.
+        let group: Int
+        let rhythm: (across: TimeInterval, down: TimeInterval, swell: TimeInterval,
+                     phase: TimeInterval, fade: TimeInterval)
+        /// How long a cloud takes to cross the span. Nothing for a glow blob, which wanders.
+        let crossing: TimeInterval
+    }
+
+    /// The shuffle the picker draws with. Any fixed value would do: what matters is that it
+    /// is fixed, so the preview does not change every time the screen lays itself out.
+    static let stillShuffle: UInt64 = 0
+
+    /// A seed and a shuffle made into one seed, mixed well enough that shuffles one apart
+    /// give layouts nothing alike (splitmix64's finaliser).
+    static func mixed(_ seed: UInt64, _ shuffle: UInt64) -> UInt64 {
+        var z = seed &+ shuffle &* 0x9E3779B97F4A7C15
+        z = (z ^ (z >> 30)) &* 0xBF58476D1CE4E5B9
+        z = (z ^ (z >> 27)) &* 0x94D049BB133111EB
+        return z ^ (z >> 31)
+    }
+
+    /// How far a pool's centre may wander from where `glowPools` puts it, each way, as a
+    /// share of the field, and how much bigger or smaller the whole pool may start.
+    ///
+    /// James, round 358: "the starting point of the backgrounds in the game is the same each
+    /// time, is it possible to randomise the size and position of the blobs at the start?"
+    /// Not so far that the two pools can swap sides - the diagonal is the composition - but
+    /// far enough that no two games open on the same light.
+    static let poolWander: CGFloat = 0.12
+    static let poolSizeRange: ClosedRange<CGFloat> = 0.85...1.2
+
+    /// Every blob of the Glow, laid out for a background of this size.
+    ///
+    /// `shuffle` is the run's own number: the scene picks a new one each game, and keeps it
+    /// for the whole game so that a resize or a rotation lays the same blobs out again rather
+    /// than reshuffling them in front of the player.
+    static func glowBlobs(in size: CGSize, shuffle: UInt64) -> [PlacedBlob] {
+        guard size.width > 0, size.height > 0 else { return [] }
+        return glowPools.enumerated().flatMap { group, pool -> [PlacedBlob] in
+            let seed = mixed(pool.seed, shuffle)
+            var state = seed
+            func next() -> CGFloat {
+                state = state &* 6364136223846793005 &+ 1442695040888963407
+                return CGFloat((state >> 33) % 100_000)/100_000
+            }
+            let centre = CGPoint(x: size.width*(pool.centre.x + (next()*2 - 1)*poolWander),
+                                 y: size.height*(pool.centre.y + (next()*2 - 1)*poolWander))
+            let grown = poolSizeRange.lowerBound
+                + next()*(poolSizeRange.upperBound - poolSizeRange.lowerBound)
+            let reach = size.width*pool.radius*grown
+            let diameter = reach*hazeBlobShare
+
+            return hazeBlobs(seed: seed).enumerated().map { index, placed in
+                PlacedBlob(centre: CGPoint(x: centre.x + placed.offset.x*reach,
+                                           y: centre.y - placed.offset.y*reach),
+                           size: CGSize(width: diameter*placed.scale,
+                                        height: diameter*0.78*placed.scale),
+                           // Squashed, so a pool lies across the field rather than sitting
+                           // in it as a ball
+                           alpha: pool.strength*hazeBlobStrength*placed.share,
+                           colour: pool.colour, group: group,
+                           rhythm: blobDrift(index: index, seed: seed), crossing: 0)
+            }
+        }
+    }
+
+    /// Every cloud, laid out for a background of this size.
+    ///
+    /// Spread across a span one field wider than the field, so the gaps between them arrive
+    /// as varied as the clouds do; the scene slides each one across that span and back.
+    static func cloudBlobs(in size: CGSize, shuffle: UInt64) -> [PlacedBlob] {
+        guard size.width > 0, size.height > 0 else { return [] }
+        return cloudLayers.enumerated().flatMap { group, layer -> [PlacedBlob] in
+            let seed = mixed(layer.seed, shuffle)
+            return (0..<layer.blobs).map { index in
+                var state = seed &+ UInt64(index) &* 0xD6E8FEB86659FD93
+                func next() -> CGFloat {
+                    state = state &* 6364136223846793005 &+ 1442695040888963407
+                    return CGFloat((state >> 33) % 100_000)/100_000
+                }
+                let width = size.width*(0.34 + next()*0.42)
+                let height = width*(0.34 + next()*0.20)
+                let alpha = layer.strength*(0.55 + next()*0.6)
+                let centre = CGPoint(x: next()*size.width*2,
+                                     y: size.height*(0.12 + next()*0.76))
+                return PlacedBlob(centre: centre, size: CGSize(width: width, height: height),
+                                  alpha: alpha, colour: layer.colour, group: group,
+                                  rhythm: blobDrift(index: index, seed: seed),
+                                  crossing: layer.crossing*(0.8 + next()*0.45))
+            }
+        }
+    }
+
+    /// How bright the scene's blob shader is at a distance from the middle, `r` running from
+    /// 0 at the centre to 1 at the rim - the same sum `backgroundBlobShaderSource` does, so a
+    /// still picture is lit the way the game is.
+    static func blobBody(at r: CGFloat) -> CGFloat {
+        let d = r*r
+        let t = min(max((d - 0.55)/0.45, 0), 1)
+        return exp(-d*blobSoftness)*(1 - t*t*(3 - 2*t))
+    }
+
+    /// The gradient with these blobs over it, drawn as the scene would draw its first frame.
+    static func stillPicture(size: CGSize, paddleFraction: CGFloat,
+                             blobs: [PlacedBlob]) -> UIImage? {
         guard let base = gradientImage(size: size, paddleFraction: paddleFraction) else {
             return nil
         }
+        let format = UIGraphicsImageRendererFormat.default()
+        format.opaque = false
+        let light = UIGraphicsImageRenderer(size: size, format: format).image { context in
+            let cg = context.cgContext
+            cg.setBlendMode(.plusLighter)
+            // Added to what is beneath, as the scene's `.add` blend is
+            let stops = (0...24).map { CGFloat($0)/24 }
+            for blob in blobs {
+                let colours = stops.map {
+                    blob.colour.withAlphaComponent(blobBody(at: $0)*blob.alpha).cgColor
+                } as CFArray
+                guard let fade = CGGradient(colorsSpace: CGColorSpaceCreateDeviceRGB(),
+                                            colors: colours, locations: stops) else { continue }
+                cg.saveGState()
+                cg.translateBy(x: blob.centre.x, y: size.height - blob.centre.y)
+                cg.scaleBy(x: 1, y: blob.size.height/blob.size.width)
+                cg.drawRadialGradient(fade, startCenter: .zero, startRadius: 0,
+                                      endCenter: .zero, endRadius: blob.size.width/2,
+                                      options: [])
+                cg.restoreGState()
+            }
+        }
         return UIGraphicsImageRenderer(size: size).image { _ in
             base.draw(in: CGRect(origin: .zero, size: size))
-            for layer in cloudLayers {
-                cloudImage(size: size, seed: layer.seed, blobs: layer.blobs,
-                           tint: layer.colour, strength: layer.strength)
-                    .map(grained)?
-                    .draw(in: CGRect(origin: .zero, size: size))
-            }
+            grained(light).draw(in: CGRect(origin: .zero, size: size))
         }
     }
 

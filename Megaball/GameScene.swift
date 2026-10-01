@@ -9030,6 +9030,10 @@ laserTimer?.invalidate()
 		clearSavedGame()
 		// If restarting after resuming, make sure the correct level is selected
 
+		backgroundShuffle = .random(in: 1...UInt64.max)
+		applyBackgroundSetting()
+		// A new game opens on new light - see `backgroundShuffle`
+
 		clearPlacedDigits(from: scoreLabel)
 		write(endlessMode ? "0m" : "0", into: scoreLabel)
 		lastScoreMilestone = 0
@@ -10009,6 +10013,15 @@ laserTimer?.invalidate()
 	/// and a layer left over from the last choice would drift across the new one for ever.
 	var backgroundMotionLayers: [SKSpriteNode] = []
 
+	/// This game's own layout of the Glow and the Clouds (James, round 358: "the starting
+	/// point of the backgrounds in the game is the same each time, is it possible to randomise
+	/// the size and position of the blobs at the start?").
+	///
+	/// Chosen per game rather than per drawing: `applyBackgroundSetting` runs again on every
+	/// resize and every settings change, and a layout that reshuffled each time would jump in
+	/// front of the player whenever an iPad window was dragged. A restart picks a new one.
+	var backgroundShuffle = UInt64.random(in: 1...UInt64.max)
+
 	private func clearBackgroundMotion() {
 		backgroundMotionLayers.forEach { $0.removeFromParent() }
 		backgroundMotionLayers.removeAll()
@@ -10020,124 +10033,108 @@ laserTimer?.invalidate()
 	/// could only sit there. On its own node it swells and settles over eight seconds, which
 	/// is slow enough to be felt at the edge of the eye rather than watched.
 	private func addBackgroundHaze(over overlay: SKSpriteNode) {
-		for (pool, drift) in zip(GameBackground.glowPools, GameBackground.hazeDrift) {
-			let reach = overlay.size.width*pool.radius
-			let diameter = reach*GameBackground.hazeBlobShare
-			let shader = GameScene.backgroundBlobShader(colour: pool.colour)
-			// One shader per pool, shared by its blobs - see `backgroundBlobShader`
+		let shaders = GameBackground.glowPools.map {
+			GameScene.backgroundBlobShader(colour: $0.colour)
+		}
+		// One shader per pool, shared by its blobs - see `backgroundBlobShader`
 
-			let centre = CGPoint(
-				x: overlay.position.x - overlay.size.width*(overlay.anchorPoint.x - pool.centre.x),
-				y: overlay.position.y - overlay.size.height*(overlay.anchorPoint.y - pool.centre.y))
+		for placed in GameBackground.glowBlobs(in: overlay.size, shuffle: backgroundShuffle) {
+			let drift = GameBackground.hazeDrift[placed.group]
+			let own = placed.rhythm
 
-			for (index, placed) in GameBackground.hazeBlobs(seed: pool.seed).enumerated() {
-				let own = GameBackground.blobDrift(index: index, seed: pool.seed)
+			let blob = backgroundBlob(shader: shaders[placed.group])
+			blob.size = placed.size
+			blob.position = backgroundPoint(placed.centre, on: overlay)
+			blob.alpha = placed.alpha
+			blob.blendMode = .add
+			blob.zPosition = overlay.zPosition + 0.01
+			addChild(blob)
+			backgroundMotionLayers.append(blob)
 
-				let blob = backgroundBlob(shader: shader)
-				blob.size = CGSize(width: diameter*placed.scale, height: diameter*0.78*placed.scale)
-				// Squashed, so a pool lies across the field rather than sitting in it as a ball
-				blob.position = CGPoint(x: centre.x + placed.offset.x*reach,
-										y: centre.y - placed.offset.y*reach)
-				let strength = pool.strength*GameBackground.hazeBlobStrength*placed.share
-				blob.alpha = strength
-				blob.blendMode = .add
-				blob.zPosition = overlay.zPosition + 0.01
-				addChild(blob)
-				backgroundMotionLayers.append(blob)
+			// **Each blob on its own path, which is the whole of the effect.** Round 297
+			// drifted the baked haze as one picture, so every part of it moved together and
+			// the shape never changed - James: "the whole background image is shifting as a
+			// static image. That is not what I meant." What makes a lava lamp is the
+			// *gaps*: blobs that drift at different rates merge, part and merge again, and
+			// the shape of the light is remade continuously without any one blob doing
+			// anything but wandering.
+			let across = SKAction.sequence([
+				.moveBy(x: overlay.size.width*drift.x, y: 0, duration: own.across),
+				.moveBy(x: -overlay.size.width*drift.x, y: 0, duration: own.across)])
+			let down = SKAction.sequence([
+				.moveBy(x: 0, y: overlay.size.height*drift.y, duration: own.down),
+				.moveBy(x: 0, y: -overlay.size.height*drift.y, duration: own.down)])
+			let swell = SKAction.sequence([
+				.scale(to: 1.35, duration: own.swell),
+				.scale(to: 0.8, duration: own.swell)])
+			let fade = GameScene.blobFade(from: placed.alpha, over: own.fade)
+			for action in [across, down, swell] { action.timingMode = .easeInEaseOut }
 
-				// **Each blob on its own path, which is the whole of the effect.** Round 297
-				// drifted the baked haze as one picture, so every part of it moved together and
-				// the shape never changed - James: "the whole background image is shifting as a
-				// static image. That is not what I meant." What makes a lava lamp is the
-				// *gaps*: blobs that drift at different rates merge, part and merge again, and
-				// the shape of the light is remade continuously without any one blob doing
-				// anything but wandering.
-				let across = SKAction.sequence([
-					.moveBy(x: overlay.size.width*drift.x, y: 0, duration: own.across),
-					.moveBy(x: -overlay.size.width*drift.x, y: 0, duration: own.across)])
-				let down = SKAction.sequence([
-					.moveBy(x: 0, y: overlay.size.height*drift.y, duration: own.down),
-					.moveBy(x: 0, y: -overlay.size.height*drift.y, duration: own.down)])
-				let swell = SKAction.sequence([
-					.scale(to: 1.35, duration: own.swell),
-					.scale(to: 0.8, duration: own.swell)])
-				let fade = GameScene.blobFade(from: strength, over: own.fade)
-				for action in [across, down, swell] { action.timingMode = .easeInEaseOut }
-
-				blob.run(.sequence([.wait(forDuration: own.phase),
-									.group([.repeatForever(across), .repeatForever(down),
-											.repeatForever(swell), .repeatForever(fade)])]))
-				// Started at its own offset into the cycle, or every blob in a pool would set
-				// off in the same direction at the same moment and the pool would breathe as
-				// one thing again - which is the fault being fixed
-			}
+			blob.run(.sequence([.wait(forDuration: own.phase),
+								.group([.repeatForever(across), .repeatForever(down),
+										.repeatForever(swell), .repeatForever(fade)])]))
+			// Started at its own offset into the cycle, or every blob in a pool would set
+			// off in the same direction at the same moment and the pool would breathe as
+			// one thing again - which is the fault being fixed
 		}
 	}
 
 	/// The cloud layers, drifting at two speeds.
 	///
-	/// Each layer is drawn as a strip the width of the field and moved by exactly that width
-	/// before starting again - the strip is built so that its two edges match, so the restart
-	/// cannot be seen. Two of them, at different speeds, because parallax is what makes a flat
-	/// picture read as depth.
+	/// Two of them, at different speeds, because parallax is what makes a flat picture read
+	/// as depth.
 	private func addBackgroundClouds(over overlay: SKSpriteNode) {
-		for layer in GameBackground.cloudLayers {
-			let shader = GameScene.backgroundBlobShader(colour: layer.colour)
-
-			for index in 0..<layer.blobs {
-				let own = GameBackground.blobDrift(index: index, seed: layer.seed)
-				var state = layer.seed &+ UInt64(index) &* 0xD6E8FEB86659FD93
-				func next() -> CGFloat {
-					state = state &* 6364136223846793005 &+ 1442695040888963407
-					return CGFloat((state >> 33) % 100_000)/100_000
-				}
-
-				let width = overlay.size.width*(0.34 + next()*0.42)
-				let cloud = backgroundBlob(shader: shader)
-				cloud.size = CGSize(width: width, height: width*(0.34 + next()*0.20))
-				let strength = layer.strength*(0.55 + next()*0.6)
-				cloud.alpha = strength
-				cloud.blendMode = .add
-				cloud.zPosition = overlay.zPosition + 0.01
-
-				// Spread across a span one field wider than the field, so the gaps between them
-				// arrive as varied as the clouds do
-				let span = overlay.size.width*2
-				let left = overlay.position.x - overlay.size.width*overlay.anchorPoint.x
-				let top = overlay.position.y - overlay.size.height*overlay.anchorPoint.y
-				cloud.position = CGPoint(x: left + next()*span,
-										 y: top + overlay.size.height*(0.12 + next()*0.76))
-				addChild(cloud)
-				backgroundMotionLayers.append(cloud)
-
-				// **Every cloud wraps itself**, which is what lets them differ. The old strips
-				// were two baked pictures moved by exactly the field's width, so the seam was
-				// hidden by the picture repeating - and a repeat is the one thing that makes a
-				// drift read as a loop. A blob that crosses the span and jumps back to the far
-				// side needs no seam at all, because there is no strip: the sky is the blobs.
-				let crossing = layer.crossing*(0.8 + next()*0.45)
-				cloud.run(.repeatForever(.sequence([
-					.moveBy(x: -span, y: 0, duration: crossing),
-					.moveBy(x: span, y: 0, duration: 0)])))
-
-				// And it changes shape on the way over, on its own rhythm - clouds that keep
-				// their outline while they cross are a conveyor belt of stamps
-				let swell = SKAction.sequence([
-					.scaleX(to: 1.3, y: 0.8, duration: own.swell),
-					.scaleX(to: 0.85, y: 1.25, duration: own.swell)])
-				let bob = SKAction.sequence([
-					.moveBy(x: 0, y: overlay.size.height*0.05, duration: own.down),
-					.moveBy(x: 0, y: -overlay.size.height*0.05, duration: own.down)])
-				let fade = GameScene.blobFade(from: strength, over: own.fade)
-				for action in [swell, bob] { action.timingMode = .easeInEaseOut }
-				cloud.run(.sequence([.wait(forDuration: own.phase),
-									 .group([.repeatForever(swell), .repeatForever(bob),
-											 .repeatForever(fade)])]))
-				// The stretch is on both axes and in opposite directions, so a blob widens as
-				// it flattens: that is a cloud being drawn out by the wind rather than a circle
-				// getting bigger
-			}
+		let shaders = GameBackground.cloudLayers.map {
+			GameScene.backgroundBlobShader(colour: $0.colour)
 		}
+		let span = overlay.size.width*2
+
+		for placed in GameBackground.cloudBlobs(in: overlay.size, shuffle: backgroundShuffle) {
+			let own = placed.rhythm
+			let cloud = backgroundBlob(shader: shaders[placed.group])
+			cloud.size = placed.size
+			cloud.alpha = placed.alpha
+			cloud.blendMode = .add
+			cloud.zPosition = overlay.zPosition + 0.01
+			cloud.position = backgroundPoint(placed.centre, on: overlay)
+			addChild(cloud)
+			backgroundMotionLayers.append(cloud)
+
+			// **Every cloud wraps itself**, which is what lets them differ. The old strips
+			// were two baked pictures moved by exactly the field's width, so the seam was
+			// hidden by the picture repeating - and a repeat is the one thing that makes a
+			// drift read as a loop. A blob that crosses the span and jumps back to the far
+			// side needs no seam at all, because there is no strip: the sky is the blobs.
+			cloud.run(.repeatForever(.sequence([
+				.moveBy(x: -span, y: 0, duration: placed.crossing),
+				.moveBy(x: span, y: 0, duration: 0)])))
+
+			// And it changes shape on the way over, on its own rhythm - clouds that keep
+			// their outline while they cross are a conveyor belt of stamps
+			let swell = SKAction.sequence([
+				.scaleX(to: 1.3, y: 0.8, duration: own.swell),
+				.scaleX(to: 0.85, y: 1.25, duration: own.swell)])
+			let bob = SKAction.sequence([
+				.moveBy(x: 0, y: overlay.size.height*0.05, duration: own.down),
+				.moveBy(x: 0, y: -overlay.size.height*0.05, duration: own.down)])
+			let fade = GameScene.blobFade(from: placed.alpha, over: own.fade)
+			for action in [swell, bob] { action.timingMode = .easeInEaseOut }
+			cloud.run(.sequence([.wait(forDuration: own.phase),
+								 .group([.repeatForever(swell), .repeatForever(bob),
+										 .repeatForever(fade)])]))
+			// The stretch is on both axes and in opposite directions, so a blob widens as
+			// it flattens: that is a cloud being drawn out by the wind rather than a circle
+			// getting bigger
+		}
+	}
+
+	/// A point measured from the background's bottom-left corner, in the scene.
+	///
+	/// Every layer wears the overlay's anchor point (round 145), so the corner is worked out
+	/// from it rather than assumed.
+	func backgroundPoint(_ point: CGPoint, on overlay: SKSpriteNode) -> CGPoint {
+		CGPoint(x: overlay.position.x - overlay.size.width*overlay.anchorPoint.x + point.x,
+				y: overlay.position.y - overlay.size.height*overlay.anchorPoint.y + point.y)
 	}
 
 	/// One drifting blob, drawn by the shader rather than by its picture.
