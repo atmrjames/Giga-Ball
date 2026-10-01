@@ -104,6 +104,31 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
     private var livesUnderScore: NSLayoutConstraint!
     private var livesUnderDailyTotal: NSLayoutConstraint!
     private var gameCentreUnderTheStatsButton: NSLayoutConstraint!
+    /// The Game Center block's ordinary place, low on the screen, which a daily ending trades
+    /// for one under the score (round 357, `arrangeTheDailyEnding`).
+    private var gameCentreAboveTheButtons: NSLayoutConstraint!
+    private var gameCentreUnderTheLives: NSLayoutConstraint!
+    private var gameCentreWellUnderTheLives: NSLayoutConstraint!
+    /// The two constraints that hang a daily ending's Game Center block under whatever ends
+    /// the score block - rebuilt each time, because which label that is changes with the run.
+    private var gameCentreUnderTheScore: [NSLayoutConstraint] = []
+    private lazy var statsUnderTheGameCentre = [
+        PauseMenuViewController.wanted(moreStatsButton.topAnchor.constraint(
+            equalTo: resultLabel.bottomAnchor, constant: 14)),
+        moreStatsButton.topAnchor.constraint(greaterThanOrEqualTo: resultLabel.bottomAnchor,
+                                             constant: 2)]
+    // **Each gap wanted, with a small floor required** - the shape the rest of this screen
+    // settled on (round 160): on an iPhone SE the score block, the board's four lines,
+    // Statistics and the signed-out note do not all fit at their wanted gaps, and a required
+    // eighteen pressed the board's own lines until the caption and the player's row vanished
+
+    private static func wanted(_ constraint: NSLayoutConstraint) -> NSLayoutConstraint {
+        constraint.priority = .defaultHigh
+        return constraint
+    }
+    private lazy var statsStayOnTheScreen = moreStatsButton.bottomAnchor.constraint(
+        lessThanOrEqualTo: buttonCollectionView.topAnchor,
+        constant: -PauseMenuViewController.bottomGroupClearance)
     private var statsUnderTheResult: NSLayoutConstraint!
     private var statsWellUnderTheResult: NSLayoutConstraint!
     private weak var activePowerUpHUD: PausedPowerUpHUD?
@@ -732,6 +757,14 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
         // argument every time; the margins around it are what should bend, and below they do
         containterView.addSubview(resultLabel)
 
+        for label in [leaderboardTitle, resultLabel] {
+            label.isUserInteractionEnabled = true
+            label.addGestureRecognizer(UITapGestureRecognizer(target: self,
+                                                              action: #selector(gameCentreBlockTapped)))
+        }
+        // **The block opens the day's board** (James, round 357: "Clicking that area opens the
+        // game centre leaderboard for that challenge") - a daily's only; every other ending's
+        // line names a board the Game Center button beside it already opens
         leaderboardTitle.translatesAutoresizingMaskIntoConstraints = false
         leaderboardTitle.textAlignment = .center
         leaderboardTitle.font = .boldSystemFont(ofSize: 11)
@@ -774,6 +807,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
             equalTo: buttonCollectionView.topAnchor,
             constant: -(46 + PauseMenuViewController.bottomGroupClearance - 12))
         statsAboveTheButtons.priority = .defaultHigh
+        gameCentreAboveTheButtons = statsAboveTheButtons
         // The bottom of the lower group against the button row, at the gap round 112 settled
         // on. High rather than required: on a short screen the clearances above win and the
         // group simply sits where it fits, rather than the layout breaking a constraint it
@@ -940,12 +974,16 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
                                                         constant: -30),
 
             resultLabel.centerXAnchor.constraint(equalTo: containterView.centerXAnchor),
-            resultLabel.topAnchor.constraint(greaterThanOrEqualTo:
-                                                    livesLabel.bottomAnchor, constant: 8),
+            {
+                self.gameCentreUnderTheLives = self.resultLabel.topAnchor.constraint(
+                    greaterThanOrEqualTo: self.livesLabel.bottomAnchor, constant: 8)
+                return self.gameCentreUnderTheLives
+            }(),
             {
                 let preferred = resultLabel.topAnchor.constraint(
                     equalTo: livesLabel.bottomAnchor, constant: 22)
                 preferred.priority = .defaultHigh
+                self.gameCentreWellUnderTheLives = preferred
                 return preferred
             }(),
             // Under the run's numbers, which is what it is one of: the score, the balls,
@@ -1235,6 +1273,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
     /// every other mode says nothing at all - there the line *is* the placing, and a line
     /// that appears empty and then fills reads as a glitch.
     func updateResultLine() {
+        arrangeTheDailyEnding()
         if isDailyChallenge {
             let session = DailyChallengeSession.shared
             let unit = session.active?.mode.isEndless == true ? "m" : ""
@@ -1247,10 +1286,12 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
             // **The day's points of comparison, on every face of the screen** (James, round 350,
             // `DailyComparison`): the posted score when a better free-play run has taken the row
             // above, and the board's leader - in the pause as well as at the end
-            if sender != "Pause", session.lastRunPosted {
-                lines.insert(standing.map { "\($0.text) on today's leaderboard" }
-                                ?? "Submitted to today's leaderboard", at: 0)
+            if sender != "Pause", session.lastRunPosted, dailyBoard.isEmpty {
+                lines.insert("Submitted to today's leaderboard", at: 0)
             }
+            // **No placing line** (James, round 357: "remove the 1/1 on today's leaderboard
+            // label"). The board's rows below carry the player's own place, so the line said
+            // it twice; it stays only as the confirmation while the board has not answered
             let text = NSMutableAttributedString(string: lines.joined(separator: "\n"))
             let lime = #colorLiteral(red: 0.8235294118, green: 1, blue: 0, alpha: 1)
             for row in dailyBoard {
@@ -2160,6 +2201,55 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
     }
 
     /// briefing screen's leaderboard button shows, so the two doors open the same room.
+    @objc private func gameCentreBlockTapped() {
+        guard isDailyChallenge, sender != "Pause" else { return }
+        openDailyLeaderboard()
+    }
+
+    /// Puts a daily ending's Game Center block under the score and the Statistics button under
+    /// the block (James, round 357: "Put the game centre leaderboard info above the stats info
+    /// / balls remaining info so it's closer to the player's score").
+    ///
+    /// Everywhere else the block keeps its place low on the screen, hung above the button row
+    /// and under the lives line. On a daily ending those three are what is switched off: the
+    /// lives line is hidden there, and a block held below it and above the buttons was held at
+    /// the foot of the screen with Statistics between it and the score it reports on.
+    private func arrangeTheDailyEnding() {
+        let daily = isDailyChallenge && sender != "Pause"
+        gameCentreAboveTheButtons.isActive = daily == false
+        gameCentreUnderTheLives.isActive = daily == false
+        gameCentreWellUnderTheLives.isActive = daily == false
+        if daily { gameCentreUnderTheStatsButton.isActive = false }
+        NSLayoutConstraint.deactivate(gameCentreUnderTheScore)
+        gameCentreUnderTheScore = []
+        if daily {
+            let breakdown = showsDailyBreakdown && dailyTotalLabel.isHidden == false
+            let comparison = (highscoreLabel.text ?? "").isEmpty == false
+            let above: UIView = breakdown ? dailyTotalLabel
+                : (comparison ? highscoreLabel : scoreLabel)
+            // **Whatever actually ends the score block.** The comparison row under the score
+            // is empty on a first attempt and still holds its storyboard height, which on an
+            // iPhone SE was the room the board's caption needed
+            gameCentreUnderTheScore = [
+                PauseMenuViewController.wanted(leaderboardTitle.topAnchor.constraint(
+                    equalTo: above.bottomAnchor, constant: 18)),
+                leaderboardTitle.topAnchor.constraint(greaterThanOrEqualTo: above.bottomAnchor,
+                                                      constant: 2)]
+            NSLayoutConstraint.activate(gameCentreUnderTheScore)
+        }
+        statsUnderTheGameCentre.forEach { $0.isActive = daily }
+        let firm: UILayoutPriority = daily ? .required : .defaultHigh
+        leaderboardTitle.setContentCompressionResistancePriority(firm, for: .vertical)
+        moreStatsButton.setContentCompressionResistancePriority(firm, for: .vertical)
+        signedOutLabel.setContentCompressionResistancePriority(
+            daily ? .defaultLow : .defaultHigh, for: .vertical)
+        // On a screen too short for all of it, the signed-out note gives way first - the
+        // caption and the door to the statistics are the ones a player is looking for, and
+        // the note is not there at all for a player who is signed in, which is the only player
+        // with a board to show
+        statsStayOnTheScreen.isActive = daily
+    }
+
     func openDailyLeaderboard() {
         guard GKLocalPlayer.local.isAuthenticated else { return }
         if hapticsSetting {

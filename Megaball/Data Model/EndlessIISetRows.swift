@@ -83,10 +83,13 @@ struct EndlessIISetRow {
         EndlessIISetRow(name: "Chequer", rows: ["N.N.N.N.N.N",
                                                 ".N.N.N.N.N."], minimumHeight: 60),
 
-        EndlessIISetRow(name: "Vault", rows: ["IIIIIIIIIII",
+        EndlessIISetRow(name: "Vault", rows: ["IIIII.IIIII",
                                               "..MMMMMMM..",
                                               "....NNN...."], minimumHeight: 200),
-        // An indestructible lid over something worth getting at
+        // An indestructible lid over something worth getting at. **With a slot in it since
+        // round 357** (James: "ball can get stuck above solid row on indestructible bricks",
+        // screenshotted on this lid): a ball that got above an unbroken lid could never come
+        // back down. The slot is over the middle of the treasure, so the way out is also a way in
 
         EndlessIISetRow(name: "Split", rows: ["NNNNN.NNNNN",
                                               "....I.I...."], minimumHeight: 150),
@@ -404,6 +407,132 @@ struct EndlessIISetRow {
         // for the same reason: a formation cannot ask the row above it for room, because that
         // row was built before this one was drawn. What the arrangement adds is a *gradient*:
         // the outer pair are reachable from the wall lanes, the inner pair only from the middle
+
+        // MARK: - Round 357: more rows, and the first sections
+
+        // James, round 357: "Make more preset brick patterns for endless mayhem mode. More rows,
+        // sections, clusters, etc. have some fun with different ideas, using the different
+        // brick types creatively." Rows first: each of these is built around a pairing the
+        // catalogue had not tried.
+
+        EndlessIISetRow(name: "Spillway", rows: ["EEEEE.WWWWW"], minimumHeight: 160,
+                        legend: ["W": EndlessIIBrickSpec(behaviour: .standard, shape: .wedge,
+                                                         mirrored: true),
+                                 "E": EndlessIIBrickSpec(behaviour: .standard, shape: .wedge,
+                                                         mirrored: false)]),
+        // The Chevron turned inside out. There the two halves face the gap and feed it; here
+        // they face away, so everything that lands either side of the gap is thrown towards
+        // the walls. The gap is still one column wide, and now nothing helps the ball find it
+
+        EndlessIISetRow(name: "Glimmer", rows: ["fNfNfNfNfNf"], minimumHeight: 120,
+                        legend: ["f": EndlessIIBrickSpec(behaviour: .standard,
+                                                         actions: [.flashing])]),
+        // Flashing bricks had a cluster and no row. Alternating with ordinary ones, the row is
+        // solid for half of every beat and a comb for the other half - the ordinary bricks are
+        // always there to hit, and the shot through is a matter of when
+
+        EndlessIISetRow(name: "Beacon", rows: [".....X.....",
+                                               "....NNN....",
+                                               "...MMMMM..."], minimumHeight: 210,
+                        legend: ["X": EndlessIIBrickSpec(behaviour: .standard,
+                                                         actions: [.exploding])]),
+        // A pyramid with a charge on its point. Climbing it from below is the long way - five
+        // multi-hits, then three, then the top - and a ball that gets over it can take the
+        // point and most of the pyramid in one go. The reward is for getting round the back
+
+        EndlessIISetRow(name: "Pinball", rows: ["V.........V",
+                                                "...V...V...",
+                                                ".....X....."], minimumHeight: 180,
+                        legend: ["V": EndlessIIBrickSpec(behaviour: .standard, shape: .convex),
+                                 "X": EndlessIIBrickSpec(behaviour: .standard,
+                                                         actions: [.exploding])]),
+        // Four domes in a fan with a charge at the bottom of it. A dome throws a ball wide
+        // whatever it arrived at, so a ball in here bounces between them like a table's
+        // bumpers - and the charge is the one target a lucky bounce can find for you
+
+        EndlessIISetRow(name: "Fog Bank", rows: ["vvvvv.vvvvv",
+                                                 "..MMMMMMM.."], minimumHeight: 230,
+                        legend: ["v": EndlessIIBrickSpec(behaviour: .invisible)]),
+        // The Vault's lid made of nothing anyone can see. The slot is in the same place, so a
+        // player who has met the Vault knows where to aim; one who has not finds the lid by
+        // bouncing off it, and the multi-hits below are the reason to keep trying
+
+        EndlessIISetRow(name: "Tinsel", rows: ["t.t.t.t.t.t",
+                                               ".f.f.f.f.f."], minimumHeight: 140,
+                        legend: ["t": EndlessIIBrickSpec(behaviour: .standard, size: .tiny),
+                                 "f": EndlessIIBrickSpec(behaviour: .standard,
+                                                         actions: [.flashing])]),
+        // Quarter bricks over flashing ones, offset by a column. Lots of small things to hit
+        // and a second row that keeps blinking out of the way of the first - a row that is
+        // busy rather than hard, and pays out a hit at a time
+
+        EndlessIISetRow(name: "Bulwark", rows: ["B.B.B.B.B..",
+                                                "..........."], minimumHeight: 300,
+                        legend: ["B": EndlessIIBrickSpec(behaviour: .multiHit, size: .big)]),
+        // Five Big multi-hits shoulder to shoulder, with the last column open. The heaviest
+        // row in the catalogue and still not a wall: everything in it breaks, and the gap at
+        // the end is a shot along the right-hand wall for anyone who would rather not
+
+        // MARK: Sections (round 357)
+        //
+        // A row is a landmark; a section is a place. These run four to six rows deep, which is
+        // longer than the three every other pattern here keeps to - deliberately, because
+        // James asked for sections by name, and what makes one is that it holds the field for
+        // long enough to be played as a stretch rather than glanced at as it goes by. They are
+        // gated deeper than the rows and are still drawn from the same pool, so they arrive at
+        // the same rate as everything else and simply stay longer when they do.
+
+        EndlessIISetRow(name: "Slalom", rows: ["NNNNNNNN...",
+                                               "...........",
+                                               "...NNNNNNNN",
+                                               "...........",
+                                               "NNNNNNNN..."], minimumHeight: 140),
+        // Three gates, each open at the opposite end from the last. A ball working up through
+        // it has to go side to side, which is the oldest course in skiing and makes the field
+        // read as a run rather than a pile
+
+        EndlessIISetRow(name: "Ziggurat", rows: ["...NNNNN...",
+                                                 "..MMMMMMM..",
+                                                 ".NNNNNNNNN.",
+                                                 "IIII...IIII"], minimumHeight: 220),
+        // A stepped pyramid on an indestructible plinth with a doorway in it. The way in is
+        // through the door and up the middle, and every step is worth something on the way
+
+        EndlessIISetRow(name: "Cathedral", rows: [".....M.....",
+                                                  "....M.M....",
+                                                  "...M...M...",
+                                                  "..M..X..M..",
+                                                  ".M.......M.",
+                                                  "M.........M"], minimumHeight: 280,
+                        legend: ["X": EndlessIIBrickSpec(behaviour: .standard,
+                                                         actions: [.exploding])]),
+        // A pointed arch of multi-hits with a charge hanging under the apex. Open at the
+        // bottom, so the ball walks straight in - and once it is in, the arch hands it about
+        // between the walls until the charge goes and takes half the arch with it
+
+        EndlessIISetRow(name: "Downpour", rows: ["g...g...g..",
+                                                 "..g...g...g",
+                                                 "g...g...g..",
+                                                 "..g...g...g",
+                                                 "?.?.?.?.?.?"], minimumHeight: 230,
+                        legend: ["g": EndlessIIBrickSpec(behaviour: .standard,
+                                                         actions: [.gravity])]),
+        // Twelve fallers staggered over four rows, standing over a row of whatever the field was
+        // making. Strike one and it drops through the gaps below it until it lands - so the
+        // shape is never the same twice after the first hit, and the bottom row fills up with
+        // what came down from above
+
+        EndlessIISetRow(name: "Gauntlet", rows: ["I.........I",
+                                                 "I.D.....D.I",
+                                                 "I.........I",
+                                                 "I...MMM...I"], minimumHeight: 320,
+                        legend: ["D": EndlessIIBrickSpec(behaviour: .standard,
+                                                         actions: [.directional],
+                                                         side: .bottom)]),
+        // A corridor walled in down both sides with two one-way bricks inside it and a
+        // multi-hit block at its foot. The walls take the outer lanes away for four rows, the
+        // block is the way in, and the two directionals can only be hurt from below - so the
+        // corridor is worked from the bottom up, which is the only direction the player has
     ]
 
     /// The ones allowed at this height.

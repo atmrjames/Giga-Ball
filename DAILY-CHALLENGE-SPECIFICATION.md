@@ -522,6 +522,16 @@ briefing screen (§6).
   composed for sharing (square-ish, legible small) rather than shaped like a phone.
   Promoted from stretch to phase 5, because a daily's scores are only social if they can
   leave the phone.
+- **The day's board, in the app** - **built in rounds 354 and 357**, the first half of the item
+  below. James: "is it possible to show each day's daily challenge leaderboard in the app rather
+  than going to game centre?" The menu's card lists the top three and the player's own place
+  under them after a gap, headed LEADERBOARD, lime with purple words when the player leads, and
+  it replaces the posted-score container whenever it can be shown - the two said the same thing.
+  The game-over and complete screens list the same rows under the score, above Statistics, and
+  open the day's board when tapped. Today and yesterday only: Game Center keeps the open
+  occurrence and the one that closed last (`DailyChallengeSession.boardOccurrence`). James saw it
+  working with real entries on 1 October. Average, percentile and a refresh timer are still the
+  open half of the item below.
 - **Live board stats** — *backlogged by James (round 14): build it once the Game Center
   leaderboards are set up in App Store Connect, since none of it can be seen working
   until there are real boards with real scores on them.* Once today's run is finished,
@@ -533,7 +543,8 @@ briefing screen (§6).
   rank over total. Average needs a sweep of entries (paged, cap it) or an approximation
   from the top page - decide when building. Refresh on screen-appear plus a modest
   timer; never block the screen on the network.
-- ~~**The posted-score container** (twelfth round)~~ - **built**, and it was mostly built
+- ~~**The posted-score container** (twelfth round)~~ - **built**, and since round 357 shown only
+  on a day whose board cannot be shown (older than yesterday, or a player signed out). It was mostly built
   already: the container, its own place beneath the details card, the mark and the reading, the
   score and the rank all landed with round 21, which also replaced the checkmark with the
   leaderboard's own `list.number` because "the tick and 'on the board' were two ways of saying

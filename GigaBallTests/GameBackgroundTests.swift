@@ -223,3 +223,14 @@ final class SunsetBackgroundTests: XCTestCase {
         XCTAssertNotNil(UIImage(named: named))
     }
 }
+
+/// James, round 357: "Scrolling through the game backgrounds settings screen, the page dots
+/// don't line up with the sequence of swiping through the backgrounds. The dots jump about
+/// seemingly randomly."
+final class BackgroundDotsTests: XCTestCase {
+    func testSwipingThroughTheStripLightsTheDotsInOrder() {
+        let dots = GameBackground.inDisplayOrder.map(BackgroundSelectViewController.dot(for:))
+        XCTAssertEqual(dots, Array(0..<GameBackground.inDisplayOrder.count),
+                       "each page lights the next dot along, not its raw value's")
+    }
+}

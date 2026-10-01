@@ -183,8 +183,11 @@ extension GameScene {
     }
 
     func endlessIICollectPaddleHalo() {
-        endlessIIPaddleHaloClock.collect(GameScene.endlessIIPaddlePowerUpDuration,
-                                         deepestLevel: EndlessIIPaddleEffects.haloReach.count - 1)
+        endlessIIPaddleHaloClock.collect(GameScene.endlessIIPaddlePowerUpDuration)
+        // **A second Halo restarts the timer and nothing else** (James, round 357: "Halo is too
+        // powerful if collected twice in a row - it gets too big so the bricks just
+        // continuously descend. Getting it again whilst it's active should just reset the
+        // timer, not make it bigger"). It used to step up `haloReach` a level per collection
         // **Timed too** (round 218). The glow eats whatever the field brings over it, which is
         // something it does continuously and nothing to do with a bounce
     }

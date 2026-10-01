@@ -1108,7 +1108,13 @@ extension GameScene {
     /// descending. A row a second is a rate a player can watch and plan against, and over the
     /// fixed six seconds it is still the largest single source of height in the mode - which
     /// is the point of the power-up (round 51).
-    static let endlessIIDescentStep: TimeInterval = 1.0
+    ///
+    /// **And slower again** (James, round 357: "The brick descent power-up moves through rows
+    /// very quickly. It should move 1 row every few seconds. Empty rows should be moved as
+    /// quickly as they normally would"). Three seconds a row, so its six rows take eighteen.
+    /// The empty-row catch-up is the field's own rule, not this one, and closes a gap at its
+    /// usual speed whatever Descent is doing (rounds 94 and 99)
+    static let endlessIIDescentStep: TimeInterval = 3.0
 
     /// Drives the descent. Called from the field batch's tick.
     ///

@@ -422,10 +422,12 @@ extension GameScene {
         // Measured in the bar's own coordinates, and off its underside for the reason the
         // paddle's strip is: the two pictures are drawn to meet at that line, and both stand
         // on it rather than being centred across it
-        strip.color = GameScene.endlessIIHaloColour
-        strip.colorBlendFactor = 1
-        // Tinted with the bar, which is the whole of what makes it read as the bar's own face
-        // rather than as the paddle's having come loose
+        strip.colorBlendFactor = 0
+        // **The paddle's own colours, untinted** (James, round 357: "the sticky graphics on the
+        // safety paddle is the wrong colour"). It was tinted with the bar's lime at full
+        // strength, and a tint multiplies: the sticky face's pink times lime is the red he
+        // screenshotted. The face says "this catches", and it says it in the colour the
+        // paddle's own sticky face uses
     }
 
     static let endlessIISafetyPaddleTopName = "endlessIISafetyPaddleTop"

@@ -54,6 +54,7 @@ final class DailyCardView: UIView {
             card.layer.cornerRadius = 18
             let glass = SettingsTableViewCell.addGlass(behind: card, cornerRadius: 18)
             if card === resultCard { resultGlass = glass }
+            if card === boardCard { boardGlass = glass }
             // These two were already translucent rather than light cards, so glass is a
             // change of material and not of scheme - the labels on them are white already
         }
@@ -110,7 +111,7 @@ final class DailyCardView: UIView {
         resultLabel.translatesAutoresizingMaskIntoConstraints = false
         resultCard.addSubview(resultLabel)
 
-        boardTitle.text = "TOP SCORES"
+        boardTitle.text = "LEADERBOARD"
         boardTitle.font = .boldSystemFont(ofSize: 11)
         boardTitle.textColor = UIColor(white: 1, alpha: 0.5)
         boardTitle.textAlignment = .center
@@ -279,12 +280,17 @@ final class DailyCardView: UIView {
 
         showTwists(challenge)
         showBoard(board, unit: challenge.mode == .classic ? "" : "m")
-        showResult(record, mode: challenge.mode, isToday: isToday, standing: standing,
-                   boardBest: boardBest ?? board.first?.score,
-                   saysTheBest: board.isEmpty)
-        // The leader's figure is the board's first row whenever the board is showing, so the
-        // result card stops repeating it - and a day not yet played, whose card was *only* that
-        // figure, shows the board instead of it
+        if board.isEmpty {
+            showResult(record, mode: challenge.mode, isToday: isToday, standing: standing,
+                       boardBest: boardBest)
+        } else {
+            resultCard.isHidden = true
+        }
+        // **The board or the posted score, never both** (James, round 357: "there's no need to
+        // show the top scores section and the posted score section together. If the top score
+        // section is available to show, hide the posted score section"). The board already
+        // holds everything the posted-score card said - the player's own score and place, and
+        // the leader's figure as its first row - so the second card was the same facts twice
     }
 
     /// The day's leading places, one row each (round 354).
@@ -296,12 +302,21 @@ final class DailyCardView: UIView {
         boardRows.arrangedSubviews.forEach { $0.removeFromSuperview() }
         boardCard.isHidden = rows.isEmpty
         let lime = #colorLiteral(red: 0.8235294118, green: 1, blue: 0, alpha: 1)
-        for row in rows {
-            let colour = row.isLocalPlayer ? lime : UIColor.white
+        let leading = rows.first?.isLocalPlayer == true
+        DailyCardView.dress(boardCard, glass: boardGlass, lime: leading)
+        boardTitle.textColor = leading ? DailyCardView.onLime : UIColor(white: 1, alpha: 0.5)
+        // **Lime when the player leads** (James, round 357: "If the current user is the top
+        // scorer make the top score section background colour giga-ball yellow/green with the
+        // text and icons dark purple") - the look the posted-score card wore for a leader in
+        // round 350, moved to the card that now stands in for it
+        for (position, row) in rows.enumerated() {
+            let own = leading ? DailyCardView.onLime : lime
+            let colour = row.isLocalPlayer ? own : (leading ? DailyCardView.onLime : UIColor.white)
             let rank = UILabel()
             rank.text = "\(row.rank)"
             rank.font = UIViewController.gameScoreFont(ofSize: 14)
-            rank.textColor = row.isLocalPlayer ? lime : UIColor(white: 1, alpha: 0.55)
+            rank.textColor = row.isLocalPlayer || leading
+                ? colour : UIColor(white: 1, alpha: 0.55)
             rank.widthAnchor.constraint(equalToConstant: 26).isActive = true
             let name = UILabel()
             name.text = row.name
@@ -324,6 +339,30 @@ final class DailyCardView: UIView {
             line.accessibilityLabel = "\(row.rank), \(row.name), \(score.text ?? "")"
             // One element a row, read the way it is laid out: place, player, score
             boardRows.addArrangedSubview(line)
+            if position > 0, row.isLocalPlayer, row.rank > rows[position - 1].rank + 1,
+               let above = boardRows.arrangedSubviews.dropLast().last {
+                boardRows.setCustomSpacing(14, after: above)
+            }
+            // **Set apart when the player is below the leaders** (round 357: "show them at the
+            // bottom of the leaderboard section with a little gap, showing their position and
+            // score"). The gap is what says the places between are not shown
+        }
+    }
+
+    private var boardGlass: UIVisualEffectView?
+
+    /// A card's two looks: ordinary glass, and lime for the day's leader (rounds 350 and 357).
+    static func dress(_ card: UIView, glass: UIVisualEffectView?, lime leading: Bool) {
+        let lime = #colorLiteral(red: 0.8235294118, green: 1, blue: 0, alpha: 1)
+        if #available(iOS 26.0, *), let glass {
+            let effect = UIGlassEffect(style: .regular)
+            effect.isInteractive = false
+            effect.tintColor = leading ? lime.withAlphaComponent(0.85)
+                                       : SettingsTableViewCell.glassTint
+            glass.effect = effect
+            card.backgroundColor = .clear
+        } else {
+            card.backgroundColor = leading ? lime : UIColor(white: 1, alpha: 0.07)
         }
     }
 
@@ -338,17 +377,7 @@ final class DailyCardView: UIView {
     /// glass is tinted rather than replaced, so it stays glass; without glass (before iOS 26)
     /// the card itself is filled.
     private func dressTheResultCard(leading: Bool) {
-        let lime = #colorLiteral(red: 0.8235294118, green: 1, blue: 0, alpha: 1)
-        if #available(iOS 26.0, *), let resultGlass {
-            let effect = UIGlassEffect(style: .regular)
-            effect.isInteractive = false
-            effect.tintColor = leading ? lime.withAlphaComponent(0.85)
-                                       : SettingsTableViewCell.glassTint
-            resultGlass.effect = effect
-            resultCard.backgroundColor = .clear
-        } else {
-            resultCard.backgroundColor = leading ? lime : UIColor(white: 1, alpha: 0.07)
-        }
+        DailyCardView.dress(resultCard, glass: resultGlass, lime: leading)
     }
 
     /// The dark purple the lime card's words are set in.

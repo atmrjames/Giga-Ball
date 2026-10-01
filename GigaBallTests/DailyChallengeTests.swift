@@ -2585,6 +2585,45 @@ final class DailyLandslideTests: XCTestCase {
         XCTAssertTrue(GameScene.landslideIsDue(elapsed: step))
     }
 
+    /// The tick itself, through a whole step: six seconds of play move a brick a row - headed
+    /// for, while the step animates - and a brick at the floor comes round to the top.
+    func testSixSecondsOfPlayStepTheFieldAndWrapTheBottomRow() {
+        let scene = landslideScene()
+        scene.yBrickOffset = 200
+        scene.gameState.enter(Playing.self)
+        let middle = SKSpriteNode(color: .white, size: CGSize(width: 30, height: 20))
+        middle.name = BrickCategoryName
+        middle.position = CGPoint(x: 0, y: 100)
+        scene.addChild(middle)
+        let bottom = SKSpriteNode(color: .white, size: CGSize(width: 30, height: 20))
+        bottom.name = BrickCategoryName
+        bottom.position = CGPoint(x: 40, y: scene.dailyLandslideFloor)
+        scene.addChild(bottom)
+
+        var time: TimeInterval = 1
+        scene.tickDailyLandslide(time)
+        // The first frame is a baseline
+        while time < 1 + GameScene.dailyLandslideStep - 0.2 {
+            time += 0.05
+            scene.tickDailyLandslide(time)
+        }
+        XCTAssertNil(middle.descentRestingY, "a step came early")
+        let justAbove = SKSpriteNode(color: .white, size: CGSize(width: 30, height: 20))
+        justAbove.name = BrickCategoryName
+        justAbove.position = CGPoint(x: -40, y: scene.dailyLandslideFloor + scene.brickHeight)
+        scene.addChild(justAbove)
+        // A row above the floor steps down onto it rather than wrapping - the boundary
+        // mutation testing found unasked (round 357)
+
+        for _ in 0..<8 { time += 0.05; scene.tickDailyLandslide(time) }
+        XCTAssertEqual(middle.descentRestingY, 80, "a row down, held until the step lands")
+        XCTAssertEqual(bottom.position.y, scene.dailyLandslideCeiling,
+                       "the floor's brick came round to the top")
+        XCTAssertEqual(justAbove.descentRestingY, scene.dailyLandslideFloor,
+                       "the brick a row above the floor stepped down to it")
+        XCTAssertLessThan(scene.dailyLandslideElapsed, 0.5, "and the wait started again, from the remainder")
+    }
+
     /// James, round 354: "Landslide twist, quitting and resuming the app seems to reset the
     /// timer between the brick moving down animations - the timer should be preserved".
     func testTheWaitSurvivesAPauseAndASave() throws {
@@ -3677,7 +3716,11 @@ final class FixedBrickRarityTests: XCTestCase {
 
     func testFixedIsRarerThanAnOrdinaryStyleWhenItArrives() {
         let early = EndlessIIProgression.fixedWeight(100, at: EndlessIIProgression.fixedFirstMetres)
-        XCTAssertGreaterThan(early, 0)
+        XCTAssertGreaterThan(early, 1, "at 60m it has arrived, not still at its opening trickle")
+        XCTAssertEqual(EndlessIIProgression.fixedWeight(100, at: 5000), 50,
+                       "half an ordinary style's weight by the end of the ramp")
+        // Both added in round 357 after mutation testing: an off-by-one at the 60m line and a
+        // `min` for the `max` both passed the bounds this test held before
         XCTAssertLessThanOrEqual(early, 30)
         XCTAssertLessThanOrEqual(EndlessIIProgression.fixedWeight(100, at: 5000), 50)
     }
@@ -3699,6 +3742,15 @@ final class DailyBoardRowTests: XCTestCase {
         let rows = DailyBoardRow.shown(leaders: leaders(5), local: me, limit: 5)
         XCTAssertEqual(rows.map(\.rank), [1, 2, 3, 4, 5, 12],
                        "however far down, a player can find themselves")
+    }
+
+    /// Mutation testing, round 357: a player tied on rank with somebody else is still the
+    /// player, and still shown.
+    func testAPlayerTiedWithALeaderIsStillShown() {
+        let me = DailyBoardRow(rank: 3, name: "Me", score: 9_700, isLocalPlayer: true)
+        let rows = DailyBoardRow.shown(leaders: leaders(3), local: me, limit: 3)
+        XCTAssertEqual(rows.filter(\.isLocalPlayer).count, 1)
+        XCTAssertEqual(rows.count, 4)
     }
 
     func testAPlayerAmongTheLeadersIsNotListedTwice() {
@@ -3742,10 +3794,44 @@ final class DailyBoardRowTests: XCTestCase {
         card.show(key: key, isToday: true, record: nil, standing: nil, boardBest: 9_900,
                   board: leaders(3))
         let shown = labels(in: card).filter { isShowing($0) }
-        XCTAssertTrue(shown.contains { $0.text == "TOP SCORES" })
+        XCTAssertTrue(shown.contains { $0.text == "LEADERBOARD" })
         XCTAssertTrue(shown.contains { $0.text == "Player 1" })
         XCTAssertFalse(shown.contains { ($0.attributedText?.string ?? "").contains("Global Hi-Score") },
                        "the first row is the leader, so the card does not say it twice")
+    }
+
+    /// Round 357: "there's no need to show the top scores section and the posted score section
+    /// together. If the top score section is available to show, hide the posted score section."
+    func testTheBoardTakesThePostedScoresPlace() {
+        let card = DailyCardView()
+        let key = DailyChallengeSession.shared.todayKey
+        let record = DailyChallengeRecord(dateKey: key, firstAttemptScore: 6_420, posted: true,
+                                          bestPracticeScore: 0, attemptCount: 1)
+        card.show(key: key, isToday: true, record: record, standing: nil, boardBest: 9_900,
+                  board: DailyBoardRow.shown(leaders: leaders(3),
+                                             local: DailyBoardRow(rank: 17, name: "Me",
+                                                                  score: 6_420,
+                                                                  isLocalPlayer: true),
+                                             limit: 3))
+        let shown = labels(in: card).filter { isShowing($0) }
+        XCTAssertFalse(shown.contains { ($0.attributedText?.string ?? "").contains("Posted Score") },
+                       "the posted-score card beside the board says the same thing twice")
+        XCTAssertTrue(shown.contains { $0.text == "Me" }, "the player is on the board instead")
+    }
+
+    /// "If the current user is the top scorer make the top score section background colour
+    /// giga-ball yellow/green with the text and icons dark purple."
+    func testALeadingPlayersBoardIsLimeWithPurpleWords() {
+        let card = DailyCardView()
+        let key = DailyChallengeSession.shared.todayKey
+        let me = DailyBoardRow(rank: 1, name: "Me", score: 9_900, isLocalPlayer: true)
+        card.show(key: key, isToday: true, record: nil, standing: nil,
+                  board: [me] + leaders(3).dropFirst())
+        let words = labels(in: card).filter { isShowing($0) && $0.text == "LEADERBOARD" || $0.text == "Me" }
+        XCTAssertFalse(words.isEmpty)
+        for label in words {
+            XCTAssertEqual(label.textColor, DailyCardView.onLime, "\(label.text ?? "")")
+        }
     }
 
     func testADayWithNoBoardShowsNoneAndKeepsTheLeadersLine() {
@@ -3753,7 +3839,7 @@ final class DailyBoardRowTests: XCTestCase {
         let key = DailyChallengeSession.shared.todayKey
         card.show(key: key, isToday: true, record: nil, standing: nil, boardBest: 9_900)
         let shown = labels(in: card).filter { isShowing($0) }
-        XCTAssertFalse(shown.contains { $0.text == "TOP SCORES" })
+        XCTAssertFalse(shown.contains { $0.text == "LEADERBOARD" })
         XCTAssertTrue(shown.contains { ($0.attributedText?.string ?? "").contains("Global Hi-Score") })
     }
 }

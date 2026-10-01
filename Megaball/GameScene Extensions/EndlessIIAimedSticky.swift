@@ -361,10 +361,12 @@ extension GameScene {
 
         let arrow = endlessIIAimArrow ?? {
             let node = SKShapeNode()
-            node.zPosition = 9
+            node.zPosition = 2.9
             // A pathless parent: the line hangs off it as segments, because one node wears
-            // one stroke and the fade needs a different one every step. Over everything -
-            // an aiming aid that can hide behind a brick is not aiming anything
+            // one stroke and the fade needs a different one every step. Over the bricks -
+            // an aiming aid that can hide behind a brick is not aiming anything - and, since
+            // round 357, under the ball, at 3: the line's soft glow reaches past where it
+            // starts, and the ball is what the line comes out of
 
             let length = max(ballSize*4.5,
                              finalBrickRowHeight - brickHeight/2 - target.position.y - ballSize)
@@ -395,10 +397,16 @@ extension GameScene {
             // The head stays gone: James asked for that in round 260 and again here.
             let step = max(ballSize*0.9, 1)
             let pieces = max(Int((length/step).rounded(.up)), 1)
+            let edge = ballSize/2 + 1
+            // **From the ball's edge, not its centre** (James, round 357: "aimed sticky line
+            // graphic is still being drawn on top of the ball"). The line hangs off the held
+            // ball's centre, and drawn from nought along its own axis it crossed the ball on its
+            // way out, over the top of it. The trajectory line had the same fault and the same
+            // answer in round 354
             for piece in 0..<pieces {
-                let a = length*CGFloat(piece)/CGFloat(pieces)
-                let b = length*CGFloat(piece + 1)/CGFloat(pieces)
-                let along = (a + b)/2/length
+                let a = edge + length*CGFloat(piece)/CGFloat(pieces)
+                let b = edge + length*CGFloat(piece + 1)/CGFloat(pieces)
+                let along = ((a + b)/2 - edge)/length
                 let certainty = pow(1 - along, 1.8)
 
                 let segment = FadingLine.segment(glow: true, soft: true)

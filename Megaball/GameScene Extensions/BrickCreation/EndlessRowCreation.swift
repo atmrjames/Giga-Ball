@@ -123,6 +123,52 @@ extension GameScene {
         // Endless, whose leaderboards hold years of scores
     }
 
+    /// Takes one brick out of a row that would otherwise be unbreakable from wall to wall.
+    ///
+    /// **James, round 357: "Ball can get stuck above solid row on indestructible bricks - I'm
+    /// not sure the best way to solve this other than to ensure there's at least 1 missing
+    /// brick in the row."** A ball above such a row can never come back down to the paddle,
+    /// and nothing it does up there can open the way. His screenshot is the Vault formation's
+    /// lid, which has its gap now - but a row can be closed by other routes too (a formation
+    /// over a generated row, a Big brick beside a run of indestructibles), so the rule is asked
+    /// of the finished row rather than trusted to every pattern.
+    ///
+    /// Only bricks that never break count: `brickIndestructible2Texture` is what every one of
+    /// them wears. A row with any breakable brick or any gap in it is left alone, and so is
+    /// every mode but Mayhem - the old modes' indestructible rows are built half-empty.
+    ///
+    /// The alternative he named - putting the ball back on the paddle after a long time
+    /// without a paddle hit - is not built: any threshold long enough to never fire on a good
+    /// rally would also leave the stuck one going for that long, and a threshold short enough
+    /// to help would sometimes end a rally the player was enjoying.
+    func endlessIIOpenASolidUnbreakableRow(_ bricks: inout [SKNode]) {
+        guard gameMode == .endlessII, numberOfBrickColumns > 0 else { return }
+        let walls = bricks.compactMap { $0 as? SKSpriteNode }.filter {
+            $0.parent != nil && $0.texture == brickIndestructible2Texture
+        }
+        guard walls.isEmpty == false else { return }
+
+        func centre(_ column: Int) -> CGFloat {
+            -gameWidth/2 + brickWidth/2 + brickWidth*CGFloat(column)
+        }
+        func covering(_ column: Int) -> [SKSpriteNode] {
+            let x = centre(column)
+            return walls.filter {
+                let rect = endlessIIFieldRect(of: $0)
+                return rect.minX < x && x < rect.maxX
+            }
+        }
+        let columns = Array(0..<numberOfBrickColumns)
+        guard columns.allSatisfy({ covering($0).isEmpty == false }) else { return }
+
+        guard let column = columns.randomElement() else { return }
+        let opened = covering(column)
+        for brick in opened { brick.removeFromParent() }
+        bricks.removeAll { node in opened.contains { $0 === node } }
+        // Every brick over the chosen column, so a Big brick spanning it goes whole rather than
+        // leaving half a gap
+    }
+
     func buildNewEndlessRow() {
         
         var brickArray: [SKNode] = []
@@ -769,6 +815,9 @@ extension GameScene {
             brickArray.append(brick)
         }
         // Appended with the rest so it animates in and is counted like any other brick
+
+        endlessIIOpenASolidUnbreakableRow(&brickArray)
+        // Before anything counts or animates the row, so a brick taken out was never in it
 
         applyDailyFog(to: brickArray)
         // New rows arrive fogged too, or the day's fog would lift a row at a time

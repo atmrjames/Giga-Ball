@@ -107,7 +107,9 @@ class TotalStats: Codable {
     /// that happen: they are never *running*, so they are never in the active set this counts
     /// from. Clear And Retreat runs now (round 136) and still scores nothing, for a reason of
     /// its own: it holds the field, and a field that is not descending is not climbing either,
-    /// so there are no metres to attribute while it lasts.
+    /// so there are no metres to attribute while it lasts. **Except under a Lock** (round 356),
+    /// where the hold gives way so the field can keep descending, and a Retreat held on by the
+    /// Lock earns the metres climbed while it is.
     ///
     /// Optional for the same decode-safety reason `bestBallHits` is: a stats file written
     /// before this existed must still decode, or it is every player's history gone.

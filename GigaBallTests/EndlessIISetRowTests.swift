@@ -8,15 +8,23 @@
 //
 
 import XCTest
+import SpriteKit
 @testable import Giga_Ball
 
 final class EndlessIISetRowTests: XCTestCase {
 
-    func testEveryPatternIsOneToThreeRows() {
-        // Longer than three and it stops being a landmark and becomes the field.
+    func testEveryPatternIsOneToThreeRowsOrASection() {
+        // Longer than three and it stops being a landmark and becomes the field - which is
+        // what a section is for (James, round 357, asking for "more rows, sections,
+        // clusters"). A section may run to six rows and is gated past the opening, so a
+        // run's first minutes still meet only the short ones
         for pattern in EndlessIISetRow.all {
             XCTAssertGreaterThan(pattern.rows.count, 0, pattern.name)
-            XCTAssertLessThanOrEqual(pattern.rows.count, 3, pattern.name)
+            XCTAssertLessThanOrEqual(pattern.rows.count, 6, pattern.name)
+            if pattern.rows.count > 3 {
+                XCTAssertGreaterThanOrEqual(pattern.minimumHeight, 100,
+                                            "\(pattern.name) is a section in the opening")
+            }
         }
     }
 
@@ -70,6 +78,24 @@ final class EndlessIISetRowTests: XCTestCase {
     /// indestructibles has to contain something worth breaking. Without that it is a wall
     /// that descends past with nothing to earn from it - the ball rattles off it and the row
     /// is a tax on time.
+    /// James, round 357: "Ball can get stuck above solid row on indestructible bricks". The
+    /// test above asks the question of a whole pattern, which is how the Vault passed it: its
+    /// lid was solid and the rows under it had gaps. A ball is stuck by a *row*, so every row is
+    /// asked. `?` counts as a wall here, because it can be anything the generator makes - and
+    /// `endlessIIOpenASolidUnbreakableRow` answers the rows a pattern cannot see coming
+    func testNoSingleRowIsAWallFromSideToSide() {
+        for pattern in EndlessIISetRow.all {
+            for row in pattern.rows {
+                let open = row.contains { character in
+                    character == "." || (character != "?"
+                        && EndlessIIBrickSpec.spec(for: character,
+                                                   legend: pattern.legend).isBreakable)
+                }
+                XCTAssertTrue(open, "\(pattern.name): '\(row)' is a wall a ball cannot get past")
+            }
+        }
+    }
+
     func testAnyMostlyIndestructiblePatternHasSomethingWorthHavingInIt() {
         var checked = 0
         for pattern in EndlessIISetRow.all {
@@ -131,5 +157,79 @@ final class EndlessIISetRowTests: XCTestCase {
             XCTAssertFalse(pattern.name.isEmpty)
         }
         XCTAssertEqual(Set(EndlessIISetRow.all.map(\.name)).count, EndlessIISetRow.all.count)
+    }
+}
+
+
+/// The guard behind the catalogue's own rule, for rows no pattern drew.
+final class EndlessIISolidRowGuardTests: XCTestCase {
+
+    private func scene() -> GameScene {
+        let scene = GameScene()
+        scene.gameMode = .endlessII
+        scene.numberOfBrickColumns = 11
+        scene.brickWidth = 30
+        scene.brickHeight = 15
+        scene.gameWidth = 330
+        return scene
+    }
+
+    private func row(in scene: GameScene, unbreakable columns: [Int]) -> [SKNode] {
+        columns.map { column in
+            let brick = SKSpriteNode(texture: scene.brickIndestructible2Texture,
+                                     size: CGSize(width: scene.brickWidth, height: scene.brickHeight))
+            brick.position = CGPoint(x: -scene.gameWidth/2 + scene.brickWidth/2
+                                        + scene.brickWidth*CGFloat(column), y: 200)
+            brick.name = BrickCategoryName
+            scene.addChild(brick)
+            return brick
+        }
+    }
+
+    func testAWallFromSideToSideLosesOneBrick() {
+        let scene = scene()
+        var bricks = row(in: scene, unbreakable: Array(0..<11))
+        scene.endlessIIOpenASolidUnbreakableRow(&bricks)
+        XCTAssertEqual(bricks.count, 10, "a ball above it could never come back down")
+        XCTAssertEqual(bricks.filter { $0.parent != nil }.count, 10)
+    }
+
+    func testARowWithAGapIsLeftAlone() {
+        let scene = scene()
+        var bricks = row(in: scene, unbreakable: [0, 1, 2, 3, 4, 6, 7, 8, 9, 10])
+        scene.endlessIIOpenASolidUnbreakableRow(&bricks)
+        XCTAssertEqual(bricks.count, 10)
+    }
+
+    /// Mutation testing, round 357: nothing said a full row of *breakable* bricks is left alone,
+    /// so the guard could have counted every brick as a wall and still passed.
+    func testAFullRowOfBreakableBricksIsLeftAlone() {
+        let scene = scene()
+        var bricks: [SKNode] = (0..<11).map { column in
+            let brick = SKSpriteNode(texture: scene.brickNormalTexture,
+                                     size: CGSize(width: scene.brickWidth, height: scene.brickHeight))
+            brick.position = CGPoint(x: -scene.gameWidth/2 + scene.brickWidth/2
+                                        + scene.brickWidth*CGFloat(column), y: 200)
+            scene.addChild(brick)
+            return brick
+        }
+        scene.endlessIIOpenASolidUnbreakableRow(&bricks)
+        XCTAssertEqual(bricks.count, 11, "every one of them breaks, so there is a way through")
+    }
+
+    func testAFieldWithNoColumnsIsNotAsked() {
+        let scene = scene()
+        var bricks = row(in: scene, unbreakable: [0, 1])
+        scene.numberOfBrickColumns = 0
+        scene.endlessIIOpenASolidUnbreakableRow(&bricks)
+        XCTAssertEqual(bricks.count, 2, "no columns to cover, so nothing to open - and no crash")
+    }
+
+    func testOnlyMayhemIsTouched() {
+        let scene = scene()
+        scene.gameMode = .endless
+        var bricks = row(in: scene, unbreakable: Array(0..<11))
+        scene.endlessIIOpenASolidUnbreakableRow(&bricks)
+        XCTAssertEqual(bricks.count, 11)
     }
 }

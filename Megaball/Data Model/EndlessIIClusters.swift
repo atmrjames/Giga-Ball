@@ -515,6 +515,68 @@ struct EndlessIICluster {
         // of the rows sliding past it - a landmark that the player made, by hitting it. The
         // ordinary brick in the centre is the catalogue's own dotting rule: a formation with
         // nothing breakable in it is a formation with nothing to earn
+
+        // MARK: - Round 357's
+
+        // James, round 357: "have some fun with different ideas, using the different brick
+        // types creatively." Two pictures, because a field that occasionally draws something is
+        // a field somebody made, and five built around a brick doing something to its
+        // neighbours.
+
+        EndlessIICluster(name: "Heart", rows: [".N.N.",
+                                               "NNNNN",
+                                               ".NNN.",
+                                               "..N.."], minimumHeight: 40, weight: 6),
+        // Exactly what it says. Shallow and ordinary, because it is a picture rather than a
+        // problem - the first thing in the field a new player will notice somebody drew
+
+        EndlessIICluster(name: "Grin", rows: [".N.N.",
+                                              ".....",
+                                              "N...N",
+                                              ".MMM."], minimumHeight: 60, weight: 5),
+        // Two eyes and a smile, the smile in multi-hits so it is the last thing to go
+
+        EndlessIICluster(name: "Fuse Box", rows: ["xNx",
+                                                  "NxN",
+                                                  "xNx"], minimumHeight: 240, weight: 5,
+                         legend: ["x": EndlessIIBrickSpec(behaviour: .standard,
+                                                          actions: [.exploding])]),
+        // Five charges in a chequer with ordinary bricks between. Any one of them sets off the
+        // rest, so the cluster and two rows round it go in a single hit - the biggest reward
+        // for one shot anywhere in the mode, and found by accident as often as by design
+
+        EndlessIICluster(name: "Igloo", rows: [".III.",
+                                               "IN.NI",
+                                               "I...I"], minimumHeight: 260, weight: 5),
+        // An indestructible dome with a door in its floor and two bricks inside. The only way
+        // to what is inside is up through the door, and a ball that gets in rattles about
+        // under the dome until it finds the way back out
+
+        EndlessIICluster(name: "Chandelier", rows: ["..I..",
+                                                    ".MMM.",
+                                                    "N.N.N"], minimumHeight: 170, weight: 6),
+        // Hanging from one indestructible hook: a bar of multi-hits and three drops below it.
+        // The hook stays when everything else has gone, a small mark of where it hung
+
+        EndlessIICluster(name: "Snowflake", rows: ["..t..",
+                                                   "t.N.t",
+                                                   "..t.."], minimumHeight: 120, weight: 6,
+                         legend: ["t": EndlessIIBrickSpec(behaviour: .standard, size: .tiny)]),
+        // Four sets of quarter bricks round an ordinary one. Sixteen small things to hit for
+        // one big one, spread out so that clearing it is a handful of separate shots
+
+        EndlessIICluster(name: "Ghost Ship", rows: [".vvv.",
+                                                    "vNNNv",
+                                                    ".vvv."], minimumHeight: 200, weight: 5,
+                         legend: ["v": EndlessIIBrickSpec(behaviour: .invisible)]),
+        // A hull nobody can see round a cargo everybody can. Three bricks sitting apparently
+        // in open space, and a ball sent at them finds out the hard way that they are not
+
+        EndlessIICluster(name: "Accordion", rows: ["bbbbb"], minimumHeight: 140, weight: 6,
+                         legend: ["b": EndlessIIBrickSpec(behaviour: .standard,
+                                                          actions: [.breathing])]),
+        // A short bar of breathing bricks, each swelling and shrinking out of step with the
+        // next, so gaps open and close along it like the folds of the instrument
     ]
 
     /// The ones allowed at this height.

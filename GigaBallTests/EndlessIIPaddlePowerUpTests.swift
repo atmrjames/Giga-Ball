@@ -767,24 +767,25 @@ final class EndlessIIPaddleSceneTests: XCTestCase {
         XCTAssertFalse(scene.endlessIIAimedCatch(scene.ball, isExtra: false))
     }
 
-    // MARK: - Paddle Halo stacking (play-test round 98)
+    // MARK: - Paddle Halo stacking (play-test round 98, reversed in round 357)
 
-    /// "Getting this power-up whilst it's already active should make it grow bigger."
-    /// Each collection that finds the clock running climbs one reach level, to the ladder's
-    /// deepest rung and no further.
-    func testRecollectingTheHaloClimbsTheReachLadder() {
-        var clock = EndlessIIClock()
-        let deepest = EndlessIIPaddleEffects.haloReach.count - 1
+    /// Round 98 asked for a second Halo to grow it; round 357 reverses that: "Halo is too
+    /// powerful if collected twice in a row - it gets too big so the bricks just continuously
+    /// descend. Getting it again whilst it's active should just reset the timer, not make it
+    /// bigger."
+    func testRecollectingTheHaloRestartsTheTimerAndStaysTheSameSize() {
+        let scene = GameScene()
+        scene.gameMode = .endlessII
+        scene.endlessIICollectPaddleHalo()
+        scene.endlessIIPaddleHaloClock.run(down: 5)
+        let worn = scene.endlessIIPaddleHaloClock.remaining
 
-        clock.collect(GameScene.endlessIIPaddlePowerUpTurns, deepestLevel: deepest)
-        XCTAssertEqual(clock.level, 0, "the first collection is the base halo")
-
-        clock.collect(GameScene.endlessIIPaddlePowerUpTurns, deepestLevel: deepest)
-        clock.collect(GameScene.endlessIIPaddlePowerUpTurns, deepestLevel: deepest)
-        XCTAssertEqual(clock.level, deepest, "two re-collections reach the top")
-
-        clock.collect(GameScene.endlessIIPaddlePowerUpTurns, deepestLevel: deepest)
-        XCTAssertEqual(clock.level, deepest, "and the ladder has a top")
+        scene.endlessIICollectPaddleHalo()
+        scene.endlessIICollectPaddleHalo()
+        XCTAssertEqual(scene.endlessIIPaddleHaloClock.level, 0, "it grew")
+        XCTAssertGreaterThan(scene.endlessIIPaddleHaloClock.remaining, worn, "the timer restarted")
+        XCTAssertEqual(scene.endlessIIPaddleHaloClock.remaining,
+                       GameScene.endlessIIPaddlePowerUpDuration, accuracy: 0.001)
     }
 
     /// The ladder must actually climb: each level reaches further than the one before,

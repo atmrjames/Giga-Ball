@@ -758,3 +758,55 @@ final class EndlessIILockHoldsEverythingTests: XCTestCase {
         XCTAssertEqual(scene.powerUpProbArray[GameScene.keyPowerUpIndex], 0)
     }
 }
+
+/// Round 354, James: "Hitting a power up brick (which was multi-ball) with a laser didn't
+/// activate the power-up (the extra ball never appear) it should". A laser can break a brick
+/// while the ball is being lost, and `applyPowerUp` turns everything away then - so the
+/// power-up was gone. It is held until the ball is back now.
+final class HeldBrickPowerUpTests: XCTestCase {
+
+    private func scene() -> GameScene {
+        let scene = GameScene()
+        scene.gameMode = .endlessII
+        scene.totalStatsArray = [TotalStats()]
+        scene.powerUpTextureArray = scene.powerUpTexturesInOrder
+        // `didMove` fills this, and a power-up is known by its texture (`ApplyPowerUpTests`)
+        return scene
+    }
+
+    private func powerUpBrick(in scene: GameScene, holding index: Int) -> SKSpriteNode {
+        let brick = SKSpriteNode(color: .white, size: CGSize(width: 30, height: 15))
+        brick.name = BrickCategoryName
+        brick.endlessIIPowerUpIndex = index
+        scene.addChild(brick)
+        return brick
+    }
+
+    func testABrickBrokenWhileTheBallIsLostKeepsItsPowerUpForTheNextBall() {
+        let scene = scene()
+        scene.ballLostBool = true
+        let brick = powerUpBrick(in: scene, holding: GameScene.lockPowerUpIndex)
+
+        XCTAssertTrue(scene.endlessIITriggerPowerUpBrick(brick))
+        XCTAssertNil(brick.parent, "the brick still breaks")
+        XCTAssertEqual(scene.endlessIIHeldBrickPowerUps, [GameScene.lockPowerUpIndex])
+        XCTAssertFalse(scene.endlessIILocked, "nothing is applied to a ball that is not there")
+
+        scene.releaseEndlessIIHeldBrickPowerUps()
+        XCTAssertFalse(scene.endlessIILocked, "still waiting: the ball has not come back")
+
+        scene.ballLostBool = false
+        scene.releaseEndlessIIHeldBrickPowerUps()
+        XCTAssertTrue(scene.endlessIIHeldBrickPowerUps.isEmpty)
+        XCTAssertTrue(scene.endlessIILocked, "the held power-up landed on the next ball")
+    }
+
+    func testARunEndingThrowsAwayWhatWasHeld() {
+        let scene = scene()
+        scene.endlessIIHeldBrickPowerUps = [GameScene.lockPowerUpIndex]
+        scene.ball.physicsBody = SKPhysicsBody(circleOfRadius: 6)
+        scene.powerUpsReset()
+        XCTAssertTrue(scene.endlessIIHeldBrickPowerUps.isEmpty,
+                      "a power-up waiting for a lost ball does not outlive the run")
+    }
+}

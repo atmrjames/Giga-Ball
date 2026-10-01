@@ -220,6 +220,14 @@ its `PBXGroup`, and — the one that is easy to miss — the **right target's** 
   `MainMenuCollectionViewCell.spokenName`, keyed by the artwork every caller already passes, so
   a new button added to the glass table without a name fails `RoundButtonVoiceOverTests`.
 
+- **A screen that is hard to reach on the simulator can be looked at from a test.** Round 357
+  checked the daily game-over screen at iPhone 17 Pro and SE sizes without playing a daily to
+  its end: build the controller as `GameCentreLineOnEveryScreenTests.gameOver` does, put it in a
+  `UIWindow` of the size wanted, lay it out, and draw `window.layer.render(in:)` onto a context
+  filled with the background colour, then write the PNG to the scratchpad and read it.
+  `drawHierarchy` returns a blank image off-screen, and without the fill the white labels are
+  drawn on nothing. Keep such a test out of the commit - it is a look, not a check.
+
 - **Tests are written from play-test reports.** When a bug is described, the test says what
   was reported, in the comment, in the reporter's terms. That is what stops a fix regressing
   into something that merely passes.

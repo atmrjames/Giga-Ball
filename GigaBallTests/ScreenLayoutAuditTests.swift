@@ -1557,6 +1557,25 @@ final class GameCentreLineOnEveryScreenTests: XCTestCase {
         return screen
     }
 
+    /// James, round 357: "Put the game centre leaderboard info above the stats info / balls
+    /// remaining info so it's closer to the player's score" - a daily ending, every size.
+    func testADailyEndingPutsTheBoardBetweenTheScoreAndTheStatistics() throws {
+        for (name, size, regular) in shapes {
+            let screen = try XCTUnwrap(gameOver(size: size, regular: regular))
+            let root = screen.view!
+            let caption = screen.leaderboardTitle.convert(screen.leaderboardTitle.bounds, to: root)
+            let board = screen.resultLabel.convert(screen.resultLabel.bounds, to: root)
+            let score = screen.scoreLabel.convert(screen.scoreLabel.bounds, to: root)
+            let stats = screen.moreStatsButton.convert(screen.moreStatsButton.bounds, to: root)
+            XCTAssertGreaterThan(caption.height, 0, "\(name): the caption was squeezed away")
+            XCTAssertGreaterThanOrEqual(caption.minY, score.maxY - 0.5, "\(name)")
+            if screen.moreStatsButton.isHidden == false {
+                XCTAssertLessThanOrEqual(board.maxY, stats.minY + 0.5,
+                                         "\(name): the board is below Statistics")
+            }
+        }
+    }
+
     /// The block is above the row of buttons, and on the screen, at every size.
     func testTheLeaderboardLineIsNeverPushedOffTheBottom() throws {
         for (name, size, regular) in shapes {

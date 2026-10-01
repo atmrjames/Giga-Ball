@@ -260,7 +260,8 @@ class BackgroundSelectViewController: UIViewController, UICollectionViewDelegate
 
     func scrollViewDidScroll(_ scrollView: UIScrollView) {
         guard scrollView === backgrounds, scrollView.bounds.width > 0 else { return }
-        pageControl.currentPage = background(atPage: page(in: scrollView)).rawValue
+        pageControl.currentPage = BackgroundSelectViewController.dot(
+            for: background(atPage: page(in: scrollView)))
         // The dots follow the finger rather than waiting for the page to settle, so the swipe
         // has something answering it while it is happening
     }
@@ -332,7 +333,18 @@ class BackgroundSelectViewController: UIViewController, UICollectionViewDelegate
 
     private func updateLabels() {
         nameLabel.text = selected.name.uppercased()
-        pageControl.currentPage = selected.rawValue
+        pageControl.currentPage = BackgroundSelectViewController.dot(for: selected)
+    }
+
+    /// Which dot a background lights: its place in the order the strip shows them.
+    ///
+    /// **Not its raw value** (James, round 357: "the page dots don't line up with the sequence
+    /// of swiping through the backgrounds. The dots jump about seemingly randomly"). The two
+    /// agreed until round 329 put the backgrounds in a more logical order, which moved the
+    /// pages and left the dots counting in the order the cases happen to have been added -
+    /// Deep Green, the tenth added, lit the tenth dot from its sixth page.
+    static func dot(for background: GameBackground) -> Int {
+        GameBackground.inDisplayOrder.firstIndex(of: background) ?? 0
     }
 
     private func close() {

@@ -510,15 +510,15 @@ the first is still active.
 
 | Power-up | Conflict | Tier | Timed | Stacking | Behaviour and notes |
 |---|---|---|---|---|---|
-| **Descent** | — | Uncommon | Yes | Extends duration | Field moves down continuously. Bricks past the lower limit are destroyed, not scored. Suspends the normal descent cadence while active |
+| **Descent** | — | Uncommon | Yes | Extends duration | Field steps down one row every three seconds for six rows (round 357; it was a row a second). Bricks past the lower limit are destroyed, not scored. The normal cadence still closes an empty bottom row at its usual speed alongside it |
 | **Trajectory Line** | — | Uncommon | Yes | Extends, then lengthens the line | Draws the ball's path ahead, reflecting off walls, stopping at the first brick it would meet |
 | **Aimed Sticky** | `launchControl` | Uncommon | Yes | Extends duration | Ball is held; drag to choose the launch angle, shown by an arrow. **The default angle is the angle the ball would have bounced at anyway**, so releasing without dragging changes nothing |
 | **Magnetism** | — | Uncommon | Yes | Extends, then strengthens | Curves the ball toward the paddle. Strength falls off with distance. Temporary, so it cannot make a run unloseable |
-| **Lock** | — | Rare | Yes | Extends duration | Freezes every active timed power-up; their timers stop. **Only drops while at least one timed power-up is active with enough time left to still be active when the Lock reaches the paddle.** Ends by itself, or by Key |
+| **Lock** | — | Rare | Yes | Extends duration | Freezes every active timed power-up; their timers stop. **Only drops while at least one timed power-up is active with enough time left to still be active when the Lock reaches the paddle.** Ends only by a Key (round 218), or with the ball (round 354). It holds the paddle-hit turns as well as the timed clocks (round 354), and Retreat and Quicksand stay on under it while the field keeps descending to their shifted floor (round 356). While it runs the capsule wears a lime border, the rings turn white, and Wipe and Key drop more often |
 | **Key** | — | Uncommon | No | n/a | Ends the Lock; timers resume. **Only drops while a Lock is active** — so its weight is set high *within that window*, rare overall but reliably available while it is possible |
 | **Cull** | — | Rare | No | Fires again | Destroys half the remaining bricks, chosen at random, of any type including Indestructible. Scored as destroyed. Its value is highest exactly when the field is worst, which is when a run is most likely to end - and being random rather than chosen means it relieves the pressure without deciding the shape of what is left |
 | **Laser Beam** | — | Rare | No | Fires again | A sustained vertical beam destroying a whole column including Indestructible. **One beam per ball in play**, each fired from its own x-position — so with four balls it clears four columns at once |
-| **Portal Paddle** | — | Rare | Yes | Extends duration | Ball entering the paddle re-enters at the top, keeping horizontal velocity |
+| **Portal Paddle** | — | Rare | Yes | Extends duration | Ball entering the paddle re-enters at the top, keeping horizontal velocity. Auto-Aim and Portal Paddle end each other (confirmed round 356) |
 | **Wrap-Around** | — | Rare | Yes | Extends duration | Ball leaving one side re-enters the other. **The paddle wraps too**, so a paddle driven off one edge reappears at the other — the side walls stop being walls for as long as it lasts, and the corners stop being the safe places they usually are. Moving bricks and explosions wrap as well, so what the power-up changes is the shape of the field rather than one rule about the ball |
 | **Landing Marker** | — | Common | Yes | Extends duration | Marks where the ball will cross the paddle's line |
 | **Wrecking Ball** | `ballHitBehaviour` | Rare | Yes | Extends duration | Destroys any brick in one hit regardless of type, and **still bounces off it** — distinct from Giga-Ball, which passes through without destroying everything |
@@ -528,7 +528,7 @@ the first is still active.
 | **Flipped Angle** | — | Uncommon | Yes | Extends duration | Paddle's angular influence inverted. Bad |
 | **Multi-Ball** | — | Uncommon | No | Adds another ball, to a maximum of four | Adds a ball. **Weight drops to zero while four are in play**, so it stops being offered rather than being collected for nothing. §5.4 |
 | ~~**Wipe**~~ | — | Uncommon | No | n/a | **Built** (round 31). Ends every active power-up immediately. Bad. **Does not remove a Lock** — otherwise Wipe is strictly better than Key and Key never drops. Drops only while something is running for it to end: a bad power-up that takes nothing away is a gift rather than a dud |
-| **Paddle Halo** | — | Rare | Yes | Extends, then reaches further | Semicircular glow from the paddle into the lower rows, destroying bricks it touches |
+| **Paddle Halo** | — | Rare | Yes | Restarts the timer (round 357; it used to reach further on each collection) | Semicircular glow from the paddle into the lower rows, destroying bricks it touches |
 | **Reversed Controls** | — | Uncommon | Yes | Extends duration | Paddle moves opposite to the player's touch. Bad |
 | **Ball Steering** | — | Rare | Yes | Extends duration | Moving the paddle steers the ball's x-position in flight |
 | **Clear And Retreat** | — | Uncommon | Yes | Extends duration | Destroys the lowest **two** occupied rows and **holds the field there** for eight seconds. **Timed since round 136** (play-test round 126: "it should be timed and it should raise the lowest brick level by 2 bricks"). Instant, it was self-defeating: it made a gap, and the cadence exists to close exactly that gap, so the retreat was gone inside a second and the power-up read as doing nothing. The hold is the retreat - no cadence, no Descent, no new rows while it runs. It costs the run its tempo, since height only comes from the field descending, and gives that height back the moment it ends and the field drops into the room that was made. Nothing is lifted any more: the lowest *level* rises by the two lowest rows being destroyed, which is what the name says and needs no rule for a brick pushed off the top |
@@ -2838,15 +2838,47 @@ testing." What it found and did:
   ways; every reload the screen makes now restores the offset (`reloadSettingsKeepingThePlace`).
   **James to confirm on his phone.**
 
+**Round 357: the daily's board in two places, a Vault with a door, and new shapes.**
+
+- **The daily menu shows the board or the posted score, never both**, headed LEADERBOARD rather
+  than TOP SCORES. The card turns lime with purple words when the player leads, the round 350
+  look moved to the card that now stands in for the posted score, and a player below the top
+  three is listed under them after a small gap. James has seen the board with real entries.
+- **The daily game-over and complete screens** put the Game Center block straight under the
+  score, with Statistics beneath it (`arrangeTheDailyEnding`), list the top three and the
+  player's own place, drop the "1/1 on today's leaderboard" line, and open the day's board when
+  the block is tapped. On an iPhone SE the gaps are wanted rather than required, and the
+  signed-out note gives way first: there it is only shown to a player with no board to show.
+- **The Game Backgrounds dots follow the swipe.** They were set from each background's raw
+  value, and since round 329 reordered the strip the two no longer agreed. The Glow and Clouds
+  work James asked about was built in rounds 299 and 351 (each blob its own drifting, fading
+  shape); see the report for where to look.
+- **Descent steps a row every three seconds** (was one); the empty-row catch-up is unchanged.
+- **A second Halo restarts its timer** rather than growing it, reversing round 98.
+- **No row is unbreakable from wall to wall.** The Vault's lid has a slot (James's 252m
+  screenshot), `testNoSingleRowIsAWallFromSideToSide` asks every row of every pattern, and
+  `endlessIIOpenASolidUnbreakableRow` takes one brick out of any Mayhem row that comes out solid
+  some other way. The ball-reset alternative is not built: any threshold safe from false
+  positives would leave a stuck ball stuck for that long.
+- **The Safety Paddle's sticky face** is drawn in the paddle's own colours; the lime tint over
+  the pink was making it red.
+- **The Aimed Sticky line** starts at the ball's edge and sits under the ball.
+- **Seven new rows, five sections and eight clusters** for Mayhem. Rows: Spillway, Glimmer,
+  Beacon, Pinball, Fog Bank, Tinsel, Bulwark. Sections, four to six rows deep and a new kind of
+  formation: Slalom, Ziggurat, Cathedral, Downpour, Gauntlet. Clusters: Heart, Grin, Fuse Box,
+  Igloo, Chandelier, Snowflake, Ghost Ship, Accordion. Appended, so a run's saved schedule keeps
+  its indices.
+
 **Open after round 344:**
 
 | Item | What is known |
 |---|---|
-| The game view following an iPad or Mac window | Built in round 342, tested as arithmetic and on a bare scene. Not yet seen on a device |
+| The game view following an iPad or Mac window | Built in round 342, tested as arithmetic and on a bare scene. **James is checking it on his iPad** (round 357): start a level, drag the window wider, narrower, taller and shorter, and the field should never stretch, crop or jump |
+| The settings list keeping its place | Round 356. Not reproduced on the simulator; every reload now restores the offset. James to confirm on his phone |
 | ~~The iPad paddle-speed field in the column~~ | **Seen working, round 348**, on an iPad Pro 11-inch (M5) simulator on iOS 26.5: the field sits in the column as a scaled model of the play area, the slider reads x2.00 a quarter of the way along, and a 100-point drag carried the paddle from the centre to near the right edge |
 | ~~Aimed Sticky's sounds~~ | **Answered, round 356** ("aimed sticky sounds should use the sticky paddle sound"). It did, and the ordinary bounce played under it - see round 356 |
 | ~~Portal Paddle with Auto-Aim~~ | **Answered, round 356**: "Portal Paddle and auto-aim should not run together". The pair is back in the matrix |
-| The daily board in the app | Round 354. Tested as arithmetic and as a laid-out card with sample rows; the real board needs a device signed in to Game Center |
+| ~~The daily board in the app~~ | **Seen working, 1 October** - James: "In-app daily leaderboards look good". Round 357 reshaped both screens to his notes |
 
 **Backlogged**
 

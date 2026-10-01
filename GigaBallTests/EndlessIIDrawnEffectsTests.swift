@@ -337,14 +337,16 @@ final class PaddleHaloArtworkTests: XCTestCase {
                              + "picture has to be")
     }
 
-    /// A deeper collection reaches further, and the picture follows.
-    func testTheGlowGrowsWithTheStack() throws {
+    /// A second Halo keeps the picture the size it was (James, round 357: "Getting it again
+    /// whilst it's active should just reset the timer, not make it bigger"). Until then a
+    /// deeper collection reached further and the picture followed it out.
+    func testTheGlowStaysTheSameSizeWhenCollectedAgain() throws {
         let scene = mayhem()
         let first = try XCTUnwrap(halo(scene)).size.width
         scene.endlessIICollectPaddleHalo()
         scene.tickEndlessIIPaddleHalo()
         let second = try XCTUnwrap(scene.endlessIIPaddleHaloNode as? SKSpriteNode).size.width
-        XCTAssertGreaterThan(second, first)
+        XCTAssertEqual(second, first, accuracy: 0.01)
     }
 
     // MARK: - The fade below the paddle line
@@ -379,8 +381,10 @@ final class PaddleHaloArtworkTests: XCTestCase {
         let node = try XCTUnwrap(halo(scene))
         let firstDepth = try XCTUnwrap(skirt(of: node)).size.height
 
-        scene.endlessIICollectPaddleHalo()
+        scene.paddleWidth *= 1.5
         scene.tickEndlessIIPaddleHalo()
+        // Grown by the paddle now that a second Halo no longer grows it (round 357) - the reach
+        // is a share of the paddle's width, so an Expand Paddle is the way it still grows
         let grown = try XCTUnwrap(scene.endlessIIPaddleHaloNode as? SKSpriteNode)
         let secondDepth = try XCTUnwrap(skirt(of: grown)).size.height
 
