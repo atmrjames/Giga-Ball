@@ -34,11 +34,23 @@ extension GameScene {
     /// launch while it runs. The arriving velocity is the pre-step sample - the contact's
     /// own velocity has already been bounced by the engine (§8.6), and the *arrival* is what
     /// the default angle is the mirror of.
+    /// Whether a ball landing on the paddle's top now is caught by Aimed Sticky.
+    ///
+    /// Asked by the catch, and by the paddle contact as it chooses a sound **before** the catch
+    /// runs (James, round 356: "aimed sticky sounds should use the sticky paddle sound"). Aimed
+    /// Sticky sets plain Sticky's catches to nought, so the contact read the paddle as an
+    /// ordinary one and played the bounce, and the catch's own sticky sound went off on top of
+    /// it - the bounce was what a player heard. One answer, so the sound and the catch cannot
+    /// disagree about whether this landing is a catch.
+    var endlessIIAimedCatchWillHappen: Bool {
+        gameMode == .endlessII
+            && (endlessIIAimedStickyClock.hasTurns || endlessIIAimedStickyOwedTurn)
+            && endlessIIInertPaddleClock.isRunning == false
+        // An inert paddle holds nothing - see paddleHit's sticky band
+    }
+
     func endlessIIAimedCatch(_ subject: SKSpriteNode, isExtra: Bool) -> Bool {
-        guard gameMode == .endlessII,
-              endlessIIAimedStickyClock.hasTurns || endlessIIAimedStickyOwedTurn
-        else { return false }
-        guard endlessIIInertPaddleClock.isRunning == false else { return false }
+        guard endlessIIAimedCatchWillHappen else { return false }
         // An inert paddle holds nothing - see paddleHit's sticky band
         if endlessIIAimedStickyClock.hasTurns == false {
             endlessIIAimedStickyOwedTurn = false

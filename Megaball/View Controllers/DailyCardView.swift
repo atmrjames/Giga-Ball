@@ -310,7 +310,7 @@ final class DailyCardView: UIView {
             name.lineBreakMode = .byTruncatingTail
             name.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
             let score = UILabel()
-            score.text = StatsPage.grouped(row.score) + unit
+            score.text = "\(row.score)" + unit
             score.font = UIViewController.gameScoreFont(ofSize: 15)
             score.textColor = colour
             score.textAlignment = .right
@@ -489,9 +489,13 @@ final class DailyCardView: UIView {
                          .foregroundColor: tint]))
 
         line.append(NSAttributedString(
-            string: StatsPage.grouped(score) + unit,
-            // Grouped like the Global Hi-Score line under it (James, round 354: "posted score has
-            // no comma thousands separator, global hi score does")
+            string: "\(score)" + unit,
+            // **Ungrouped, like the Global Hi-Score line under it** (James, round 354: "posted
+            // score has no comma thousands separator, global hi score does", and round 356:
+            // "scores in the daily challenge screen still aren't consistent"). The two agree by
+            // following the game's rule - a score is never grouped (play-test round 126, see
+            // `PauseMenuViewController`) - which the hi-score line had broken in round 350, and
+            // which round 354 followed the wrong way
             attributes: [.font: UIViewController.gameScoreFont(ofSize: 16),
                          .foregroundColor: UIColor.white]))
 
@@ -561,7 +565,7 @@ final class DailyCardView: UIView {
                                        attributes: [.font: UIFont.systemFont(ofSize: 14),
                                                     .foregroundColor: tint]))
         line.append(NSAttributedString(
-            string: StatsPage.grouped(best) + unit,
+            string: "\(best)" + unit,
             attributes: [.font: UIViewController.gameScoreFont(ofSize: 16),
                          .foregroundColor: onLime ? DailyCardView.onLime : UIColor.white]))
         return line

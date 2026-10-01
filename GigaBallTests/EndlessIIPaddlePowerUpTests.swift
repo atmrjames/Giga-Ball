@@ -6406,3 +6406,32 @@ final class MirrorShadowRenderTests: XCTestCase {
         print("\n  Mirror shadow over the halo: \(file.path)\n")
     }
 }
+
+/// James, round 356: "aimed sticky sounds should use the sticky paddle sound". The paddle
+/// contact chose its sound from plain Sticky's catches, which Aimed Sticky sets to nought, so it
+/// played the bounce underneath the catch's own sticky sound. It asks the catch's question now.
+final class AimedStickySoundTests: XCTestCase {
+
+    private func mayhem() -> GameScene {
+        let scene = GameScene()
+        scene.gameMode = .endlessII
+        scene.totalStatsArray = [TotalStats()]
+        return scene
+    }
+
+    func testTheContactKnowsAnAimedCatchIsComing() {
+        let scene = mayhem()
+        XCTAssertFalse(scene.endlessIIAimedCatchWillHappen)
+        scene.endlessIICollectAimedSticky()
+        XCTAssertEqual(scene.stickyPaddleCatches, 0,
+                       "which is why asking plain Sticky's catches heard a bounce")
+        XCTAssertTrue(scene.endlessIIAimedCatchWillHappen)
+    }
+
+    func testAnInertPaddleCatchesNothingAndSoSoundsLikeABounce() {
+        let scene = mayhem()
+        scene.endlessIICollectAimedSticky()
+        scene.endlessIIInertPaddleClock.collect(turns: 3)
+        XCTAssertFalse(scene.endlessIIAimedCatchWillHappen)
+    }
+}

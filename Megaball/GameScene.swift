@@ -5235,9 +5235,27 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	/// movement being visible at all.
 	var endlessIIFieldIsHeld: Bool {
 		endlessIIAimedStickyOwedTurn
-			|| endlessIIClearAndRetreatClock.isRunning
-			|| endlessIIQuicksandClock.isRunning
+			|| (endlessIIShiftHoldsTheField
+				&& (endlessIIClearAndRetreatClock.isRunning || endlessIIQuicksandClock.isRunning))
 			|| (gameMode == .endlessII && endlessIIFieldShiftHasSettled == false)
+	}
+
+	/// Whether a running Retreat or Quicksand holds the field: always, except under a Lock.
+	///
+	/// **James, round 356: "Retreat and quicksand can remain on during lock, so long as the
+	/// bricks keep descending to the bottom row, even if that bottom row is higher or lower due
+	/// to the power-up."** A Lock freezes both clocks, and a Lock has no timer of its own - so a
+	/// held field under a Lock was held until a Key, and Keys come from the bricks a held field
+	/// never makes. Under a Lock the field descends as ever, against the floor wherever the
+	/// shift has put it, and new rows arrive on the shifted top row (`endlessNewRowY`). The
+	/// glide itself still holds it: mid-glide every brick is between rows (§8.6).
+	var endlessIIShiftHoldsTheField: Bool { endlessIILocked == false }
+
+	/// Where the endless modes build their next row: the top row, moved with the field while a
+	/// Retreat or Quicksand has it shifted (round 356). Nought shift outside Mayhem, and inside
+	/// it whenever the field is held, which used to be every time it was shifted.
+	var endlessNewRowY: CGFloat {
+		yBrickOffsetEndless + (gameMode == .endlessII ? endlessIIFieldShift : 0)
 	}
 	// **An aim no longer holds the field** (James, round 293: "aimed sticky is still causing
 	// the game to pause whilst the ball is on the paddle. This is no longer necessary").
@@ -5590,9 +5608,17 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		}
 		// Paddle bounce angle rules are slightly different for square paddle due to lack of round edges
 				
+		let aimedCatchComing = isOnPaddle == false
+			&& ball.position.y >= paddle.position.y + paddleHeight/2
+			&& endlessIIAimedCatchWillHappen
+		// The same three conditions the aimed catch below is asked under
+
 		if soundsSetting {
 			if ball.position.x > paddleLeftEdgePosition + ball.size.width/3 && ball.position.x < paddleRightEdgePosition - ball.size.width/3 && stickyPaddleCatches != 0 {
 				self.run(stickyPaddleHitSound)
+			} else if aimedCatchComing {
+				// Silent here: the aimed catch plays the sticky paddle's own sound, and this used
+				// to play the ordinary bounce underneath it (round 356)
 			} else if endlessIIBallSpinIsRunning, let spin = GameScene.mayhemSound("ballSpinPaddleHit") {
 				self.run(spin)
 				// **James, round 340: "ball spin paddle hit - instead of paddle hit when ball
@@ -5620,8 +5646,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			// it instead of the ball's position on the paddle
 		}
 
-		if isOnPaddle == false && ball.position.y >= paddle.position.y + paddleHeight/2
-			&& endlessIIAimedCatch(ball, isExtra: isExtra) {
+		if aimedCatchComing && endlessIIAimedCatch(ball, isExtra: isExtra) {
 			endlessIIAimedStickyOwedTurn = false
 			return
 		}
@@ -9809,15 +9834,14 @@ laserTimer?.invalidate()
 		// themselves
 
 		if gameMode == .endlessII && endlessIILocked {
-			let running = GameScene.endlessIIFieldHoldRingIDs
 			entries = entries.map { entry in
 				var held = entry
-				held.held = running.contains(entry.id) == false
+				held.held = true
 				return held
 			}
 		}
-		// White while a Lock holds them (round 354) - all but the two field holds, which a
-		// Lock lets run (`endlessIIFieldHoldClockPaths`), so a white ring is never seen moving
+		// White while a Lock holds them (round 354) - every one, Retreat and Quicksand
+		// included since round 356
 		return entries
 	}
 
@@ -10264,6 +10288,26 @@ laserTimer?.invalidate()
 			}
 			// Which way the field was sliding is part of which Drift is running (round 201)
 
+			numberOfLevels = savedGame.numberOfLevels
+			levelTimerValue = savedGame.levelTimerValue
+			packTimerValue = savedGame.packTimerValue
+			deathsPerLevel = savedGame.deathsPerLevel
+			deathsPerPack = savedGame.deathsPerPack
+			powerUpsGeneratedPerLevel = savedGame.powerUpsGeneratedPerLevel
+			powerUpsCollectedPerLevel = savedGame.powerUpsCollectedPerLevel
+			powerUpsGeneratedPerPack = savedGame.powerUpsGeneratedPerPack
+			powerUpsCollectedPerPack = savedGame.powerUpsCollectedPerPack
+			paddleHitsPerLevel = savedGame.paddleHitsPerLevel
+			levelTimerBonus = 500
+			// **Whether or not the ball was in flight** (James, round 356: "some stats are still
+			// wrong at the end of the game - only showing what happened after returning from a
+			// resume"). These were restored inside the branch below, which only runs for a save
+			// taken with the ball moving - so a run saved with it on the paddle (a sticky catch,
+			// a serve, the moment after a lost ball) came back with the clock, the losses and the
+			// per-level counts at nought. And that branch's `else` saves at once, so the noughts
+			// were written over the good save before the player had touched anything: the earlier
+			// screenshot's 78m in "0:04". The counters belong to the run, not to the ball
+
 			if savedGame.ballProperties.count >= SavedGame.ballPropertiesCount {
 				// Read positionally up to index 4 below. isEmpty was not a strong enough
 				// guard - a short array traps here, during resume, at launch.
@@ -10295,17 +10339,6 @@ laserTimer?.invalidate()
 				// dress in the wrong places - and then quietly corrected itself the first time
 				// the player moved, which is the kind of bug that never gets reported because
 				// it is gone by the time anybody looks
-				numberOfLevels = savedGame.numberOfLevels
-				levelTimerValue = savedGame.levelTimerValue
-				packTimerValue = savedGame.packTimerValue
-				deathsPerLevel = savedGame.deathsPerLevel
-				deathsPerPack = savedGame.deathsPerPack
-				powerUpsGeneratedPerLevel = savedGame.powerUpsGeneratedPerLevel
-				powerUpsCollectedPerLevel = savedGame.powerUpsCollectedPerLevel
-				powerUpsGeneratedPerPack = savedGame.powerUpsGeneratedPerPack
-				powerUpsCollectedPerPack = savedGame.powerUpsCollectedPerPack
-				paddleHitsPerLevel = savedGame.paddleHitsPerLevel
-				levelTimerBonus = 500
 			} else {
 				saveCurrentGame()
 			}

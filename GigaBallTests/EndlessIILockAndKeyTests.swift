@@ -666,37 +666,52 @@ final class EndlessIILockHoldsEverythingTests: XCTestCase {
 
     /// James, round 354: "Lock power up with brick retreat power up enabled and bricks stopped
     /// descending when the bottom row was clear meant the game effectively broke once the
-    /// board was totally clear". A frozen Retreat held the field until a Key, and Keys drop
-    /// from bricks a held field never makes.
-    func testALockDoesNotFreezeTheTwoPowerUpsThatHoldTheField() {
-        for path in GameScene.endlessIIFieldHoldClockPaths {
-            XCTAssertFalse(GameScene.endlessIITimedClockPaths.contains(path),
-                           "\(path) is frozen by a Lock, and holds the field while frozen")
-            XCTAssertTrue(GameScene.endlessIIWipeableClockPaths.contains(path),
-                          "\(path) should still be something a Wipe clears")
+    /// board was totally clear" - and round 356, on how to answer it: "Retreat and quicksand
+    /// can remain on during lock, so long as the bricks keep descending to the bottom row, even
+    /// if that bottom row is higher or lower due to the power-up".
+    func testALockFreezesRetreatAndQuicksandLikeEverythingElse() {
+        for path: ReferenceWritableKeyPath<GameScene, EndlessIIClock>
+                in [\.endlessIIClearAndRetreatClock, \.endlessIIQuicksandClock] {
+            XCTAssertTrue(GameScene.endlessIITimedClockPaths.contains(path), "\(path)")
         }
     }
 
-    func testARetreatRunsOutUnderALockAndLetsTheFieldGo() {
+    func testUnderALockARetreatStaysOnAndTheFieldStillDescends() {
         let scene = mayhem()
         scene.gameState.enter(Playing.self)
-        scene.endlessIICollectLock()
         scene.endlessIIClearAndRetreatClock.collect(1)
-        XCTAssertTrue(scene.endlessIIFieldIsHeld)
+        XCTAssertTrue(scene.endlessIIFieldIsHeld, "without a Lock, a Retreat holds the field")
+
+        scene.endlessIICollectLock()
+        XCTAssertFalse(scene.endlessIIFieldIsHeld,
+                       "under a Lock the field must keep descending, or nothing ends the Lock")
 
         scene.endlessIIPaddleFrameDelta = 0.5
         for _ in 0..<8 { scene.tickEndlessIIFieldPowerUps() }
+        XCTAssertTrue(scene.endlessIIClearAndRetreatClock.isRunning,
+                      "the Retreat stays on while the Lock holds it")
 
-        XCTAssertFalse(scene.endlessIIClearAndRetreatClock.isRunning,
-                       "the Retreat never ran out under the Lock")
-        XCTAssertTrue(scene.endlessIILocked, "and the Lock is still on, as it should be")
+        scene.endlessIITurnKey()
+        XCTAssertTrue(scene.endlessIIFieldIsHeld, "and holds the field again once it is unlocked")
+    }
+
+    func testANewRowArrivesOnTheTopRowWhereverTheShiftHasPutIt() {
+        let scene = mayhem()
+        scene.yBrickOffsetEndless = 300
+        scene.brickHeight = 20
+        XCTAssertEqual(scene.endlessNewRowY, 300)
+        scene.endlessIIFieldShift = 40
+        XCTAssertEqual(scene.endlessNewRowY, 340,
+                       "a lifted field's new row on the old top row lands on a lifted brick")
+        scene.endlessIIFieldShift = -40
+        XCTAssertEqual(scene.endlessNewRowY, 260)
     }
 
     // MARK: - The HUD
 
     /// "change the colour of the power-up progress bars to white - this indicates that all the
     /// power-ups are locked in"
-    func testTheRingsAreMarkedHeldUnderALockExceptTheOnesStillMoving() {
+    func testEveryRingIsMarkedHeldUnderALock() {
         let scene = mayhem()
         scene.endlessIIAuraClock.collect(10)
         scene.endlessIIClearAndRetreatClock.collect(10)
@@ -704,9 +719,8 @@ final class EndlessIILockHoldsEverythingTests: XCTestCase {
 
         scene.endlessIICollectLock()
         let entries = scene.activePowerUpEntries()
-        XCTAssertEqual(entries.first { $0.id == "endlessIIAura" }?.held, true)
-        XCTAssertEqual(entries.first { $0.id == "endlessIIClearAndRetreat" }?.held, false,
-                       "a white ring that moves says the opposite of what white means")
+        XCTAssertFalse(entries.isEmpty)
+        XCTAssertTrue(entries.allSatisfy(\.held), "Retreat included, since round 356")
     }
 
     func testTheCapsuleWearsTheLimeBorderOnlyWhileLocked() {

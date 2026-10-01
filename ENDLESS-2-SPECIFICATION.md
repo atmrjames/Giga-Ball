@@ -2796,14 +2796,56 @@ testing." What it found and did:
   haptics; the capsule widens with every ring even when a ring arrives mid-pause; Music sits
   above the two sound rows; posted scores are grouped with commas like the global hi-score.
 
+**Round 356: James's answers to round 354.**
+
+- **Portal Paddle and Auto-Aim end each other again**, as round 223's matrix had them ("Portal
+  Paddle and auto-aim should not run together"). Round 354's downward aim from the top exit is
+  taken out with the pairing it served.
+- **Retreat and Quicksand stay on under a Lock, and the field keeps descending** ("so long as the
+  bricks keep descending to the bottom row, even if that bottom row is higher or lower due to the
+  power-up"). Round 354 let both run down instead. Now the Lock freezes them like everything
+  else, and it is their hold on the field that gives way while locked
+  (`endlessIIShiftHoldsTheField`), so the field steps to its floor wherever the shift has put
+  it. New rows are built on the top row moved with the shift (`endlessNewRowY`): until now the
+  field was always held while shifted, so no row had ever been built during a shift, and on a
+  lifted field the old top row is a row that already holds bricks. Watched on the simulator:
+  under a Lock with Retreat on, the field went from 0m to 27m with rows arriving from behind
+  the HUD and nothing overlapping.
+- **Aimed Sticky sounds like Sticky Paddle** ("aimed sticky sounds should use the sticky paddle
+  sound"). Its catch always played the sticky sound, and the paddle contact played the ordinary
+  bounce underneath it: the contact chose its sound from plain Sticky's catches, which Aimed
+  Sticky sets to nought. The contact now asks the catch's own question
+  (`endlessIIAimedCatchWillHappen`) and stays silent when a catch is coming.
+- **The website is live** with round 353's iPad gallery.
+- The Monochromatic exclusion stands as built in round 355, Checkers and City Hall included.
+- **A resumed run keeps its clock and counters whatever the ball was doing** ("some stats are
+  still wrong at the end of the game - only showing what happened after returning from a
+  resume"). `resumeGame` restored the time, the losses and the per-level counts only inside the
+  branch for a save with the ball in flight; a run saved with the ball on the paddle (a sticky
+  catch, a serve, just after a lost ball) came back with them at nought, and that branch's
+  `else` saved at once, writing the noughts over the good save. This is the "0:04" beside 78m
+  in round 354's screenshot. Shared by all three modes; it only changes what a resume restores.
+- **Scores on the daily screens agree, by having no separators** ("scores in the daily
+  challenge screen still aren't consistent"). The game's rule since play-test round 126 is that
+  a score is never grouped; round 350's global hi-score line broke it and round 354 followed it
+  the wrong way. Posted score, global hi-score, the comparison lines and the board's rows are
+  plain digits again. `LeaderboardStanding.bestText` keeps its grouping, which round 185 chose to
+  match the field size printed beside it on the non-daily end screens.
+- **Settings read Music, In-Game Sound, UI Sound** ("swap UI sound and in-game sound rows").
+- **The settings list keeps its place when it reloads** ("pressing the swipe-up to pause cell
+  ... if scrolled down, causes the scroll position to reset to the top"). Not reproduced on the
+  simulator or in a test that scrolls an SE-sized list to the bottom and presses the row both
+  ways; every reload the screen makes now restores the offset (`reloadSettingsKeepingThePlace`).
+  **James to confirm on his phone.**
+
 **Open after round 344:**
 
 | Item | What is known |
 |---|---|
 | The game view following an iPad or Mac window | Built in round 342, tested as arithmetic and on a bare scene. Not yet seen on a device |
 | ~~The iPad paddle-speed field in the column~~ | **Seen working, round 348**, on an iPad Pro 11-inch (M5) simulator on iOS 26.5: the field sits in the column as a scaled model of the play area, the slider reads x2.00 a quarter of the way along, and a 100-point drag carried the paddle from the centre to near the right edge |
-| Aimed Sticky's sounds | Round 339: it already plays the sticky catch on the catch and the release on the launch, as plain Sticky does. Waiting on James to say what he hears instead |
-| Portal Paddle with Auto-Aim | Round 354 took the pair out of the exclusion matrix so the two run together, on James's report. His matrix had Auto-Aim ending the Portal, so this wants his confirmation |
+| ~~Aimed Sticky's sounds~~ | **Answered, round 356** ("aimed sticky sounds should use the sticky paddle sound"). It did, and the ordinary bounce played under it - see round 356 |
+| ~~Portal Paddle with Auto-Aim~~ | **Answered, round 356**: "Portal Paddle and auto-aim should not run together". The pair is back in the matrix |
 | The daily board in the app | Round 354. Tested as arithmetic and as a laid-out card with sample rows; the real board needs a device signed in to Game Center |
 
 **Backlogged**

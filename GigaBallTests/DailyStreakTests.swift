@@ -229,8 +229,8 @@ final class DailyFreePlayLineTests: XCTestCase {
                        + "own invited exactly the comparison it then had to explain away. "
                        + "`freePlayLine` itself is still built and still tested below - this "
                        + "is about what the card chooses to draw")
-        XCTAssertTrue(card.resultTextForTesting.contains(StatsPage.grouped(12480)),
-                      "the day's own number is still the headline - grouped since round 354")
+        XCTAssertTrue(card.resultTextForTesting.contains("12480"),
+                      "the day's own number is still the headline")
     }
 
     /// It says free play, which is what the player reads everywhere else (round 12's rename).

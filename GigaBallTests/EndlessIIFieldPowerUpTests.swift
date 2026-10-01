@@ -540,22 +540,6 @@ final class EndlessIIFieldPowerUpTests: XCTestCase {
                        + "is lower and it is a brick")
     }
 
-    /// James, round 354: "with portal paddle and auto aim power ups on, the ball is bouncing off
-    /// of the paddle at the bottom rather than coming out at the top of the game view". Coming
-    /// out of the top, the aim looked *up* for a target and found nothing there.
-    func testFromThePortalsTopExitAutoAimLooksDownForTheFirstBrickItWillMeet() {
-        let scene = fieldScene()
-        brick(in: scene, x: 0, y: 60)
-        let highNear = brick(in: scene, x: 40, y: 200)
-        brick(in: scene, x: -150, y: 200)
-
-        let top = CGPoint(x: 30, y: 400)
-        XCTAssertNil(scene.endlessIIAutoAimTarget(from: top), "the old search, which looks up")
-        let target = scene.endlessIIAutoAimTarget(from: top, downward: true)
-        XCTAssertEqual(target?.y, 200, "the highest brick is the first one the shot meets")
-        XCTAssertEqual(target?.x, highNear.position.x, "nearest of the equally high")
-    }
-
     func testAutoAimSkipsABrickTheLaunchArcCannotReach() {
         // The shot is clamped to the launchable arc, so a brick shallower than the minimum
         // angle would be marked and then missed - the clamp bends the shot up and it sails
@@ -2488,8 +2472,8 @@ final class EndlessIIQuicksandTests: XCTestCase {
         XCTAssertTrue(scene.endlessIIFieldRingEntries().contains { $0.id == "endlessIIQuicksand" })
         XCTAssertTrue(scene.endlessIIFieldClockSaveEntries().contains { $0.key == "endlessIIQuicksand" })
         XCTAssertTrue(GameScene.endlessIIWipeableClockPaths.contains(\.endlessIIQuicksandClock))
-        XCTAssertTrue(GameScene.endlessIIFieldHoldClockPaths.contains(\.endlessIIQuicksandClock),
-                      "it holds the field, so a Lock must let it run (round 354)")
+        XCTAssertTrue(GameScene.endlessIITimedClockPaths.contains(\.endlessIIQuicksandClock),
+                      "a Lock has to freeze it")
 
         scene.endlessIIRestoreFieldClock(key: "endlessIIQuicksand", remaining: 4,
                                          total: 10, magnitude: 0)
@@ -2547,7 +2531,7 @@ final class PaddleHaloFollowsTheFieldTests: XCTestCase {
 ///
 /// Fifteen cells of it, and deliberately not the group model `PowerUpCatalogue.conflict` uses:
 /// these are pairs rather than a partition. Inert Ball ends a Giga-Ball, a Wrecking Ball and a
-/// Ball Aura, and those three combine happily with each other. Auto-Aim ends an Aimed Sticky, and a
+/// Ball Aura, and those three combine happily with each other. Auto-Aim ends a Portal, and a
 /// Portal runs contentedly beside an Inert Paddle.
 final class EndlessIIExclusionTests: XCTestCase {
 
@@ -2563,7 +2547,7 @@ final class EndlessIIExclusionTests: XCTestCase {
         let expected: [(EndlessIIExclusive, EndlessIIExclusive)] = [
             (.inertBall, .gigaBall), (.wreckingBall, .inertBall), (.ballAura, .inertBall),
             (.inertPaddle, .aimedSticky), (.flippedAngle, .aimedSticky),
-            (.flippedAngle, .inertPaddle), (.autoAim, .aimedSticky),
+            (.flippedAngle, .inertPaddle), (.autoAim, .aimedSticky), (.autoAim, .portalPaddle),
             (.autoAim, .inertPaddle), (.autoAim, .flippedAngle), (.ballSpin, .stickyPaddle),
             (.ballSpin, .aimedSticky), (.ballSpin, .ballControl), (.ballSpin, .inertPaddle),
             (.ballSpin, .autoAim),
@@ -2588,22 +2572,21 @@ final class EndlessIIExclusionTests: XCTestCase {
         XCTAssertFalse(EndlessIIExclusions.ended(byCollecting: .gigaBall).contains(.ballAura))
         XCTAssertFalse(EndlessIIExclusions.ended(byCollecting: .portalPaddle).contains(.inertPaddle),
                        "a Portal and an Inert Paddle agree perfectly")
-        XCTAssertFalse(EndlessIIExclusions.ended(byCollecting: .autoAim).contains(.portalPaddle),
-                       "the paddle swallows the ball and the aim owns the re-entry (round 354)")
         XCTAssertFalse(EndlessIIExclusions.ended(byCollecting: .ballSpin).contains(.flippedAngle),
                        "spin off a flipped angle is simply spin the other way")
     }
 
     /// Collecting one ends the other, on the scene.
-    func testCollectingAutoAimEndsTheAimedStickyButLeavesThePortal() {
+    /// James, round 356: "Portal Paddle and auto-aim should not run together" - confirming
+    /// the matrix after round 354 had briefly let them.
+    func testCollectingAutoAimEndsTheAimedStickyAndThePortal() {
         let scene = mayhem()
         scene.endlessIICollectAimedSticky()
         scene.endlessIICollectPortalPaddle()
         scene.endlessIICollectAutoAim()
 
         XCTAssertFalse(scene.endlessIIAimedStickyClock.isRunning)
-        XCTAssertTrue(scene.endlessIIPortalPaddleClock.isRunning,
-                      "Auto-Aim ended the Portal, and the paddle went back to bouncing (round 354)")
+        XCTAssertFalse(scene.endlessIIPortalPaddleClock.isRunning)
         XCTAssertTrue(scene.endlessIIAutoAimClock.isRunning)
     }
 

@@ -2159,3 +2159,37 @@ extension SavedGameTests {
         XCTAssertEqual(recents.bricksDestroyedThisRun, 1, "nothing to restore, so nothing replaced")
     }
 }
+
+/// James, round 356: "some stats are still wrong at the end of the game - only showing what
+/// happened after returning from a resume". The run's counters came back only when the save had
+/// the ball in flight.
+extension SavedGameTests {
+
+    func testARunSavedWithTheBallOnThePaddleKeepsItsClockAndCounters() {
+        var game = sampleGame()
+        game.ballProperties = []
+        // The ball on the paddle: a sticky catch, a serve, the moment after a lost ball
+        game.fallingPowerUps = []; game.fallingPowerUpXPositions = []; game.fallingPowerUpYPositions = []
+        game.activePowerUps = []; game.activePowerUpDurations = []
+        game.activePowerUpTimers = []; game.activePowerUpMagnitudes = []
+        // Nothing in the air or running: a bare scene has no layout to build them in, and
+        // the counters are the question
+
+        let scene = GameScene()
+        scene.totalStatsArray = [TotalStats()]
+        scene.gameMode = .classic
+        scene.ball.physicsBody = SKPhysicsBody(circleOfRadius: 6)
+        // A resume ends in the paused state, which reads the ball's velocity
+        scene.savedGame = game
+        scene.resumeGameToLoad = true
+        scene.resumeGame()
+
+        XCTAssertEqual(scene.levelTimerValue, 45, "the clock started again from nought")
+        XCTAssertEqual(scene.packTimerValue, 300)
+        XCTAssertEqual(scene.deathsPerLevel, 1)
+        XCTAssertEqual(scene.deathsPerPack, 3)
+        XCTAssertEqual(scene.powerUpsGeneratedPerLevel, 4)
+        XCTAssertEqual(scene.powerUpsCollectedPerPack, 11)
+        XCTAssertEqual(scene.paddleHitsPerLevel, 33)
+    }
+}

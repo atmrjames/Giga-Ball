@@ -1719,9 +1719,9 @@ struct DailyComparison: Equatable {
     /// The row under the score: its title and figure, or nil for a day with nothing before it.
     func row(unit: String) -> (title: String, value: String)? {
         if let posted, (previousBest ?? 0) <= posted {
-            return ("Posted Score", "\(StatsPage.grouped(posted))\(unit)")
+            return ("Posted Score", "\(posted)\(unit)")
         }
-        if let previousBest { return ("Previous Best", "\(StatsPage.grouped(previousBest))\(unit)") }
+        if let previousBest { return ("Previous Best", "\(previousBest)\(unit)") }
         return nil
     }
 
@@ -1730,10 +1730,11 @@ struct DailyComparison: Equatable {
     func lines(boardBest: Int?, unit: String) -> [String] {
         var lines: [String] = []
         if let posted, let previousBest, previousBest > posted {
-            lines.append("Posted score \(StatsPage.grouped(posted))\(unit)")
+            lines.append("Posted score \(posted)\(unit)")
         }
         if let boardBest, boardBest > 0 {
-            lines.append("Global hi-score \(StatsPage.grouped(boardBest))\(unit)")
+            lines.append("Global hi-score \(boardBest)\(unit)")
+            // Scores are never grouped (play-test round 126), the board's included (round 356)
         }
         return lines
     }
@@ -1766,6 +1767,6 @@ struct DailyBoardRow: Equatable {
 
     /// "1. Name  12,340m", for a place with room for one line of text.
     func line(unit: String) -> String {
-        "\(rank). \(name)  \(StatsPage.grouped(score))\(unit)"
+        "\(rank). \(name)  \(score)\(unit)"
     }
 }

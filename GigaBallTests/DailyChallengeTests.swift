@@ -3550,8 +3550,8 @@ final class DailyComparisonTests: XCTestCase {
     func testThePostedScoreIsTheRowWhileNothingHasBeatenIt() {
         let comparison = DailyComparison(record: record(first: 1_867, practice: 1_200, posted: true))
         XCTAssertEqual(comparison.row(unit: "")?.title, "Posted Score")
-        XCTAssertEqual(comparison.row(unit: "")?.value, "1,867",
-                       "grouped like the global hi-score beside it (round 354)")
+        XCTAssertEqual(comparison.row(unit: "")?.value, "1867",
+                       "a score is never grouped, so it reads like the global hi-score (round 356)")
         XCTAssertEqual(comparison.lines(boardBest: nil, unit: ""), [],
                        "the posted score is already the row, so it is not said twice")
     }
@@ -3559,9 +3559,9 @@ final class DailyComparisonTests: XCTestCase {
     func testABetterFreePlayRunTakesTheRowAndThePostedScoreMovesToTheLine() {
         let comparison = DailyComparison(record: record(first: 1_200, practice: 1_867, posted: true))
         XCTAssertEqual(comparison.row(unit: "")?.title, "Previous Best")
-        XCTAssertEqual(comparison.row(unit: "")?.value, "1,867")
+        XCTAssertEqual(comparison.row(unit: "")?.value, "1867")
         XCTAssertEqual(comparison.lines(boardBest: 3_400, unit: ""),
-                       ["Posted score 1,200", "Global hi-score 3,400"])
+                       ["Posted score 1200", "Global hi-score 3400"])
     }
 
     func testADayThatNeverPostedStillHasAPreviousBest() {
@@ -3582,7 +3582,7 @@ final class DailyComparisonTests: XCTestCase {
 
     func testTheCardsHiScoreLineReadsAsTheBoardsFigure() {
         XCTAssertEqual(DailyCardView.hiScoreLine(3_400, unit: "", onLime: false).string
-                        .trimmingCharacters(in: .whitespaces).hasSuffix("Global Hi-Score:  3,400"),
+                        .trimmingCharacters(in: .whitespaces).hasSuffix("Global Hi-Score:  3400"),
                        true)
     }
 }
@@ -3716,7 +3716,8 @@ final class DailyBoardRowTests: XCTestCase {
 
     func testALineReadsPlaceNameAndAGroupedScore() {
         let row = DailyBoardRow(rank: 1, name: "James", score: 12_340, isLocalPlayer: false)
-        XCTAssertEqual(row.line(unit: "m"), "1. James  \(StatsPage.grouped(12_340))m")
+        XCTAssertEqual(row.line(unit: "m"), "1. James  12340m",
+                       "a score is never grouped (play-test round 126; round 356)")
     }
 
     private func labels(in view: UIView) -> [UILabel] {
@@ -3841,5 +3842,22 @@ final class DailyMonochromeLevelTests: XCTestCase {
         XCTAssertTrue(DailyTwist.monochromatic.changesSomething(onClassicLevel: 62, on: "2026-10-02"))
         XCTAssertTrue(DailyTwist.monochromatic.changesSomething(onClassicLevel: nil, on: "2026-10-02"),
                       "an endless day has no level to be grey already")
+    }
+}
+
+/// James, round 356: "Scores in the daily challenge screen still aren't consistent on whether
+/// they have a thousands separator". They agree now by following the game's rule, a score is
+/// never grouped (play-test round 126): every score the daily card can show, together.
+final class DailyScoresReadAlikeTests: XCTestCase {
+    func testNoScoreOnTheDailyCardIsGrouped() {
+        let card = DailyCardView()
+        let key = DailyChallengeSession.shared.todayKey
+        let record = DailyChallengeRecord(dateKey: key, firstAttemptScore: 12_480, posted: true,
+                                          bestPracticeScore: 0, attemptCount: 1)
+        card.show(key: key, isToday: true, record: record, standing: nil, boardBest: 34_500)
+        XCTAssertTrue(card.resultTextForTesting.contains("12480"))
+        XCTAssertTrue(card.resultTextForTesting.contains("34500"))
+        XCTAssertFalse(card.resultTextForTesting.contains(","),
+                       "one score grouped and the other not is the report")
     }
 }

@@ -725,7 +725,7 @@ extension GameScene {
             brick.size.height = brickHeight
             brick.anchorPoint.x = 0.5
             brick.anchorPoint.y = 0.5
-            brick.position = CGPoint(x: -gameWidth/2 + brickWidth/2 + brickWidth*CGFloat(j), y: yBrickOffsetEndless)
+            brick.position = CGPoint(x: -gameWidth/2 + brickWidth/2 + brickWidth*CGFloat(j), y: endlessNewRowY)
             brick.physicsBody = SKPhysicsBody(rectangleOf: brick.frame.size)
             brick.physicsBody!.allowsRotation = false
             brick.physicsBody!.friction = 0.0
@@ -751,7 +751,7 @@ extension GameScene {
 
         for booking in endlessII.bigs {
             let big = endlessIIMakeBig(leftColumn: booking.build.column,
-                                       rowY: yBrickOffsetEndless)
+                                       rowY: endlessNewRowY)
             endlessIIDressBookedShape(big, as: booking.spec)
             brickArray.append(big)
         }
@@ -759,13 +759,13 @@ extension GameScene {
 
         for booking in endlessII.squares {
             let square = endlessIIMakeSquare(column: booking.build.column,
-                                             rowY: yBrickOffsetEndless)
+                                             rowY: endlessNewRowY)
             endlessIIDressBookedShape(square, as: booking.spec)
             brickArray.append(square)
         }
 
         if let column = endlessII.powerUpAt,
-           let brick = endlessIIMakePowerUpBrick(column: column, rowY: yBrickOffsetEndless) {
+           let brick = endlessIIMakePowerUpBrick(column: column, rowY: endlessNewRowY) {
             brickArray.append(brick)
         }
         // Appended with the rest so it animates in and is counted like any other brick

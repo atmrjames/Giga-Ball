@@ -713,8 +713,8 @@ extension GameScene {
     /// a Lose A Ball is not a free shot. And only bricks the shot can actually arrive at:
     /// `endlessIIAimCanReach` keeps the marker's promise and the shot's delivery the same
     /// thing, which is why the marker and the redirect both choose through here.
-    func endlessIIAutoAimTarget(from origin: CGPoint, downward: Bool = false) -> CGPoint? {
-        endlessIIAutoAimBrick(from: origin, downward: downward)?.position
+    func endlessIIAutoAimTarget(from origin: CGPoint) -> CGPoint? {
+        endlessIIAutoAimBrick(from: origin)?.position
     }
 
     /// The brick a free shot would be sent at, rather than only the point.
@@ -722,24 +722,15 @@ extension GameScene {
     /// The marker draws itself round the brick's own outline since round 299, so it needs the
     /// node - and the shot needs the point, which is the node's position. One search either
     /// way: two would be two chances to pick different bricks.
-    ///
-    /// **Downward from a Portal Paddle's top exit** (round 354). A ball coming back in at the top
-    /// meets the field from above, so the brick worth the shot is the *highest* one it can
-    /// reach - the lowest is behind everything else - and "can reach" is the launchable arc
-    /// turned upside down.
-    func endlessIIAutoAimBrick(from origin: CGPoint, downward: Bool = false) -> SKSpriteNode? {
+    func endlessIIAutoAimBrick(from origin: CGPoint) -> SKSpriteNode? {
         var best: (brick: SKSpriteNode, distance: CGFloat)?
         enumerateChildNodes(withName: BrickCategoryName) { node, _ in
             guard let brick = node as? SKSpriteNode else { return }
             guard self.endlessIIWorthAimingAt(brick) else { return }
-            guard self.endlessIIAimCanReach(node.position, from: origin,
-                                            downward: downward) else { return }
+            guard self.endlessIIAimCanReach(node.position, from: origin) else { return }
             let distance = abs(node.position.x - origin.x)
-            let nearerTheShot = downward
-                ? { (y: CGFloat, than: CGFloat) in y > than + 1 }
-                : { (y: CGFloat, than: CGFloat) in y < than - 1 }
             if let current = best {
-                if nearerTheShot(node.position.y, current.brick.position.y)
+                if node.position.y < current.brick.position.y - 1
                     || (abs(node.position.y - current.brick.position.y) <= 1
                         && distance < current.distance) {
                     best = (brick, distance)
@@ -758,9 +749,8 @@ extension GameScene {
     /// would be *marked* and then missed - the shot, bent up to the minimum angle, sails
     /// past underneath it. A brick the arc cannot reach is simply not a target; a higher
     /// brick the shot can reach is a better use of the bounce than a promised miss.
-    func endlessIIAimCanReach(_ target: CGPoint, from origin: CGPoint,
-                              downward: Bool = false) -> Bool {
-        let dy = Double(downward ? origin.y - target.y : target.y - origin.y)
+    func endlessIIAimCanReach(_ target: CGPoint, from origin: CGPoint) -> Bool {
+        let dy = Double(target.y - origin.y)
         guard dy > 0 else { return false }
         let angleDeg = atan2(dy, Double(target.x - origin.x))*180/Double.pi
         return angleDeg >= minAngleDeg && angleDeg <= 180 - minAngleDeg
@@ -818,18 +808,10 @@ extension GameScene {
         // there is no next bounce - it was hanging over a brick through the whole lost-ball
         // animation, pointing at a shot nobody was about to take
 
-        let portalling = endlessIIPortalPaddleClock.hasTurns
-        let launch = portalling
-            ? CGPoint(x: paddle.position.x, y: endlessIIPaddlePortalTopExitY(ballHeight: ball.size.height))
-            : CGPoint(x: paddle.position.x, y: paddleTopY + ball.size.height/2)
+        let launch = CGPoint(x: paddle.position.x, y: paddleTopY + ball.size.height/2)
         // Where the next bounce will leave from - the reachability check needs a height as
-        // well as an x, so the marker judges the shot from the same spot the shot takes.
-        // With a Portal Paddle that is the top of the field, heading down (round 354)
-        let promisable = portalling == false || endlessIIPortals().isEmpty
-        // Through a Portal brick the exit is chosen at random as the ball arrives, so there
-        // is no one shot to mark - and a marker on the wrong brick is worse than none
-        let target = aiming && promisable
-            ? endlessIIAutoAimBrick(from: launch, downward: portalling) : nil
+        // well as an x, so the marker judges the shot from the same spot the shot takes
+        let target = aiming ? endlessIIAutoAimBrick(from: launch) : nil
 
         guard let target else {
             childNode(withName: GameScene.autoAimMarkerName)?.removeFromParent()
@@ -1175,9 +1157,8 @@ extension GameScene {
                 // bounce angle mirrored downward
             }
 
-            let fromTheTop = body.velocity.dy < 0
             if endlessIIAutoAimClock.isRunning || endlessIIAutoAimOwedTurn,
-               let target = endlessIIAutoAimTarget(from: subject.position, downward: fromTheTop) {
+               let target = endlessIIAutoAimTarget(from: subject.position) {
                 endlessIIAutoAimOwedTurn = false
                 let dx = Double(target.x - subject.position.x)
                 let dy = Double(target.y - subject.position.y)
@@ -1188,10 +1169,10 @@ extension GameScene {
                 // brick worth hitting. Together they were cancelling out: the aim set
                 // the launch and the portal threw it away.
                 //
-                // **Downward from the top exit** (round 354): the search looked only *up*
-                // from wherever the ball came back in, and from just under the top strip there
-                // is nothing up there - so the aim found nothing and the re-entry was never
-                // aimed at all. Out of a Portal brick the ball still climbs, and looks up
+                // Unreachable while round 223's matrix has the two end each other, which James
+                // confirmed in round 356 ("Portal Paddle and auto-aim should not run
+                // together"). Left in place rather than deleted, because it is the half of the
+                // pairing that already works should the matrix ever let the two meet again
             }
         }
     }

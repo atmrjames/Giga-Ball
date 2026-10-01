@@ -1758,12 +1758,38 @@ final class SettingsRowTapTests: XCTestCase {
 
     /// James, round 351: "Re-order settings: In-Game Sound, UI Sound, Music to UI Sound, In-Game
     /// Sound, Music."
-    /// And round 354: "move music above the sound settings".
-    func testTheSoundRowsReadMusicThenUISoundThenInGameSound() throws {
+    /// James, round 356: "Pressing the swipe-up to pause cell in the settings view, if scrolled
+    /// down, causes the scroll position to reset to the top".
+    func testPressingTheSwipeRowLeavesTheListWhereItWas() throws {
+        let (screen, defaults) = try settings()
+        let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 375, height: 667))
+        window.rootViewController = screen
+        window.makeKeyAndVisible()
+        screen.view.layoutIfNeeded()
+        let table = screen.settingsTableView!
+        let bottom = max(0, table.contentSize.height - table.bounds.height)
+        XCTAssertGreaterThan(bottom, 0, "an SE's settings list scrolls, or there is nothing to test")
+        table.contentOffset.y = bottom
+        screen.view.layoutIfNeeded()
+
+        for _ in 0..<2 {
+            // Off, then on - which is the press that puts the explainer up
+            try tap(.swipeUpToPause, on: screen)
+            screen.view.layoutIfNeeded()
+            RunLoop.main.run(until: Date().addingTimeInterval(0.3))
+            XCTAssertEqual(table.contentOffset.y, bottom, accuracy: 1,
+                           "swipe up to pause \(defaults.bool(forKey: "swipeUpPause")): the list jumped")
+        }
+        window.isHidden = true
+    }
+
+    /// And round 354: "move music above the sound settings"; and round 356: "swap UI sound and
+    /// in-game sound rows around in settings".
+    func testTheSoundRowsReadMusicThenInGameSoundThenUISound() throws {
         let (screen, _) = try settings()
         let rows = screen.settingRows
         let music = try XCTUnwrap(rows.firstIndex(of: .music))
-        XCTAssertEqual(Array(rows[music..<(music + 3)]), [.music, .interfaceSound, .sounds])
+        XCTAssertEqual(Array(rows[music..<(music + 3)]), [.music, .sounds, .interfaceSound])
     }
 }
 

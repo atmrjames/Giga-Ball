@@ -183,10 +183,10 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         // above it: all three are what the game *looks* like, and it had been sitting among
         // the rows that decide how it plays
 
-        rows += [.music, .interfaceSound, .sounds]
-        // **Music, then UI Sound, then In-Game Sound** (James, round 354: "move music above the
-        // sound settings"). Round 351 put the menus' own sound first; the two sound switches
-        // still sit together
+        rows += [.music, .sounds, .interfaceSound]
+        // **Music, then In-Game Sound, then UI Sound** (James, round 354: "move music above the
+        // sound settings", and round 356: "swap UI sound and in-game sound rows around"). The
+        // two sound switches still sit together
         if SettingsViewController.deviceHasHaptics { rows.append(.haptics) }
         rows += [.perspective, .paddleSpeed, .swipeUpToPause]
 
@@ -809,11 +809,32 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
                 cell.setPressed(true, colour: #colorLiteral(red: 0.6978054643, green: 0.6936593652, blue: 0.7009937763, alpha: 1), duration: 0.2)
             }
             tableView.deselectRow(at: indexPath, animated: true)
-            tableView.reloadData()
+            reloadSettingsKeepingThePlace()
             // Update table view
 //        }
     }
     
+    /// Reloads the list without moving it (James, round 356: "pressing the swipe-up to pause
+    /// cell in the settings view, if scrolled down, causes the scroll position to reset to the
+    /// top").
+    ///
+    /// **Not reproduced on the simulator or in `testPressingTheSwipeRowLeavesTheListWhereItWas`**,
+    /// which scrolls an SE-sized list to the bottom and presses the row both ways. A phone has
+    /// two things the simulator does not - the haptics row and an iCloud account, whose sync
+    /// notification reloads this list too - so every reload the screen does, from the press and
+    /// from the notifications, now puts the list back where it was rather than trusting each
+    /// path not to move it. Clamped, because a reload that removed a row may have shortened it.
+    func reloadSettingsKeepingThePlace() {
+        let table = settingsTableView!
+        let place = table.contentOffset
+        table.reloadData()
+        table.layoutIfNeeded()
+        let lowest = -table.adjustedContentInset.top
+        let highest = max(lowest, table.contentSize.height + table.adjustedContentInset.bottom
+                                    - table.bounds.height)
+        table.contentOffset = CGPoint(x: place.x, y: min(max(place.y, lowest), highest))
+    }
+
     func moveToItemDetails(senderID: Int) {
         let itemsDetailView = self.storyboard?.instantiateViewController(withIdentifier: "itemsDetailView") as! ItemsDetailViewController
         itemsDetailView.senderID = senderID
@@ -1179,7 +1200,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         if parallaxSetting {
             addParallaxToView()
         }
-        settingsTableView.reloadData()
+        reloadSettingsKeepingThePlace()
     }
     
     @objc func returnNotificiationKeyReceived(_ notification: Notification) {
@@ -1188,7 +1209,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         if parallaxSetting {
             addParallaxToView()
         }
-        settingsTableView.reloadData()
+        reloadSettingsKeepingThePlace()
     }
     
     @objc func reanimateNotificiationKeyReceived(_ notification: Notification) {
@@ -1197,14 +1218,14 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         if parallaxSetting {
             addParallaxToView()
         }
-        settingsTableView.reloadData()
+        reloadSettingsKeepingThePlace()
         revealAnimate()
     }
     
     @objc func refreshViewForSyncNotificationKeyReceived(notification:Notification) {
         userSettings()
         loadData()
-        settingsTableView.reloadData()
+        reloadSettingsKeepingThePlace()
     }
     // Runs when the NSUbiquitousKeyValueStore changes
     

@@ -775,25 +775,16 @@ extension GameScene {
         \.endlessIIWrapAroundClock, \.endlessIIBallSteeringClock, \.endlessIIMagnetismClock,
         \.endlessIIPaddleHaloClock, \.endlessIIPortalPaddleClock,
         \.endlessIIRandomisedBounceClock, \.endlessIIGhostBallClock,
-        \.endlessIISafetyPaddleClock, \.endlessIIDriftClock,
+        \.endlessIIClearAndRetreatClock, \.endlessIISafetyPaddleClock,
+        \.endlessIIDriftClock, \.endlessIIQuicksandClock,
     ]
-    // **Clear And Retreat and Quicksand left this list in round 354** (James: "Lock power up
-    // with brick retreat power up enabled and bricks stopped descending when the bottom row
-    // was clear meant the game effectively broke once the board was totally clear"). Both
-    // hold the field for as long as they run - `endlessIIFieldIsHeld` - and a Lock has no
-    // timer of its own, so a Lock that froze either one held the field until a Key arrived.
-    // Keys drop from bricks, and a held field makes no new ones: the board emptied and
-    // nothing could ever end it. They run down through a Lock now, which is
-    // `endlessIIFieldHoldClockPaths` below, and a Wipe still clears them
-
-    /// The rings of the two clocks below, which stay lime under a Lock because they still move.
-    static let endlessIIFieldHoldRingIDs: Set<String> = ["endlessIIClearAndRetreat",
-                                                          "endlessIIQuicksand"]
-
-    /// The clocks that hold the field still, which a Lock lets run (round 354).
-    static let endlessIIFieldHoldClockPaths: [ReferenceWritableKeyPath<GameScene, EndlessIIClock>] = [
-        \.endlessIIClearAndRetreatClock, \.endlessIIQuicksandClock,
-    ]
+    // **Clear And Retreat and Quicksand are frozen like the rest** (James, round 356:
+    // "Retreat and quicksand can remain on during lock, so long as the bricks keep descending
+    // to the bottom row, even if that bottom row is higher or lower due to the power-up").
+    // Round 354 let them run down instead, because each holds the field while it runs and a
+    // Lock has no timer: frozen, they held the field until a Key came, and Keys come from bricks
+    // a held field never makes. The hold is what gives way now - `endlessIIFieldIsHeld` lets
+    // the field descend under a Lock, against the floor wherever the shift has put it
     // Double Paddle and Mirror Paddle left this list in round 180: they were designed as
     // 12-second clocks but were never in any run-down loop, so both ran for ever (James:
     // "it doesn't ever end" / "it just remained on the whole time") - and the cure was the
@@ -817,7 +808,7 @@ extension GameScene {
     /// better than a Key, and a Key that is never worth collecting is a power-up that may as
     /// well not drop.
     static let endlessIIWipeableClockPaths: [ReferenceWritableKeyPath<GameScene, EndlessIIClock>] =
-        endlessIITimedClockPaths + endlessIIFieldHoldClockPaths + [
+        endlessIITimedClockPaths + [
             \.endlessIIAimedStickyClock, \.endlessIIInertPaddleClock,
             \.endlessIIFlippedAngleClock, \.endlessIIReversedControlsClock,
             \.endlessIIAutoAimClock,
@@ -1324,11 +1315,8 @@ extension GameScene {
             endlessIIAuraClock.run(down: endlessIIClockDelta)
             endlessIIRandomisedBounceClock.run(down: endlessIIClockDelta)
             endlessIIGhostBallClock.run(down: endlessIIClockDelta)
-            endlessIIClearAndRetreatClock.run(down: endlessIIPaddleFrameDelta)
-            endlessIIQuicksandClock.run(down: endlessIIPaddleFrameDelta)
-            // The raw delta rather than `endlessIIClockDelta`: a Lock does not freeze these two,
-            // because both hold the field and a frozen hold is a field that never moves again
-            // (round 354, `endlessIIFieldHoldClockPaths`)
+            endlessIIClearAndRetreatClock.run(down: endlessIIClockDelta)
+            endlessIIQuicksandClock.run(down: endlessIIClockDelta)
             endlessIISafetyPaddleClock.run(down: endlessIIClockDelta)
             endlessIIDriftClock.run(down: endlessIIClockDelta)
             tickEndlessIIGhostBall()
