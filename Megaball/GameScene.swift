@@ -138,8 +138,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	/// is not signed in, which is the ordinary case rather than a failure.
 	var endlessIIRivalLines: [EndlessIIRival] = []
 
-	/// When a Landslide day last stepped its field down.
-	var dailyLandslideLastStep: TimeInterval = 0
+	/// How much play a Landslide day has had since its field last stepped down, and the frame
+	/// it was last measured at.
+	var dailyLandslideElapsed: TimeInterval = 0
+	var dailyLandslideLastTick: TimeInterval = 0
 	var endlessIIAutoAimClock = EndlessIIClock()
 	/// Whether the contact being handled still owns its power-up's effect, per turn-based
 	/// paddle power-up whose effect lands *after* the turns are spent. Spending the last
@@ -304,6 +306,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	/// has ever been.
 	var runBestBallHits: Int = 0
 	var endlessIIAuraNodes: [SKSpriteNode] = []
+	/// Power-up bricks broken while a ball was being lost, waiting for play to come back.
+	var endlessIIHeldBrickPowerUps: [Int] = []
+	/// Each aura's comet tail, one per ball, parallel to `endlessIIAuraNodes` (round 354).
+	var endlessIIAuraTails: [SKEmitterNode] = []
 	/// Bricks the aura is currently sitting on, so each is hit once per pass rather than
 	/// once per frame. Cleared as the glow moves off them.
 	var endlessIIAuraHitBricks: Set<ObjectIdentifier> = []
@@ -3170,8 +3176,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         // changed" would make the band unreadable for a fifth of a second
     }
 
-    func spendStickyPaddleCatch() {
+    func spendStickyPaddleCatch(evenUnderALock: Bool = false) {
         guard stickyPaddleCatches != 0 else { return }
+        guard evenUnderALock || gameMode != .endlessII || endlessIILocked == false else { return }
+        // A Lock holds the catches as it holds every other turn (round 354). A power-up taken
+        // away rather than used - `endlessIIEnd`, which spends every catch in a loop - goes
+        // through regardless, or that loop would never finish
 
         stickyPaddleCatches -= 1
         let iconBarLength: CGFloat = (CGFloat(stickyPaddleCatches)/CGFloat(max(1, stickyPaddleCatchesTotal)))
@@ -3799,6 +3809,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		// frame with the last one
 		tickDailyTimeTrial(frameDelta)
 		tickDeferredBallPowerUpEnds()
+		releaseEndlessIIHeldBrickPowerUps()
 		// The paddle's wall clamp is not here - it is in `didEvaluateActions`, because
 		// the growth it has to keep up with is an SKAction and actions have not run yet
 		// Measured once, for everything that needs to know what a frame is worth - the sticky
@@ -3815,6 +3826,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		// here for the splash screen to get out of its way (play-test round 9)
 
 		if gameMode == .endlessII {
+			powerUpRings.locked = endlessIILocked
 			powerUpRings.update(with: activePowerUpEntries())
 			tickEndlessIIHeldBalls()
 			tickEndlessIIAim()
@@ -5267,7 +5279,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			// Anything descending onto an anchored brick is destroyed by it, which is what
 			// carves a channel up through everything arriving above it
 
-			node.run(moveBricksDown)
+			self.moveBrickDownARow(node, by: moveBricksDown)
 		}
 		// Move bricks down. By a row, not by each brick's own height - those were the same
 		// number while every brick was exactly one cell, but a brick that is any other size
@@ -5383,6 +5395,16 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         // To run once the new row is inserted - slight delay to allow frame to move forward before executing
 	}
 	
+	/// Moves a brick down one row with this action, remembering the row it is heading for
+	/// until it gets there (`SKNode.descentRestingY`), so a save taken meanwhile writes the row
+	/// rather than the frame (round 354).
+	func moveBrickDownARow(_ node: SKNode, by move: SKAction) {
+		node.descentRestingY = (node.descentRestingY ?? node.position.y) - brickHeight
+		node.run(move) { [weak node] in node?.descentRestingY = nil }
+		// Weak, because the action belongs to the node and a strong capture would keep a
+		// brick destroyed mid-step alive with it
+	}
+
 	func ballBackstopHit(_ subject: SKSpriteNode) {
 		let ball = subject
 		if soundsSetting {
@@ -7510,6 +7532,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     func powerUpsReset() {
         self.removeAllActions()
         // Stop all timers and animations
+		endlessIIHeldBrickPowerUps.removeAll()
+		// A power-up waiting for a lost ball to come back does not outlive the run it was
+		// broken in
 		endlessIIResetVision()
 		endlessIIResetPaddlePowerUps()
 		endlessIIResetFieldPowerUps()
@@ -9440,7 +9465,16 @@ laserTimer?.invalidate()
 				// Alongside the texture, because the texture index only encodes hidden
 				// for two of the types and a Fog of War day fogs them all (§12.5)
 				
-				let restingY = self.endlessIIBuildInFinalY[ObjectIdentifier(sprite)] ?? sprite.position.y
+				let restingY = self.endlessIIBuildInFinalY[ObjectIdentifier(sprite)]
+					?? sprite.descentRestingY ?? sprite.position.y
+				// **Or the row a descent is carrying it to** (James, round 354: "Endless mayhem
+				// bricks coming back in the wrong place with some bricks on top of other bricks
+				// after app quit and resume"). The endless autosave runs from inside the row
+				// step, *after* the step has handed every brick its move and before a single
+				// frame has run it - so every brick was saved on the row it was leaving, and the
+				// new top row, built on the top row, was saved on top of the old one. A pause
+				// that lands in the step's twentieth of a second does the same. The same rule as
+				// the build-in's, one line up: save where the brick belongs
 				// **Where the brick belongs, not where it is.** A brick's position.y is its row
 				// (§8.6) - but only once it has arrived. During the opening build-in the bricks
 				// are in flight, and quitting the app mid-animation saved whatever height each
@@ -9679,6 +9713,12 @@ laserTimer?.invalidate()
 		savedGame?.endlessIIDriftDirection =
 			endlessIIDriftDirection != 0 ? endlessIIDriftDirection : nil
 		savedGame?.levelTimerBonus = savedBetweenLevels ? levelTimerBonus : nil
+		savedGame?.dailyLandslideElapsed = dailyLandslide ? dailyLandslideElapsed : nil
+		// Part way to the next step, and it should still be part way after a relaunch (round 354)
+		savedGame?.runStats = InGameRecents.shared.runStats(
+			bestBallHits: max(hitsOnThisBall, runBestBallHits))
+		// The run's statistics so far, so a resumed run's game-over page counts from the start
+		// rather than from the resume (round 354, `SavedGame.runStats`)
 		// The screen a between-levels save returns to shows the bonus (round 322b)
 		// Set after the initialiser rather than passed into it: that call already takes forty
 		// arguments and one more optional tipped the type-checker over its own limit - twice
@@ -9692,6 +9732,15 @@ laserTimer?.invalidate()
 		defaults.set(resumeGameToLoad, forKey: "resumeGameToLoad")
 	}
 	
+	/// Puts the run's statistics back from a save (round 354). Both resume paths call it -
+	/// into play, and onto the between-levels screen, which clears the save before the next
+	/// level is built.
+	func restoreRunStats(from savedGame: SavedGame) {
+		guard let stats = savedGame.runStats else { return }
+		InGameRecents.shared.restore(stats)
+		runBestBallHits = max(runBestBallHits, stats.bestBallHits)
+	}
+
 	func clearSavedGame() {
 		userSettings()
 		resumeGameToLoad = false
@@ -9758,6 +9807,17 @@ laserTimer?.invalidate()
 		entries.append(contentsOf: endlessIIFieldRingEntries())
 		// Endless 2.0's own power-ups have no tray slot to be read from, so they report
 		// themselves
+
+		if gameMode == .endlessII && endlessIILocked {
+			let running = GameScene.endlessIIFieldHoldRingIDs
+			entries = entries.map { entry in
+				var held = entry
+				held.held = running.contains(entry.id) == false
+				return held
+			}
+		}
+		// White while a Lock holds them (round 354) - all but the two field holds, which a
+		// Lock lets run (`endlessIIFieldHoldClockPaths`), so a white ring is never seen moving
 		return entries
 	}
 
@@ -10185,6 +10245,8 @@ laserTimer?.invalidate()
 		// implied by the guards rather than stated, and this path runs at launch
 		if resumeGameToLoad {
 			adoptEndlessIISchedule(from: savedGame)
+			restoreRunStats(from: savedGame)
+			dailyLandslideElapsed = savedGame.dailyLandslideElapsed ?? 0
 			backstopSpentThisRun = savedGame.backstopSpent ?? false
 			// The one-per-run limit survives the relaunch, which is the whole point of it
 			// being in the save rather than only in the scene (round 320)
@@ -10652,22 +10714,22 @@ laserTimer?.invalidate()
 		readyCountdown.run(startGroup, completion: {
 			self.readyCountdown.isHidden = false
 			self.playMayhemSound("countdownTick")
+			if self.hapticsSetting { self.mediumHaptic.impactOccurred() }
+			// **A tap with each beep** (James, round 354: "add haptics to Ready, Go! on resume")
 			self.readyCountdown.run(animationIn1, completion: {
 				self.readyCountdown.run(animationOut, completion: {
 					self.readyCountdown.isHidden = true
 					self.goCountdown.run(startGroup, completion: {
 						self.goCountdown.isHidden = false
 						self.playMayhemSound("countdownGo")
+						if self.hapticsSetting { self.heavyHaptic.impactOccurred() }
 						// **A beep for READY and a higher one for GO!** (James, round 341:
 						// "create a countdown sound to play for the ready, go when resuming a
 						// level ... just some simple timing beeps would do"). Two pips a
 						// fifth apart, the way a start light counts down
 						self.goCountdown.run(animationIn2, completion: {
 							self.gameState.enter(Playing.self)
-							// Restart playing
-							if self.hapticsSetting {
-								self.lightHaptic.impactOccurred()
-							}
+							// Restart playing. The tap for GO! is given as it appears now, above
 							self.goCountdown.run(animationOut, completion: {
 								self.goCountdown.isHidden = true
 							})

@@ -156,8 +156,21 @@ extension GameScene {
         let margin = endlessIIPaddleGlowMargin()
         let stretch = max(abs(paddle.xScale), 0.01)
         glow.texture = texture
-        glow.size = CGSize(width: paddle.size.width + margin.width/stretch,
+        glow.xScale = 1/stretch
+        glow.size = CGSize(width: paddle.size.width*stretch + margin.width,
                            height: paddle.size.height + margin.height)
+        let art = texture.size()
+        let cap = art.width > 0 ? min(0.45, (art.height/2)/art.width) : 0
+        glow.centerRect = CGRect(x: cap, y: 0, width: 1 - cap*2, height: 1)
+        // **The rounded ends keep their size, and so does the rim** (James, round 354: "portal
+        // paddle glow still extends incorrectly - it should stay the same size relative to the
+        // paddle, not expand at the same rate as the paddle. It gets too wide when extending").
+        // Round 327 kept the *margin* at forty points by dividing it by the paddle's stretch,
+        // and the halo's size was then right - but a child is drawn through its parent's
+        // `xScale`, so the picture itself was still stretched: its soft rounded ends doubled in
+        // width with the paddle, and the glow bloomed out past the tips. Now the glow undoes
+        // the parent's stretch on its own scale and is sized in screen points, and the picture
+        // is nine-sliced so only its straight middle grows
         // **Divided by the paddle's scale, because the glow is the paddle's child** (James,
         // round 327: "paddle glow is expanding and shrinking too far. It should stay 40 points
         // bigger than the paddle, not expand at the same rate"). Round 320 made the margin an

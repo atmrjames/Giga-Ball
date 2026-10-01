@@ -2747,6 +2747,55 @@ testing." What it found and did:
 - **The website's iPad gallery** shows the 13-inch App Store captures in a 3:4 frame with an
   iPad's bezel, rather than 11-inch captures cropped to a phone's proportions.
 
+**Round 354: the day's board in the app, a Lock that holds everything, and resumes that keep what they had.**
+
+- **Each day's leaderboard is in the app** (James: "is it possible to show each day's daily
+  challenge leaderboard in the app rather than going to game centre?"). The daily menu's card
+  lists the top three places above the player's own line, rank, name and score, with the player
+  in lime and added underneath when they are further down. The game-over and complete screens
+  list the top three under the placing. Game Center keeps today's board and the one that closed
+  last, so today and yesterday have a board to show and older days show none. `DailyBoardRow`
+  holds the rows and `GameCenterHandler.loadDailyBoardTop` asks for them in one request. Not yet
+  seen with real entries: the simulator has no Game Center.
+- **A Lock holds the paddle-hit power-ups as well as the timed ones** (James: "I had ball
+  trajectory that ended and then collected sticky paddle that started counting down the uses").
+  Paddle hits no longer spend turns while locked, Sticky Paddle's catches included, and what a
+  hit buys still lands. While locked the power-up capsule wears a lime glowing border and the
+  rings turn white. Wipe is three times as likely and the Key twice as likely, and the Key's
+  weight is set the moment the Lock lands rather than at the next row.
+- **Clear And Retreat and Quicksand run down under a Lock.** Both hold the field while they run,
+  and a Lock has no timer, so a frozen one held the field until a Key came, and Keys come from
+  bricks a held field never makes. Their rings stay lime, because they are still moving.
+- **A Lock ends with the ball**, as everything it holds already did, and so does Quicksand,
+  which round 219 left out of the reset. Seen on the simulator: a replay began with the
+  capsule still wearing the Lock's border and nothing inside it. And a Sticky Paddle ended by
+  another power-up under a Lock still ends: its ending spends every catch in a loop, and a held
+  catch would have spun that loop for ever, which is what hung the first full run of the suite.
+- **Portal Paddle and Auto-Aim run together again** (James: "the ball is bouncing off of the
+  paddle at the bottom rather than coming out at the top"). Round 223's matrix had Auto-Aim end
+  the Portal, which left round 88's pairing unreachable. The paddle swallows the ball, and the
+  aim now looks down from the top exit for the highest brick it can reach, rather than up from
+  it where there is nothing. The marker follows. **James to confirm**: this reverses one cell of
+  his matrix.
+- **A resumed run keeps its statistics** (bricks destroyed, paddle hits, every power-up seen and
+  whether it was taken, the best ball), in `SavedGame.runStats`. **Landslide's wait survives a
+  pause and a relaunch**: it counts up play time and the save carries it, where it used to
+  restart the six seconds on every frame that was not play.
+- **Mayhem bricks no longer come back on top of each other.** The endless autosave runs inside
+  the row step, after each brick has been given its move and before any frame has run it, so
+  every brick was saved on the row it was leaving and the new top row on top of the old one. A
+  brick now carries the row it is heading for (`SKNode.descentRestingY`) and a save writes that.
+  Landslide's steps do the same.
+- **A power-up brick struck by a laser while the ball is lost** keeps its power-up until the
+  ball is back, where it used to be discarded, which is why Multi-Ball never appeared.
+- **The rest of James's list:** convex and rounded portal bricks wear their own shape's glow; the
+  trajectory line starts at the ball's edge instead of drawing over it; the Portal Paddle's glow
+  keeps its rounded ends as the paddle stretches; Aimed Sticky stops the moment its last use is
+  spent; the Aura reaches further and trails a comet tail; Fixed bricks start at 60m, at a fifth of
+  their old share and rising to half; READY, GO and the Time Trial's last three seconds tap the
+  haptics; the capsule widens with every ring even when a ring arrives mid-pause; Music sits
+  above the two sound rows; posted scores are grouped with commas like the global hi-score.
+
 **Open after round 344:**
 
 | Item | What is known |
@@ -2754,6 +2803,8 @@ testing." What it found and did:
 | The game view following an iPad or Mac window | Built in round 342, tested as arithmetic and on a bare scene. Not yet seen on a device |
 | ~~The iPad paddle-speed field in the column~~ | **Seen working, round 348**, on an iPad Pro 11-inch (M5) simulator on iOS 26.5: the field sits in the column as a scaled model of the play area, the slider reads x2.00 a quarter of the way along, and a 100-point drag carried the paddle from the centre to near the right edge |
 | Aimed Sticky's sounds | Round 339: it already plays the sticky catch on the catch and the release on the launch, as plain Sticky does. Waiting on James to say what he hears instead |
+| Portal Paddle with Auto-Aim | Round 354 took the pair out of the exclusion matrix so the two run together, on James's report. His matrix had Auto-Aim ending the Portal, so this wants his confirmation |
+| The daily board in the app | Round 354. Tested as arithmetic and as a laid-out card with sample rows; the real board needs a device signed in to Game Center |
 
 **Backlogged**
 

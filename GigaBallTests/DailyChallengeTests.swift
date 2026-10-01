@@ -2578,11 +2578,41 @@ final class DailyLandslideTests: XCTestCase {
     /// It steps on its own cadence rather than every frame.
     func testItStepsOnItsOwnCadence() {
         let step = GameScene.dailyLandslideStep
-        XCTAssertFalse(GameScene.landslideIsDue(now: 1, lastStep: 0),
+        XCTAssertEqual(GameScene.landslideFrameDelta(now: 1, lastTick: 0), 0,
                        "a first frame is a baseline, not a step")
-        XCTAssertFalse(GameScene.landslideIsDue(now: 100 + step - 0.1, lastStep: 100),
+        XCTAssertFalse(GameScene.landslideIsDue(elapsed: step - 0.1),
                        "a second is not a step - the field would be gone in ten")
-        XCTAssertTrue(GameScene.landslideIsDue(now: 100 + step, lastStep: 100))
+        XCTAssertTrue(GameScene.landslideIsDue(elapsed: step))
+    }
+
+    /// James, round 354: "Landslide twist, quitting and resuming the app seems to reset the
+    /// timer between the brick moving down animations - the timer should be preserved".
+    func testTheWaitSurvivesAPauseAndASave() throws {
+        XCTAssertEqual(GameScene.landslideFrameDelta(now: 500, lastTick: 100), 0.1,
+                       accuracy: 0.0001,
+                       "the time a pause lasted is not play, and must not step the field")
+
+        let scene = landslideScene()
+        scene.dailyLandslideElapsed = 4.5
+        scene.tickDailyLandslide(10)
+        XCTAssertEqual(scene.dailyLandslideElapsed, 4.5,
+                       "a frame that is not play left the wait where it was, not at nothing")
+
+        var save = SavedGame(
+            levelNumber: 0, endLevelNumber: 0, packNumber: 0, levelScore: 0, totalScore: 0,
+            numberOfLives: 1, endlessHeight: 0, numberOfLevels: 1, levelTimerValue: 0,
+            packTimerValue: 0, deathsPerLevel: 0, deathsPerPack: 0,
+            powerUpsGeneratedPerLevel: 0, powerUpsCollectedPerLevel: 0,
+            powerUpsGeneratedPerPack: 0, powerUpsCollectedPerPack: 0, paddleHitsPerLevel: 0,
+            multiplier: 1, brickTextures: [], brickColours: [], brickXPositions: [],
+            brickYPositions: [], ballProperties: [],
+            fallingPowerUpXPositions: [], fallingPowerUpYPositions: [], fallingPowerUps: [],
+            activePowerUps: [], activePowerUpDurations: [], activePowerUpTimers: [],
+            activePowerUpMagnitudes: [])
+        save.dailyLandslideElapsed = scene.dailyLandslideElapsed
+        let store = InMemoryKeyValueStore()
+        save.save(to: store)
+        XCTAssertEqual(try XCTUnwrap(SavedGame.load(from: store)).dailyLandslideElapsed, 4.5)
     }
 
     /// Slower than Mayhem's own cadence, because Classic's levels are built to be cleared
@@ -3520,7 +3550,8 @@ final class DailyComparisonTests: XCTestCase {
     func testThePostedScoreIsTheRowWhileNothingHasBeatenIt() {
         let comparison = DailyComparison(record: record(first: 1_867, practice: 1_200, posted: true))
         XCTAssertEqual(comparison.row(unit: "")?.title, "Posted Score")
-        XCTAssertEqual(comparison.row(unit: "")?.value, "1867")
+        XCTAssertEqual(comparison.row(unit: "")?.value, "1,867",
+                       "grouped like the global hi-score beside it (round 354)")
         XCTAssertEqual(comparison.lines(boardBest: nil, unit: ""), [],
                        "the posted score is already the row, so it is not said twice")
     }
@@ -3528,7 +3559,7 @@ final class DailyComparisonTests: XCTestCase {
     func testABetterFreePlayRunTakesTheRowAndThePostedScoreMovesToTheLine() {
         let comparison = DailyComparison(record: record(first: 1_200, practice: 1_867, posted: true))
         XCTAssertEqual(comparison.row(unit: "")?.title, "Previous Best")
-        XCTAssertEqual(comparison.row(unit: "")?.value, "1867")
+        XCTAssertEqual(comparison.row(unit: "")?.value, "1,867")
         XCTAssertEqual(comparison.lines(boardBest: 3_400, unit: ""),
                        ["Posted score 1,200", "Global hi-score 3,400"])
     }
@@ -3594,5 +3625,134 @@ final class DailyLeaderCardTests: XCTestCase {
         XCTAssertEqual(DailyChallengeRecord.merged([mine], [theirs]).first?.closingBoardBest, 40)
         mine.closingBoardBest = 55
         XCTAssertEqual(DailyChallengeRecord.merged([mine], [theirs]).first?.closingBoardBest, 55)
+    }
+}
+
+/// James, round 354: "ball trajectory line is still drawn on top of the ball, not behind it".
+final class TrajectoryStartsAtTheBallsEdgeTests: XCTestCase {
+    func testTheLineLeavesFromTheRimNotTheCentre() {
+        let moved = GameScene.trajectoryStartingAtTheBallsEdge(
+            [CGPoint(x: 0, y: 0), CGPoint(x: 0, y: 100)], radius: 6)
+        XCTAssertEqual(moved[0].y, 6, accuracy: 0.001)
+        XCTAssertEqual(moved[1].y, 100)
+    }
+
+    func testAFirstLegTooShortToMoveIsLeftAlone() {
+        let points = [CGPoint(x: 0, y: 0), CGPoint(x: 5, y: 0)]
+        XCTAssertEqual(GameScene.trajectoryStartingAtTheBallsEdge(points, radius: 6), points)
+    }
+}
+
+/// James, round 354: "aimed sticky power up doesn't end quickly enough after the final use - it
+/// can show up again if the ball lands on the paddle soon after and then disappears".
+final class TurnClockGoodbyeTests: XCTestCase {
+    func testAClockInItsGoodbyeHasNoTurnsToGive() {
+        var clock = EndlessIIClock()
+        clock.collect(turns: 1)
+        XCTAssertTrue(clock.hasTurns)
+        clock.spendTurn(thenLingerFor: EndlessIIClock.lingerSeconds)
+        XCTAssertTrue(clock.isRunning, "still showing its goodbye")
+        XCTAssertFalse(clock.hasTurns, "and nothing left to buy with a landing")
+    }
+
+    func testALandingInTheGoodbyeIsNotOwedACatch() {
+        let scene = GameScene()
+        scene.gameMode = .endlessII
+        scene.endlessIIAimedStickyClock.collect(turns: 1)
+        scene.endlessIISpendPaddleTurns()
+        XCTAssertTrue(scene.endlessIIAimedStickyOwedTurn, "the last turn still catches")
+        scene.endlessIIAimedStickyOwedTurn = false
+        scene.endlessIISpendPaddleTurns()
+        XCTAssertFalse(scene.endlessIIAimedStickyOwedTurn,
+                       "a second landing inside the half-second goodbye is owed nothing")
+    }
+}
+
+/// James, round 354: "proportion of fixed bricks is too high too early".
+final class FixedBrickRarityTests: XCTestCase {
+    /// James, round 354: "proportion of fixed bricks is too high too early".
+    func testFixedIsAtItsRarestInTheOpeningButNeverLockedOut() {
+        XCTAssertEqual(EndlessIIProgression.fixedWeight(100, at: 10), 1)
+    }
+
+    func testFixedIsRarerThanAnOrdinaryStyleWhenItArrives() {
+        let early = EndlessIIProgression.fixedWeight(100, at: EndlessIIProgression.fixedFirstMetres)
+        XCTAssertGreaterThan(early, 0)
+        XCTAssertLessThanOrEqual(early, 30)
+        XCTAssertLessThanOrEqual(EndlessIIProgression.fixedWeight(100, at: 5000), 50)
+    }
+}
+
+/// James, round 354: "is it possible to show each day's daily challenge leaderboard in the app
+/// rather than going to game centre? It would be good to see the top scores from the day and
+/// the users who posted them on the daily challenge main menu view and game over / completion
+/// view".
+final class DailyBoardRowTests: XCTestCase {
+
+    private func leaders(_ count: Int) -> [DailyBoardRow] {
+        (1...count).map { DailyBoardRow(rank: $0, name: "Player \($0)",
+                                        score: 10_000 - $0*100, isLocalPlayer: false) }
+    }
+
+    func testAPlayerBelowTheLeadersIsAddedUnderThem() {
+        let me = DailyBoardRow(rank: 12, name: "Me", score: 4_000, isLocalPlayer: true)
+        let rows = DailyBoardRow.shown(leaders: leaders(5), local: me, limit: 5)
+        XCTAssertEqual(rows.map(\.rank), [1, 2, 3, 4, 5, 12],
+                       "however far down, a player can find themselves")
+    }
+
+    func testAPlayerAmongTheLeadersIsNotListedTwice() {
+        var top = leaders(5)
+        top[1] = DailyBoardRow(rank: 2, name: "Me", score: 9_800, isLocalPlayer: true)
+        let rows = DailyBoardRow.shown(leaders: top, local: top[1], limit: 5)
+        XCTAssertEqual(rows.map(\.rank), [1, 2, 3, 4, 5])
+        XCTAssertEqual(rows.filter(\.isLocalPlayer).count, 1)
+    }
+
+    func testTheLimitIsTheLeadersShownAndTheOrderIsTheBoards() {
+        let rows = DailyBoardRow.shown(leaders: leaders(8).reversed(), local: nil, limit: 3)
+        XCTAssertEqual(rows.map(\.rank), [1, 2, 3])
+    }
+
+    func testALineReadsPlaceNameAndAGroupedScore() {
+        let row = DailyBoardRow(rank: 1, name: "James", score: 12_340, isLocalPlayer: false)
+        XCTAssertEqual(row.line(unit: "m"), "1. James  \(StatsPage.grouped(12_340))m")
+    }
+
+    private func labels(in view: UIView) -> [UILabel] {
+        view.subviews.flatMap { sub -> [UILabel] in
+            if let label = sub as? UILabel { return [label] }
+            return labels(in: sub)
+        }
+    }
+
+    private func isShowing(_ view: UIView) -> Bool {
+        var node: UIView? = view
+        while let current = node {
+            if current.isHidden { return false }
+            node = current.superview
+        }
+        return true
+    }
+
+    func testTheCardListsTheBoardAndStopsRepeatingTheLeadersFigure() {
+        let card = DailyCardView()
+        let key = DailyChallengeSession.shared.todayKey
+        card.show(key: key, isToday: true, record: nil, standing: nil, boardBest: 9_900,
+                  board: leaders(3))
+        let shown = labels(in: card).filter { isShowing($0) }
+        XCTAssertTrue(shown.contains { $0.text == "TOP SCORES" })
+        XCTAssertTrue(shown.contains { $0.text == "Player 1" })
+        XCTAssertFalse(shown.contains { ($0.attributedText?.string ?? "").contains("Global Hi-Score") },
+                       "the first row is the leader, so the card does not say it twice")
+    }
+
+    func testADayWithNoBoardShowsNoneAndKeepsTheLeadersLine() {
+        let card = DailyCardView()
+        let key = DailyChallengeSession.shared.todayKey
+        card.show(key: key, isToday: true, record: nil, standing: nil, boardBest: 9_900)
+        let shown = labels(in: card).filter { isShowing($0) }
+        XCTAssertFalse(shown.contains { $0.text == "TOP SCORES" })
+        XCTAssertTrue(shown.contains { ($0.attributedText?.string ?? "").contains("Global Hi-Score") })
     }
 }

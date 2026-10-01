@@ -429,8 +429,25 @@ extension GameScene {
     /// Pure, and tested as such: the tick that asks it stands down unless the scene is in
     /// `Playing`, which a scene built in a test is not - so the cadence would otherwise be the
     /// one part of this that nothing could check.
-    static func landslideIsDue(now: TimeInterval, lastStep: TimeInterval) -> Bool {
-        lastStep != 0 && now - lastStep >= GameScene.dailyLandslideStep
+    static func landslideIsDue(elapsed: TimeInterval) -> Bool {
+        elapsed >= GameScene.dailyLandslideStep
+    }
+
+    /// The play time a frame adds to the Landslide's wait: the gap since the last frame,
+    /// capped, and nothing for the first.
+    ///
+    /// **Counted up rather than stamped** (James, round 354: "Landslide twist, quitting and
+    /// resuming the app seems to reset the timer between the brick moving down animations -
+    /// the timer should be preserved"). The tick used to remember *when* the field last
+    /// stepped, and every frame that was not play moved that moment to now - so a pause, a
+    /// resume countdown or a relaunch each started the six seconds again from the beginning.
+    /// An amount of play is something a pause can leave alone and a save can carry.
+    ///
+    /// Capped because a frame that follows a pause or a hitch measures the time the game was
+    /// not running as well, and that time is not play.
+    static func landslideFrameDelta(now: TimeInterval, lastTick: TimeInterval) -> TimeInterval {
+        guard lastTick != 0 else { return 0 }
+        return min(max(0, now - lastTick), 0.1)
     }
 
     /// Whether the day's field is coming down.
@@ -464,14 +481,14 @@ extension GameScene {
     /// that moves bricks is: `countBricks` gates on a brick having no actions, and a brick
     /// carrying a permanent one would stop the field being counted for ever (§8.6).
     func tickDailyLandslide(_ currentTime: TimeInterval) {
-        guard dailyLandslide, gameState.currentState is Playing, isPaused == false else {
-            dailyLandslideLastStep = currentTime
-            return
-        }
-        if dailyLandslideLastStep == 0 { dailyLandslideLastStep = currentTime }
-        guard GameScene.landslideIsDue(now: currentTime,
-                                       lastStep: dailyLandslideLastStep) else { return }
-        dailyLandslideLastStep = currentTime
+        let delta = GameScene.landslideFrameDelta(now: currentTime, lastTick: dailyLandslideLastTick)
+        dailyLandslideLastTick = currentTime
+        guard dailyLandslide, gameState.currentState is Playing, isPaused == false else { return }
+        dailyLandslideElapsed += delta
+        guard GameScene.landslideIsDue(elapsed: dailyLandslideElapsed) else { return }
+        dailyLandslideElapsed -= GameScene.dailyLandslideStep
+        // Subtracted rather than zeroed, so a long frame's remainder is kept and the rate
+        // stays the rate - Descent's lesson (§12.0's "variable rate")
 
         let floor = dailyLandslideFloor
         let ceiling = dailyLandslideCeiling
@@ -486,7 +503,11 @@ extension GameScene {
                 // a second, and a brick's `position.y` is its row (§8.6). Appearing is the
                 // honest picture anyway - it has come round, not flown home
             } else {
-                brick.run(.moveBy(x: 0, y: -self.brickHeight, duration: 0.25))
+                self.moveBrickDownARow(brick, by: .moveBy(x: 0, y: -self.brickHeight,
+                                                          duration: 0.25))
+                // Through the helper that remembers the destination: a Classic save rounds each
+                // brick to a cell, and a brick a quarter of a second into its step rounded to
+                // the row it was leaving about half the time
             }
         }
         if hapticsSetting { lightHaptic.impactOccurred(intensity: 0.5) }
@@ -873,6 +894,9 @@ extension GameScene {
         // READY's own three steps - in from double size, a hold, out to half - over a second,
         // so each number has gone before the next arrives
         playMayhemSound("countdownTick")
+        if hapticsSetting { mediumHaptic.impactOccurred() }
+        // With a tap, as READY and GO! have (James, round 354: "add haptics to ... 3, 2, 1 at the
+        // end of a time trial")
     }
 
     /// How many of the last seconds are counted aloud.

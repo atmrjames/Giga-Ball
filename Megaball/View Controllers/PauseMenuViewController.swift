@@ -510,6 +510,11 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
     // Asked of the session, which outlives the scene until the menus return
 
     var standing: LeaderboardStanding?
+    /// The day's leading places, for a daily's end screen (round 354).
+    var dailyBoard: [DailyBoardRow] = []
+    /// How many places the end screen lists. Three rather than the menu's five: this screen
+    /// is already full on the smallest phone, and the rest are one tap away on Game Center.
+    static let dailyBoardRowsShown = 3
     // Where the finished run stands on its board, once Game Center has answered - today's
     // board for a daily, the mode's own for an endless or classic run
 
@@ -660,6 +665,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
     /// moment over it, which is why the daily's line says "submitted" until the placing
     /// arrives rather than claiming a place it does not have yet.
     private func askForStanding() {
+        askForTheDaysBoard()
         guard sender != "Pause", let board = runBoard else { return }
         GameCenterHandler().loadRank(leaderboardID: board.id) { [weak self] standing in
             guard let self, let standing else { return }
@@ -672,6 +678,22 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
         // dismissed just ignores it
     }
     
+    /// The day's leading places, asked for as a daily's end screen goes up (James, round 354:
+    /// "it would be good to see the top scores from the day and the users who posted them on
+    /// the daily challenge main menu view and game over / completion view"). After the score
+    /// has been submitted, like the standing, so a posting run finds itself among them.
+    private func askForTheDaysBoard() {
+        guard sender != "Pause", isDailyChallenge,
+              let key = DailyChallengeSession.shared.active?.dateKey else { return }
+        let shown = PauseMenuViewController.dailyBoardRowsShown
+        GameCenterHandler().loadDailyBoardTop(forKey: key, count: shown) { [weak self] answer in
+            guard let self, let answer else { return }
+            self.dailyBoard = DailyBoardRow.shown(leaders: answer.leaders, local: answer.local,
+                                                  limit: shown)
+            self.updateResultLine()
+        }
+    }
+
     func setUpLivesLabel() {
         livesLabel.translatesAutoresizingMaskIntoConstraints = false
         livesLabel.textAlignment = .center
@@ -1218,7 +1240,10 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
             let unit = session.active?.mode.isEndless == true ? "m" : ""
             var lines = DailyComparison(posted: session.comparisonPosted,
                                         previousBest: session.comparisonPreviousBest)
-                .lines(boardBest: session.boardBest ?? standing?.best, unit: unit)
+                .lines(boardBest: dailyBoard.isEmpty ? session.boardBest ?? standing?.best : nil,
+                       unit: unit)
+            // Not the leader's figure once the board's own rows are listed below: the first of
+            // them *is* the leader
             // **The day's points of comparison, on every face of the screen** (James, round 350,
             // `DailyComparison`): the posted score when a better free-play run has taken the row
             // above, and the board's leader - in the pause as well as at the end
@@ -1226,9 +1251,22 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
                 lines.insert(standing.map { "\($0.text) on today's leaderboard" }
                                 ?? "Submitted to today's leaderboard", at: 0)
             }
-            resultLabel.isHidden = lines.isEmpty
-            leaderboardTitle.isHidden = lines.isEmpty
-            resultLabel.text = lines.joined(separator: "\n")
+            let text = NSMutableAttributedString(string: lines.joined(separator: "\n"))
+            let lime = #colorLiteral(red: 0.8235294118, green: 1, blue: 0, alpha: 1)
+            for row in dailyBoard {
+                if text.length > 0 { text.append(NSAttributedString(string: "\n")) }
+                text.append(NSAttributedString(
+                    string: row.line(unit: unit),
+                    attributes: row.isLocalPlayer
+                        ? [.foregroundColor: lime, .font: UIFont.boldSystemFont(ofSize: 12)]
+                        : [.foregroundColor: UIColor(white: 1, alpha: 0.75)]))
+            }
+            // **The day's top places, under the placing** (round 354), the player's own in lime.
+            // Three at most, one line each, so the block still fits above the buttons on an SE
+            let empty = text.length == 0
+            resultLabel.isHidden = empty
+            leaderboardTitle.isHidden = empty
+            resultLabel.attributedText = text
             return
         }
 

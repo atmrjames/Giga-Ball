@@ -1758,11 +1758,12 @@ final class SettingsRowTapTests: XCTestCase {
 
     /// James, round 351: "Re-order settings: In-Game Sound, UI Sound, Music to UI Sound, In-Game
     /// Sound, Music."
-    func testTheSoundRowsReadUISoundThenInGameSoundThenMusic() throws {
+    /// And round 354: "move music above the sound settings".
+    func testTheSoundRowsReadMusicThenUISoundThenInGameSound() throws {
         let (screen, _) = try settings()
         let rows = screen.settingRows
-        let sound = try XCTUnwrap(rows.firstIndex(of: .interfaceSound))
-        XCTAssertEqual(Array(rows[sound..<(sound + 3)]), [.interfaceSound, .sounds, .music])
+        let music = try XCTUnwrap(rows.firstIndex(of: .music))
+        XCTAssertEqual(Array(rows[music..<(music + 3)]), [.music, .interfaceSound, .sounds])
     }
 }
 

@@ -41,6 +41,10 @@ struct EndlessIIClock: Equatable {
 
     var isRunning: Bool { remaining > 0 || goodbye > 0 }
 
+    /// Running with something still to spend: not in its goodbye (round 354). A paddle contact
+    /// in the goodbye is not a turn, and must not buy what a turn buys.
+    var hasTurns: Bool { isRunning && lingering == false }
+
     /// How much is left, from one down to zero, for the ring.
     ///
     /// **Zero for the whole goodbye second** (James, round 259: "the power-up HUD progress bar

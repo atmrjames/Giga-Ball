@@ -32,6 +32,8 @@ final class PowerUpRingHUD: SKNode {
         /// time - the sticky paddle's catches. A segmented ring says "two catches left"
         /// where a smooth one only says "about a third".
         var segments: Int?
+        /// Held by a Lock: not counting down, and drawn white to say so (round 354).
+        var held = false
     }
 
     /// The Giga-Ball yellow-green, the colour the game uses for anything of its own.
@@ -53,6 +55,7 @@ final class PowerUpRingHUD: SKNode {
         var segments: Int?
         var drawn: CGFloat = -1
         // What the ring's path was last built for. -1 so the first refresh always draws
+        var held = false
     }
 
     private var slots: [String: Slot] = [:]
@@ -66,6 +69,28 @@ final class PowerUpRingHUD: SKNode {
     /// The capsule behind the rings, for tests that need to know it is really there.
     var containerForTesting: SKShapeNode { container }
     private var containerSlots: CGFloat = 0
+
+    /// Whether a Lock is holding what the capsule shows.
+    ///
+    /// **A lime border round the capsule, and white rings inside it** (James, round 354: "add
+    /// a border to the power-up container with the giga-ball yellow/green glow, similar to the
+    /// power-up progress bars - change the colour of the power-up progress bars to white -
+    /// this indicates that all the power-ups are locked in"). The Lock has no ring of its own,
+    /// having no timer, so the border is where it shows: round the whole row, because it holds
+    /// the whole row.
+    var locked = false {
+        didSet {
+            guard locked != oldValue else { return }
+            container.strokeColor = locked ? PowerUpRingHUD.ringColour : .clear
+            container.lineWidth = locked ? PowerUpRingHUD.ringWidth : 0
+            container.glowWidth = locked ? PowerUpRingHUD.ringGlow : 0
+        }
+    }
+
+    /// The colour a ring is drawn in: lime while it counts, white while a Lock holds it.
+    static func ringColour(held: Bool) -> UIColor {
+        held ? .white : ringColour
+    }
 
     var iconSize: CGFloat = 30
     var spacing: CGFloat = 12
@@ -140,6 +165,14 @@ final class PowerUpRingHUD: SKNode {
             }
             slots[entry.id]?.remaining = entry.remaining
             slots[entry.id]?.segments = entry.segments
+            if let slot = slots[entry.id], slot.held != entry.held {
+                let colour = PowerUpRingHUD.ringColour(held: entry.held)
+                slot.ring.strokeColor = colour
+                slot.halo.strokeColor = colour
+                slots[entry.id]?.held = entry.held
+            }
+            // Only on a change, like the paths below: a colour written every frame is a
+            // redraw every frame
 
             let drawn = slots[entry.id]?.drawn ?? -1
             if PowerUpRingHUD.hasTurned(from: drawn, to: entry.remaining,
@@ -158,6 +191,7 @@ final class PowerUpRingHUD: SKNode {
 
     /// Everything gone, without animating - for a reset rather than an expiry.
     func clear() {
+        locked = false
         slots.values.forEach { $0.container.removeFromParent() }
         slots.removeAll()
         order.removeAll()
@@ -207,6 +241,8 @@ final class PowerUpRingHUD: SKNode {
         addChild(holder)
         slots[entry.id] = Slot(container: holder, icon: icon, ring: ring, halo: halo,
                                remaining: entry.remaining, segments: entry.segments)
+        // Not yet `held`, whatever the entry says: the update that follows sees the
+        // difference and colours it, so there is one place that does
 
         holder.run(.group([.fadeIn(withDuration: PowerUpRingHUD.appearDuration),
                            .scale(to: 1, duration: PowerUpRingHUD.appearDuration)]))
@@ -238,26 +274,36 @@ final class PowerUpRingHUD: SKNode {
     }
 
     /// Grows and shrinks with what is running, the way the lives row does.
+    ///
+    /// **Stepped from `update`, not run as an action** (James, round 354: "power-up HUD
+    /// container not stretching out when more power ups are active", with four rings in a
+    /// capsule sized for fewer). The width was recorded the moment the count changed and the
+    /// growth handed to an `SKAction` - and an action on a paused node never runs, so a
+    /// power-up arriving while the HUD was paused (the resume countdown pauses nodes, and so
+    /// does a pause mid-growth) left the capsule its old width for good: the next frame saw
+    /// the recorded width already matching and did nothing. Worked out here every frame from
+    /// the time, it always arrives.
     private func layoutContainer() {
         let wanted = CGFloat(max(order.count, PowerUpRingHUD.minimumSlots))
-        guard wanted != containerSlots else { return }
-
-        let from = containerSlots
-        containerSlots = wanted
-        let duration = PowerUpRingHUD.appearDuration
-
-        guard from > 0 else {
-            setContainerPath(slots: wanted)
-            return
+        let now = CACurrentMediaTime()
+        if wanted != containerTarget {
+            containerFrom = containerDrawn > 0 ? containerDrawn : wanted
+            containerTarget = wanted
+            containerStart = now
         }
-        container.removeAllActions()
-        container.run(.customAction(withDuration: duration) { [weak self] _, elapsed in
-            guard let self else { return }
-            let t = min(1, elapsed/CGFloat(duration))
-            let eased = 1 - pow(1 - t, 3)
-            self.setContainerPath(slots: from + (wanted - from)*eased)
-        })
+        let t = min(1, CGFloat((now - containerStart)/PowerUpRingHUD.appearDuration))
+        let eased = 1 - pow(1 - t, 3)
+        let slots = containerFrom + (containerTarget - containerFrom)*eased
+        guard abs(slots - containerDrawn) > 0.001 else { return }
+        containerDrawn = slots
+        containerSlots = containerTarget
+        setContainerPath(slots: slots)
     }
+
+    private var containerTarget: CGFloat = 0
+    private var containerFrom: CGFloat = 0
+    private var containerDrawn: CGFloat = 0
+    private var containerStart: CFTimeInterval = 0
 
     private func setContainerPath(slots count: CGFloat) {
         let step = iconSize + spacing

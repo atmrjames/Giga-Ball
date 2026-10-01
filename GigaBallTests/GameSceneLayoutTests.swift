@@ -12,6 +12,7 @@
 //
 
 import XCTest
+import SpriteKit
 @testable import Giga_Ball
 
 final class GameSceneLayoutTests: XCTestCase {
@@ -196,6 +197,28 @@ final class ScenePlaneTests: XCTestCase {
         hud.update(with: [])
         XCTAssertNotNil(hud.containerForTesting.path,
                         "an empty Mayhem HUD draws no bar at all")
+    }
+
+    /// James, round 354: "power-up HUD container not stretching out when more power ups are
+    /// active". The capsule grows on the frames after a power-up arrives, whether or not the
+    /// node is paused - the growth used to be an action, and a paused node runs none.
+    func testTheBarGrowsToFitFivePowerUpsEvenWhilePaused() {
+        let hud = PowerUpRingHUD()
+        hud.iconSize = 30
+        hud.spacing = 12
+        hud.update(with: [])
+        let empty = hud.containerForTesting.path?.boundingBox.width ?? 0
+        hud.isPaused = true
+        let entries = (0..<5).map {
+            PowerUpRingHUD.Entry(id: "p\($0)", texture: SKTexture(), remaining: 1)
+        }
+        hud.update(with: entries)
+        let until = Date().addingTimeInterval(0.4)
+        while Date() < until { RunLoop.current.run(until: Date().addingTimeInterval(0.02)) }
+        hud.update(with: entries)
+        let grown = hud.containerForTesting.path?.boundingBox.width ?? 0
+        XCTAssertEqual(grown, 4*42 + 30 + 16, accuracy: 0.5, "five slots wide")
+        XCTAssertGreaterThan(grown, empty)
     }
 
     /// And the bar is drawn *behind* the node that owns it, which is exactly why round 207's

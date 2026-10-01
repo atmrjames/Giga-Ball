@@ -56,6 +56,13 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
     /// The top score on the board for each day Game Center can still answer for - today and
     /// yesterday - asked once per visit (round 350).
     var boardBests: [String: Int] = [:]
+    /// The rows each day's card lists, by day (round 354).
+    var boardTops: [String: [DailyBoardRow]] = [:]
+    /// How many places a card lists before the player's own.
+    ///
+    /// Three: at five, with the player's own place under them, the list ran off the bottom of
+    /// the page on an iPhone 17 Pro, and the whole board is one tap away on Game Center.
+    static let boardRowsShown = 3
     var boardBestsRequested: Set<String> = []
     // Where today's posted score stands, once Game Center has answered - asked for at
     // most once per visit to the screen, because the answer barely moves and the ask
@@ -636,12 +643,22 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
                 forKey: key, todayKey: DailyChallengeSession.shared.todayKey) != nil
         else { return }
         boardBestsRequested.insert(key)
-        GameCenterHandler().loadDailyBoardBest(forKey: key) { [weak self] best in
-            guard let self, let best else { return }
-            self.boardBests[key] = best
-            self.keepTheClosingBest(best, forKey: key)
+        GameCenterHandler().loadDailyBoardTop(forKey: key,
+                                              count: DailyChallengeViewController.boardRowsShown) {
+            [weak self] answer in
+            guard let self, let answer else { return }
+            self.boardTops[key] = DailyBoardRow.shown(
+                leaders: answer.leaders, local: answer.local,
+                limit: DailyChallengeViewController.boardRowsShown)
+            if let best = answer.leaders.first?.score {
+                self.boardBests[key] = best
+                self.keepTheClosingBest(best, forKey: key)
+            }
             self.days.reloadData()
         }
+        // **The leading places as well as the leader** (James, round 354: "is it possible to
+        // show each day's daily challenge leaderboard in the app rather than going to game
+        // centre?"). One request answers both: the top score is simply the first row
     }
 
     /// The rank of today's posted score, asked of Game Center at most once per visit.
@@ -859,7 +876,8 @@ extension DailyChallengeViewController: UICollectionViewDataSource,
                        record: totalStatsArray[0].dailyRecord(forKey: key),
                        standing: isToday ? todayStanding : nil,
                        boardBest: boardBests[key]
-                           ?? totalStatsArray[0].dailyRecord(forKey: key)?.closingBoardBest)
+                           ?? totalStatsArray[0].dailyRecord(forKey: key)?.closingBoardBest,
+                       board: boardTops[key] ?? [])
         cell.card.twistTapped = { [weak self] twist in self?.explain(twist) }
         cell.card.twistsExplainerTapped = { [weak self] in self?.explainTheDaysTwists(on: key) }
         // The card lists the day's twists by icon and name only since round 308, so the block

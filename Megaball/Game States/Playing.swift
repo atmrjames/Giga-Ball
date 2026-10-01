@@ -234,6 +234,7 @@ class Playing: GKState {
             if let bonus = scene.savedGame?.levelTimerBonus {
                 scene.levelTimerBonus = bonus
             }
+            if let saved = scene.savedGame { scene.restoreRunStats(from: saved) }
             scene.savedGame = nil
             scene.clearSavedGame()
             scene.levelNumber -= 1

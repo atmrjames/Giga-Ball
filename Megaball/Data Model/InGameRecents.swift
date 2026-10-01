@@ -233,6 +233,28 @@ final class InGameRecents {
         brickNames.insert(name, at: 0)
     }
 
+    /// What a save carries of the run so far, so a resumed run's statistics start where it
+    /// left off rather than at the resume (round 354).
+    func runStats(bestBallHits: Int) -> SavedGame.RunStats {
+        SavedGame.RunStats(bricksDestroyed: bricksDestroyedThisRun,
+                           paddleHits: paddleHitsThisRun,
+                           sightings: sightings.map(\.index),
+                           collected: sightings.map { $0.fate == .collected },
+                           bestBallHits: bestBallHits)
+    }
+
+    /// Puts a saved run's statistics back. After `reset`, which a resumed run also goes
+    /// through, so this replaces rather than adds.
+    func restore(_ stats: SavedGame.RunStats) {
+        bricksDestroyedThisRun = stats.bricksDestroyed
+        paddleHitsThisRun = stats.paddleHits
+        sightings = zip(stats.sightings, stats.collected + Array(
+            repeating: false, count: max(0, stats.sightings.count - stats.collected.count)))
+            .map { Sighting(index: $0, fate: $1 ? .collected : .seen) }
+        // Padded rather than trusted to match: two arrays written together should agree, and
+        // a save that somehow does not should lose a tick rather than a sighting
+    }
+
     /// A new run starts with nothing seen. Called as the run is set up, so a list opened
     /// mid-run never carries the last run's memory.
     func reset() {

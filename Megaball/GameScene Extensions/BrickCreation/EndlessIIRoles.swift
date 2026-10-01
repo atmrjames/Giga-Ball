@@ -329,6 +329,18 @@ enum EndlessIISide: String, CaseIterable {
 extension SKNode {
 
     private static let roleKey = "endlessIIRole"
+    private static let descentKey = "descentRestingY"
+
+    /// The row a brick is being carried down to, while a row step's action is carrying it.
+    /// Nil the rest of the time, when its `position.y` is its row (§8.6). On the node rather
+    /// than in a table beside the scene, so a brick destroyed mid-step takes it with it.
+    var descentRestingY: CGFloat? {
+        get { (userData?[SKNode.descentKey] as? NSNumber).map { CGFloat($0.doubleValue) } }
+        set {
+            if userData == nil { userData = NSMutableDictionary() }
+            userData?[SKNode.descentKey] = newValue.map { NSNumber(value: Double($0)) }
+        }
+    }
     private static let sideKey = "endlessIISide"
     private static let plainKey = "endlessIIStaysPlain"
 

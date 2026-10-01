@@ -576,3 +576,171 @@ final class WipeOnlyShowsWhileSomethingIsRunningTests: XCTestCase {
         XCTAssertEqual(brick.endlessIIPowerUpIndex, GameScene.wipePowerUpIndex)
     }
 }
+
+/// Round 354's Lock: what it holds, what it lets run, and how the player gets out of it.
+final class EndlessIILockHoldsEverythingTests: XCTestCase {
+
+    private func mayhem() -> GameScene {
+        let scene = GameScene()
+        scene.gameMode = .endlessII
+        return scene
+    }
+
+    // MARK: - Turns
+
+    /// James, round 354: "I had ball trajectory that ended and then collected sticky paddle
+    /// that started counting down the uses. Any power up collected with lock active ... should
+    /// remain on". The Lock stopped time, and the paddle-hit power-ups do not spend time.
+    func testALockHoldsThePaddleHitPowerUpsAsWellAsTheTimedOnes() {
+        let scene = mayhem()
+        scene.endlessIICollectLock()
+        scene.endlessIICollectPortalPaddle()
+        scene.endlessIICollectTrajectoryLine()
+        let portal = scene.endlessIIPortalPaddleClock.remaining
+        let trajectory = scene.endlessIITrajectoryRemaining
+
+        for _ in 0..<10 { scene.endlessIISpendPaddleTurns() }
+
+        XCTAssertEqual(scene.endlessIIPortalPaddleClock.remaining, portal,
+                       "a paddle hit under a Lock spent a Portal Paddle turn")
+        XCTAssertEqual(scene.endlessIITrajectoryRemaining, trajectory,
+                       "a paddle hit under a Lock spent a Trajectory turn - the reported one")
+    }
+
+    func testTheHitsStillDeliverWhatTheyBuyUnderALock() {
+        // Held, not switched off: the owed turn is what makes a portal hit a portal hit
+        let scene = mayhem()
+        scene.endlessIICollectLock()
+        scene.endlessIICollectPortalPaddle()
+        scene.endlessIISpendPaddleTurns()
+        XCTAssertTrue(scene.endlessIIPortalPaddleOwedTurn)
+    }
+
+    func testTheTurnsCountAgainOnceTheKeyLands() {
+        let scene = mayhem()
+        scene.endlessIICollectLock()
+        scene.endlessIICollectPortalPaddle()
+        let before = scene.endlessIIPortalPaddleClock.remaining
+        scene.endlessIITurnKey()
+        scene.endlessIISpendPaddleTurns()
+        XCTAssertLessThan(scene.endlessIIPortalPaddleClock.remaining, before)
+    }
+
+    /// The reported power-up: Sticky Paddle's catches are the one turn count outside the clocks.
+    func testALockHoldsTheStickyPaddlesCatches() {
+        let scene = mayhem()
+        scene.stickyPaddleCatches = 3
+        scene.endlessIICollectLock()
+        scene.spendStickyPaddleCatch()
+        XCTAssertEqual(scene.stickyPaddleCatches, 3, "sticky paddle counted down under a Lock")
+
+        scene.endlessIITurnKey()
+        scene.spendStickyPaddleCatch()
+        XCTAssertEqual(scene.stickyPaddleCatches, 2)
+    }
+
+    /// A Sticky Paddle *taken away* under a Lock still goes. Its ending spends every catch in a
+    /// loop, and a catch held by the Lock would have kept that loop running for ever.
+    func testAStickyPaddleEndedByAnotherPowerUpUnderALockStillEnds() {
+        let scene = mayhem()
+        scene.totalStatsArray = [TotalStats()]
+        scene.stickyPaddleCatches = 3
+        scene.stickyPaddleCatchesTotal = 3
+        scene.endlessIICollectLock()
+        scene.endlessIICollectBallSpin()
+        XCTAssertEqual(scene.stickyPaddleCatches, 0, "Ball Spin ends a Sticky Paddle, Lock or no")
+    }
+
+    /// A Lock ends with the ball, like everything it was holding - found in round 354 when a
+    /// replay started with the capsule still wearing the Lock's border and nothing inside it.
+    func testALostBallTakesTheLockAndQuicksandWithIt() {
+        let scene = mayhem()
+        scene.endlessIICollectLock()
+        scene.endlessIIQuicksandClock.collect(10)
+        scene.endlessIIResetFieldPowerUps()
+        XCTAssertFalse(scene.endlessIILocked, "a Lock outlived the ball, and then the run")
+        XCTAssertFalse(scene.endlessIIQuicksandClock.isRunning)
+    }
+
+    // MARK: - The field
+
+    /// James, round 354: "Lock power up with brick retreat power up enabled and bricks stopped
+    /// descending when the bottom row was clear meant the game effectively broke once the
+    /// board was totally clear". A frozen Retreat held the field until a Key, and Keys drop
+    /// from bricks a held field never makes.
+    func testALockDoesNotFreezeTheTwoPowerUpsThatHoldTheField() {
+        for path in GameScene.endlessIIFieldHoldClockPaths {
+            XCTAssertFalse(GameScene.endlessIITimedClockPaths.contains(path),
+                           "\(path) is frozen by a Lock, and holds the field while frozen")
+            XCTAssertTrue(GameScene.endlessIIWipeableClockPaths.contains(path),
+                          "\(path) should still be something a Wipe clears")
+        }
+    }
+
+    func testARetreatRunsOutUnderALockAndLetsTheFieldGo() {
+        let scene = mayhem()
+        scene.gameState.enter(Playing.self)
+        scene.endlessIICollectLock()
+        scene.endlessIIClearAndRetreatClock.collect(1)
+        XCTAssertTrue(scene.endlessIIFieldIsHeld)
+
+        scene.endlessIIPaddleFrameDelta = 0.5
+        for _ in 0..<8 { scene.tickEndlessIIFieldPowerUps() }
+
+        XCTAssertFalse(scene.endlessIIClearAndRetreatClock.isRunning,
+                       "the Retreat never ran out under the Lock")
+        XCTAssertTrue(scene.endlessIILocked, "and the Lock is still on, as it should be")
+    }
+
+    // MARK: - The HUD
+
+    /// "change the colour of the power-up progress bars to white - this indicates that all the
+    /// power-ups are locked in"
+    func testTheRingsAreMarkedHeldUnderALockExceptTheOnesStillMoving() {
+        let scene = mayhem()
+        scene.endlessIIAuraClock.collect(10)
+        scene.endlessIIClearAndRetreatClock.collect(10)
+        XCTAssertTrue(scene.activePowerUpEntries().allSatisfy { $0.held == false })
+
+        scene.endlessIICollectLock()
+        let entries = scene.activePowerUpEntries()
+        XCTAssertEqual(entries.first { $0.id == "endlessIIAura" }?.held, true)
+        XCTAssertEqual(entries.first { $0.id == "endlessIIClearAndRetreat" }?.held, false,
+                       "a white ring that moves says the opposite of what white means")
+    }
+
+    func testTheCapsuleWearsTheLimeBorderOnlyWhileLocked() {
+        // Compared by alpha and green: SpriteKit hands the colour back in another colour space,
+        // so the same lime is not `==` to the one it was given
+        let hud = PowerUpRingHUD()
+        XCTAssertEqual(hud.containerForTesting.strokeColor.cgColor.alpha, 0)
+        hud.locked = true
+        var green: CGFloat = 0, alpha: CGFloat = 0
+        hud.containerForTesting.strokeColor.getRed(nil, green: &green, blue: nil, alpha: &alpha)
+        XCTAssertEqual(alpha, 1)
+        XCTAssertEqual(green, 1, accuracy: 0.01)
+        XCTAssertGreaterThan(hud.containerForTesting.glowWidth, 0)
+        hud.locked = false
+        XCTAssertEqual(hud.containerForTesting.strokeColor.cgColor.alpha, 0)
+    }
+
+    // MARK: - The way out
+
+    /// "make the wipe and key power-ups more likely when lock is active"
+    func testWipeAndKeyAreLikelierWhileLocked() {
+        let scene = mayhem()
+        scene.endlessIIAuraClock.collect(10)
+        scene.applyEndlessIIConditionalWeights()
+        let wipeBefore = scene.powerUpProbArray[GameScene.wipePowerUpIndex]
+        XCTAssertGreaterThan(wipeBefore, 0)
+
+        scene.endlessIICollectLock()
+        XCTAssertGreaterThan(scene.powerUpProbArray[GameScene.wipePowerUpIndex], wipeBefore)
+        XCTAssertGreaterThan(scene.powerUpProbArray[GameScene.keyPowerUpIndex], 0,
+                             "the Key has to be droppable the moment the Lock lands, not a row later")
+
+        scene.endlessIITurnKey()
+        XCTAssertEqual(scene.powerUpProbArray[GameScene.wipePowerUpIndex], wipeBefore)
+        XCTAssertEqual(scene.powerUpProbArray[GameScene.keyPowerUpIndex], 0)
+    }
+}

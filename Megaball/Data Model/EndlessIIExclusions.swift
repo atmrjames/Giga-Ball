@@ -56,7 +56,6 @@ enum EndlessIIExclusions {
         (.flippedAngle, .aimedSticky),
         (.flippedAngle, .inertPaddle),
         (.autoAim, .aimedSticky),
-        (.autoAim, .portalPaddle),
         (.autoAim, .inertPaddle),
         (.autoAim, .flippedAngle),
         (.ballSpin, .stickyPaddle),
@@ -67,7 +66,15 @@ enum EndlessIIExclusions {
         // The rest all decide where the ball goes when it leaves the paddle, and two answers
         // to that question is one too many. Not every pair of them is here: a Portal and an
         // Inert Paddle agree perfectly (nothing angles the ball, and it comes out of the top),
-        // and Ball Spin off a Flipped Angle is simply spin the other way
+        // and Ball Spin off a Flipped Angle is simply spin the other way.
+        //
+        // **Auto-Aim and Portal left the list in round 354** (James: "with portal paddle and
+        // auto aim power ups on, the ball is bouncing off of the paddle at the bottom rather
+        // than coming out at the top of the game view"). The matrix had Auto-Aim ending the
+        // Portal, so collecting it took the portal away and the paddle went back to bouncing -
+        // which is not what a player holding both expects, and not what round 88 built: the
+        // two speak in sequence, the paddle swallows the ball and the aim owns the re-entry
+        // (`applyEndlessIIPaddlePortals`). That code had been unreachable since round 223
     ]
 
     /// What collecting this power-up ends.

@@ -183,9 +183,10 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         // above it: all three are what the game *looks* like, and it had been sitting among
         // the rows that decide how it plays
 
-        rows += [.interfaceSound, .sounds, .music]
-        // **UI Sound, then In-Game Sound, then Music** (James, round 351). The two sound
-        // switches have sat together since round 341; the menus' own sound now comes first
+        rows += [.music, .interfaceSound, .sounds]
+        // **Music, then UI Sound, then In-Game Sound** (James, round 354: "move music above the
+        // sound settings"). Round 351 put the menus' own sound first; the two sound switches
+        // still sit together
         if SettingsViewController.deviceHasHaptics { rows.append(.haptics) }
         rows += [.perspective, .paddleSpeed, .swipeUpToPause]
 

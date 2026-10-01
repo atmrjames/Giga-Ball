@@ -363,6 +363,31 @@ struct SavedGame: Codable, Equatable {
     /// already has the bonus banked in it.
     var levelTimerBonus: Int?
 
+    /// The run's own statistics, so far (round 354).
+    ///
+    /// James: "stats from a game that was resumed only have stats from since the game was
+    /// resumed, not the start of the game". The level and pack counters above were always
+    /// saved; the run's - bricks destroyed, paddle hits, every power-up seen and whether it
+    /// was taken, the best ball - live in `InGameRecents`, which a new scene starts empty, and
+    /// nothing wrote them down. Optional, so an older save still decodes, and a run resumed
+    /// from one simply counts from the resume as it always did.
+    var runStats: RunStats?
+
+    /// How far a Landslide day was towards its next step (round 354: "quitting and resuming
+    /// the app seems to reset the timer between the brick moving down animations - the timer
+    /// should be preserved"). Nil on every other day, and on older saves, which start the
+    /// wait afresh as they always did.
+    var dailyLandslideElapsed: Double?
+
+    struct RunStats: Codable, Equatable {
+        var bricksDestroyed: Int
+        var paddleHits: Int
+        /// Power-up indices in sighting order, newest first, with whether each was taken.
+        var sightings: [Int]
+        var collected: [Bool]
+        var bestBallHits: Int
+    }
+
     // MARK: - Consistency
 
     /// The five values `ballProperties` carries when a ball is in play:

@@ -172,6 +172,7 @@ extension GameScene {
 
         enumerateChildNodes(withName: BrickCategoryName) { node, _ in
             node.position.y += delta
+            if let resting = node.descentRestingY { node.descentRestingY = resting + delta }
         }
         for key in endlessIIBuildInFinalY.keys {
             endlessIIBuildInFinalY[key]! += delta
@@ -439,7 +440,40 @@ extension GameScene {
     /// **This changes what a Mayhem run scores**, so it is the kind of number to watch in a
     /// play test rather than to keep pushing: the aura eats bricks, and an aura a fifth wider
     /// eats about forty per cent more of them per pass.
-    static let endlessIIAuraReach: [CGFloat] = [2.4, 3.4]
+    static let endlessIIAuraReach: [CGFloat] = [2.9, 4.0]
+    // **Round 354: a fifth further again** (James: "aura power up glow graphic and effect
+    // should be larger"). From 2.4 and 3.4, the same step round 339 took, and the same warning
+    // stands: this eats bricks, and the score a Mayhem run reaches is worth watching after it
+
+    /// The comet tail's own numbers: how long a puff lasts, how many a second, and how big each
+    /// is against the reach (James, round 354: "perhaps the glow should trail the ball like a
+    /// comet tail").
+    static let endlessIIAuraTailLife: CGFloat = 0.32
+    static let endlessIIAuraTailRate: CGFloat = 70
+    static let endlessIIAuraTailSize: CGFloat = 1.1
+
+    /// A tail that lays soft copies of the glow behind the ball as it travels.
+    ///
+    /// An emitter on the ball whose particles live in the **scene**, so each puff stays where it
+    /// was laid while the ball moves on - which is what a trail is - and fades and shrinks as
+    /// it goes. It adds nothing to what the aura hits: the reach is the circle round the ball,
+    /// and the tail is a picture of where it has been.
+    func endlessIIMakeAuraTail() -> SKEmitterNode {
+        let tail = SKEmitterNode()
+        tail.particleTexture = GameScene.endlessIIAuraTexture
+        tail.particleBirthRate = GameScene.endlessIIAuraTailRate
+        tail.particleLifetime = GameScene.endlessIIAuraTailLife
+        tail.particleSpeed = 0
+        tail.particleAlpha = 0.55
+        tail.particleAlphaSpeed = -0.55/GameScene.endlessIIAuraTailLife
+        tail.particleColor = .white
+        tail.particleColorBlendFactor = 0
+        tail.particleBlendMode = .add
+        tail.zPosition = GameScene.endlessIIAuraZPosition - 0.1
+        tail.targetNode = self
+        return tail
+    }
+
 
     /// How much of the artwork's half-width still reads as glow.
     ///
@@ -497,6 +531,8 @@ extension GameScene {
             if endlessIIAuraNodes.isEmpty == false {
                 endlessIIAuraNodes.forEach { $0.removeFromParent() }
                 endlessIIAuraNodes.removeAll()
+                endlessIIAuraTails.forEach { $0.removeFromParent() }
+                endlessIIAuraTails.removeAll()
             }
             return
         }
@@ -509,11 +545,13 @@ extension GameScene {
             let glow = SKSpriteNode(texture: GameScene.endlessIIAuraTexture)
             glow.zPosition = GameScene.endlessIIAuraZPosition
             endlessIIAuraNodes.append(glow)
+            endlessIIAuraTails.append(endlessIIMakeAuraTail())
             // Not added to anything here. Each glow is parented to its own ball below, and a
             // glow that spent one frame on the scene first would spend it at the origin
         }
         while endlessIIAuraNodes.count > balls.count {
             endlessIIAuraNodes.removeLast().removeFromParent()
+            endlessIIAuraTails.removeLast().removeFromParent()
         }
 
         var touchedNow: Set<ObjectIdentifier> = []
@@ -551,6 +589,22 @@ extension GameScene {
             let scale = max(subject.xScale, 0.01)
             glow.size = CGSize(width: reach*2/GameScene.endlessIIAuraVisibleShare/scale,
                                height: reach*2/GameScene.endlessIIAuraVisibleShare/scale)
+
+            let tail = endlessIIAuraTails[index]
+            if tail.parent !== subject {
+                tail.removeFromParent()
+                subject.addChild(tail)
+            }
+            tail.position = .zero
+            let puff = reach*2*GameScene.endlessIIAuraTailSize
+            tail.particleSize = CGSize(width: puff, height: puff)
+            tail.particleScaleSpeed = -1/GameScene.endlessIIAuraTailLife
+            tail.particleAlpha = 0.55*subject.alpha
+            tail.particleBirthRate = subject.alpha > 0.05 ? GameScene.endlessIIAuraTailRate : 0
+            // **The comet's tail** (round 354). Its puffs are laid in the scene, not on the
+            // ball, so a Ghost Ball's fade does not reach them through the parent the way it
+            // reaches the glow - the ball's alpha is copied on to new puffs here instead, and a
+            // ball that has vanished lays none
             // **The reach is read off the ball rather than off `ballSize`**, which is what
             // makes the glow grow and shrink with it (James, round 284). `ballSize` is the
             // ordinary ball's width and never moves; the Increase and Decrease Ball Size
@@ -622,6 +676,10 @@ extension GameScene {
     /// A Lock lands. Extends, like every other timed power-up.
     func endlessIICollectLock() {
         endlessIILockClock.hold()
+        if isDailyChallenge == false { applyEndlessIIConditionalWeights() }
+        // At once rather than at the next row: the Key's weight was zero when this row was
+        // built, and a held field may be a while making another. Never in a daily, which has
+        // no Lock and no Key and sets its own weights last
         // **No timer** (James, round 218). It ran fifteen seconds and then let go by itself,
         // which made the Key a convenience rather than the answer. Held, the Key is the only
         // way out and a Lock is a thing that happens *to* you until you undo it
@@ -633,6 +691,7 @@ extension GameScene {
     /// and an answer that only shortened it would leave the player still locked.
     func endlessIITurnKey() {
         endlessIILockClock = EndlessIIClock()
+        if gameMode == .endlessII && isDailyChallenge == false { applyEndlessIIConditionalWeights() }
     }
 
     /// Whether the timed power-ups are frozen.
@@ -667,6 +726,34 @@ extension GameScene {
         // item): Descent's clock counts rows now, and rows do not decay while the Lock falls
     }
 
+    /// Wipe's, Lock's and Key's weights, which depend on what the run is doing now.
+    ///
+    /// **Wipe and Key come more often while a Lock runs** (James, round 354: "make the wipe and
+    /// key power-ups more likely when lock is active"). A Lock has no timer, so the Key is the
+    /// only way out of it, and a Wipe is the other way to clear what it is holding - both are
+    /// the answer to it, and an answer the player waits a long time for is the Lock outstaying
+    /// its welcome.
+    func applyEndlessIIConditionalWeights() {
+        guard powerUpProbArray.count > GameScene.wipePowerUpIndex else { return }
+        powerUpProbArray[GameScene.wipePowerUpIndex] = endlessIIWipeMayDrop
+            ? (endlessIILocked ? GameScene.endlessIILockedWipeWeight : GameScene.endlessIIWipeWeight)
+            : 0
+        // Uncommon (§5.4), and conditional for the same reason a Lock is: with nothing running
+        // it takes nothing away, and a bad power-up that does nothing is a gift rather than a dud
+        powerUpProbArray[GameScene.lockPowerUpIndex] = endlessIILockMayDrop ? 3 : 0
+        // Rare, and conditional
+        powerUpProbArray[GameScene.keyPowerUpIndex] = endlessIIKeyMayDrop
+            ? GameScene.endlessIIKeyWeight : 0
+        // Weighted high inside its own window and zero outside it (§5.4): rare overall, but
+        // reliably there while it is possible at all
+    }
+
+    static let endlessIIWipeWeight = 5
+    static let endlessIILockedWipeWeight = 15
+    static let endlessIIKeyWeight = 60
+    // The Key was 30 until round 354. It only ever drops under a Lock, so doubling it is
+    // entirely "more likely while locked"
+
     /// Whether a Key is worth dropping: only while there is a Lock to undo.
     var endlessIIKeyMayDrop: Bool {
         gameMode == .endlessII && endlessIILocked
@@ -688,8 +775,24 @@ extension GameScene {
         \.endlessIIWrapAroundClock, \.endlessIIBallSteeringClock, \.endlessIIMagnetismClock,
         \.endlessIIPaddleHaloClock, \.endlessIIPortalPaddleClock,
         \.endlessIIRandomisedBounceClock, \.endlessIIGhostBallClock,
-        \.endlessIIClearAndRetreatClock, \.endlessIISafetyPaddleClock,
-        \.endlessIIDriftClock, \.endlessIIQuicksandClock,
+        \.endlessIISafetyPaddleClock, \.endlessIIDriftClock,
+    ]
+    // **Clear And Retreat and Quicksand left this list in round 354** (James: "Lock power up
+    // with brick retreat power up enabled and bricks stopped descending when the bottom row
+    // was clear meant the game effectively broke once the board was totally clear"). Both
+    // hold the field for as long as they run - `endlessIIFieldIsHeld` - and a Lock has no
+    // timer of its own, so a Lock that froze either one held the field until a Key arrived.
+    // Keys drop from bricks, and a held field makes no new ones: the board emptied and
+    // nothing could ever end it. They run down through a Lock now, which is
+    // `endlessIIFieldHoldClockPaths` below, and a Wipe still clears them
+
+    /// The rings of the two clocks below, which stay lime under a Lock because they still move.
+    static let endlessIIFieldHoldRingIDs: Set<String> = ["endlessIIClearAndRetreat",
+                                                          "endlessIIQuicksand"]
+
+    /// The clocks that hold the field still, which a Lock lets run (round 354).
+    static let endlessIIFieldHoldClockPaths: [ReferenceWritableKeyPath<GameScene, EndlessIIClock>] = [
+        \.endlessIIClearAndRetreatClock, \.endlessIIQuicksandClock,
     ]
     // Double Paddle and Mirror Paddle left this list in round 180: they were designed as
     // 12-second clocks but were never in any run-down loop, so both ran for ever (James:
@@ -714,7 +817,7 @@ extension GameScene {
     /// better than a Key, and a Key that is never worth collecting is a power-up that may as
     /// well not drop.
     static let endlessIIWipeableClockPaths: [ReferenceWritableKeyPath<GameScene, EndlessIIClock>] =
-        endlessIITimedClockPaths + [
+        endlessIITimedClockPaths + endlessIIFieldHoldClockPaths + [
             \.endlessIIAimedStickyClock, \.endlessIIInertPaddleClock,
             \.endlessIIFlippedAngleClock, \.endlessIIReversedControlsClock,
             \.endlessIIAutoAimClock,
@@ -748,7 +851,7 @@ extension GameScene {
         case .wreckingBall: endlessIIWreckingBallClock.reset()
         case .ballAura: endlessIIAuraClock.reset()
         case .stickyPaddle:
-            while stickyPaddleCatches > 0 { spendStickyPaddleCatch() }
+            while stickyPaddleCatches > 0 { spendStickyPaddleCatch(evenUnderALock: true) }
             // Spent rather than zeroed: the last catch leaving is what puts the paddle's face
             // back, releases a ball still sitting on it and clears the icon, and all of that
             // has to happen whether the catches ran out or were taken away
@@ -1221,8 +1324,11 @@ extension GameScene {
             endlessIIAuraClock.run(down: endlessIIClockDelta)
             endlessIIRandomisedBounceClock.run(down: endlessIIClockDelta)
             endlessIIGhostBallClock.run(down: endlessIIClockDelta)
-            endlessIIClearAndRetreatClock.run(down: endlessIIClockDelta)
-            endlessIIQuicksandClock.run(down: endlessIIClockDelta)
+            endlessIIClearAndRetreatClock.run(down: endlessIIPaddleFrameDelta)
+            endlessIIQuicksandClock.run(down: endlessIIPaddleFrameDelta)
+            // The raw delta rather than `endlessIIClockDelta`: a Lock does not freeze these two,
+            // because both hold the field and a frozen hold is a field that never moves again
+            // (round 354, `endlessIIFieldHoldClockPaths`)
             endlessIISafetyPaddleClock.run(down: endlessIIClockDelta)
             endlessIIDriftClock.run(down: endlessIIClockDelta)
             tickEndlessIIGhostBall()
@@ -1401,11 +1507,20 @@ extension GameScene {
         endlessIIDescentClock.reset()
         endlessIIDescentAccumulated = 0
         endlessIIClearAndRetreatClock.reset()
+        endlessIIQuicksandClock.reset()
+        endlessIILockClock = EndlessIIClock()
+        // **Both were missing** (found in round 354, watching a Lock's border stay lit on a
+        // replay with nothing running). Everything a Lock holds is reset a few lines up, so a
+        // Lock that outlived the ball froze nothing and could only be ended by a Key - and it
+        // outlived the *run* too, into the next one. Quicksand was the one field clock left out
+        // when round 219 gave it an endless version, so a lost ball kept the field two rows low
         endlessIISafetyPaddleClock.reset()
         endlessIIDriftClock.reset()
         endlessIIDriftDirection = 0
         childNode(withName: GameScene.endlessIISafetyPaddleName)?.removeFromParent()
         endlessIIAuraNodes.forEach { $0.removeFromParent() }
         endlessIIAuraNodes.removeAll()
+        endlessIIAuraTails.forEach { $0.removeFromParent() }
+        endlessIIAuraTails.removeAll()
     }
 }

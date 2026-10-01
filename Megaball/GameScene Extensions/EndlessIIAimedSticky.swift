@@ -36,11 +36,11 @@ extension GameScene {
     /// the default angle is the mirror of.
     func endlessIIAimedCatch(_ subject: SKSpriteNode, isExtra: Bool) -> Bool {
         guard gameMode == .endlessII,
-              endlessIIAimedStickyClock.isRunning || endlessIIAimedStickyOwedTurn
+              endlessIIAimedStickyClock.hasTurns || endlessIIAimedStickyOwedTurn
         else { return false }
         guard endlessIIInertPaddleClock.isRunning == false else { return false }
         // An inert paddle holds nothing - see paddleHit's sticky band
-        if endlessIIAimedStickyClock.isRunning == false {
+        if endlessIIAimedStickyClock.hasTurns == false {
             endlessIIAimedStickyOwedTurn = false
             endlessIIAimOwedHold = true
         }
@@ -301,7 +301,7 @@ extension GameScene {
     /// arrives at the *top* of the field travelling down, which is the whole gift of a portal
     /// paddle and the reason to be holding one.
     var endlessIIAimLaunchesThroughThePaddle: Bool {
-        endlessIIPortalPaddleClock.isRunning || endlessIIPortalPaddleOwedTurn
+        endlessIIPortalPaddleClock.hasTurns || endlessIIPortalPaddleOwedTurn
     }
 
     /// Sends an aimed shot out through the paddle and back in at the top.

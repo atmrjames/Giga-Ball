@@ -6079,7 +6079,23 @@ final class PaddleGlowMarginTests: XCTestCase {
 
     /// What the player sees: the glow's width on screen, less the paddle's own.
     private func marginOnScreen(_ scene: GameScene, _ glow: SKSpriteNode) -> CGFloat {
-        (glow.size.width - scene.paddle.size.width)*scene.paddle.xScale
+        glow.size.width*glow.xScale*scene.paddle.xScale
+            - scene.paddle.size.width*scene.paddle.xScale
+        // The glow undoes its parent's stretch on its own scale since round 354, so both scales
+        // count
+    }
+
+    /// James, round 354: "portal paddle glow still extends incorrectly ... it gets too wide when
+    /// extending". The picture itself must not be stretched with the paddle: its rounded ends
+    /// stay their drawn size, and only the straight middle grows.
+    func testTheGlowsEndsAreNotStretchedWithThePaddle() throws {
+        let scene = mayhem()
+        scene.paddle.xScale = 2
+        scene.refreshEndlessIIPaddleGlow()
+        let glow = try glow(in: scene)
+        XCTAssertEqual(glow.xScale*scene.paddle.xScale, 1, accuracy: 0.001,
+                       "drawn at one to one on screen")
+        XCTAssertGreaterThan(glow.centerRect.minX, 0, "the ends are sliced off the stretch")
     }
 
     func testTheMarginIsTheSameAtEveryPaddleWidth() throws {

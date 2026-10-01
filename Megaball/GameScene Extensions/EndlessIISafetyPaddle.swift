@@ -475,7 +475,10 @@ extension GameScene {
         if soundsSetting { run(ballPaddleHitSound) }
         if hapticsSetting { lightHaptic.impactOccurred() }
 
-        endlessIISafetyPaddleClock.spendTurn(thenLingerFor: EndlessIIClock.lingerSeconds)
+        if endlessIILocked == false {
+            endlessIISafetyPaddleClock.spendTurn(thenLingerFor: EndlessIIClock.lingerSeconds)
+        }
+        // Held under a Lock, like every other turn (round 354)
         // **This is the bounce being counted** (round 305), and it is counted here rather than
         // at the contact because everything above this line is a reason the bar did *not*
         // bounce the ball: a climber passing through from below, and a catch, which is the

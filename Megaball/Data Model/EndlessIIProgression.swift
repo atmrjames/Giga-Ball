@@ -518,10 +518,30 @@ struct EndlessIIProgression: Codable, Equatable {
         guard flatRarity == false else { return EndlessIIProgression.introducedWeight }
         // Level Pegging: everything as likely as everything else, which for the styles is
         // already what an introduced weight means - they differ only by *when* they arrive
-        return height >= introductionHeight(of: style)
+        let weight = height >= introductionHeight(of: style)
             ? EndlessIIProgression.introducedWeight
             : EndlessIIProgression.earlyWeight
+        guard style == .fixed else { return weight }
+        return EndlessIIProgression.fixedWeight(weight, at: height)
     }
+
+    /// **Fixed is rarer than the other styles, and later** (James, round 354: "proportion of
+    /// fixed bricks is too high too early"). Every introduced style weighed the same, so once
+    /// Fixed arrived it was drawn as often as Rounded - and a Fixed brick is not a look, it is
+    /// an obstacle that anchors where it is struck and destroys what descends onto it, so a few
+    /// of them change a field more than a whole row of rounded corners. The smallest weight
+    /// there is before `fixedFirstMetres`, then a share that climbs from a fifth of an ordinary
+    /// style's weight to half of it by the ramp's end.
+    ///
+    /// Not none before then: §2's rule is that nothing is ever locked out, only rare, and
+    /// `testNothingIsEverLockedOut` holds every style to it.
+    static func fixedWeight(_ weight: Int, at height: Int) -> Int {
+        guard height >= fixedFirstMetres else { return min(weight, 1) }
+        let share = ramped(from: 20, to: 50, at: height)
+        return max(1, weight*share/100)
+    }
+
+    static let fixedFirstMetres = 60
 
     /// Picks a style, respecting the weights.
     ///

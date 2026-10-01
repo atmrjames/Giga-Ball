@@ -391,6 +391,12 @@ extension GameScene {
         brick.endlessIIFace = face
         resizeEndlessIIFace(brick, to: cell)
         refreshEndlessIIBrickArt(brick)
+        refreshEndlessIIPortalGlow(on: brick)
+        // **And the halo re-chosen for the new outline** (James, round 354, with a screenshot:
+        // "convex bricks that are portals have the portal glow of a normal rectangular brick").
+        // A brick given its role before its face picked the oblong glow when it became a
+        // Portal, and nothing asked again once it turned convex. A brick that is not a Portal
+        // is left alone - the call takes any glow away, and there is none
         // Takes the Square overlay off, the way `makeRounded` does. Without it a square Diamond
         // wore both: the plain square picture underneath, showing through the four transparent
         // corners of the diamond one, so the brick came out square with a rhombus drawn on it -

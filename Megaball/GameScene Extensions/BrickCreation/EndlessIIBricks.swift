@@ -1128,7 +1128,8 @@ extension GameScene {
         // brick's is on its top edge, so shrinking it walked the picture up out of the circle
         // and the corners came out through the top of the ring. Moving the anchor by the same
         // factor keeps `(0.5 - anchorPoint) * size` where it was, which is the expression the
-        // face, the multi-hit bar and the resumed field all read the drawn centre off
+        // face, the multi-hit bar and the resumed field all read the drawn centre off        refreshEndlessIIPortalGlow(on: brick)
+        // A Portal made before it was rounded wears the rounded halo, as `makeFace` does (round 354)
     }
 
     /// How much of a brick's short side is taken up by each rounded corner.

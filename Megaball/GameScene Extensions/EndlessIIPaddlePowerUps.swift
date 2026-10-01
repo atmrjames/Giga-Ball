@@ -713,8 +713,8 @@ extension GameScene {
     /// a Lose A Ball is not a free shot. And only bricks the shot can actually arrive at:
     /// `endlessIIAimCanReach` keeps the marker's promise and the shot's delivery the same
     /// thing, which is why the marker and the redirect both choose through here.
-    func endlessIIAutoAimTarget(from origin: CGPoint) -> CGPoint? {
-        endlessIIAutoAimBrick(from: origin)?.position
+    func endlessIIAutoAimTarget(from origin: CGPoint, downward: Bool = false) -> CGPoint? {
+        endlessIIAutoAimBrick(from: origin, downward: downward)?.position
     }
 
     /// The brick a free shot would be sent at, rather than only the point.
@@ -722,15 +722,24 @@ extension GameScene {
     /// The marker draws itself round the brick's own outline since round 299, so it needs the
     /// node - and the shot needs the point, which is the node's position. One search either
     /// way: two would be two chances to pick different bricks.
-    func endlessIIAutoAimBrick(from origin: CGPoint) -> SKSpriteNode? {
+    ///
+    /// **Downward from a Portal Paddle's top exit** (round 354). A ball coming back in at the top
+    /// meets the field from above, so the brick worth the shot is the *highest* one it can
+    /// reach - the lowest is behind everything else - and "can reach" is the launchable arc
+    /// turned upside down.
+    func endlessIIAutoAimBrick(from origin: CGPoint, downward: Bool = false) -> SKSpriteNode? {
         var best: (brick: SKSpriteNode, distance: CGFloat)?
         enumerateChildNodes(withName: BrickCategoryName) { node, _ in
             guard let brick = node as? SKSpriteNode else { return }
             guard self.endlessIIWorthAimingAt(brick) else { return }
-            guard self.endlessIIAimCanReach(node.position, from: origin) else { return }
+            guard self.endlessIIAimCanReach(node.position, from: origin,
+                                            downward: downward) else { return }
             let distance = abs(node.position.x - origin.x)
+            let nearerTheShot = downward
+                ? { (y: CGFloat, than: CGFloat) in y > than + 1 }
+                : { (y: CGFloat, than: CGFloat) in y < than - 1 }
             if let current = best {
-                if node.position.y < current.brick.position.y - 1
+                if nearerTheShot(node.position.y, current.brick.position.y)
                     || (abs(node.position.y - current.brick.position.y) <= 1
                         && distance < current.distance) {
                     best = (brick, distance)
@@ -749,8 +758,9 @@ extension GameScene {
     /// would be *marked* and then missed - the shot, bent up to the minimum angle, sails
     /// past underneath it. A brick the arc cannot reach is simply not a target; a higher
     /// brick the shot can reach is a better use of the bounce than a promised miss.
-    func endlessIIAimCanReach(_ target: CGPoint, from origin: CGPoint) -> Bool {
-        let dy = Double(target.y - origin.y)
+    func endlessIIAimCanReach(_ target: CGPoint, from origin: CGPoint,
+                              downward: Bool = false) -> Bool {
+        let dy = Double(downward ? origin.y - target.y : target.y - origin.y)
         guard dy > 0 else { return false }
         let angleDeg = atan2(dy, Double(target.x - origin.x))*180/Double.pi
         return angleDeg >= minAngleDeg && angleDeg <= 180 - minAngleDeg
@@ -808,10 +818,18 @@ extension GameScene {
         // there is no next bounce - it was hanging over a brick through the whole lost-ball
         // animation, pointing at a shot nobody was about to take
 
-        let launch = CGPoint(x: paddle.position.x, y: paddleTopY + ball.size.height/2)
+        let portalling = endlessIIPortalPaddleClock.hasTurns
+        let launch = portalling
+            ? CGPoint(x: paddle.position.x, y: endlessIIPaddlePortalTopExitY(ballHeight: ball.size.height))
+            : CGPoint(x: paddle.position.x, y: paddleTopY + ball.size.height/2)
         // Where the next bounce will leave from - the reachability check needs a height as
-        // well as an x, so the marker judges the shot from the same spot the shot takes
-        let target = aiming ? endlessIIAutoAimBrick(from: launch) : nil
+        // well as an x, so the marker judges the shot from the same spot the shot takes.
+        // With a Portal Paddle that is the top of the field, heading down (round 354)
+        let promisable = portalling == false || endlessIIPortals().isEmpty
+        // Through a Portal brick the exit is chosen at random as the ball arrives, so there
+        // is no one shot to mark - and a marker on the wrong brick is worse than none
+        let target = aiming && promisable
+            ? endlessIIAutoAimBrick(from: launch, downward: portalling) : nil
 
         guard let target else {
             childNode(withName: GameScene.autoAimMarkerName)?.removeFromParent()
@@ -998,11 +1016,25 @@ extension GameScene {
     /// spends one, which is the price of running four balls through a five-turn power-up.
     func endlessIISpendPaddleTurns() {
         guard gameMode == .endlessII else { return }
-        endlessIIPortalPaddleOwedTurn = endlessIIPortalPaddleClock.isRunning
-        endlessIIAimedStickyOwedTurn = endlessIIAimedStickyClock.isRunning
+        endlessIIPortalPaddleOwedTurn = endlessIIPortalPaddleClock.hasTurns
+        endlessIIAimedStickyOwedTurn = endlessIIAimedStickyClock.hasTurns
+        // **Turns left, not merely running** (James, round 354: "aimed sticky power up doesn't
+        // end quickly enough after the final use - it can show up again if the ball lands on
+        // the paddle soon after and then disappears"). A spent clock says goodbye for half a
+        // second and reads as running all the while, so a landing inside that half second was
+        // given a catch it had not paid for - and the ring came back to count it
         endlessIIAutoAimOwedTurn = endlessIIAutoAimClock.isRunning
         // Snapshotted before the spend: the effects these buy land later in the same
         // contact, and a clock expired by its own last turn must still deliver it
+
+        guard endlessIILocked == false else { return }
+        // **A Lock holds the turns too** (James, round 354: "when lock power-up is active, some
+        // power ups are still ending when they shouldn't ... I had ball trajectory that ended
+        // and then collected sticky paddle that started counting down the uses. Any power up
+        // collected with lock active ... should remain on"). The Lock stopped *time*, and the
+        // paddle-hit power-ups do not spend time, so they went on counting down under it. Every
+        // one of them is held now; the landing still delivers what it buys, because the owed
+        // flags above are set before this
 
         endlessIIAimedStickyClock.spendTurn(thenLingerFor: EndlessIIClock.lingerSeconds)
         endlessIIPortalPaddleClock.spendTurn(thenLingerFor: EndlessIIClock.lingerSeconds)
@@ -1051,7 +1083,7 @@ extension GameScene {
     /// took the ball, so the caller skips the bounce it would otherwise be correcting.
     func endlessIIPaddlePortalTook(_ subject: SKSpriteNode, collision: Double) -> Bool {
         guard gameMode == .endlessII,
-              endlessIIPortalPaddleClock.isRunning || endlessIIPortalPaddleOwedTurn
+              endlessIIPortalPaddleClock.hasTurns || endlessIIPortalPaddleOwedTurn
         else { return false }
         endlessIIPortalPaddleOwedTurn = false
         endlessIIPendingPaddlePortals.append(subject)
@@ -1083,10 +1115,13 @@ extension GameScene {
     /// that turn was the clock's last - and a mirror contact in the same step consuming it
     /// would take the paddle's own portal away from it.
     func endlessIIMirrorPortalTook(_ subject: SKSpriteNode, collision: Double) -> Bool {
-        guard gameMode == .endlessII, endlessIIPortalPaddleClock.isRunning else { return false }
+        guard gameMode == .endlessII, endlessIIPortalPaddleClock.hasTurns else { return false }
         endlessIIPendingPaddlePortals.append(subject)
         endlessIIPendingPortalCollisions[ObjectIdentifier(subject)] = collision
-        endlessIIPortalPaddleClock.spendTurn(thenLingerFor: EndlessIIClock.lingerSeconds)
+        if endlessIILocked == false {
+            endlessIIPortalPaddleClock.spendTurn(thenLingerFor: EndlessIIClock.lingerSeconds)
+        }
+        // Held under a Lock like the paddle's own turns (round 354)
         if hapticsSetting { mediumHaptic.impactOccurred() }
         playMayhemSound("paddlePortal", or: "portalJump")
         return true
@@ -1133,15 +1168,16 @@ extension GameScene {
                 // chosen at random, and the ball climbs out of the brick into the field
             } else {
                 subject.position = CGPoint(x: subject.position.x,
-                                           y: frame.height/2 - topScreenBlock.size.height
-                                              - subject.size.height)
+                                           y: endlessIIPaddlePortalTopExitY(
+                                               ballHeight: subject.size.height))
                 body.velocity = CGVector(dx: cos(angleRad)*speed, dy: -sin(angleRad)*speed)
                 // On its own the paddle's portal exits at the top, falling back in - the
                 // bounce angle mirrored downward
             }
 
+            let fromTheTop = body.velocity.dy < 0
             if endlessIIAutoAimClock.isRunning || endlessIIAutoAimOwedTurn,
-               let target = endlessIIAutoAimTarget(from: subject.position) {
+               let target = endlessIIAutoAimTarget(from: subject.position, downward: fromTheTop) {
                 endlessIIAutoAimOwedTurn = false
                 let dx = Double(target.x - subject.position.x)
                 let dy = Double(target.y - subject.position.y)
@@ -1150,9 +1186,21 @@ extension GameScene {
                 // Portal Paddle × Auto-Aim (§12.0): both speak in sequence - the hit
                 // still portals, and the aim owns the *re-entry*, pointed at the lowest
                 // brick worth hitting. Together they were cancelling out: the aim set
-                // the launch and the portal threw it away
+                // the launch and the portal threw it away.
+                //
+                // **Downward from the top exit** (round 354): the search looked only *up*
+                // from wherever the ball came back in, and from just under the top strip there
+                // is nothing up there - so the aim found nothing and the re-entry was never
+                // aimed at all. Out of a Portal brick the ball still climbs, and looks up
             }
         }
+    }
+
+    /// Where a Portal Paddle puts the ball back in when there is no Portal brick to climb out
+    /// of: just under the top strip. One place, because the exit and the Auto-Aim marker that
+    /// promises where it goes next both need it.
+    func endlessIIPaddlePortalTopExitY(ballHeight: CGFloat) -> CGFloat {
+        frame.height/2 - topScreenBlock.size.height - ballHeight
     }
 
     // MARK: - Each frame

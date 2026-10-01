@@ -209,8 +209,36 @@ extension GameScene {
         // through applyPowerUp, which marks that sighting collected rather than adding
         // a second one for the same appearance
 
+        _ = award(78)
+        // **Feel The Power Of The Brick** (round 310). "Collect a power-up from a power-up
+        // brick" - and a power-up brick *is* the collection: it hands the effect straight to
+        // `applyPowerUp` rather than dropping something to be caught, so the moment it triggers
+        // is the moment it is collected. Mayhem only, which the guard above already settles
+        totalStatsArray[0].powerupsGenerated[index] += 1
+        // Collected is counted by `applyPowerUp` itself, in whichever case it lands on
+        endlessIIShowPowerUpBrickBurst(at: brick.position, index: index)
+        let at = brick.position
+        brick.removeFromParent()
+
+        guard ballLostBool == false else {
+            endlessIIHeldBrickPowerUps.append(index)
+            return true
+        }
+        // **Held, not lost, while a ball is going down** (James, round 354: "hitting a power up
+        // brick (which was multi-ball) with a laser didn't activate the power-up - the extra
+        // ball never appear[ed]"). `applyPowerUp` ignores anything that arrives while a ball is
+        // being lost, which is right for a falling power-up and was never a question for a brick
+        // hit by the ball, which cannot be flying then. A laser still in the air can: it broke
+        // the brick, the brick went, and the power-up was thrown away. Now it waits and is
+        // handed over by `releaseEndlessIIHeldBrickPowerUps` the moment play is back
+        endlessIIApplyBrickPowerUp(index, at: at)
+        return true
+    }
+
+    /// Hands a power-up brick's power-up to `applyPowerUp`, the way a caught one arrives.
+    func endlessIIApplyBrickPowerUp(_ index: Int, at point: CGPoint) {
         let carrier = SKSpriteNode(texture: endlessIIPowerUpTexture(index))
-        carrier.position = brick.position
+        carrier.position = point
         carrier.alpha = 0
         addChild(carrier)
         powerUpsOnScreen += 1
@@ -223,20 +251,15 @@ extension GameScene {
         applyPowerUp(node: carrier)
         // Handed to the same method a caught power-up goes through, so every effect, timer,
         // icon and conflict rule is the one that already exists
+    }
 
-        _ = award(78)
-        // **Feel The Power Of The Brick** (round 310). "Collect a power-up from a power-up
-        // brick" - and a power-up brick *is* the collection: it hands the effect straight to
-        // `applyPowerUp` rather than dropping something to be caught, so the moment it triggers
-        // is the moment it is collected. Mayhem only, which the guard at the top of this method
-        // already settles
-
-        totalStatsArray[0].powerupsGenerated[index] += 1
-        // Collected is counted by `applyPowerUp` itself, in whichever case it lands on
-
-        endlessIIShowPowerUpBrickBurst(at: brick.position, index: index)
-        brick.removeFromParent()
-        return true
+    /// Sets off whatever power-up bricks were broken while a ball was being lost, once it is
+    /// back. Called every frame; nothing to do almost always.
+    func releaseEndlessIIHeldBrickPowerUps() {
+        guard endlessIIHeldBrickPowerUps.isEmpty == false, ballLostBool == false else { return }
+        let held = endlessIIHeldBrickPowerUps
+        endlessIIHeldBrickPowerUps.removeAll()
+        for index in held { endlessIIApplyBrickPowerUp(index, at: paddle.position) }
     }
 
     /// The scene's own texture for a power-up.

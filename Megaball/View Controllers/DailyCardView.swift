@@ -41,11 +41,15 @@ final class DailyCardView: UIView {
 
     private let detailsCard = UIView()
     private let resultCard = UIView()
+    private let boardCard = UIView()
+    private let boardTitle = UILabel()
+    private let boardRows = UIStackView()
+    private let lowerStack = UIStackView()
 
     private func build() {
         translatesAutoresizingMaskIntoConstraints = false
 
-        for card in [detailsCard, resultCard] {
+        for card in [detailsCard, resultCard, boardCard] {
             card.backgroundColor = UIColor(white: 1, alpha: 0.07)
             card.layer.cornerRadius = 18
             let glass = SettingsTableViewCell.addGlass(behind: card, cornerRadius: 18)
@@ -106,12 +110,36 @@ final class DailyCardView: UIView {
         resultLabel.translatesAutoresizingMaskIntoConstraints = false
         resultCard.addSubview(resultLabel)
 
-        detailsCard.translatesAutoresizingMaskIntoConstraints = false
-        resultCard.translatesAutoresizingMaskIntoConstraints = false
-        addSubview(detailsCard)
-        addSubview(resultCard)
+        boardTitle.text = "TOP SCORES"
+        boardTitle.font = .boldSystemFont(ofSize: 11)
+        boardTitle.textColor = UIColor(white: 1, alpha: 0.5)
+        boardTitle.textAlignment = .center
+        boardRows.axis = .vertical
+        boardRows.spacing = 4
+        let boardStack = UIStackView(arrangedSubviews: [boardTitle, boardRows])
+        boardStack.axis = .vertical
+        boardStack.spacing = 6
+        boardStack.translatesAutoresizingMaskIntoConstraints = false
+        boardCard.addSubview(boardStack)
+        boardCard.isHidden = true
+        boardCard.addGestureRecognizer(
+            UITapGestureRecognizer(target: self, action: #selector(resultWasTapped)))
+        // The whole card opens Game Center's own board, as the posted score's does: this is a
+        // few places of it, and the rest is one tap away
 
-        let resultSitsAtTheBottom = resultCard.bottomAnchor.constraint(equalTo: bottomAnchor)
+        lowerStack.axis = .vertical
+        lowerStack.spacing = 12
+        lowerStack.translatesAutoresizingMaskIntoConstraints = false
+        [boardCard, resultCard].forEach { lowerStack.addArrangedSubview($0) }
+        // **The day's board sits above the player's own line** (round 354), and the two stand
+        // together at the bottom of the page. A stack, so a day with no board to show - any
+        // day older than yesterday, or a signed-out player - closes up as if it were never there
+
+        detailsCard.translatesAutoresizingMaskIntoConstraints = false
+        addSubview(detailsCard)
+        addSubview(lowerStack)
+
+        let resultSitsAtTheBottom = lowerStack.bottomAnchor.constraint(equalTo: bottomAnchor)
         resultSitsAtTheBottom.priority = .required - 1
         // **The day's rules hug the top and the day's score hugs the bottom** (play-test
         // round 126: "move the score container lower"). They used to be one stack, so the
@@ -128,11 +156,16 @@ final class DailyCardView: UIView {
             detailsCard.leadingAnchor.constraint(equalTo: leadingAnchor),
             detailsCard.trailingAnchor.constraint(equalTo: trailingAnchor),
 
-            resultCard.topAnchor.constraint(greaterThanOrEqualTo: detailsCard.bottomAnchor,
+            lowerStack.topAnchor.constraint(greaterThanOrEqualTo: detailsCard.bottomAnchor,
                                             constant: 12),
-            resultCard.leadingAnchor.constraint(equalTo: leadingAnchor),
-            resultCard.trailingAnchor.constraint(equalTo: trailingAnchor),
+            lowerStack.leadingAnchor.constraint(equalTo: leadingAnchor),
+            lowerStack.trailingAnchor.constraint(equalTo: trailingAnchor),
             resultSitsAtTheBottom,
+
+            boardStack.topAnchor.constraint(equalTo: boardCard.topAnchor, constant: 10),
+            boardStack.leadingAnchor.constraint(equalTo: boardCard.leadingAnchor, constant: 18),
+            boardStack.trailingAnchor.constraint(equalTo: boardCard.trailingAnchor, constant: -18),
+            boardStack.bottomAnchor.constraint(equalTo: boardCard.bottomAnchor, constant: -12),
 
             stack.topAnchor.constraint(equalTo: detailsCard.topAnchor, constant: 16),
             stack.leadingAnchor.constraint(equalTo: detailsCard.leadingAnchor, constant: 16),
@@ -190,7 +223,8 @@ final class DailyCardView: UIView {
     /// Shows a day. Everything the card draws comes from these arguments, so the same card
     /// can be reused for any day the pager scrolls to.
     func show(key: String, isToday: Bool, record: DailyChallengeRecord?,
-              standing: LeaderboardStanding?, boardBest: Int? = nil) {
+              standing: LeaderboardStanding?, boardBest: Int? = nil,
+              board: [DailyBoardRow] = []) {
         let challenge = DailyChallengeGenerator.challenge(forKey: key)
 
         modeLabel.text = challenge.mode.name.uppercased()
@@ -244,8 +278,53 @@ final class DailyCardView: UIView {
         }
 
         showTwists(challenge)
+        showBoard(board, unit: challenge.mode == .classic ? "" : "m")
         showResult(record, mode: challenge.mode, isToday: isToday, standing: standing,
-                   boardBest: boardBest)
+                   boardBest: boardBest ?? board.first?.score,
+                   saysTheBest: board.isEmpty)
+        // The leader's figure is the board's first row whenever the board is showing, so the
+        // result card stops repeating it - and a day not yet played, whose card was *only* that
+        // figure, shows the board instead of it
+    }
+
+    /// The day's leading places, one row each (round 354).
+    ///
+    /// Rank, name and score in three columns so the scores line up down the right, and the
+    /// player's own row in lime - which is also how a player placed below the rows shown finds
+    /// themselves, added under them by `DailyBoardRow.shown`.
+    private func showBoard(_ rows: [DailyBoardRow], unit: String) {
+        boardRows.arrangedSubviews.forEach { $0.removeFromSuperview() }
+        boardCard.isHidden = rows.isEmpty
+        let lime = #colorLiteral(red: 0.8235294118, green: 1, blue: 0, alpha: 1)
+        for row in rows {
+            let colour = row.isLocalPlayer ? lime : UIColor.white
+            let rank = UILabel()
+            rank.text = "\(row.rank)"
+            rank.font = UIViewController.gameScoreFont(ofSize: 14)
+            rank.textColor = row.isLocalPlayer ? lime : UIColor(white: 1, alpha: 0.55)
+            rank.widthAnchor.constraint(equalToConstant: 26).isActive = true
+            let name = UILabel()
+            name.text = row.name
+            name.font = .systemFont(ofSize: 15, weight: row.isLocalPlayer ? .bold : .regular)
+            name.textColor = colour
+            name.lineBreakMode = .byTruncatingTail
+            name.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+            let score = UILabel()
+            score.text = StatsPage.grouped(row.score) + unit
+            score.font = UIViewController.gameScoreFont(ofSize: 15)
+            score.textColor = colour
+            score.textAlignment = .right
+            score.setContentHuggingPriority(.required, for: .horizontal)
+            score.setContentCompressionResistancePriority(.required, for: .horizontal)
+            let line = UIStackView(arrangedSubviews: [rank, name, score])
+            line.axis = .horizontal
+            line.spacing = 8
+            line.alignment = .firstBaseline
+            line.isAccessibilityElement = true
+            line.accessibilityLabel = "\(row.rank), \(row.name), \(score.text ?? "")"
+            // One element a row, read the way it is laid out: place, player, score
+            boardRows.addArrangedSubview(line)
+        }
     }
 
     /// The result container's glass, kept so it can wear lime for a day the player leads.
@@ -331,11 +410,11 @@ final class DailyCardView: UIView {
     /// a scoring run that could not reach Game Center), and not played at all.
     private func showResult(_ record: DailyChallengeRecord?, mode: GameMode,
                             isToday: Bool, standing: LeaderboardStanding?,
-                            boardBest: Int? = nil) {
+                            boardBest: Int? = nil, saysTheBest: Bool = true) {
         let unit = mode == .classic ? "" : "m"
         guard let record, record.posted else {
             dressTheResultCard(leading: false)
-            guard let boardBest, boardBest > 0 else {
+            guard saysTheBest, let boardBest, boardBest > 0 else {
                 resultLabel.attributedText = nil
                 resultCard.isHidden = true
                 return
@@ -410,7 +489,9 @@ final class DailyCardView: UIView {
                          .foregroundColor: tint]))
 
         line.append(NSAttributedString(
-            string: String(score) + unit,
+            string: StatsPage.grouped(score) + unit,
+            // Grouped like the Global Hi-Score line under it (James, round 354: "posted score has
+            // no comma thousands separator, global hi score does")
             attributes: [.font: UIViewController.gameScoreFont(ofSize: 16),
                          .foregroundColor: UIColor.white]))
 
@@ -443,7 +524,7 @@ final class DailyCardView: UIView {
         // clause of it: "free play attempts played after the post get listed in the same
         // container"). A second line under the day's own number, quieter than it, because a
         // free-play score is not on any board and must never read as though it might be
-        if let boardBest, boardBest > 0 {
+        if saysTheBest, let boardBest, boardBest > 0 {
             line.append(NSAttributedString(string: "\n"))
             line.append(DailyCardView.hiScoreLine(boardBest, unit: unit, onLime: leading))
         }

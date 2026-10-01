@@ -69,22 +69,41 @@ final class WindowSizeTests: XCTestCase {
     /// would bury the one finding that matters in noise.
     ///
     /// The tolerance is a point, for the rounding that lands on `.5` at 2x and 3x scales.
+    ///
+    /// **Except below the fold of a page that scrolls** (round 354). Since round 351 the daily's
+    /// card scrolls inside its page rather than being squeezed into a short window - so on a
+    /// day whose twists run long, the last of them sits below a 420-point window's edge and is
+    /// one drag away, which is the design rather than a fault. This failed the morning the day
+    /// turned over to a three-twist challenge, on the last commit as much as on the change being
+    /// tested. Inside a scroll view whose content is taller than it, a label is checked against
+    /// the window sideways and against the scrolled content up and down.
     private func clipped(in root: UIView) -> [String] {
         var found: [String] = []
-        func walk(_ view: UIView) {
+        func walk(_ view: UIView, scrollingWithin reach: CGRect? = nil) {
             for child in view.subviews {
+                var childReach = reach
+                if let scroll = child as? UIScrollView,
+                   scroll.contentSize.height > scroll.bounds.height + 1 {
+                    let content = CGRect(origin: CGPoint(x: 0, y: -scroll.contentOffset.y),
+                                         size: CGSize(width: scroll.bounds.width,
+                                                      height: scroll.contentSize.height))
+                    let inRoot = scroll.convert(content, to: root)
+                    childReach = CGRect(x: root.bounds.minX, y: inRoot.minY,
+                                        width: root.bounds.width, height: inRoot.height)
+                }
                 if child.isHidden == false, child.alpha > 0.01,
                    child is UILabel || child is UIButton {
                     let frame = child.convert(child.bounds, to: root)
+                    let bounds = reach ?? root.bounds
                     if frame.width > 0, frame.height > 0,
-                       root.bounds.insetBy(dx: -1, dy: -1).contains(frame) == false {
+                       bounds.insetBy(dx: -1, dy: -1).contains(frame) == false {
                         let what = (child as? UILabel)?.text
                             ?? (child as? UIButton)?.title(for: .normal)
                             ?? String(describing: type(of: child))
                         found.append("\(what) at \(NSCoder.string(for: frame))")
                     }
                 }
-                walk(child)
+                walk(child, scrollingWithin: childReach)
             }
         }
         walk(root)

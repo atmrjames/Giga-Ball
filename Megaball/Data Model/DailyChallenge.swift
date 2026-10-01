@@ -1472,6 +1472,9 @@ final class DailyChallengeSession {
     /// board, or yesterday's closed one) and has been asked for.
     var boardBest: Int?
 
+    /// The day's leading entries, for the end screen (round 354). Empty until Game Center answers.
+    var boardTop: [DailyBoardRow] = []
+
     /// Takes the day's figures from its record as a run begins or resumes. The record's scores do
     /// not yet include the run in play: a result is written when a run ends.
     func captureComparison(from record: DailyChallengeRecord?) {
@@ -1479,6 +1482,7 @@ final class DailyChallengeSession {
         comparisonPosted = comparison.posted
         comparisonPreviousBest = comparison.previousBest
         boardBest = nil
+        boardTop = []
     }
 
     /// Which occurrence of the recurring daily board holds a day: today's is the open one,
@@ -1677,9 +1681,9 @@ struct DailyComparison: Equatable {
     /// The row under the score: its title and figure, or nil for a day with nothing before it.
     func row(unit: String) -> (title: String, value: String)? {
         if let posted, (previousBest ?? 0) <= posted {
-            return ("Posted Score", "\(posted)\(unit)")
+            return ("Posted Score", "\(StatsPage.grouped(posted))\(unit)")
         }
-        if let previousBest { return ("Previous Best", "\(previousBest)\(unit)") }
+        if let previousBest { return ("Previous Best", "\(StatsPage.grouped(previousBest))\(unit)") }
         return nil
     }
 
@@ -1694,5 +1698,36 @@ struct DailyComparison: Equatable {
             lines.append("Global hi-score \(StatsPage.grouped(boardBest))\(unit)")
         }
         return lines
+    }
+}
+
+/// One place on a day's board, as the app shows it (round 354).
+///
+/// James: "is it possible to show each day's daily challenge leaderboard in the app rather than
+/// going to game centre? It would be good to see the top scores from the day and the users who
+/// posted them on the daily challenge main menu view and game over / completion view". Game
+/// Center keeps two occurrences of the recurring board - today's, and the one that closed last -
+/// so today and yesterday are the days that can have one; older days show none.
+struct DailyBoardRow: Equatable {
+    let rank: Int
+    let name: String
+    let score: Int
+    let isLocalPlayer: Bool
+
+    /// The rows to show: the leaders, and the player's own place under them when it is not
+    /// already one of them - so a player can always find themselves, however far down.
+    static func shown(leaders: [DailyBoardRow], local: DailyBoardRow?,
+                      limit: Int) -> [DailyBoardRow] {
+        var rows = Array(leaders.sorted { $0.rank < $1.rank }.prefix(limit))
+        if let local, rows.contains(where: { $0.rank == local.rank && $0.isLocalPlayer }) == false {
+            rows.removeAll { $0.isLocalPlayer }
+            rows.append(local)
+        }
+        return rows
+    }
+
+    /// "1. Name  12,340m", for a place with room for one line of text.
+    func line(unit: String) -> String {
+        "\(rank). \(name)  \(StatsPage.grouped(score))\(unit)"
     }
 }

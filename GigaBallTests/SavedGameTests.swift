@@ -824,6 +824,42 @@ final class SavedMayhemFieldTests: XCTestCase {
         return brick
     }
 
+    /// James, round 354: "Endless mayhem bricks coming back in the wrong place with some bricks
+    /// on top of other bricks after app quit and resume". The autosave runs inside the row step
+    /// after every brick has been handed its move and before any frame has run it - so the new
+    /// top row and the old one were saved on the same row.
+    func testASaveTakenMidStepWritesTheRowEachBrickIsHeadingFor() {
+        let scene = mayhem()
+        scene.yBrickOffsetEndless = 300
+        scene.gameState.enter(Playing.self)
+        scene.ballLostBool = false
+        scene.ballIsOnPaddle = true
+
+        let leaving = brick(in: scene, x: 0, y: 300)
+        scene.moveBrickDownARow(leaving, by: .moveBy(x: 0, y: -scene.brickHeight, duration: 0.05))
+        // The old top row, handed its step, which no frame has run yet
+        let arriving = brick(in: scene, x: 0, y: 300)
+        // The new top row, built where the old one is about to leave
+        XCTAssertEqual(leaving.position.y, arriving.position.y, "the moment the save sees")
+
+        scene.saveCurrentGame()
+        let saved = try? XCTUnwrap(SavedGame.load(from: scene.defaults)?.endlessIIBricks)
+        let rows = (saved ?? []).map(\.y).sorted()
+        XCTAssertEqual(rows, [280, 300], "two bricks saved on one row come back on top of each other")
+    }
+
+    func testASecondStepBeforeTheFirstHasLandedCountsFromTheFirstsDestination() {
+        // The step before this one is still in flight, so the brick is between rows: counting
+        // from where it *is* would land the destination half a row out
+        let scene = mayhem()
+        let node = brick(in: scene, x: 0, y: 100)
+        let step = SKAction.moveBy(x: 0, y: -scene.brickHeight, duration: 0.05)
+        scene.moveBrickDownARow(node, by: step)
+        node.position.y = 90
+        scene.moveBrickDownARow(node, by: step)
+        XCTAssertEqual(node.descentRestingY, 60)
+    }
+
     func testATinySetSurvivesTheRoundTrip() {
         // The heart of it. Four quarter-cell bricks share one cell, so four *cell indices*
         // round to the same cell - and the old restore put four full-size bricks on one
@@ -2074,5 +2110,52 @@ extension ResumeTransitionTests {
         scene.gameState.enter(InbetweenLevels.self)
         XCTAssertEqual(scene.totalStatsArray[0].pack1LevelHighScores[0], 9_000,
                        "a player's best stays their best")
+    }
+}
+
+/// James, round 354: "stats from a game that was resumed only have stats from since the game was
+/// resumed, not the start of the game".
+extension SavedGameTests {
+
+    func testARunsStatisticsTravelWithItsSave() throws {
+        let recents = InGameRecents.shared
+        recents.reset()
+        defer { recents.reset() }
+        for _ in 0..<3 { recents.brickDestroyed() }
+        for _ in 0..<2 { recents.paddleHit() }
+        recents.sawPowerUp(5)
+        recents.collectedPowerUp(5)
+        recents.sawPowerUp(7)
+
+        var game = sampleGame()
+        game.runStats = recents.runStats(bestBallHits: 9)
+        let decoded = try JSONDecoder().decode(SavedGame.self, from: JSONEncoder().encode(game))
+        XCTAssertEqual(decoded.runStats, game.runStats)
+
+        recents.reset()
+        // What a relaunch does: the new scene's run starts empty
+        let scene = GameScene()
+        scene.restoreRunStats(from: decoded)
+
+        XCTAssertEqual(recents.bricksDestroyedThisRun, 3)
+        XCTAssertEqual(recents.paddleHitsThisRun, 2)
+        XCTAssertEqual(recents.powerUpsSeen, 2)
+        XCTAssertEqual(recents.powerUpsCollected, 1)
+        XCTAssertEqual(recents.powerUpIndices, [7, 5], "newest first, as they were")
+        XCTAssertEqual(scene.runBestBallHits, 9)
+    }
+
+    func testASaveFromBeforeRunStatsStillDecodesAndCountsFromTheResume() throws {
+        let game = sampleGame()
+        XCTAssertNil(game.runStats)
+        let decoded = try JSONDecoder().decode(SavedGame.self, from: JSONEncoder().encode(game))
+        XCTAssertNil(decoded.runStats)
+
+        let recents = InGameRecents.shared
+        recents.reset()
+        defer { recents.reset() }
+        recents.brickDestroyed()
+        GameScene().restoreRunStats(from: decoded)
+        XCTAssertEqual(recents.bricksDestroyedThisRun, 1, "nothing to restore, so nothing replaced")
     }
 }

@@ -204,6 +204,57 @@ final class GameCenterHandler: NSObject {
         }
     }
 
+    /// The leading places on a day's board, and the local player's own (round 354).
+    ///
+    /// The same two occurrences `loadDailyBoardBest` can reach, and nil for the same reasons:
+    /// an older day, a signed-out player, no network, no board. An empty board answers with
+    /// no leaders rather than nil, so the caller can tell "nobody yet" from "cannot know".
+    ///
+    /// One request answers both halves: `loadEntries(for: .global ...)` hands back the local
+    /// player's entry beside the range asked for, which is the call `loadRank` already relies
+    /// on.
+    func loadDailyBoardTop(forKey key: String, count: Int,
+                           completion: @escaping ((leaders: [DailyBoardRow],
+                                                   local: DailyBoardRow?)?) -> Void) {
+        let session = DailyChallengeSession.shared
+        guard GKLocalPlayer.local.isAuthenticated,
+              let occurrence = DailyChallengeSession.boardOccurrence(forKey: key,
+                                                                    todayKey: session.todayKey)
+        else { completion(nil); return }
+        let me = GKLocalPlayer.local.gamePlayerID
+        func row(_ entry: GKLeaderboard.Entry) -> DailyBoardRow {
+            DailyBoardRow(rank: entry.rank, name: entry.player.displayName, score: entry.score,
+                          isLocalPlayer: entry.player.gamePlayerID == me)
+        }
+        func top(of board: GKLeaderboard) {
+            board.loadEntries(for: .global, timeScope: .allTime,
+                              range: NSRange(location: 1, length: max(1, count))) {
+                localEntry, entries, _, error in
+                let answer = error == nil || entries != nil
+                    ? (leaders: (entries ?? []).map(row), local: localEntry.map(row))
+                    : nil
+                DispatchQueue.main.async { completion(answer) }
+            }
+        }
+        GKLeaderboard.loadLeaderboards(IDs: [DailyChallengeBoards.daily]) { boards, _ in
+            guard let board = boards?.first else {
+                DispatchQueue.main.async { completion(nil) }
+                return
+            }
+            switch occurrence {
+            case .current: top(of: board)
+            case .previous:
+                board.loadPreviousOccurrence { previous, _ in
+                    guard let previous else {
+                        DispatchQueue.main.async { completion(nil) }
+                        return
+                    }
+                    top(of: previous)
+                }
+            }
+        }
+    }
+
     /// The overall board's running total (§7), submitted whole after a day's post is
     /// confirmed. Always the whole total, so it is safe to resubmit and self-heals: a
     /// day that lands late still reaches it.

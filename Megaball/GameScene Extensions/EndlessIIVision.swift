@@ -211,6 +211,19 @@ extension GameScene {
         return portals
     }
 
+    /// A path with its first point moved out along its first leg by `radius`, so it starts at
+    /// the rim of the ball it leaves. A first leg shorter than that is left as it is.
+    static func trajectoryStartingAtTheBallsEdge(_ points: [CGPoint],
+                                                 radius: CGFloat) -> [CGPoint] {
+        guard points.count > 1 else { return points }
+        let dx = points[1].x - points[0].x, dy = points[1].y - points[0].y
+        let length = hypot(dx, dy)
+        guard length > radius*2 else { return points }
+        var moved = points
+        moved[0] = CGPoint(x: points[0].x + dx/length*radius, y: points[0].y + dy/length*radius)
+        return moved
+    }
+
     func endlessIIVisionBricks() -> [CGRect] {
         var bricks: [CGRect] = []
         enumerateChildNodes(withName: BrickCategoryName) { node, _ in
@@ -256,8 +269,14 @@ extension GameScene {
     /// so a deepened Trajectory Line really is a clearer one.
     ///
     /// Returns the next free index in the shared line pool.
-    private func endlessIIDrawFadingTrajectory(_ points: [CGPoint], from start: Int) -> Int {
-        guard points.count > 1 else { return start }
+    private func endlessIIDrawFadingTrajectory(_ drawn: [CGPoint], from start: Int) -> Int {
+        guard drawn.count > 1 else { return start }
+        let points = GameScene.trajectoryStartingAtTheBallsEdge(drawn, radius: ballSize*0.6)
+        // **From the ball's edge, not its centre** (James, round 354, with a screenshot: "ball
+        // trajectory line is still drawn on top of the ball, not behind it"). Round 342 put the
+        // line on a plane below the ball, which was right and was not enough: the line began at
+        // the ball's centre and its glow is wider than the ball, so the first segment spilled
+        // out round the ball on both sides and read as laid over it
 
         let step = max(ballSize*0.9, 1)
         let sharpness = CGFloat(endlessIITrajectoryLevel)

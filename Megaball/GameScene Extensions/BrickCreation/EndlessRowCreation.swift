@@ -100,16 +100,9 @@ extension GameScene {
         powerUpProbArray[51] = gameMode == .endlessII ? 5 : 0 // Randomised Bounce -
         // uncommon and bad (§5.4). Unconditional, unlike the Lock and the Wipe below:
         // it takes something away whatever else is running, so it is never a dud
-        powerUpProbArray[50] = endlessIIWipeMayDrop ? 5 : 0 // Wipe - uncommon (§5.4), and
-        // conditional for the same reason a Lock is: with nothing running it takes nothing
-        // away, and a bad power-up that does nothing is a gift rather than a dud
-
-        powerUpProbArray[48] = endlessIILockMayDrop ? 3 : 0 // Lock - rare, and conditional
-        powerUpProbArray[49] = endlessIIKeyMayDrop ? 30 : 0 // Key - weighted high inside its
-        // own window and zero outside it (§5.4): rare overall, but reliably there while it
-        // is possible at all. These two are the only drops whose eligibility is live game
-        // state rather than a table, which is why they are set here on every row rather than
-        // once at level load
+        applyEndlessIIConditionalWeights()
+        // Wipe, Lock and Key, whose weights are live game state rather than a table - which
+        // is why they are set here on every row rather than once at level load
 
         if gameMode == .endlessII {
             let gap = Double(powerUpProbFactor) * endlessIIPhase.powerUpGapFactor
