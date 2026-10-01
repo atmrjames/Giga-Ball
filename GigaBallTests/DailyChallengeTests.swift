@@ -3756,3 +3756,90 @@ final class DailyBoardRowTests: XCTestCase {
         XCTAssertTrue(shown.contains { ($0.attributedText?.string ?? "").contains("Global Hi-Score") })
     }
 }
+
+/// James, round 354: "Computer pack - clock level showed up with a monochromatic twist. That
+/// level is already plain white so the twist did nothing."
+///
+/// `DailyTwist.levelsAlreadyMonochrome` is a cache of this measurement, the way
+/// `levelsUnchangedBy` is a cache of `DailyLayoutFlipTests`: the generator works from a date
+/// with no scene, so the answer is measured here and fails the moment the two disagree.
+final class DailyMonochromeLevelTests: XCTestCase {
+
+    /// Nine bricks in ten - see the table's own note for where the line falls and why.
+    static let colourlessBar = 90
+
+    private func levelScene() -> GameScene {
+        let scene = GameScene(size: CGSize(width: 402, height: 874))
+        scene.gameMode = .classic
+        scene.totalStatsArray = [TotalStats()]
+        let layout = GameSceneLayout(screen: CGSize(width: 402, height: 874))
+        scene.numberOfBrickRows = GameSceneLayout.brickRows
+        scene.numberOfBrickColumns = GameSceneLayout.brickColumns
+        scene.brickWidth = layout.brickWidth
+        scene.brickHeight = layout.brickHeight
+        scene.gameWidth = layout.gameWidth
+        scene.yBrickOffset = 300
+        return scene
+    }
+
+    /// The share of a level's bricks that a greyscale filter leaves looking the same: ordinary
+    /// bricks with no tint to speak of. Every other Classic brick has colour in its own art.
+    private func colourlessShare(_ scene: GameScene, level: Int) -> Int? {
+        scene.enumerateChildNodes(withName: BrickCategoryName) { node, _ in node.removeFromParent() }
+        scene.bricksLeft = 0
+        scene.levelNumber = level
+        scene.loadLevel(level)
+        var total = 0, plain = 0
+        scene.enumerateChildNodes(withName: BrickCategoryName) { node, _ in
+            guard let brick = node as? SKSpriteNode,
+                  brick.texture != scene.brickNullTexture else { return }
+            total += 1
+            var hue: CGFloat = 0, saturation: CGFloat = 0, brightness: CGFloat = 0, alpha: CGFloat = 0
+            brick.color.getHue(&hue, saturation: &saturation, brightness: &brightness, alpha: &alpha)
+            if brick.texture == scene.brickNormalTexture,
+               saturation*brick.colorBlendFactor <= 0.05 { plain += 1 }
+        }
+        return total == 0 ? nil : plain*100/total
+    }
+
+    func testTheTableIsExactlyTheLevelsWithNoColourToLose() {
+        let scene = levelScene()
+        var measured: Set<Int> = []
+        for level in 1...DailyChallengeGenerator.classicLevelCount {
+            if let share = colourlessShare(scene, level: level),
+               share >= DailyMonochromeLevelTests.colourlessBar { measured.insert(level) }
+        }
+        XCTAssertTrue(measured.contains(55), "Computer 5, Clock - the reported level")
+        XCTAssertEqual(DailyTwist.levelsAlreadyMonochrome, measured,
+                       "a level crossed the bar: missing \(measured.subtracting(DailyTwist.levelsAlreadyMonochrome).sorted()), "
+                       + "no longer over it \(DailyTwist.levelsAlreadyMonochrome.subtracting(measured).sorted())")
+    }
+
+    func testTheReportedDayStillReadsAsItWasPlayed() {
+        // Today has scores on its board, so it keeps the day James screenshotted
+        let day = DailyChallengeGenerator.challenge(forKey: "2026-10-01")
+        XCTAssertEqual(day.classicLevel, 55)
+        XCTAssertTrue(day.twists.contains(.monochromatic))
+    }
+
+    func testFromTheRuleOnNoDayGreysALevelThatIsAlreadyGrey() {
+        var key = DailyTwist.monochromeRuleKey
+        for _ in 0..<730 {
+            let day = DailyChallengeGenerator.challenge(forKey: key)
+            if let level = day.classicLevel, day.twists.contains(.monochromatic) {
+                XCTAssertFalse(DailyTwist.levelsAlreadyMonochrome.contains(level),
+                               "\(key) greys level \(level), which has no colour to lose")
+            }
+            key = DailyDay.key(for: DailyDay.utcCalendar.date(
+                byAdding: .day, value: 1, to: DailyDay.date(forKey: key)!)!)
+        }
+    }
+
+    func testTheRuleIsAskedOnlyOfTheDaysItCovers() {
+        XCTAssertTrue(DailyTwist.monochromatic.changesSomething(onClassicLevel: 55, on: "2026-10-01"))
+        XCTAssertFalse(DailyTwist.monochromatic.changesSomething(onClassicLevel: 55, on: "2026-10-02"))
+        XCTAssertTrue(DailyTwist.monochromatic.changesSomething(onClassicLevel: 62, on: "2026-10-02"))
+        XCTAssertTrue(DailyTwist.monochromatic.changesSomething(onClassicLevel: nil, on: "2026-10-02"),
+                      "an endless day has no level to be grey already")
+    }
+}

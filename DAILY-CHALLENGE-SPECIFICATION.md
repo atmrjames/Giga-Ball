@@ -849,6 +849,17 @@ must be *posted* inside the window, not merely earned in it. As shipped:
   re-measures it, so a level edited into or out of symmetry fails a test rather than quietly
   costing somebody a twist.
 
+- **Nor is a greyscale on a level with no colour** (round 354). James: "Computer pack - clock
+  level showed up with a monochromatic twist. That level is already plain white so the twist
+  did nothing." Measured the same way: every level built, and a level counted as already grey
+  when nine bricks in ten are an untinted ordinary brick, since every other Classic brick has
+  colour in its own art. Six levels are entirely colourless (Command, Clock, Zoom, One, Eight,
+  Finish Line), and Checkers at 97% and City Hall at 91% clear the bar; the next level down is
+  at 83%. `DailyTwist.levelsAlreadyMonochrome` is the table and `DailyMonochromeLevelTests`
+  re-measures it. **From 2 October 2026** (`monochromeRuleKey`): taking a level out of the
+  twist's pool changes what every day drawing that level rolls, so it starts the day after
+  the report and the days behind it, the reported one included, read as they were played.
+
 - ~~**Twist badges.**~~ **Delivered, round 290; completed round 294** - Full Deck and Level
   Pegging, the two with no row in the twist matrix, arrived with updates to Classic Mayhem and
   No Breaks. Every live twist wears its own artwork.

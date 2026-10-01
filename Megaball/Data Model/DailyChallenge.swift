@@ -446,10 +446,48 @@ enum DailyTwist: String, CaseIterable, Codable {
     /// True for everything that is not a layout flip, and for every day with no Classic level
     /// to flip - the endless modes generate their own fields and have nothing fixed to be
     /// symmetric about.
-    func changesSomething(onClassicLevel level: Int?) -> Bool {
-        guard let level, let unchanged = DailyTwist.levelsUnchangedBy[self] else { return true }
+    ///
+    /// Monochromatic is asked as well, from `monochromeRuleKey` (round 354), against the levels
+    /// that are already colourless. `key` is the day being drawn; nil asks today's rules, which
+    /// is what every caller outside the generator wants.
+    func changesSomething(onClassicLevel level: Int?, on key: String? = nil) -> Bool {
+        guard let level else { return true }
+        if self == .monochromatic {
+            if let key, key < DailyTwist.monochromeRuleKey { return true }
+            return DailyTwist.levelsAlreadyMonochrome.contains(level) == false
+        }
+        guard let unchanged = DailyTwist.levelsUnchangedBy[self] else { return true }
         return unchanged.contains(level) == false
     }
+
+    /// The Classic levels Monochromatic has nothing to take the colour from (round 354).
+    ///
+    /// James: "Computer pack - clock level showed up with a monochromatic twist. That level is
+    /// already plain white so the twist did nothing." The twist greys the whole scene, and on a
+    /// level built of plain white bricks there is no colour to lose - the briefing promises a
+    /// rule change and the level arrives looking exactly as it always does, which is the flip
+    /// twists' problem in another form and gets the same answer.
+    ///
+    /// **Measured, then written down** (`DailyMonochromeLevelTests`), as the flip table is: a
+    /// level is here when at least nine bricks in ten are an untinted ordinary brick. Every
+    /// other brick in the Classic theme carries colour in its own art - the multi-hits, both
+    /// indestructibles and the invisible one - so only a white-or-grey ordinary brick is
+    /// unchanged by the filter. Six levels are entirely colourless; Checkers (97%) and City
+    /// Hall (91%) clear the bar with two and eight coloured bricks; the next level down is at
+    /// 83%, which is where the line was drawn. The test fails if a level crosses it either way.
+    static let levelsAlreadyMonochrome: Set<Int> = [
+        1,              // Classic 1 Checkers
+        38,             // City 8 City Hall
+        51, 55, 58,     // Computer 1 Command, 5 Clock, 8 Zoom
+        91, 98,         // Numbers 1 One, 8 Eight
+        110,            // Challenge 10 Finish Line
+    ]
+
+    /// The first day the table above is honoured. **Tomorrow, not today** (round 354): leaving a
+    /// level out of Monochromatic's pool changes what every day that drew that level rolls, and
+    /// days already played - including today's, with scores on its board - must read the same
+    /// for ever (§2.1).
+    static let monochromeRuleKey = "2026-10-02"
 
     // MARK: - Which twists may share a day
 
@@ -914,7 +952,7 @@ enum DailyChallengeGenerator {
                    let look = DailyTwist.Category.look.activationKey <= key
                     ? DailyChallengeGenerator.draw(from: DailyTwist.allCases.filter {
                         $0.category == .look && $0.inPool(on: key, for: mode)
-                            && $0.changesSomething(onClassicLevel: classicLevel) },
+                            && $0.changesSomething(onClassicLevel: classicLevel, on: key) },
                         &stream) : nil {
                     twists.append(look)
                     categories.removeAll { $0 == .look }
@@ -938,7 +976,7 @@ enum DailyChallengeGenerator {
             let pool = DailyTwist.allCases.filter { candidate in
                 candidate.category == category && candidate.inPool(on: key, for: mode)
                     && twists.allSatisfy { $0.pairsWith(candidate) }
-                    && candidate.changesSomething(onClassicLevel: classicLevel)
+                    && candidate.changesSomething(onClassicLevel: classicLevel, on: key)
             }
             guard pool.isEmpty == false else { continue }
             // **And nothing already drawn refuses it** (round 286). At most one twist per
@@ -970,7 +1008,7 @@ enum DailyChallengeGenerator {
             let everything = DailyTwist.allCases.filter { candidate in
                 categories.contains(candidate.category)
                     && candidate.inPool(on: key, for: mode)
-                    && candidate.changesSomething(onClassicLevel: classicLevel)
+                    && candidate.changesSomething(onClassicLevel: classicLevel, on: key)
             }
             if let twist = DailyChallengeGenerator.draw(from: everything, &stream) {
                 twists.append(twist)
