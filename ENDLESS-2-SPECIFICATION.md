@@ -2905,12 +2905,13 @@ testers:
   that acts; `seamFace` was already tested), `endlessIISpawn(around:)` in a real field (only the
   pure choice was tested), `ballLost` (every lost ball in all three modes), every rule in
   `powerUpCanAppear` (half its branches had never run, and the scoring ones decide what falls
-  in Classic and Endless), `breakHorizontalRuns`, and the style pass `applyEndlessIIStyles`.
+  in Classic and Endless), `breakHorizontalRuns`, the style pass `applyEndlessIIStyles`, and three of `handleContact`'s branches - the ceiling ("ran along the top of the screen"), the side blocks and the backstop - plus a power-up missed at the bottom and the Power-Up Leaver progress it moves.
   No game code changed for any of them: each did what it says.
 - **Mutation scores:** eligibility 45 of 45; `ballLost` 10 of 10 (4 of 10 before its second set of tests - Butter Fingers, the flags and Mayhem's height lines had nothing watching them); the background layout 20 of 24 after its range
   tests (the four left are a symmetric jitter flipped, which changes nothing a test or a player
   can see); the Spawner's room rules 9 of 11, then the edge rows. The seam resolver's one
   survivor is `keepingCapacity` flipped.
+- **Coverage 78.1%** (77.0% that morning), **97 functions over a CRAP of 30** (104), and `handleContact` off the top of the list. Suite: 2,844 passed, no failures, no relaunches.
 - **VoiceOver** says the daily ending's Game Center block and the menu card's board rows are
   buttons that open the day's board. Both were tappable labels read as plain text.
 - **SPECIFICATION.md** corrected: 98 achievements rather than 41, the four 1.3 leaderboards,
@@ -2926,6 +2927,8 @@ testers:
 | ~~The game view following an iPad or Mac window~~ | **Seen working, 2 October** - James on his iPad: "it's working perfectly" |
 | ~~The settings list keeping its place~~ | **Seen fixed, 2 October**, on his phone and his iPad |
 | Descent's pace | Round 357's three seconds a row. James is playing it: "maybe a bit slow, let's see". `endlessIIDescentStep` is the one figure to change |
+| "Bricks hit" counts an ordinary brick's last hit twice | Found in round 358b, reading `hitBrick` for coverage. The `default` (ordinary) and `brickInvisibleTexture` cases add one to `bricksHit` on entry and another in the branch that destroys the brick, so every ordinary brick broken adds two hits. It dates from July 2020. Fixing it is two deleted lines; it is James's call because the lifetime figure everyone already holds is inflated and would then grow at a different rate. Not changed for 1.3 |
+| Four old power-up achievements can be earned in a daily | Found in round 358b. First Power-Up (24), Max Paddle Size (32) and the two Power-Up Leavers (30, 31) write `achievementsUnlockedArray` directly rather than through `award(_:)`, so round 310's "only `earnableInDaily` in a daily" rule never sees them. Daily spec §9 does not forbid it - those four are about power-ups rather than levels - so it may be fine as it is. James to say |
 | ~~The iPad paddle-speed field in the column~~ | **Seen working, round 348**, on an iPad Pro 11-inch (M5) simulator on iOS 26.5: the field sits in the column as a scaled model of the play area, the slider reads x2.00 a quarter of the way along, and a 100-point drag carried the paddle from the centre to near the right edge |
 | ~~Aimed Sticky's sounds~~ | **Answered, round 356** ("aimed sticky sounds should use the sticky paddle sound"). It did, and the ordinary bounce played under it - see round 356 |
 | ~~Portal Paddle with Auto-Aim~~ | **Answered, round 356**: "Portal Paddle and auto-aim should not run together". The pair is back in the matrix |
