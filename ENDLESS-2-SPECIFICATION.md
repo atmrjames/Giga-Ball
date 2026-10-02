@@ -2916,6 +2916,11 @@ testers:
   buttons that open the day's board. Both were tappable labels read as plain text.
 - **SPECIFICATION.md** corrected: 98 achievements rather than 41, the four 1.3 leaderboards,
   the daily ending, and the settings table in the screen's own order.
+- **James's answers the same evening:** "fix the bricks hit count" (done, see the table below),
+  "leave the daily achievements", "push it". Validated before the push: a **Release** build for
+  a generic iOS device (no errors, no warnings, 1.3 (83), privacy manifest in), and the app on
+  the simulator - a run saved that morning resumed onto the same field, played to a game over,
+  and its summary and Statistics page read right.
 - **A fixture trap, recorded so it is not mistaken for a bug:** `saveCurrentGame` divides a
   falling power-up's position by `brickWidth`, so a bare `GameScene()` with a power-up on
   screen traps converting NaN to Int. A real scene is always laid out before play.
@@ -2927,8 +2932,8 @@ testers:
 | ~~The game view following an iPad or Mac window~~ | **Seen working, 2 October** - James on his iPad: "it's working perfectly" |
 | ~~The settings list keeping its place~~ | **Seen fixed, 2 October**, on his phone and his iPad |
 | Descent's pace | Round 357's three seconds a row. James is playing it: "maybe a bit slow, let's see". `endlessIIDescentStep` is the one figure to change |
-| "Bricks hit" counts an ordinary brick's last hit twice | Found in round 358b, reading `hitBrick` for coverage. The `default` (ordinary) and `brickInvisibleTexture` cases add one to `bricksHit` on entry and another in the branch that destroys the brick, so every ordinary brick broken adds two hits. It dates from July 2020. Fixing it is two deleted lines; it is James's call because the lifetime figure everyone already holds is inflated and would then grow at a different rate. Not changed for 1.3 |
-| Four old power-up achievements can be earned in a daily | Found in round 358b. First Power-Up (24), Max Paddle Size (32) and the two Power-Up Leavers (30, 31) write `achievementsUnlockedArray` directly rather than through `award(_:)`, so round 310's "only `earnableInDaily` in a daily" rule never sees them. Daily spec §9 does not forbid it - those four are about power-ups rather than levels - so it may be fine as it is. James to say |
+| ~~"Bricks hit" counts an ordinary brick's last hit twice~~ | **Fixed, round 358b** (James: "fix the bricks hit count"). The `default` and `brickInvisibleTexture` cases of `hitBrick` counted the breaking hit twice from July 2020; the second count is gone and `BricksHitCountTests` pins one hit a hit for every brick type. Totals already held stay as they are - they are lifetime figures and the iCloud merge takes the larger - so the figure grows at the honest rate from 1.3 on |
+| ~~Four old power-up achievements can be earned in a daily~~ | **Answered, round 358b**: James, "leave the daily achievements". First Power-Up, Max Paddle Size and the two Power-Up Leavers stay earnable in a daily; they are about power-ups rather than levels, which is what daily spec §9 protects |
 | ~~The iPad paddle-speed field in the column~~ | **Seen working, round 348**, on an iPad Pro 11-inch (M5) simulator on iOS 26.5: the field sits in the column as a scaled model of the play area, the slider reads x2.00 a quarter of the way along, and a 100-point drag carried the paddle from the centre to near the right edge |
 | ~~Aimed Sticky's sounds~~ | **Answered, round 356** ("aimed sticky sounds should use the sticky paddle sound"). It did, and the ordinary bounce played under it - see round 356 |
 | ~~Portal Paddle with Auto-Aim~~ | **Answered, round 356**: "Portal Paddle and auto-aim should not run together". The pair is back in the matrix |

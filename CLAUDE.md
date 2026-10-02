@@ -166,6 +166,14 @@ background: piping `xcodebuild` straight into `grep` has hung twice.
   there with its own `--derived-data` while a suite runs on the 16 Pro. Every build compiles the
   whole working tree, so do not edit the file being mutated while it runs, and do not commit
   until `mutate.py` has printed `file restored`.
+  **But do not install the app on the other simulator while a suite runs.** Round 358b did -
+  a `clean build` and `simctl install` on the 17 Pro mid-suite - and the 16 Pro's running test
+  host had its bundle moved into `containermanagerd/Dead/`, so from then on every test that
+  loads a storyboard failed with "There doesn't seem to be a valid compiled storyboard" or
+  "Could not load NIB in bundle". Seventeen named failures, no assertion about the code among
+  them. The tell is `Dead/temp.` in the path the error prints. Building and running tests on
+  the second simulator during a suite was fine all that day, several times over; the one run
+  that broke was the one with a `simctl install` of the app beside it, so that is the suspect.
 
 ## Adding a file
 

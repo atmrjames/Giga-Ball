@@ -4885,7 +4885,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                 })
                 // Animate bricks in
 			} else {
-				totalStatsArray[0].bricksHit[7]+=1
+				// The hit was counted on the way in. A second count here made every broken brick
+				// two hits from July 2020 until round 358b, when James had it fixed
 				totalStatsArray[0].bricksDestroyed[7]+=1
 				removeBrick(node: node, sprite: sprite)
 			}
@@ -4904,7 +4905,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                     sprite.run(brickHitGroup)
                 })
 			} else {
-				totalStatsArray[0].bricksHit[0]+=1
+				// Counted once, above - see the invisible brick's note
 				totalStatsArray[0].bricksDestroyed[0]+=1
 				removeBrick(node: node, sprite: sprite)
 			}

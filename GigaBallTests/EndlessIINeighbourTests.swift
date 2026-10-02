@@ -1260,3 +1260,68 @@ final class SpawnerInTheFieldTests: XCTestCase {
         XCTAssertEqual(bricks(scene).count, count)
     }
 }
+
+/// James, round 358b: "fix the bricks hit count". Breaking an ordinary or an invisible brick
+/// added two to the lifetime "Bricks hit" figure - one on the way into its case, one more in
+/// the branch that destroys it - from July 2020 until this round.
+final class BricksHitCountTests: XCTestCase {
+
+    private let cell = CGSize(width: 40, height: 20)
+
+    private func scene() -> GameScene {
+        let scene = GameScene(size: CGSize(width: 500, height: 900))
+        scene.gameWidth = 440
+        scene.brickWidth = cell.width
+        scene.brickHeight = cell.height
+        scene.gameMode = .classic
+        scene.totalStatsArray = [TotalStats()]
+        return scene
+    }
+
+    private func brick(_ scene: GameScene, texture: SKTexture, hidden: Bool = false) -> SKSpriteNode {
+        let node = SKSpriteNode(texture: texture, size: cell)
+        node.name = BrickCategoryName
+        node.isHidden = hidden
+        scene.addChild(node)
+        return node
+    }
+
+    func testBreakingAnOrdinaryBrickIsOneHit() {
+        let scene = scene()
+        let target = brick(scene, texture: scene.brickNormalTexture)
+        scene.hitBrick(node: target, sprite: target)
+        XCTAssertEqual(scene.totalStatsArray[0].bricksHit[0], 1)
+        XCTAssertEqual(scene.totalStatsArray[0].bricksDestroyed[0], 1)
+    }
+
+    func testAnInvisibleBrickIsOneHitToShowAndOneToBreak() {
+        let scene = scene()
+        let target = brick(scene, texture: scene.brickInvisibleTexture, hidden: true)
+        scene.hitBrick(node: target, sprite: target)
+        XCTAssertEqual(scene.totalStatsArray[0].bricksHit[7], 1)
+        XCTAssertEqual(scene.totalStatsArray[0].bricksDestroyed[7], 0, "shown, not broken")
+
+        target.isHidden = false
+        // What the reveal's animation finishes by doing
+        scene.hitBrick(node: target, sprite: target)
+        XCTAssertEqual(scene.totalStatsArray[0].bricksHit[7], 2)
+        XCTAssertEqual(scene.totalStatsArray[0].bricksDestroyed[7], 1)
+    }
+
+    func testEveryKindOfBrickCountsOneHitAHit() {
+        // The rest never double-counted; pinned beside the two that did, so a change to the
+        // switch is checked against all of them at once
+        let scene = scene()
+        let kinds: [(SKTexture, Int)] = [(scene.brickMultiHit1Texture, 1),
+                                         (scene.brickMultiHit2Texture, 2),
+                                         (scene.brickMultiHit3Texture, 3),
+                                         (scene.brickMultiHit4Texture, 4),
+                                         (scene.brickIndestructible1Texture, 5),
+                                         (scene.brickIndestructible2Texture, 6)]
+        for (texture, slot) in kinds {
+            let target = brick(scene, texture: texture)
+            scene.hitBrick(node: target, sprite: target)
+            XCTAssertEqual(scene.totalStatsArray[0].bricksHit[slot], 1, "slot \(slot)")
+        }
+    }
+}
