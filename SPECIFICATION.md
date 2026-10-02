@@ -442,11 +442,15 @@ that screen, whose Continue starts the next level. `ResumeTransitionTests` drive
 
 ## 10. Game Center
 
-- **74 leaderboards**: 61 per-level boards, 11 per-pack boards, plus total score, best
-  endless height and total endless height. (Best endless height appears in both the level
-  and global lists, hence 74 unique rather than 75.)
-- **41 achievements**, covering pack completions, score thresholds, level counts, speed
-  runs, no-ball-lost runs, power-up usage and endless height milestones.
+- **74 leaderboards up to 1.2**: 61 per-level boards, 11 per-pack boards, plus total score,
+  best endless height and total endless height. (Best endless height appears in both the
+  level and global lists, hence 74 unique rather than 75.) **1.3 adds four**: Endless Mayhem's
+  best and total height, and the daily's two - the day's own board, which recurs at 00:00
+  UTC, and the running total across days (`DailyChallengeBoards`).
+- **98 achievements in 1.3** (41 in 1.2), covering pack completions, score thresholds, level
+  counts, speed runs, no-ball-lost runs, power-up usage, height milestones in both endless
+  modes, and nineteen the daily can award. `AchievementCatalogue.identifiers` is the list,
+  append-only, because Game Center holds every identifier that has shipped.
 - Submission happens at the end of every level and game, and when opening stats screens.
   It is guarded on the player being authenticated. **The per-level boards are the exception:
   they exist and nothing has posted to them for years**, so anything reading a standing uses
@@ -458,6 +462,10 @@ that screen, whose Continue starts the next level. `ResumeTransitionTests` drive
   signed out, offline, or Single Level Mode. **Endless Mayhem is no longer one of those** -
   James had its boards approved on 21 August 2026, and this line went on saying they did not
   exist.
+- **A daily's ending is different** (round 357): the Game Center block sits straight under
+  the score, lists the day's top three with the player's own place under them, and opens the
+  day's board when tapped. The daily menu's card shows the same board, lime when the player
+  leads, in place of the posted score once there is a board to show.
 
 Game Center can be disabled in settings.
 
@@ -465,15 +473,15 @@ Game Center can be disabled in settings.
 
 ## 11. Settings
 
-| Setting | Values |
+| Setting (in the order the screen lists them) | Values |
 |---|---|
 | App Icon | 1 of 12, subject to unlocks; the row wears the chevron of a row that opens a page, at the card's right edge with any state to its left (round 348) |
 | Ball & Paddle Theme | 1 of 12, subject to unlocks; Retro also brings its own bricks; chevron as App Icon |
+| Game Background | 1 of 11, chosen on a screen with a model of the game view. Glow and Clouds drift, and each game starts them in a new arrangement (round 358); the picker shows them as a game's first frame would |
+| Music | on / off, with a choice of tracks. All four can be ticked or unticked, the Title Theme included: the menus play the Title Theme while it is ticked and another ticked track when it is not, a run draws from the ticked game tracks (the Title Theme only if nothing else is), and nothing ticked is music off (round 346) |
 | In-Game Sound | on / off (was "Sounds") |
 | UI Sound | on / off: the button click, separately from the game (round 341) |
-| Music | on / off, with a choice of tracks. All four can be ticked or unticked, the Title Theme included: the menus play the Title Theme while it is ticked and another ticked track when it is not, a run draws from the ticked game tracks (the Title Theme only if nothing else is), and nothing ticked is music off (round 346) |
 | Haptics | on / off; hidden on devices with no haptic engine, such as iPads |
-| Game Background | 1 of 11, chosen on a screen with a model of the game view |
 | Perspective Zoom | on / off: the tilt-based motion on menu backgrounds (was "Parallax"), and off whenever the system's Reduce Motion is on |
 | Paddle Speed | a slider from 1.0 to 5.0 in quarter steps, with a practice field (5.0 from round 346) |
 | Swipe Up To Pause | on / off |

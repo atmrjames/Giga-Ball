@@ -288,3 +288,178 @@ final class PowerUpAllocationTests: XCTestCase {
         }
     }
 }
+
+/// Whether a power-up has anything to do right now (`powerUpCanAppear`), asked of every rule
+/// in Classic and the original Endless. Round 358's coverage pass found half the function's
+/// branches unrun: the drop generator has asked these questions since 2020 and the scoring
+/// ones decide what can fall in modes with years of leaderboard scores on them.
+final class PowerUpEligibilityTests: XCTestCase {
+
+    private func scene(endless: Bool = false) -> GameScene {
+        let scene = GameScene()
+        scene.gameMode = endless ? .endless : .classic
+        scene.endlessMode = endless
+        scene.numberOfLives = 2
+        scene.multiplier = 1.0
+        return scene
+    }
+
+    @discardableResult
+    private func bricks(_ scene: GameScene, _ count: Int, texture: SKTexture,
+                        hidden: Bool = false, y: CGFloat = 200) -> [SKSpriteNode] {
+        (0..<count).map { index in
+            let brick = SKSpriteNode(texture: texture)
+            brick.name = BrickCategoryName
+            brick.isHidden = hidden
+            brick.position = CGPoint(x: CGFloat(index)*40, y: y)
+            scene.addChild(brick)
+            return brick
+        }
+    }
+
+    func testGetALifeStopsAtFiveAndNeverFallsInEndless() {
+        let scene = scene()
+        scene.numberOfLives = 4
+        XCTAssertTrue(scene.powerUpCanAppear(0))
+        scene.numberOfLives = 5
+        XCTAssertFalse(scene.powerUpCanAppear(0))
+        XCTAssertFalse(self.scene(endless: true).powerUpCanAppear(0), "one life by definition")
+    }
+
+    func testLoseALifeNeedsALifeToLoseAndIsNeverAMystery() {
+        let scene = scene()
+        XCTAssertTrue(scene.powerUpCanAppear(1))
+        scene.numberOfLives = 0
+        XCTAssertFalse(scene.powerUpCanAppear(1))
+        scene.numberOfLives = 2
+        scene.mysteryPowerUp = true
+        XCTAssertFalse(scene.powerUpCanAppear(1))
+        XCTAssertFalse(self.scene(endless: true).powerUpCanAppear(1))
+    }
+
+    func testPointsOnlyFallWhereThereIsAScore() {
+        for index in [8, 10] {
+            XCTAssertTrue(scene().powerUpCanAppear(index))
+            XCTAssertFalse(scene(endless: true).powerUpCanAppear(index), "height is the score")
+        }
+    }
+
+    func testLosingPointsNeedsTwiceTheLossToTakeFrom() {
+        for (index, loss) in [(9, 100), (11, 1000)] {
+            let scene = scene()
+            scene.levelScore = loss*2
+            XCTAssertFalse(scene.powerUpCanAppear(index), "\(index) at exactly twice the loss")
+            scene.levelScore = loss*2 + 1
+            XCTAssertTrue(scene.powerUpCanAppear(index))
+            scene.mysteryPowerUp = true
+            XCTAssertFalse(scene.powerUpCanAppear(index))
+            let endless = self.scene(endless: true)
+            endless.levelScore = loss*10
+            XCTAssertFalse(endless.powerUpCanAppear(index))
+        }
+    }
+
+    func testTheMultiplierUpsAndDownsRespectTheirLimits() {
+        let scene = scene()
+        scene.multiplier = 1.9
+        XCTAssertTrue(scene.powerUpCanAppear(12))
+        scene.multiplier = 2.0
+        XCTAssertFalse(scene.powerUpCanAppear(12), "already at the cap")
+
+        scene.multiplier = 1.1
+        XCTAssertFalse(scene.powerUpCanAppear(13), "nothing to take away")
+        scene.multiplier = 1.2
+        XCTAssertTrue(scene.powerUpCanAppear(13))
+        scene.mysteryPowerUp = true
+        XCTAssertFalse(scene.powerUpCanAppear(13))
+        XCTAssertFalse(self.scene(endless: true).powerUpCanAppear(12))
+    }
+
+    func testCompleteLevelIsClassicsAndNeverAMystery() {
+        XCTAssertTrue(scene().powerUpCanAppear(14))
+        XCTAssertFalse(scene(endless: true).powerUpCanAppear(14), "no next level to skip to")
+        let mystery = scene()
+        mystery.mysteryPowerUp = true
+        XCTAssertFalse(mystery.powerUpCanAppear(14))
+    }
+
+    func testShowBricksNeedsThreeHidden() {
+        let scene = scene()
+        bricks(scene, 2, texture: scene.brickNormalTexture, hidden: true)
+        XCTAssertFalse(scene.powerUpCanAppear(15))
+        bricks(scene, 1, texture: scene.brickNormalTexture, hidden: true)
+        XCTAssertTrue(scene.powerUpCanAppear(15))
+    }
+
+    func testHideBricksNeedsThreeOrdinaryBricks() {
+        let scene = scene()
+        for texture in [scene.brickMultiHit1Texture, scene.brickMultiHit2Texture,
+                        scene.brickMultiHit3Texture, scene.brickMultiHit4Texture,
+                        scene.brickInvisibleTexture, scene.brickIndestructible1Texture,
+                        scene.brickIndestructible2Texture] {
+            bricks(scene, 3, texture: texture)
+        }
+        XCTAssertFalse(scene.powerUpCanAppear(16), "none of those can be hidden")
+        bricks(scene, 3, texture: scene.brickNormalTexture)
+        XCTAssertTrue(scene.powerUpCanAppear(16))
+    }
+
+    func testTheMultiHitPowerUpsNeedTheBricksTheyWorkOn() {
+        let clear = scene()
+        bricks(clear, 2, texture: clear.brickMultiHit1Texture)
+        bricks(clear, 2, texture: clear.brickMultiHit3Texture)
+        XCTAssertFalse(clear.powerUpCanAppear(17), "two it can clear, two it cannot")
+        bricks(clear, 1, texture: clear.brickMultiHit2Texture)
+        XCTAssertTrue(clear.powerUpCanAppear(17))
+
+        let reset = scene()
+        bricks(reset, 5, texture: reset.brickMultiHit1Texture)
+        XCTAssertFalse(reset.powerUpCanAppear(18), "none of them has been hit yet")
+        bricks(reset, 1, texture: reset.brickMultiHit2Texture)
+        bricks(reset, 1, texture: reset.brickMultiHit3Texture)
+        bricks(reset, 1, texture: reset.brickMultiHit4Texture)
+        XCTAssertTrue(reset.powerUpCanAppear(18))
+    }
+
+    func testZapIndestructibleNeedsThreeToZap() {
+        let scene = scene()
+        bricks(scene, 1, texture: scene.brickIndestructible1Texture)
+        bricks(scene, 1, texture: scene.brickIndestructible2Texture)
+        XCTAssertFalse(scene.powerUpCanAppear(19))
+        bricks(scene, 1, texture: scene.brickIndestructible2Texture)
+        XCTAssertTrue(scene.powerUpCanAppear(19))
+    }
+
+    func testClassicQuicksandStopsWhenTheFieldReachesThePaddle() {
+        let scene = scene()
+        scene.paddle.position = CGPoint(x: 0, y: -300)
+        scene.minPaddleGap = 40
+        bricks(scene, 3, texture: scene.brickNormalTexture, y: -200)
+        XCTAssertTrue(scene.powerUpCanAppear(23))
+        bricks(scene, 1, texture: scene.brickNormalTexture, y: -261)
+        XCTAssertFalse(scene.powerUpCanAppear(23), "the field is already at the bottom")
+        XCTAssertFalse(self.scene(endless: true).powerUpCanAppear(23),
+                       "the original Endless comes down by itself")
+    }
+
+    func testMysteryAndBackstopOnlyOnceAtATime() {
+        let scene = scene()
+        XCTAssertTrue(scene.powerUpCanAppear(24))
+        scene.mysteryPowerUp = true
+        XCTAssertFalse(scene.powerUpCanAppear(24))
+
+        XCTAssertTrue(scene.powerUpCanAppear(25))
+        scene.backstopCatches = 1
+        XCTAssertFalse(scene.powerUpCanAppear(25), "one is already out")
+        scene.backstopCatches = 0
+        scene.backstopSpentThisRun = true
+        XCTAssertFalse(scene.powerUpCanAppear(25), "once per run (round 320)")
+    }
+
+    func testEverythingElseCanAlwaysFall() {
+        let scene = scene()
+        for index in [2, 3, 4, 5, 6, 7, 20, 21, 22, 26, 27] {
+            XCTAssertTrue(scene.powerUpCanAppear(index), "\(index)")
+        }
+    }
+}

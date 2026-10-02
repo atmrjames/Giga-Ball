@@ -2895,6 +2895,30 @@ is it possible to randomise the size and position of the blobs at the start?"
   way) and was left alone; `hazeDrift` and `cloudLayers.crossing` are the figures if he wants
   it livelier.
 
+**Round 358b: the day after the push - coverage on the parts of play nothing ran.**
+
+`release-1.3` pushed at `af698c95` (James: "push it"). Then a day spent on the coverage
+report's 0% list rather than on features, since nothing is queued and the build is going to
+testers:
+
+- **Untested until today, all now pinned:** `resolveBrickSeamBounces` (the half of the seam fix
+  that acts; `seamFace` was already tested), `endlessIISpawn(around:)` in a real field (only the
+  pure choice was tested), `ballLost` (every lost ball in all three modes), every rule in
+  `powerUpCanAppear` (half its branches had never run, and the scoring ones decide what falls
+  in Classic and Endless), `breakHorizontalRuns`, and the style pass `applyEndlessIIStyles`.
+  No game code changed for any of them: each did what it says.
+- **Mutation scores:** eligibility 45 of 45; `ballLost` 10 of 10 (4 of 10 before its second set of tests - Butter Fingers, the flags and Mayhem's height lines had nothing watching them); the background layout 20 of 24 after its range
+  tests (the four left are a symmetric jitter flipped, which changes nothing a test or a player
+  can see); the Spawner's room rules 9 of 11, then the edge rows. The seam resolver's one
+  survivor is `keepingCapacity` flipped.
+- **VoiceOver** says the daily ending's Game Center block and the menu card's board rows are
+  buttons that open the day's board. Both were tappable labels read as plain text.
+- **SPECIFICATION.md** corrected: 98 achievements rather than 41, the four 1.3 leaderboards,
+  the daily ending, and the settings table in the screen's own order.
+- **A fixture trap, recorded so it is not mistaken for a bug:** `saveCurrentGame` divides a
+  falling power-up's position by `brickWidth`, so a bare `GameScene()` with a power-up on
+  screen traps converting NaN to Int. A real scene is always laid out before play.
+
 **Open after round 344:**
 
 | Item | What is known |

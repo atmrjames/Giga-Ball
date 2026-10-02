@@ -338,6 +338,9 @@ final class DailyCardView: UIView {
             line.isAccessibilityElement = true
             line.accessibilityLabel = "\(row.rank), \(row.name), \(score.text ?? "")"
             // One element a row, read the way it is laid out: place, player, score
+            line.accessibilityTraits = .button
+            line.accessibilityHint = "Opens the day's leaderboard"
+            // The card under the row is the door to Game Center's board, so the row says so
             boardRows.addArrangedSubview(line)
             if position > 0, row.isLocalPlayer, row.rank > rows[position - 1].rank + 1,
                let above = boardRows.arrangedSubviews.dropLast().last {

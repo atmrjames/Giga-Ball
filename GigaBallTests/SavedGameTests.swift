@@ -2193,3 +2193,165 @@ extension SavedGameTests {
         XCTAssertEqual(scene.paddleHitsPerLevel, 33)
     }
 }
+
+/// What losing a ball does to the run, in one place. Round 358's coverage pass found
+/// `ballLost` run by no test at all, though every lost ball in all three modes goes through it
+/// and round 356's resume report ("some stats are still wrong at the end of the game") was
+/// about exactly the counters it keeps.
+final class LosingABallTests: XCTestCase {
+
+    override func tearDown() {
+        UserDefaults().removePersistentDomain(forName: GameScene.testSettingsSuite)
+        super.tearDown()
+    }
+
+    private func classicInPlay(lives: Int) -> GameScene {
+        let scene = GameScene()
+        scene.totalStatsArray = [TotalStats()]
+        scene.gameMode = .classic
+        scene.gameState.enter(Playing.self)
+        scene.numberOfLives = lives
+        scene.gameWidth = 440
+        scene.brickWidth = 40
+        scene.brickHeight = 20
+        // Laid out, as a scene in play always is: the save the loss ends with divides by these
+        scene.addChild(scene.paddle)
+        scene.paddle.position = CGPoint(x: 35, y: -300)
+        scene.ballStartingPositionY = -285
+        scene.addChild(scene.ball)
+        scene.ball.position = CGPoint(x: -100, y: -420)
+        scene.ball.physicsBody = SKPhysicsBody(circleOfRadius: 6)
+        scene.ball.physicsBody!.velocity = CGVector(dx: 80, dy: -400)
+        scene.ballIsOnPaddle = false
+        return scene
+    }
+
+    func testTheLossIsCountedAndTheBallsRunCloses() {
+        let scene = classicInPlay(lives: 2)
+        scene.deathsPerLevel = 1
+        scene.hitsOnThisBall = 23
+        scene.runBestBallHits = 9
+
+        scene.ballLost()
+
+        XCTAssertEqual(scene.totalStatsArray[0].ballsLost, 1)
+        XCTAssertEqual(scene.deathsPerLevel, 2)
+        XCTAssertEqual(scene.runBestBallHits, 23, "the run's best ball is this one")
+        XCTAssertEqual(scene.totalStatsArray[0].longestBallRun, 23, "and the lifetime best")
+        XCTAssertEqual(scene.hitsOnThisBall, 0, "and the next ball counts from nothing")
+    }
+
+    func testTheLifetimeBestBallIsNeverLoweredByAShortOne() {
+        let scene = classicInPlay(lives: 2)
+        scene.totalStatsArray[0].bestBallHits = 40
+        scene.hitsOnThisBall = 3
+
+        scene.ballLost()
+
+        XCTAssertEqual(scene.totalStatsArray[0].longestBallRun, 40)
+    }
+
+    func testTheNextBallWaitsOnThePaddle() {
+        let scene = classicInPlay(lives: 2)
+
+        scene.ballLost()
+
+        XCTAssertTrue(scene.ballIsOnPaddle)
+        XCTAssertEqual(scene.ball.position.x, scene.paddle.position.x)
+        XCTAssertEqual(scene.ball.position.y, scene.ballStartingPositionY)
+        XCTAssertEqual(scene.ball.physicsBody!.velocity, .zero)
+        XCTAssertTrue(scene.ballIsReturning, "on its way back rather than ready to launch")
+        XCTAssertFalse(scene.gameoverStatus, "two lives left is not a game over")
+    }
+
+    func testTheMultiplierAndTheBallsGraphicsGoWithIt() {
+        // James, round 299: "auto aim graphic needs to disappear immediately if the ball is
+        // lost whilst its visible"
+        let scene = classicInPlay(lives: 2)
+        scene.multiplier = 2.4
+        let marker = SKSpriteNode(color: .white, size: CGSize(width: 4, height: 4))
+        marker.name = GameScene.autoAimMarkerName
+        scene.addChild(marker)
+        scene.directionMarker.isHidden = false
+
+        scene.ballLost()
+
+        XCTAssertEqual(scene.multiplier, Scoring.multiplierBase)
+        XCTAssertNil(marker.parent)
+        XCTAssertTrue(scene.directionMarker.isHidden)
+    }
+
+    func testTheLostBallIsHiddenAndTheLossIsFlagged() {
+        let scene = classicInPlay(lives: 2)
+        scene.endlessMoveInProgress = true
+        scene.paddleMoved = false
+        scene.ballLostBool = false
+
+        scene.ballLost()
+
+        XCTAssertTrue(scene.ball.isHidden, "hidden until the next one is served")
+        XCTAssertTrue(scene.ballLostBool)
+        XCTAssertTrue(scene.paddleMoved)
+        XCTAssertFalse(scene.endlessMoveInProgress)
+    }
+
+    /// An endless run, with a life in hand so the loss is not the end of it. An endless run
+    /// never has one, and the game-over path is not what these are about.
+    private func endlessInPlay(_ mode: GameMode) -> GameScene {
+        let scene = classicInPlay(lives: 1)
+        scene.gameMode = mode
+        scene.endlessMode = true
+        InGameRecents.shared.reset()
+        return scene
+    }
+
+    func testButterFingersIsLosingTheBallBeforeABrick() {
+        // Round 310: "lose the ball before destroying any bricks", both endless modes
+        let scene = endlessInPlay(.endless)
+        scene.ballLost()
+        XCTAssertTrue(scene.totalStatsArray[0].achievementsUnlockedArray[95])
+    }
+
+    func testOneBrickIsEnoughToMissButterFingers() {
+        let scene = endlessInPlay(.endlessII)
+        InGameRecents.shared.brickDestroyed()
+        scene.ballLost()
+        XCTAssertFalse(scene.totalStatsArray[0].achievementsUnlockedArray[95])
+    }
+
+    func testClassicHasNoButterFingers() {
+        // "A rack of three balls would hand it over on any careless first serve"
+        InGameRecents.shared.reset()
+        let scene = classicInPlay(lives: 2)
+        scene.ballLost()
+        XCTAssertFalse(scene.totalStatsArray[0].achievementsUnlockedArray[95])
+    }
+
+    func testMayhemsHeightLinesGoWithTheBall() {
+        // James, round 305: "Endless Mayhem height marker lines should disappear immediately
+        // when the ball is lost"
+        let scene = endlessInPlay(.endlessII)
+        let line = SKSpriteNode(color: .white, size: CGSize(width: 300, height: 1))
+        line.name = GameScene.endlessIIMarkerName
+        scene.addChild(line)
+
+        scene.ballLost()
+
+        XCTAssertNil(line.parent)
+    }
+
+    func testFallingPowerUpsAndLasersAreTakenAway() {
+        let scene = classicInPlay(lives: 2)
+        let falling = SKSpriteNode(color: .white, size: CGSize(width: 10, height: 10))
+        falling.name = PowerUpCategoryName
+        let laser = SKSpriteNode(color: .white, size: CGSize(width: 2, height: 10))
+        laser.name = LaserCategoryName
+        scene.addChild(falling)
+        scene.addChild(laser)
+
+        scene.ballLost()
+
+        XCTAssertTrue(falling.hasActions(), "shrinking away on its way out")
+        XCTAssertTrue(laser.hasActions())
+    }
+}

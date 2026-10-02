@@ -519,6 +519,24 @@ enum GameBackground: Int, CaseIterable {
     static let poolWander: CGFloat = 0.12
     static let poolSizeRange: ClosedRange<CGFloat> = 0.85...1.2
 
+    /// Where a game's shuffle puts one pool, as a share of the field, how much it has grown,
+    /// and the seed its blobs are drawn from.
+    static func poolPlacement(_ index: Int, shuffle: UInt64)
+    -> (centre: CGPoint, grown: CGFloat, seed: UInt64) {
+        let pool = glowPools[index]
+        let seed = mixed(pool.seed, shuffle)
+        var state = seed
+        func next() -> CGFloat {
+            state = state &* 6364136223846793005 &+ 1442695040888963407
+            return CGFloat((state >> 33) % 100_000)/100_000
+        }
+        let centre = CGPoint(x: pool.centre.x + (next()*2 - 1)*poolWander,
+                             y: pool.centre.y + (next()*2 - 1)*poolWander)
+        let grown = poolSizeRange.lowerBound
+            + next()*(poolSizeRange.upperBound - poolSizeRange.lowerBound)
+        return (centre, grown, seed)
+    }
+
     /// Every blob of the Glow, laid out for a background of this size.
     ///
     /// `shuffle` is the run's own number: the scene picks a new one each game, and keeps it
@@ -527,22 +545,13 @@ enum GameBackground: Int, CaseIterable {
     static func glowBlobs(in size: CGSize, shuffle: UInt64) -> [PlacedBlob] {
         guard size.width > 0, size.height > 0 else { return [] }
         return glowPools.enumerated().flatMap { group, pool -> [PlacedBlob] in
-            let seed = mixed(pool.seed, shuffle)
-            var state = seed
-            func next() -> CGFloat {
-                state = state &* 6364136223846793005 &+ 1442695040888963407
-                return CGFloat((state >> 33) % 100_000)/100_000
-            }
-            let centre = CGPoint(x: size.width*(pool.centre.x + (next()*2 - 1)*poolWander),
-                                 y: size.height*(pool.centre.y + (next()*2 - 1)*poolWander))
-            let grown = poolSizeRange.lowerBound
-                + next()*(poolSizeRange.upperBound - poolSizeRange.lowerBound)
+            let (centre, grown, seed) = poolPlacement(group, shuffle: shuffle)
             let reach = size.width*pool.radius*grown
             let diameter = reach*hazeBlobShare
 
             return hazeBlobs(seed: seed).enumerated().map { index, placed in
-                PlacedBlob(centre: CGPoint(x: centre.x + placed.offset.x*reach,
-                                           y: centre.y - placed.offset.y*reach),
+                PlacedBlob(centre: CGPoint(x: size.width*centre.x + placed.offset.x*reach,
+                                           y: size.height*centre.y - placed.offset.y*reach),
                            size: CGSize(width: diameter*placed.scale,
                                         height: diameter*0.78*placed.scale),
                            // Squashed, so a pool lies across the field rather than sitting

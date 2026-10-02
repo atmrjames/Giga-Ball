@@ -1081,3 +1081,182 @@ final class ContactRoutingTests: XCTestCase {
         XCTAssertEqual(target.name, BrickCategoryName, "nothing to do, and nothing done")
     }
 }
+
+/// A Spawner putting bricks back around itself, in a scene rather than as the pure choice
+/// `EndlessIIStyleTests` pins. Round 358's coverage pass found the scene half untested: the
+/// part that decides which cells are *room*, stamps the cool-off, and builds the bricks.
+final class SpawnerInTheFieldTests: XCTestCase {
+
+    private let cell = CGSize(width: 40, height: 20)
+
+    private func scene() -> GameScene {
+        let scene = GameScene(size: CGSize(width: 500, height: 900))
+        scene.gameWidth = 440
+        scene.brickWidth = cell.width
+        scene.brickHeight = cell.height
+        scene.numberOfBrickColumns = 11
+        scene.numberOfBrickRows = 22
+        scene.yBrickOffsetEndless = 300
+        scene.finalBrickRowHeight = 300 - cell.height*21
+        scene.ballSize = 12
+        scene.screenBlockTopHeight = 100
+        scene.gameMode = .endlessII
+        scene.totalStatsArray = [TotalStats()]
+        return scene
+    }
+
+    @discardableResult
+    private func brick(_ scene: GameScene, column: Int, row: Int) -> SKSpriteNode {
+        let node = SKSpriteNode(color: .white, size: cell)
+        node.position = CGPoint(x: -scene.gameWidth/2 + cell.width*(CGFloat(column) + 0.5),
+                                y: scene.yBrickOffsetEndless - cell.height*CGFloat(row))
+        node.name = BrickCategoryName
+        scene.addChild(node)
+        return node
+    }
+
+    private func bricks(_ scene: GameScene) -> [SKNode] {
+        scene.children.filter { $0.name == BrickCategoryName }
+    }
+
+    /// The Spawner sits a few rows down with a floor of bricks well below it, so the field's
+    /// lowest row is not the Spawner's own and every neighbour is fair game.
+    private func spawnerWithRoom(_ scene: GameScene, column: Int = 5) -> SKSpriteNode {
+        brick(scene, column: 0, row: 12)
+        return brick(scene, column: column, row: 5)
+    }
+
+    func testASpawnerFillsSomeOfTheCellsAroundIt() {
+        let scene = scene()
+        let spawner = spawnerWithRoom(scene)
+        let before = Set(bricks(scene).map(ObjectIdentifier.init))
+
+        scene.endlessIISpawn(around: spawner)
+
+        let made = bricks(scene).filter { before.contains(ObjectIdentifier($0)) == false }
+        XCTAssertTrue((1...8).contains(made.count), "\(made.count) made")
+        let home = scene.endlessIICell(of: spawner)
+        let around = Set(EndlessIIFieldGeometry.neighbours(of: home))
+        for new in made {
+            XCTAssertTrue(around.contains(scene.endlessIIGeometry.cell(at: new.position)),
+                          "a spawned brick lands next to its Spawner and nowhere else")
+            XCTAssertNotNil(new.physicsBody, "and is a brick the ball can hit")
+        }
+    }
+
+    func testItCoolsOffBeforeItCanFillAgain() {
+        // James, round 214: "a spawned indestructible brick should have a cooling off period
+        // after spawning new bricks so the ball can't become trapped"
+        let scene = scene()
+        let spawner = spawnerWithRoom(scene)
+        let floor = bricks(scene).first { $0 !== spawner }
+        scene.endlessIISpawn(around: spawner)
+        XCTAssertGreaterThan(bricks(scene).count, 2)
+        for new in bricks(scene) where new !== spawner && new !== floor { new.removeFromParent() }
+        // Its neighbours emptied again, as a ball clearing them would
+
+        scene.endlessIISpawn(around: spawner)
+
+        XCTAssertEqual(bricks(scene).count, 2, "a second hit inside the cool-off makes nothing")
+    }
+
+    func testAFullNeighbourhoodMakesNothingAndStillStartsTheClock() {
+        let scene = scene()
+        let spawner = spawnerWithRoom(scene)
+        for column in 4...6 { for row in 4...6 where (column, row) != (5, 5) {
+            brick(scene, column: column, row: row)
+        } }
+        let count = bricks(scene).count
+
+        scene.endlessIISpawn(around: spawner)
+
+        XCTAssertEqual(bricks(scene).count, count)
+        XCTAssertNotNil(spawner.userData?["endlessIILastSpawn"],
+                        "the brick being hit over and over is the one boxed in")
+    }
+
+    func testASpawnerAgainstTheWallNeverBuildsOutsideTheField() {
+        let scene = scene()
+        for _ in 0..<12 {
+            let spawner = spawnerWithRoom(scene, column: 0)
+            scene.endlessIISpawn(around: spawner)
+            for node in bricks(scene) {
+                XCTAssertTrue(scene.endlessIIGeometry.isInsideWidth(
+                    scene.endlessIIGeometry.cell(at: node.position)))
+            }
+            scene.removeAllChildren()
+        }
+    }
+
+    func testASpawnerOnTheTopRowBuildsNothingAboveTheField() {
+        let scene = scene()
+        for _ in 0..<12 {
+            brick(scene, column: 0, row: 12)
+            let spawner = brick(scene, column: 5, row: 0)
+            scene.endlessIISpawn(around: spawner)
+            XCTAssertTrue(bricks(scene).allSatisfy {
+                scene.endlessIIGeometry.cell(at: $0.position).row >= 0 })
+            scene.removeAllChildren()
+        }
+    }
+
+    func testASpawnerOnTheLowestRowBuildsNothingBelowIt() {
+        // Below the lowest row is the paddle's side of the field: a brick put there would be
+        // under the line the run ends at
+        let scene = scene()
+        let lowest = scene.endlessIILowestRow
+        for _ in 0..<12 {
+            let spawner = brick(scene, column: 5, row: lowest)
+            scene.endlessIISpawn(around: spawner)
+            XCTAssertGreaterThan(bricks(scene).count, 1, "it still fills beside and above")
+            XCTAssertTrue(bricks(scene).allSatisfy {
+                scene.endlessIIGeometry.cell(at: $0.position).row <= lowest })
+            scene.removeAllChildren()
+        }
+    }
+
+    func testTheEdgeRowsThemselvesCanStillBeFilled() {
+        // The top and lowest rows are inside the field: a Spawner boxed in from above or
+        // below still fills the cells beside it on its own row
+        let scene = scene()
+        let lowest = scene.endlessIILowestRow
+        for (row, blocked) in [(0, 1), (lowest, lowest - 1)] {
+            let spawner = brick(scene, column: 5, row: row)
+            for column in 4...6 { brick(scene, column: column, row: blocked) }
+            if row == 0 { brick(scene, column: 0, row: 12) }
+            let count = bricks(scene).count
+            scene.endlessIISpawn(around: spawner)
+            XCTAssertGreaterThan(bricks(scene).count, count, "row \(row)")
+            scene.removeAllChildren()
+        }
+    }
+
+    func testASpawnerLeavesASpinnersRoomEmpty() {
+        // "Filling it later put a new brick inside the arc of one already turning, and the
+        // two passed through each other"
+        let scene = scene()
+        for _ in 0..<12 {
+            brick(scene, column: 0, row: 12)
+            let spinner = brick(scene, column: 7, row: 5)
+            scene.makeSpinning(spinner)
+            let spawner = brick(scene, column: 5, row: 5)
+            scene.endlessIISpawn(around: spawner)
+            let room = Set(EndlessIIFieldGeometry.neighbours(of: scene.endlessIICell(of: spinner)))
+            for node in bricks(scene) where node !== spinner {
+                XCTAssertFalse(room.contains(scene.endlessIIGeometry.cell(at: node.position)),
+                               "a brick inside the spinner's sweep")
+            }
+            scene.removeAllChildren()
+            scene.endlessIISpinners.removeAll()
+        }
+    }
+
+    func testOnlyMayhemHasSpawners() {
+        let scene = scene()
+        scene.gameMode = .endless
+        let spawner = spawnerWithRoom(scene)
+        let count = bricks(scene).count
+        scene.endlessIISpawn(around: spawner)
+        XCTAssertEqual(bricks(scene).count, count)
+    }
+}

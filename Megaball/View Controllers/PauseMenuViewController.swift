@@ -2220,6 +2220,12 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
         gameCentreUnderTheLives.isActive = daily == false
         gameCentreWellUnderTheLives.isActive = daily == false
         if daily { gameCentreUnderTheStatsButton.isActive = false }
+        for label in [leaderboardTitle, resultLabel] {
+            label.accessibilityTraits = daily ? [.staticText, .button] : .staticText
+            label.accessibilityHint = daily ? "Opens the day's leaderboard" : nil
+        }
+        // VoiceOver says it can be pressed where it can: a tappable label is otherwise read as
+        // plain text, and the board behind it is one nobody using VoiceOver would find
         NSLayoutConstraint.deactivate(gameCentreUnderTheScore)
         gameCentreUnderTheScore = []
         if daily {

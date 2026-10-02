@@ -161,6 +161,11 @@ background: piping `xcodebuild` straight into `grep` has hung twice.
   small bug at a time into a file and runs that file's tests to see whether they notice. Both
   explain themselves in their headers. They were rebuilt in round 345 because the first ones
   lived in a session's scratch directory and were lost with it.
+  **Two simulators run side by side** (round 358): the iPhone 17 Pro on iOS 26.5,
+  `id=5E5D91D9-3BAE-4A61-AE34-CBFD2361FBB9`, builds and tests normally, so a mutation run can go
+  there with its own `--derived-data` while a suite runs on the 16 Pro. Every build compiles the
+  whole working tree, so do not edit the file being mutated while it runs, and do not commit
+  until `mutate.py` has printed `file restored`.
 
 ## Adding a file
 

@@ -1576,6 +1576,16 @@ final class GameCentreLineOnEveryScreenTests: XCTestCase {
         }
     }
 
+    /// The block opens the day's board on a tap (round 357), so VoiceOver has to say it can
+    /// be pressed - a label with a tap on it is otherwise read as plain text.
+    func testADailyEndingsBoardIsAButtonToVoiceOver() throws {
+        let screen = try XCTUnwrap(gameOver(size: CGSize(width: 402, height: 874), regular: false))
+        for label in [screen.leaderboardTitle, screen.resultLabel] {
+            XCTAssertTrue(label.accessibilityTraits.contains(.button))
+            XCTAssertNotNil(label.accessibilityHint)
+        }
+    }
+
     /// The block is above the row of buttons, and on the screen, at every size.
     func testTheLeaderboardLineIsNeverPushedOffTheBottom() throws {
         for (name, size, regular) in shapes {

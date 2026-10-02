@@ -389,3 +389,80 @@ extension EndlessIIStyleTests {
         XCTAssertTrue(brick.endlessIIIsAnchored, "setting a role must not clear the anchor")
     }
 }
+
+/// How a field's bricks are handed their styles (`applyEndlessIIStyles`). Round 358's coverage
+/// pass found it nearly unrun in a scene: the pure ramp and pick are tested, the pass that
+/// applies them to real bricks was not.
+final class StylePassTests: XCTestCase {
+
+    private func scene(_ mode: GameMode = .endlessII) -> GameScene {
+        let scene = GameScene()
+        scene.gameMode = mode
+        scene.totalStatsArray = [TotalStats()]
+        scene.brickWidth = 40
+        scene.brickHeight = 20
+        return scene
+    }
+
+    private func plainBricks(_ scene: GameScene, _ count: Int) -> [SKSpriteNode] {
+        (0..<count).map { index in
+            let brick = SKSpriteNode(texture: scene.brickNormalTexture)
+            brick.size = CGSize(width: 40, height: 20)
+            brick.position = CGPoint(x: CGFloat(index%11)*40, y: 100 - CGFloat(index/11)*20)
+            brick.name = BrickCategoryName
+            scene.addChild(brick)
+            return brick
+        }
+    }
+
+    func testAMotifPhaseDressesMostOfTheFieldInTheMotifAndNothingElse() {
+        // "A motif phase is the motif. Running it at the ordinary rate would produce a
+        // stretch of plain bricks with the occasional themed one, which is not a phase"
+        let scene = scene()
+        scene.endlessIIPhaseStyles = [.rounded]
+        let bricks = plainBricks(scene, 88)
+
+        scene.applyEndlessIIStyles(EndlessIIStyle.allCases, to: bricks)
+
+        let styled = bricks.filter { scene.endlessIIStyles(on: $0).isEmpty == false }
+        XCTAssertGreaterThan(styled.count, 88/2, "most of them, at 85 in 100")
+        XCTAssertLessThan(styled.count, 88, "a roll, not a rule")
+        for brick in styled {
+            XCTAssertEqual(scene.endlessIIStyles(on: brick), [.rounded])
+        }
+    }
+
+    func testAPhaseWhoseMotifIsNotInThePoolOffersNothing() {
+        let scene = scene()
+        scene.endlessIIPhaseStyles = [.rounded]
+        let bricks = plainBricks(scene, 44)
+
+        scene.applyEndlessIIShapes(to: bricks)
+
+        XCTAssertTrue(bricks.allSatisfy { scene.endlessIIStyles(on: $0).isEmpty },
+                      "a shapes pass during a Rounded phase leaves the bricks as they were")
+    }
+
+    func testOnlyMayhemHasStyles() {
+        for mode in [GameMode.classic, .endless] {
+            let scene = scene(mode)
+            scene.endlessIIPhaseStyles = [.rounded]
+            let bricks = plainBricks(scene, 22)
+            scene.applyEndlessIIStyles([.rounded], to: bricks)
+            XCTAssertTrue(bricks.allSatisfy { scene.endlessIIStyles(on: $0).isEmpty }, "\(mode)")
+        }
+    }
+
+    func testTheShapesPassOnlyEverGivesAShape() {
+        let scene = scene()
+        scene.endlessHeight = 900
+        // Deep, where a style is common
+        let bricks = plainBricks(scene, 88)
+
+        scene.applyEndlessIIShapes(to: bricks)
+
+        let given = bricks.flatMap { scene.endlessIIStyles(on: $0) }
+        XCTAssertFalse(given.isEmpty, "at 900m some of 88 bricks take a shape")
+        XCTAssertTrue(given.allSatisfy { [.convex, .concave, .wedge, .diamond].contains($0) })
+    }
+}

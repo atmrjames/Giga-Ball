@@ -775,3 +775,319 @@ final class PhantomBrickWatchTests: XCTestCase {
                       "Hide Bricks and Mayhem's Invisible brick both work this way")
     }
 }
+
+/// The whole of the seam correction, from the strikes a step recorded to the velocity the ball
+/// leaves with. `seamFace` is pinned above; this is the part that acts on it, which no test
+/// ran until round 358's coverage pass found it at nothing.
+///
+/// The fault it exists for (BrickSeamBounce's header): a ball arriving on the seam between two
+/// surviving bricks "bounces off what is geometrically a corner", so the field "looks like it
+/// is lying about its own shape".
+final class SeamBounceResolutionTests: XCTestCase {
+
+    private let left = SKSpriteNode(color: .red, size: CGSize(width: 40, height: 20))
+    private let right = SKSpriteNode(color: .red, size: CGSize(width: 40, height: 20))
+
+    private func scene(arrivingFrom position: CGPoint, at velocity: CGVector) -> GameScene {
+        let scene = GameScene()
+        scene.gameMode = .classic
+        scene.ballIsOnPaddle = false
+        scene.gameState.enter(Playing.self)
+        scene.ballSpeedLimit = 600
+        scene.addChild(scene.ball)
+        scene.ball.position = position
+        scene.ball.physicsBody = SKPhysicsBody(circleOfRadius: 5)
+        scene.ball.physicsBody!.velocity = velocity
+        scene.brickWidth = 40
+        left.position = CGPoint(x: -20, y: 100)
+        right.position = CGPoint(x: 20, y: 100)
+        scene.recordBallStatesBeforeStep()
+        return scene
+    }
+
+    func testABallUpIntoTheSeamComesBackDownTheWayItWentUp() {
+        let scene = scene(arrivingFrom: CGPoint(x: -4, y: 80), at: CGVector(dx: 180, dy: 572.364))
+        // At the speed limit, where the game holds every ball in flight
+        scene.noteBrickStrike(ball: scene.ball, brick: left)
+        scene.noteBrickStrike(ball: scene.ball, brick: right)
+        scene.ball.physicsBody!.velocity = CGVector(dx: -300, dy: -260)
+        // What the engine made of it: thrown back off a corner, the wrong way across
+
+        scene.resolveBrickSeamBounces()
+
+        let v = scene.ball.physicsBody!.velocity
+        XCTAssertGreaterThan(v.dx, 0, "still travelling the way it was across the row")
+        XCTAssertLessThan(v.dy, 0, "and back down off the bricks' underside")
+        XCTAssertEqual(hypot(v.dx, v.dy), 600, accuracy: 1, "at its own speed")
+        XCTAssertTrue(scene.brickSeamStrikes.isEmpty, "and the step's strikes are cleared")
+    }
+
+    func testOneBrickIsARealCornerAndIsLeftToTheEngine() {
+        let scene = scene(arrivingFrom: CGPoint(x: -4, y: 80), at: CGVector(dx: 120, dy: 400))
+        scene.noteBrickStrike(ball: scene.ball, brick: left)
+        let engine = CGVector(dx: -300, dy: -260)
+        scene.ball.physicsBody!.velocity = engine
+
+        scene.resolveBrickSeamBounces()
+
+        XCTAssertEqual(scene.ball.physicsBody!.velocity, engine)
+        XCTAssertTrue(scene.brickSeamStrikes.isEmpty)
+    }
+
+    func testAGigaBallHasNoBounceToCorrect() {
+        let scene = scene(arrivingFrom: CGPoint(x: -4, y: 80), at: CGVector(dx: 120, dy: 400))
+        scene.ball.texture = scene.gigaBallTexture
+        scene.noteBrickStrike(ball: scene.ball, brick: left)
+        scene.noteBrickStrike(ball: scene.ball, brick: right)
+        let through = CGVector(dx: 120, dy: 400)
+        scene.ball.physicsBody!.velocity = through
+
+        scene.resolveBrickSeamBounces()
+
+        XCTAssertEqual(scene.ball.physicsBody!.velocity, through, "it passes through bricks")
+    }
+
+    func testNothingIsCorrectedOutsidePlayButTheStrikesStillGo() {
+        let scene = scene(arrivingFrom: CGPoint(x: -4, y: 80), at: CGVector(dx: 120, dy: 400))
+        scene.gameState.enter(Paused.self)
+        scene.noteBrickStrike(ball: scene.ball, brick: left)
+        scene.noteBrickStrike(ball: scene.ball, brick: right)
+        let engine = CGVector(dx: -300, dy: -260)
+        scene.ball.physicsBody!.velocity = engine
+
+        scene.resolveBrickSeamBounces()
+
+        XCTAssertEqual(scene.ball.physicsBody!.velocity, engine)
+        XCTAssertTrue(scene.brickSeamStrikes.isEmpty,
+                      "or a pause would carry a stale strike into the next step")
+    }
+
+    func testABallWithNoRecordedApproachIsLeftAlone() {
+        let scene = scene(arrivingFrom: CGPoint(x: -4, y: 80), at: CGVector(dx: 120, dy: 400))
+        scene.ballStateBeforeStep.removeAll()
+        scene.noteBrickStrike(ball: scene.ball, brick: left)
+        scene.noteBrickStrike(ball: scene.ball, brick: right)
+        let engine = CGVector(dx: -300, dy: -260)
+        scene.ball.physicsBody!.velocity = engine
+
+        scene.resolveBrickSeamBounces()
+
+        XCTAssertEqual(scene.ball.physicsBody!.velocity, engine,
+                       "without the approach there is no telling which face was struck")
+    }
+}
+
+/// The every-frame catch for a ball travelling horizontally (`breakHorizontalRuns`). Round
+/// 358's coverage pass found a fifth of it run. "A horizontal ball never comes down, so it can
+/// never be lost and never be played" - the one heading the game cannot allow.
+final class HorizontalRunBreakerTests: XCTestCase {
+
+    private func flying(_ velocity: CGVector) -> GameScene {
+        let scene = GameScene()
+        scene.gameMode = .classic
+        scene.minAngleDeg = 15
+        scene.ballIsOnPaddle = false
+        scene.addChild(scene.ball)
+        scene.ball.physicsBody = SKPhysicsBody(circleOfRadius: 5)
+        scene.ball.physicsBody!.velocity = velocity
+        return scene
+    }
+
+    private func heading(_ v: CGVector) -> Double {
+        atan2(Double(abs(v.dy)), Double(abs(v.dx)))*180/Double.pi
+    }
+
+    func testANearlyFlatBallIsLiftedOffHorizontalKeepingItsWay() {
+        for _ in 0..<40 {
+            let scene = flying(CGVector(dx: -598, dy: 20))
+            scene.breakHorizontalRuns()
+            let v = scene.ball.physicsBody!.velocity
+            XCTAssertLessThan(v.dx, 0, "still going left")
+            XCTAssertGreaterThan(v.dy, 0, "still climbing")
+            XCTAssertEqual(hypot(v.dx, v.dy), hypot(598, 20), accuracy: 0.5, "at its own speed")
+            XCTAssertGreaterThanOrEqual(heading(v), 15 - 0.01)
+            XCTAssertLessThanOrEqual(heading(v), 15 + GameScene.horizontalEscapeJitter + 0.01)
+        }
+    }
+
+    func testADeadFlatBallIsSentOneWayOrTheOther() {
+        var ups = 0
+        for _ in 0..<60 {
+            let scene = flying(CGVector(dx: 500, dy: 0))
+            scene.breakHorizontalRuns()
+            let v = scene.ball.physicsBody!.velocity
+            XCTAssertGreaterThan(v.dx, 0)
+            XCTAssertNotEqual(v.dy, 0)
+            XCTAssertGreaterThanOrEqual(heading(v), 15 - 0.01)
+            if v.dy > 0 { ups += 1 }
+        }
+        XCTAssertTrue((1...59).contains(ups), "both ways turn up, \(ups) of 60 went up")
+    }
+
+    func testTheEscapesDifferSoTwoBallsDoNotLeaveInLockstep() {
+        let headings = (0..<20).map { _ -> Double in
+            let scene = flying(CGVector(dx: 600, dy: -5))
+            scene.breakHorizontalRuns()
+            return heading(scene.ball.physicsBody!.velocity)
+        }
+        XCTAssertGreaterThan(Set(headings.map { ($0*100).rounded() }).count, 5)
+    }
+
+    func testABallSteepEnoughAlreadyIsLeftAlone() {
+        let scene = flying(CGVector(dx: 500, dy: 150))
+        // 16.7 degrees: just above the 15 the scene allows
+        scene.breakHorizontalRuns()
+        XCTAssertEqual(scene.ball.physicsBody!.velocity.dx, 500, accuracy: 0.01)
+        XCTAssertEqual(scene.ball.physicsBody!.velocity.dy, 150, accuracy: 0.01)
+    }
+
+    func testABallOnThePaddleOrBarelyMovingIsNotItsBusiness() {
+        let held = flying(CGVector(dx: 300, dy: 0))
+        held.ballIsOnPaddle = true
+        held.breakHorizontalRuns()
+        XCTAssertEqual(held.ball.physicsBody!.velocity.dy, 0, "a held ball rides the paddle")
+
+        let still = flying(CGVector(dx: 0.5, dy: 0))
+        still.breakHorizontalRuns()
+        XCTAssertEqual(still.ball.physicsBody!.velocity.dy, 0)
+    }
+}
+
+/// The ceiling and the backstop, through the contact handler itself. Round 358's coverage pass
+/// found neither branch run by any test - and the ceiling's is the fix for "ran along the top
+/// of the screen horizontally until something else knocked it out of it".
+final class CeilingAndBackstopContactTests: XCTestCase {
+
+    private func playing() -> GameScene {
+        let scene = GameScene()
+        scene.gameMode = .classic
+        scene.totalStatsArray = [TotalStats()]
+        scene.minAngleDeg = 15
+        scene.ballSpeedLimit = 600
+        scene.brickWidth = 40
+        scene.gameState.enter(Playing.self)
+        scene.ballIsOnPaddle = false
+        scene.addChild(scene.ball)
+        scene.ball.physicsBody = SKPhysicsBody(circleOfRadius: 5)
+        scene.ball.physicsBody!.categoryBitMask = CollisionTypes.ballCategory.rawValue
+        return scene
+    }
+
+    private func block(_ scene: GameScene, size: CGSize, category: CollisionTypes) -> SKSpriteNode {
+        let node = SKSpriteNode(color: .clear, size: size)
+        node.physicsBody = SKPhysicsBody(rectangleOf: size)
+        node.physicsBody!.categoryBitMask = category.rawValue
+        scene.addChild(node)
+        return node
+    }
+
+    func testTheCeilingAlwaysSendsTheBallDown() {
+        // Whatever the engine has already done to it: the approach is what decides
+        for engine in [CGVector(dx: 300, dy: -520), CGVector(dx: 300, dy: 520)] {
+            let scene = playing()
+            let ceiling = block(scene, size: CGSize(width: 400, height: 40),
+                                category: .screenBlockCategory)
+            scene.ball.position = CGPoint(x: 10, y: 300)
+            scene.ball.physicsBody!.velocity = CGVector(dx: 300, dy: 520)
+            scene.recordBallStatesBeforeStep()
+            scene.ball.physicsBody!.velocity = engine
+
+            scene.handleContact(between: scene.ball.physicsBody!, and: ceiling.physicsBody!)
+
+            let v = scene.ball.physicsBody!.velocity
+            XCTAssertLessThan(v.dy, 0, "engine said \(engine)")
+            XCTAssertGreaterThan(v.dx, 0, "and it keeps travelling the way it was")
+        }
+    }
+
+    func testASideBlockIsAWall() {
+        let scene = playing()
+        let side = block(scene, size: CGSize(width: 20, height: 600), category: .screenBlockCategory)
+        scene.ball.position = CGPoint(x: 180, y: 0)
+        scene.ball.physicsBody!.velocity = CGVector(dx: 400, dy: 300)
+        scene.recordBallStatesBeforeStep()
+
+        scene.handleContact(between: side.physicsBody!, and: scene.ball.physicsBody!)
+
+        XCTAssertLessThan(scene.ball.physicsBody!.velocity.dx, 0, "back off the right-hand side")
+        XCTAssertGreaterThan(scene.ball.physicsBody!.velocity.dy, 0)
+    }
+
+    func testTheBackstopSpendsACatchAndSendsTheBallBackUp() {
+        let scene = playing()
+        scene.paddle.position = CGPoint(x: 0, y: -300)
+        let backstop = block(scene, size: CGSize(width: 400, height: 10), category: .backstopCategory)
+        scene.backstopCatches = 3
+        scene.ball.position = CGPoint(x: 0, y: -380)
+        scene.ball.physicsBody!.velocity = CGVector(dx: 590, dy: 40)
+        // Already turned up by the engine, and very shallow
+
+        scene.handleContact(between: scene.ball.physicsBody!, and: backstop.physicsBody!)
+
+        XCTAssertEqual(scene.backstopCatches, 2)
+        let v = scene.ball.physicsBody!.velocity
+        XCTAssertGreaterThan(v.dy, 0)
+        let heading = atan2(Double(v.dy), Double(abs(v.dx)))*180/Double.pi
+        XCTAssertGreaterThanOrEqual(heading, 15 - 0.01, "never sent off flat")
+    }
+
+    func testTheLastCatchPutsTheBackstopAwayAndNeverGoesNegative() {
+        let scene = playing()
+        scene.paddle.position = CGPoint(x: 0, y: -300)
+        let backstop = block(scene, size: CGSize(width: 400, height: 10), category: .backstopCategory)
+        scene.ball.position = CGPoint(x: 0, y: -380)
+        scene.ball.physicsBody!.velocity = CGVector(dx: 200, dy: 400)
+
+        scene.backstopCatches = 1
+        scene.handleContact(between: scene.ball.physicsBody!, and: backstop.physicsBody!)
+        XCTAssertEqual(scene.backstopCatches, 0)
+        XCTAssertTrue(scene.hasActions(), "the backstop's put-away is under way")
+
+        scene.handleContact(between: scene.ball.physicsBody!, and: backstop.physicsBody!)
+        XCTAssertEqual(scene.backstopCatches, 0, "a hit in the put-away does not owe a catch")
+    }
+}
+
+/// A power-up that reaches the bottom unclaimed. Round 358's coverage pass found the branch
+/// unrun: it keeps the on-screen count honest and moves the two Power-Up Leaver achievements.
+final class MissedPowerUpTests: XCTestCase {
+
+    private func missed(generated: Int, collected: Int) -> (GameScene, SKSpriteNode) {
+        let scene = GameScene()
+        scene.gameMode = .classic
+        scene.totalStatsArray = [TotalStats()]
+        scene.totalStatsArray[0].powerupsGenerated[2] = generated
+        scene.totalStatsArray[0].powerupsCollected[2] = collected
+        scene.powerUpsOnScreen = 1
+        let powerUp = SKSpriteNode(texture: scene.powerUpTexturesInOrder[2])
+        powerUp.physicsBody = SKPhysicsBody(circleOfRadius: 8)
+        powerUp.physicsBody!.categoryBitMask = CollisionTypes.powerUpCategory.rawValue
+        scene.addChild(powerUp)
+        let floor = SKSpriteNode(color: .clear, size: CGSize(width: 400, height: 20))
+        floor.physicsBody = SKPhysicsBody(rectangleOf: floor.size)
+        floor.physicsBody!.categoryBitMask = CollisionTypes.bottomScreenBlockCategory.rawValue
+        scene.addChild(floor)
+        scene.handleContact(between: powerUp.physicsBody!, and: floor.physicsBody!)
+        return (scene, powerUp)
+    }
+
+    func testAMissedPowerUpLeavesTheScreenAndTheCount() {
+        let (scene, powerUp) = missed(generated: 10, collected: 4)
+        XCTAssertEqual(scene.powerUpsOnScreen, 0)
+        XCTAssertTrue(powerUp.hasActions(), "fading away rather than vanishing")
+    }
+
+    func testTheLeaverAchievementsCountWhatWasLeft() {
+        let (scene, _) = missed(generated: 60, collected: 15)
+        XCTAssertEqual(scene.totalStatsArray[0].achievementsPercentageCompleteArray[30], "45.0%")
+        XCTAssertEqual(scene.totalStatsArray[0].achievementsPercentageCompleteArray[31], "4.5%")
+        XCTAssertFalse(scene.totalStatsArray[0].achievementsUnlockedArray[30])
+    }
+
+    func testAHundredLeftEarnsTheFirst() {
+        let (scene, _) = missed(generated: 130, collected: 30)
+        XCTAssertTrue(scene.totalStatsArray[0].achievementsUnlockedArray[30])
+        XCTAssertEqual(scene.totalStatsArray[0].achievementsPercentageCompleteArray[30], "100%")
+        XCTAssertFalse(scene.totalStatsArray[0].achievementsUnlockedArray[31])
+    }
+}

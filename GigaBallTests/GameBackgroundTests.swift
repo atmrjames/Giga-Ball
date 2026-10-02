@@ -303,8 +303,82 @@ final class MovingBackgroundStartTests: XCTestCase {
                        "untouched by the rim's fade inside d = 0.55")
     }
 
+    func testAPoolWandersOnlyAsFarAsItIsAllowed() {
+        // Far enough that no two games open on the same light, never so far that the pool
+        // leaves its corner - and both ways, or "wander" is a drift in one direction
+        for index in GameBackground.glowPools.indices {
+            let listed = GameBackground.glowPools[index].centre
+            var lowest = CGPoint(x: 1, y: 1), highest = CGPoint(x: 0, y: 0)
+            for shuffle in UInt64(1)...200 {
+                let placed = GameBackground.poolPlacement(index, shuffle: shuffle)
+                XCTAssertLessThanOrEqual(abs(placed.centre.x - listed.x),
+                                         GameBackground.poolWander + 0.0001)
+                XCTAssertLessThanOrEqual(abs(placed.centre.y - listed.y),
+                                         GameBackground.poolWander + 0.0001)
+                XCTAssertTrue(GameBackground.poolSizeRange.contains(placed.grown),
+                              "grown \(placed.grown)")
+                lowest = CGPoint(x: min(lowest.x, placed.centre.x), y: min(lowest.y, placed.centre.y))
+                highest = CGPoint(x: max(highest.x, placed.centre.x), y: max(highest.y, placed.centre.y))
+            }
+            XCTAssertLessThan(lowest.x, listed.x - GameBackground.poolWander/2)
+            XCTAssertGreaterThan(highest.x, listed.x + GameBackground.poolWander/2)
+            XCTAssertLessThan(lowest.y, listed.y - GameBackground.poolWander/2)
+            XCTAssertGreaterThan(highest.y, listed.y + GameBackground.poolWander/2)
+        }
+    }
+
+    func testEveryCloudIsDrawnFromItsRanges() {
+        // The shuffle moves the clouds about; it must not make one a sliver, a slab, a glare
+        // or a cloud that sits under the paddle
+        let size = CGSize(width: 300, height: 540)
+        for shuffle in UInt64(1)...40 {
+            for cloud in GameBackground.cloudBlobs(in: size, shuffle: shuffle) {
+                let layer = GameBackground.cloudLayers[cloud.group]
+                XCTAssertTrue((0.34*size.width...0.76*size.width).contains(cloud.size.width))
+                XCTAssertTrue((0.34...0.54).contains(cloud.size.height/cloud.size.width))
+                XCTAssertTrue((0.55*layer.strength...1.15*layer.strength).contains(cloud.alpha))
+                XCTAssertTrue((0...2*size.width).contains(cloud.centre.x))
+                XCTAssertTrue((0.12*size.height...0.88*size.height).contains(cloud.centre.y))
+                XCTAssertTrue((0.8*layer.crossing...1.25*layer.crossing).contains(cloud.crossing))
+            }
+        }
+    }
+
+    func testAFieldWithNoWidthOrNoHeightHasNoBlobs() {
+        for size in [CGSize(width: 0, height: 100), CGSize(width: 100, height: 0)] {
+            XCTAssertTrue(GameBackground.glowBlobs(in: size, shuffle: 3).isEmpty, "\(size)")
+            XCTAssertTrue(GameBackground.cloudBlobs(in: size, shuffle: 3).isEmpty, "\(size)")
+        }
+    }
+
+    func testTheStillPictureAddsLightAndCoversNothing() throws {
+        // Light added over the gradient, never painted over it: the top corner, which no pool
+        // reaches, is the gradient's own colour, and the picture as a whole is brighter
+        let size = CGSize(width: 120, height: 216)
+        let glow = greens(try XCTUnwrap(GameBackground.glowImage(size: size, paddleFraction: 0.2)))
+        let plain = greens(try XCTUnwrap(GameBackground.gradientImage(size: size,
+                                                                      paddleFraction: 0.2)))
+        let glowCorner = try XCTUnwrap(rgba(try XCTUnwrap(
+            GameBackground.glowImage(size: size, paddleFraction: 0.2))).first)
+        let plainCorner = try XCTUnwrap(rgba(try XCTUnwrap(
+            GameBackground.gradientImage(size: size, paddleFraction: 0.2))).first)
+        for channel in 0..<3 {
+            XCTAssertEqual(Int(glowCorner[channel]), Int(plainCorner[channel]), accuracy: 2,
+                           "channel \(channel): the corner is painted over")
+        }
+        // Every channel, not just green: the top of the gradient is the border's purple,
+        // which has no green in it to lose
+        let added = zip(glow, plain).map { Int($0) - Int($1) }.reduce(0, +)
+        XCTAssertGreaterThan(added, glow.count, "on average more than a step of green a pixel")
+    }
+
     /// Each pixel's green channel, top row first.
     private func greens(_ image: UIImage) -> [UInt8] {
+        rgba(image).map { $0[1] }
+    }
+
+    /// Each pixel's four channels, top row first.
+    private func rgba(_ image: UIImage) -> [[UInt8]] {
         let width = Int(image.size.width), height = Int(image.size.height)
         var pixels = [UInt8](repeating: 0, count: width*height*4)
         guard let cg = image.cgImage,
@@ -314,6 +388,6 @@ final class MovingBackgroundStartTests: XCTestCase {
                                       bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)
         else { return [] }
         context.draw(cg, in: CGRect(x: 0, y: 0, width: width, height: height))
-        return stride(from: 1, to: pixels.count, by: 4).map { pixels[$0] }
+        return stride(from: 0, to: pixels.count, by: 4).map { Array(pixels[$0..<$0 + 4]) }
     }
 }
