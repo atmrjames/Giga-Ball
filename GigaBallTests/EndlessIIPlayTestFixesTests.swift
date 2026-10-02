@@ -1099,3 +1099,152 @@ final class EndlessIIStuckRescueTests: XCTestCase {
                       "an unexplained bend is a sighting; an explained one is a line in the log")
     }
 }
+
+/// The field arriving, and a tap skipping it (`runEndlessIIBuildIn`, `runClassicBuildIn`,
+/// `finishEndlessIIBuildIn`). The wait before it is pinned above; round 358b's coverage pass
+/// found the build itself almost unrun.
+final class FieldBuildInTests: XCTestCase {
+
+    private let cell = CGSize(width: 40, height: 20)
+
+    private func scene(endless: Bool = true) -> GameScene {
+        let scene = GameScene(size: CGSize(width: 500, height: 900))
+        scene.gameWidth = 440
+        scene.brickWidth = cell.width
+        scene.brickHeight = cell.height
+        scene.numberOfBrickColumns = 11
+        scene.numberOfBrickRows = 22
+        scene.yBrickOffsetEndless = 300
+        scene.finalBrickRowHeight = 300 - cell.height*21
+        scene.gameMode = endless ? .endlessII : .classic
+        scene.endlessMode = endless
+        scene.totalStatsArray = [TotalStats()]
+        return scene
+    }
+
+    /// Bricks waiting on the top row, each with the row it is going to.
+    private func waiting(_ scene: GameScene, rows: [Int]) -> [SKSpriteNode] {
+        rows.enumerated().map { column, row in
+            let brick = SKSpriteNode(color: .white, size: cell)
+            brick.name = BrickCategoryName
+            brick.position = CGPoint(x: -200 + CGFloat(column)*40, y: 300 + cell.height)
+            brick.alpha = 0
+            scene.addChild(brick)
+            scene.endlessIIBuildInBricks.append(brick)
+            scene.endlessIIBuildInFinalY[ObjectIdentifier(brick)] = 300 - cell.height*CGFloat(row)
+            return brick
+        }
+    }
+
+    func testTheFieldFallsIntoPlace() {
+        let scene = scene()
+        let bricks = waiting(scene, rows: [0, 4, 9])
+        scene.runEndlessIIBuildIn()
+        XCTAssertTrue(scene.endlessIIBuildingIn)
+        XCTAssertTrue(bricks.allSatisfy { $0.hasActions() }, "each on its way down")
+        XCTAssertTrue(scene.endlessIIBuildInBricks.isEmpty)
+        XCTAssertEqual(scene.endlessIIBuildInFinalY.count, 3,
+                       "the destinations kept until the fall is over, for a skip to use")
+    }
+
+    func testTheDeepestRowsLeaveFirst() {
+        // "The deepest rows leave first and fall furthest, so the field stacks up from the
+        // bottom"
+        let scene = scene()
+        let bricks = waiting(scene, rows: [0, 9])
+        XCTAssertEqual(scene.endlessIIBuildInRow(of: bricks[1]), 9)
+        XCTAssertEqual(scene.endlessIIBuildInRow(of: bricks[0]), 0)
+    }
+
+    func testASkipPutsEveryBrickWhereItWasGoing() {
+        // The play test's screenshot: a skip caught bricks mid-fall and left them "parked on
+        // top of the HUD", and the field one ragged diagonal
+        let scene = scene()
+        let bricks = waiting(scene, rows: [0, 4, 9])
+        scene.runEndlessIIBuildIn()
+
+        XCTAssertTrue(scene.finishEndlessIIBuildIn())
+
+        for (brick, row) in zip(bricks, [0, 4, 9]) {
+            XCTAssertEqual(brick.position.y, 300 - cell.height*CGFloat(row), accuracy: 0.01)
+            XCTAssertEqual(brick.alpha, 1)
+            XCTAssertFalse(brick.hasActions())
+        }
+        XCTAssertFalse(scene.endlessIIBuildingIn)
+        XCTAssertTrue(scene.endlessIIBuildInFinalY.isEmpty)
+    }
+
+    func testATapWithNothingToSkipIsNotSpent() {
+        let scene = scene()
+        XCTAssertFalse(scene.finishEndlessIIBuildIn(), "so the tap launches the ball instead")
+    }
+
+    func testNothingToBuildIsNothingToDo() {
+        let scene = scene()
+        scene.runEndlessIIBuildIn()
+        XCTAssertFalse(scene.endlessIIBuildingIn)
+    }
+
+    func testClassicPopsItsLevelInFromTheTop() {
+        let scene = scene(endless: false)
+        let bricks = (0..<3).map { row -> SKSpriteNode in
+            let brick = SKSpriteNode(color: .white, size: cell)
+            brick.name = BrickCategoryName
+            brick.position = CGPoint(x: 0, y: 300 - cell.height*CGFloat(row))
+            brick.setScale(0)
+            scene.addChild(brick)
+            return brick
+        }
+        scene.endlessIIBuildInBricks = bricks
+        scene.runEndlessIIBuildIn()
+        XCTAssertTrue(scene.endlessIIBuildingIn)
+        XCTAssertTrue(bricks.allSatisfy { $0.hasActions() })
+        XCTAssertEqual(bricks[0].position.y, 300, "in place, not falling")
+
+        XCTAssertTrue(scene.finishEndlessIIBuildIn())
+        XCTAssertTrue(bricks.allSatisfy { $0.xScale == 1 && $0.alpha == 1 })
+    }
+
+    func testTheDeepestRowLeavesFirstAndFallsFurthest() {
+        let stagger = GameScene.endlessIIBuildInStagger
+        let perRow = GameScene.endlessIIBuildInFallPerRow
+        let timings = GameScene.endlessIIBuildInTimings(rows: [0, 9, 9, 4], deepest: 9)
+        XCTAssertEqual(timings.each[1].delay, 0, "the bottom row is first away")
+        XCTAssertEqual(timings.each[0].delay, stagger*9, accuracy: 1e-9)
+        XCTAssertEqual(timings.each[3].delay, stagger*5, accuracy: 1e-9)
+        XCTAssertEqual(timings.each[1].fall, perRow*10, accuracy: 1e-9, "ten rows to fall")
+        XCTAssertEqual(timings.each[0].fall, 0.06, accuracy: 1e-9,
+                       "the top row's tiny fall is given a floor so it is seen to move")
+    }
+
+    func testEachRowKnocksOnceAsItLands() {
+        // "The row-down knock as each row lands" - one a row, at the row's first arrival,
+        // in order; two bricks in a row are still one knock
+        let timings = GameScene.endlessIIBuildInTimings(rows: [0, 9, 9, 4], deepest: 9)
+        XCTAssertEqual(timings.landings.count, 3)
+        XCTAssertEqual(timings.landings, timings.landings.sorted())
+        let arrivals = timings.each.map { $0.delay + $0.fall }
+        XCTAssertEqual(timings.landings.first!, arrivals.min()!, accuracy: 1e-9)
+        XCTAssertEqual(timings.total, arrivals.max()! + 0.05, accuracy: 1e-9,
+                       "over a beat after the last brick lands, so a tap can still skip it")
+    }
+
+    func testAClassicLevelPopsInRowByRowFromTheTop() {
+        let stagger = GameScene.classicBuildInStagger
+        let timings = GameScene.classicBuildInTimings(rowsFromTop: [0, 2, 2, 5, -1])
+        XCTAssertEqual(timings.delays[0], 0)
+        XCTAssertEqual(timings.delays[3], stagger*5, accuracy: 1e-9)
+        XCTAssertEqual(timings.delays[4], 0, "nothing above the top")
+        XCTAssertEqual(timings.landings.count, 3, "rows 0, 2 and 5 - one knock each")
+        XCTAssertEqual(timings.total, stagger*5 + GameScene.classicBuildInPop, accuracy: 1e-9)
+    }
+
+    func testAClassicLevelWithNoBricksLeftIsNotBuilding() {
+        let scene = scene(endless: false)
+        let gone = SKSpriteNode(color: .white, size: cell)
+        scene.endlessIIBuildInBricks = [gone]
+        // Never added to the scene - removed before its turn
+        scene.runEndlessIIBuildIn()
+        XCTAssertFalse(scene.endlessIIBuildingIn)
+    }
+}

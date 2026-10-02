@@ -512,31 +512,23 @@ extension GameScene {
         guard endlessMode else { return runClassicBuildIn() }
         endlessIIBuildingIn = true
 
-        let stagger = GameScene.endlessIIBuildInStagger
-        let fallPerRow = GameScene.endlessIIBuildInFallPerRow
-        let rows = endlessIIBuildInBricks.reduce(0) { deepest, brick in
+        let deepest = endlessIIBuildInBricks.reduce(0) { deepest, brick in
             max(deepest, endlessIIBuildInRow(of: brick))
         }
+        let falling = endlessIIBuildInBricks.compactMap { brick -> (SKSpriteNode, CGFloat)? in
+            guard brick.parent != nil,
+                  let finalY = endlessIIBuildInFinalY[ObjectIdentifier(brick)] else { return nil }
+            return (brick, finalY)
+        }
+        let timings = GameScene.endlessIIBuildInTimings(
+            rows: falling.map { endlessIIBuildInRow(of: $0.0) }, deepest: deepest)
 
-        var landings: [Int: TimeInterval] = [:]
-        for brick in endlessIIBuildInBricks {
-            guard brick.parent != nil else { continue }
-            let row = endlessIIBuildInRow(of: brick)
-            guard let finalY = endlessIIBuildInFinalY[ObjectIdentifier(brick)] else { continue }
-
-            let delay = stagger*Double(rows - row)
-            let fall = max(0.06, fallPerRow*Double(row + 1))
-            // The deepest rows leave first and fall furthest, so the field stacks up from
-            // the bottom - each row lands just before the one that will sit above it
-
-            let drop = SKAction.moveTo(y: finalY, duration: fall)
+        for ((brick, finalY), timing) in zip(falling, timings.each) {
+            let drop = SKAction.moveTo(y: finalY, duration: timing.fall)
             drop.timingMode = .easeIn
-            brick.run(.sequence([.wait(forDuration: delay),
+            brick.run(.sequence([.wait(forDuration: timing.delay),
                                  .group([.fadeIn(withDuration: 0.05), drop])]))
-
-            let arrival = delay + fall
-            if landings[row] == nil || arrival < landings[row]! { landings[row] = arrival }
-            scheduleDailyFog(for: brick, landingAt: arrival)
+            scheduleDailyFog(for: brick, landingAt: timing.delay + timing.fall)
             // The fog travels down with the build-in rather than waiting for it (round 140)
         }
         endlessIIBuildInBricks.removeAll()
@@ -547,13 +539,12 @@ extension GameScene {
 
         // The row-down knock as each row lands, so the field arrives with the same feedback
         // it will give every time it moves for the rest of the run
-        for arrival in landings.values.sorted() {
+        for arrival in timings.landings {
             run(.sequence([.wait(forDuration: arrival),
                            .run { [weak self] in self?.endlessIIBuildInRowLanded() }]))
         }
 
-        let total = (landings.values.max() ?? 0) + 0.05
-        run(.sequence([.wait(forDuration: total),
+        run(.sequence([.wait(forDuration: timings.total),
                        .run { [weak self] in
                            self?.endlessIIBuildingIn = false
                            self?.endlessIIBuildInFinalY.removeAll()
@@ -562,6 +553,28 @@ extension GameScene {
         // Cleared on a timer rather than by counting bricks finishing, because the flag only
         // exists to know whether a tap should skip - and once everything has arrived there is
         // nothing left to skip
+    }
+
+    /// When each brick of the opening field leaves and how long it falls, when each row lands,
+    /// and when the whole build-in is over.
+    ///
+    /// The deepest rows leave first and fall furthest, so the field stacks up from the bottom -
+    /// each row lands just before the one that will sit above it. A row's landing is its
+    /// *first* brick's, because that is when the knock belongs. Pulled out of
+    /// `runEndlessIIBuildIn` in round 358b, unchanged, because a scene's actions only run under
+    /// a view and every one of these sums was invisible to the tests.
+    static func endlessIIBuildInTimings(rows: [Int], deepest: Int)
+    -> (each: [(delay: TimeInterval, fall: TimeInterval)], landings: [TimeInterval],
+        total: TimeInterval) {
+        var landings: [Int: TimeInterval] = [:]
+        let each = rows.map { row -> (delay: TimeInterval, fall: TimeInterval) in
+            let delay = endlessIIBuildInStagger*Double(deepest - row)
+            let fall = max(0.06, endlessIIBuildInFallPerRow*Double(row + 1))
+            let arrival = delay + fall
+            if landings[row] == nil || arrival < landings[row]! { landings[row] = arrival }
+            return (delay, fall)
+        }
+        return (each, landings.values.sorted(), (landings.values.max() ?? 0) + 0.05)
     }
 
     /// Classic's own opening: the level appears in place, from the top down.
@@ -583,13 +596,10 @@ extension GameScene {
             endlessIIBuildingIn = false
             return
         }
+        let timings = GameScene.classicBuildInTimings(
+            rowsFromTop: bricks.map { Int(((top - $0.position.y)/brickHeight).rounded()) })
 
-        var landings: Set<Int> = []
-        for brick in bricks {
-            let row = Int(((top - brick.position.y)/brickHeight).rounded())
-            let delay = GameScene.classicBuildInStagger*Double(max(0, row))
-            landings.insert(max(0, row))
-
+        for (brick, delay) in zip(bricks, timings.delays) {
             brick.run(.sequence([
                 .wait(forDuration: delay),
                 .group([.fadeIn(withDuration: GameScene.classicBuildInPop),
@@ -601,21 +611,32 @@ extension GameScene {
             // going while the last is still arriving
         }
 
-        for row in landings.sorted() {
+        for landing in timings.landings {
             run(.sequence([
-                .wait(forDuration: GameScene.classicBuildInStagger*Double(row)),
+                .wait(forDuration: landing),
                 .run { [weak self] in self?.endlessIIBuildInRowLanded() },
             ]))
         }
 
-        let total = GameScene.classicBuildInStagger*Double(landings.max() ?? 0)
-            + GameScene.classicBuildInPop
-        run(.sequence([.wait(forDuration: total),
+        run(.sequence([.wait(forDuration: timings.total),
                        .run { [weak self] in
                            self?.endlessIIBuildingIn = false
                            self?.endlessIIBuildInFinalY.removeAll()
                            self?.closeDailyFog()
                        }]))
+    }
+
+    /// When each brick of a Classic level pops in, when each row's knock plays, and when the
+    /// build-in is over: a row every `classicBuildInStagger` from the top, each taking
+    /// `classicBuildInPop`. Pulled out in round 358b for the same reason as
+    /// `endlessIIBuildInTimings`, unchanged.
+    static func classicBuildInTimings(rowsFromTop: [Int])
+    -> (delays: [TimeInterval], landings: [TimeInterval], total: TimeInterval) {
+        let rows = rowsFromTop.map { max(0, $0) }
+        let delays = rows.map { classicBuildInStagger*Double($0) }
+        let landings = Set(rows).sorted().map { classicBuildInStagger*Double($0) }
+        let total = classicBuildInStagger*Double(rows.max() ?? 0) + classicBuildInPop
+        return (delays, landings, total)
     }
 
     /// A row every twentieth of a second, and each brick a fifth of a second to arrive.

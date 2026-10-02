@@ -89,6 +89,14 @@ def run_tests(args):
                 testing = True
             if ": error:" in line and not testing and "-[" not in line:
                 compile_error = True
+            if testing and "Fatal error:" in line:
+                verdict = "killed"
+                break
+            # **A mutant that crashes the tests is killed** (round 358b). A Swift trap - a
+            # force-unwrapped nil, an index out of range - takes the test host down, xcodebuild
+            # relaunches it, and the relaunched run prints `Selected tests' passed` for the tests
+            # that were left, which used to be read first and called a survivor. Two of round
+            # 358b's build-in "survivors" were crashes, found by applying one by hand
             if "Test Suite 'Selected tests' failed" in line or "** TEST FAILED **" in line:
                 verdict = "killed" if testing else "stillborn"
                 break

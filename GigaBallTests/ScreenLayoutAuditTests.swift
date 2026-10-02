@@ -1610,3 +1610,98 @@ final class GameCentreLineOnEveryScreenTests: XCTestCase {
         }
     }
 }
+
+/// The pause and ending screen's three round buttons: what each one is, and that pressing it
+/// does not turn it into another (round 358b). The press and the release each decided the
+/// picture for themselves and had not kept up with the screen - an endless game over's
+/// centre Replay was pressed and released as Home - and every press renamed the button for
+/// VoiceOver whatever the picture did.
+final class PauseMenuButtonTests: XCTestCase {
+
+    private var windows: [UIWindow] = []
+
+    override func tearDown() {
+        DailyChallengeSession.shared.active = nil
+        DailyChallengeSession.shared.lastRunPosted = false
+        windows.removeAll()
+        super.tearDown()
+    }
+
+    private func screen(sender: String, endless: Bool = false, daily: Bool = false,
+                        posted: Bool = true) -> PauseMenuViewController? {
+        DailyChallengeSession.shared.active = daily
+            ? DailyChallenge(dateKey: DailyChallengeSession.shared.todayKey, mode: .classic,
+                             classicLevel: 1, twists: [])
+            : nil
+        DailyChallengeSession.shared.lastRunPosted = posted
+        let board = UIStoryboard(name: "Main", bundle: Bundle(for: PauseMenuViewController.self))
+        guard let screen = board.instantiateViewController(withIdentifier: "pauseMenuVC")
+                as? PauseMenuViewController else { return nil }
+        screen.sender = sender
+        screen.endlessMode = endless
+        screen.levelNumber = 1
+        screen.totalStatsArray = [TotalStats()]
+        return screen
+    }
+
+    private func artwork(_ screen: PauseMenuViewController) -> [String] {
+        (0..<3).map { screen.buttonArtwork(row: $0) }
+    }
+
+    func testThePauseScreenIsInformationPlayAndSettings() throws {
+        let screen = try XCTUnwrap(screen(sender: "Pause"))
+        XCTAssertEqual(artwork(screen), ["ButtonInfo", "ButtonPlay", "ButtonSettings"])
+    }
+
+    func testAClassicEndingIsReplayThenHome() throws {
+        let screen = try XCTUnwrap(screen(sender: "GameOver"))
+        XCTAssertEqual(Array(artwork(screen).prefix(2)), ["ButtonRestart", "ButtonHome"])
+    }
+
+    func testAnEndlessEndingPutsReplayInTheMiddle() throws {
+        // Play-test round 39: "after an endless run the thing almost everybody wants next is
+        // another go"
+        let screen = try XCTUnwrap(screen(sender: "GameOver", endless: true))
+        XCTAssertEqual(Array(artwork(screen).prefix(2)), ["ButtonHome", "ButtonRestart"])
+    }
+
+    func testADailyThatPostedHasNoReplayAndOffersTheBoard() throws {
+        let screen = try XCTUnwrap(screen(sender: "GameOver", daily: true, posted: true))
+        XCTAssertEqual(artwork(screen),
+                       [PauseMenuViewController.noButton, "ButtonHome", "ButtonLeaderboard"])
+    }
+
+    func testADailyFreeRunOffersAnotherGo() throws {
+        // James, round 350: "show a replay level button to the left of the home button"
+        let screen = try XCTUnwrap(screen(sender: "GameOver", daily: true, posted: false))
+        XCTAssertEqual(artwork(screen), ["ButtonRestart", "ButtonHome", "ButtonLeaderboard"])
+    }
+
+    func testPressingAButtonNeverRenamesIt() throws {
+        for (sender, endless, daily, posted) in [("Pause", false, false, true),
+                                                 ("GameOver", true, false, true),
+                                                 ("GameOver", false, true, false)] {
+            let screen = try XCTUnwrap(self.screen(sender: sender, endless: endless,
+                                                   daily: daily, posted: posted))
+            let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 402, height: 874))
+            window.rootViewController = screen
+            window.isHidden = false
+            windows.append(window)
+            window.layoutIfNeeded()
+            screen.buttonCollectionView.reloadData()
+            screen.buttonCollectionView.layoutIfNeeded()
+
+            for row in 0..<3 {
+                let path = IndexPath(row: row, section: 0)
+                guard let cell = screen.buttonCollectionView.cellForItem(at: path) else {
+                    return XCTFail("\(sender) row \(row) has no cell")
+                }
+                let name = cell.accessibilityLabel
+                screen.collectionView(screen.buttonCollectionView, didHighlightItemAt: path)
+                XCTAssertEqual(cell.accessibilityLabel, name, "\(sender) row \(row), held")
+                screen.collectionView(screen.buttonCollectionView, didUnhighlightItemAt: path)
+                XCTAssertEqual(cell.accessibilityLabel, name, "\(sender) row \(row), let go")
+            }
+        }
+    }
+}

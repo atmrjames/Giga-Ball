@@ -1495,61 +1495,40 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
         // through the briefing screen, labelled practice
         switch indexPath.row {
         case 0:
-            if self.sender == "Pause" {
-                cell.setButton("ButtonInfo.png")
-            } else if dailyReplayIsOffered {
-                cell.setButton("ButtonRestart")
-                // **Replay, on a free-play run** (James, round 350: "on the complete / game over
-                // view show a replay level button to the left of the home button. Make its
-                // position symmetrical to the game centre leaderboard button on the right and
-                // style and size the same as that button"): the small left slot, mirroring the
-                // leaderboard's small right one
-            } else if isDailyChallenge {
-                cell.setButton("ButtonNull.png")
-            } else {
-                cell.setButton(endlessGameOver ? "ButtonHome" : "ButtonRestart")
-            }
+            cell.setButton(buttonArtwork(row: 0))
+            // **Replay, on a daily's free-play run** (James, round 350: "on the complete / game
+            // over view show a replay level button to the left of the home button. Make its
+            // position symmetrical to the game centre leaderboard button on the right and
+            // style and size the same as that button"): the small left slot, mirroring the
+            // leaderboard's small right one
             cell.widthConstraint.constant = MainMenuCollectionViewCell.smallButtonSize
         case 1:
             cell.widthConstraint.constant = MainMenuCollectionViewCell.largeButtonSize
-            if self.sender == "Pause" {
-                cell.setButton("ButtonPlay.png", pointSize: MainMenuCollectionViewCell.bigGlyphPointSize, rimmed: true)
-                // The large size here, so the same glyph size and the same rim as the return-to-game
-                // play on the menus - two buttons that do the same thing should not be two
-                // different materials
-            } else {
-                cell.setButton(endlessGameOver ? "ButtonRestart" : "ButtonHome",
-                               pointSize: MainMenuCollectionViewCell.bigGlyphPointSize,
-                               rimmed: true)
-                // The game-over screen's centre button is the large size like the pause screen's play,
-                // and was drawing a 20pt glyph on it - a small mark adrift in a big disc
-                // (play-test round 85). It is also that screen's positive action, replay or
-                // home, so the same `rimmed` flag gives it the lime the play buttons wear
-            }
+            cell.setButton(buttonArtwork(row: 1),
+                           pointSize: MainMenuCollectionViewCell.bigGlyphPointSize, rimmed: true)
+            // The large size on both screens. On the pause screen it is the same glyph size and
+            // rim as the return-to-game play on the menus - two buttons that do the same thing
+            // should not be two different materials. On a game over it was drawing a 20pt glyph,
+            // a small mark adrift in a big disc (play-test round 85); it is that screen's
+            // positive action, replay or home, so `rimmed` gives it the lime the plays wear
         case 2:
-            if self.sender == "Pause" {
-                cell.setButton("ButtonSettings.png")
-            } else if dailyGameOver || gameCentreIsOffered {
-                cell.setButton("ButtonLeaderboard.png")
-                // **The Game Center door lives here now** (James, round 313: "the Game Center
-                // button on the game over / complete screen is in the top right. Move it to
-                // the bottom right to line up with the other buttons, using the small
-                // right-side button position and style").
-                //
-                // It was a loose disc added over the container and pinned to `homeButton`'s
-                // centre - and `homeButton` is hidden on this screen, sitting where the
-                // storyboard leaves it, which is the top corner. So the button was mirrored
-                // across the top rather than lining up with anything.
-                //
-                // This slot is the run's detail (play-test round 10) and it was already the
-                // leaderboard for a daily; a classic or endless ending had nothing to put in
-                // it, which is what left the door homeless. Same picture as the mode menus
-                // use for the same door, same small right-hand size, same row.
-            } else {
-                cell.setButton("ButtonNull.png")
-                // The endless run's detail moved to the More Stats… button under the
-                // stats list (play-test round 11) - the rosette here said nothing
-            }
+            cell.setButton(buttonArtwork(row: 2))
+            // **The Game Center door lives here on an ending** (James, round 313: "the Game Center
+            // button on the game over / complete screen is in the top right. Move it to
+            // the bottom right to line up with the other buttons, using the small
+            // right-side button position and style").
+            //
+            // It was a loose disc added over the container and pinned to `homeButton`'s
+            // centre - and `homeButton` is hidden on this screen, sitting where the
+            // storyboard leaves it, which is the top corner. So the button was mirrored
+            // across the top rather than lining up with anything.
+            //
+            // This slot is the run's detail (play-test round 10) and it was already the
+            // leaderboard for a daily; a classic or endless ending had nothing to put in
+            // it, which is what left the door homeless. Same picture as the mode menus
+            // use for the same door, same small right-hand size, same row. With no board
+            // to open the slot is empty: the endless run's detail moved to the More
+            // Stats… button under the stats list (play-test round 11)
             cell.widthConstraint.constant = MainMenuCollectionViewCell.smallButtonSize
         default:
             Log.ui.error("Row index out of range in \(#function, privacy: .public)")
@@ -1615,92 +1594,59 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
     }
     
     func collectionView(_ collectionView: UICollectionView, didHighlightItemAt indexPath: IndexPath) {
-        if let cell = self.buttonCollectionView.cellForItem(at: indexPath) as? MainMenuCollectionViewCell {
-            UIView.animate(withDuration: 0.1) {
-                cell.view.transform = .init(scaleX: 0.95, y: 0.95)
-            
-                switch indexPath.row {
-                case 0:
-                    if self.sender == "Pause" {
-                        if self.hapticsSetting {
-                            self.interfaceHaptic.impactOccurred()
-                            InterfaceSound.click()
-                        }
-                        cell.setButton("ButtonInfoHighlighted.png")
-                    } else if self.isDailyChallenge {
-                        cell.setButton("ButtonNull.png")
-                    } else {
-                        if self.hapticsSetting {
-                            self.interfaceHaptic.impactOccurred()
-                            InterfaceSound.click()
-                        }
-                        cell.setButton("ButtonRestartHighlighted.png")
-                    }
-                case 1:
-                    if self.hapticsSetting {
-                        self.interfaceHaptic.impactOccurred()
-                        InterfaceSound.click()
-                    }
-                    cell.setButton(self.sender == "Pause"
-                                   ? "ButtonPlayHighlighted.png" : "ButtonHomeHighlighted.png")
-                case 2:
-                    if self.sender == "Pause" {
-                        if self.hapticsSetting {
-                            self.interfaceHaptic.impactOccurred()
-                            InterfaceSound.click()
-                        }
-                        cell.setButton("ButtonSettingsHighlighted.png")
-                    } else if self.dailyGameOver {
-                        if self.hapticsSetting {
-                            self.interfaceHaptic.impactOccurred()
-                            InterfaceSound.click()
-                        }
-                        cell.setButton("ButtonLeaderboardHighlighted.png")
-                    } else {
-                        cell.setButton("ButtonNull.png")
-                    }
-                default:
-                    Log.ui.error("Row index out of range in \(#function, privacy: .public)")
-                    break
-                }
-            }
+        guard let cell = buttonCollectionView.cellForItem(at: indexPath)
+                as? MainMenuCollectionViewCell else { return }
+        let artwork = buttonArtwork(row: indexPath.row)
+        UIView.animate(withDuration: 0.1) {
+            cell.view.transform = .init(scaleX: 0.95, y: 0.95)
         }
+        guard artwork != PauseMenuViewController.noButton else { return }
+        // An empty slot neither clicks nor changes - there is nothing there to press
+        if hapticsSetting {
+            interfaceHaptic.impactOccurred()
+            InterfaceSound.click()
+        }
+        cell.setButton(artwork + "Highlighted")
     }
 
     func collectionView(_ collectionView: UICollectionView, didUnhighlightItemAt indexPath: IndexPath) {
-        
-        if let cell = self.buttonCollectionView.cellForItem(at: indexPath) as? MainMenuCollectionViewCell {
-            UIView.animate(withDuration: 0.1) {
-                cell.view.transform = .identity
-            
-            
-                switch indexPath.row {
-                case 0:
-                    if self.sender == "Pause" {
-                        cell.setButton("ButtonInfo.png")
-                    } else if self.isDailyChallenge {
-                        cell.setButton("ButtonNull.png")
-                    } else {
-                        cell.setButton("ButtonRestart.png")
-                    }
-                case 1:
-                    cell.setButton(self.sender == "Pause"
-                                   ? "ButtonPlay.png" : "ButtonHome.png")
-                case 2:
-                    if self.sender == "Pause" {
-                        cell.setButton("ButtonSettings.png")
-                    } else if self.dailyGameOver {
-                        cell.setButton("ButtonLeaderboard.png")
-                    } else {
-                        cell.setButton("ButtonNull.png")
-                    }
-                default:
-                    Log.ui.error("Row index out of range in \(#function, privacy: .public)")
-                    break
-                }
-            }
+        guard let cell = buttonCollectionView.cellForItem(at: indexPath)
+                as? MainMenuCollectionViewCell else { return }
+        UIView.animate(withDuration: 0.1) {
+            cell.view.transform = .identity
+        }
+        cell.setButton(buttonArtwork(row: indexPath.row))
+    }
+
+    /// What each of the three buttons is, asked by drawing them, pressing them and letting go.
+    ///
+    /// **One answer, three askers** (round 358b). Each used to decide for itself, and the
+    /// press and the release had not followed the screen as it grew: an endless game over's
+    /// centre Replay was pressed as Home and released as Home, its Home on the left as Replay,
+    /// a daily free run's Replay pressed as an empty slot, and the Game Center button on a
+    /// classic or endless ending as an empty slot too. On glass (iOS 26 on) the pictures never
+    /// showed, but every press still renamed the button for VoiceOver; before iOS 26 the wrong
+    /// picture was on the button for as long as it was held, and stayed there if the press was
+    /// cancelled rather than finished.
+    func buttonArtwork(row: Int) -> String {
+        switch row {
+        case 0:
+            if sender == "Pause" { return "ButtonInfo" }
+            if dailyReplayIsOffered { return "ButtonRestart" }
+            if isDailyChallenge { return PauseMenuViewController.noButton }
+            return endlessGameOver ? "ButtonHome" : "ButtonRestart"
+        case 1:
+            if sender == "Pause" { return "ButtonPlay" }
+            return endlessGameOver ? "ButtonRestart" : "ButtonHome"
+        default:
+            if sender == "Pause" { return "ButtonSettings" }
+            return dailyGameOver || gameCentreIsOffered
+                ? "ButtonLeaderboard" : PauseMenuViewController.noButton
         }
     }
+
+    /// The blank disc an empty slot wears.
+    static let noButton = "ButtonNull"
 
     func setBlur() {
         backgroundView.backgroundColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 0.33)

@@ -2933,6 +2933,28 @@ testers:
   brick and got ten pieces from three: one time in three a Tiny brick is a diagonal pair, by
   design (`endlessIITinyLayout`), and the test was wrong. The Tiny pass mutated 7 of 8; the eighth is the
   roll's `<=` turned to `<`, which a Miniatures certainty only misses on a hundred.
+- **The build-in's sums came out of the scene** (`endlessIIBuildInTimings`,
+  `classicBuildInTimings`), unchanged, because a scene's actions only run under a view and the
+  first mutation run found twenty timing mutants nothing could see. Watched on the simulator
+  afterwards: a Mayhem field still lands row by row onto its rows. Also tested: the Ball
+  Steering tick and the build-in's skip putting every brick where it was going.
+- **`mutate.py` was calling crashes survivors.** A mutant that trapped took the test host down,
+  the relaunch printed `Selected tests' passed` for what was left, and that was read first. Two
+  of the build-in's "survivors" were force-unwraps of nil, found by applying one by hand. A
+  `Fatal error:` now counts as killed; the earlier survivors in this entry were each reread and
+  none of them was a crash.
+- **The pause and ending screen's buttons are one answer now** (`buttonArtwork(row:)`). The
+  press and the release each picked their own picture and had not followed the screen: an
+  endless game over's centre Replay was pressed and released as Home and its Home as Replay, a
+  daily free run's Replay was pressed as an empty slot, and so was a classic or endless ending's
+  Game Center button. On glass (iOS 26 on) the swap is ignored, but every press still renamed
+  the button for VoiceOver; before iOS 26 the wrong picture showed for the length of the press
+  and stayed after a cancelled one. `PauseMenuButtonTests` fails against the old screen.
+  Pressing the Game Center button or a daily's Replay now clicks, as every other live button
+  does; an empty slot still does not.
+- **Not a bug, recorded so it is not chased again:** a tap in the gap between two main-menu rows
+  opens the upper one, because a row's cell reaches halfway into the gap. It looked like a
+  splash tap falling through to the menu until a tap on the settled menu did the same.
 - **A fixture trap, recorded so it is not mistaken for a bug:** `saveCurrentGame` divides a
   falling power-up's position by `brickWidth`, so a bare `GameScene()` with a power-up on
   screen traps converting NaN to Int. A real scene is always laid out before play.
