@@ -2959,6 +2959,36 @@ testers:
   falling power-up's position by `brickWidth`, so a bare `GameScene()` with a power-up on
   screen traps converting NaN to Int. A real scene is always laid out before play.
 
+**Round 359: a Cluster you can see, the day's theme by name, and yesterday's result.**
+
+James, after the round 358b push: three play-test notes.
+
+- **"I got the cluster power up when I already had the wrecking ball power up and no cluster
+  balls appeared. The sound effect played but that's it."** Each pellet copied `ball.texture`,
+  and a Wrecking Ball takes the ball's texture away to draw its spikes on a node of their own -
+  so twelve pellets were released with no picture at all. They wear `ballDressTexture(ballDress)`
+  now: the ball's own look under the spikes, plain, as round 169 asked ("they are just normal
+  balls"). Multi-Ball's extras copy the texture too, and correctly - they are spiked as well.
+- **"When clicking the twists on the daily challenge - it should show the theme that's been
+  applied - e.g. glass."** The card has named the theme since round 321; the pop-up asked each
+  twist for its plain name and blurb, "Theme" and "One theme is applied".
+  `DailyTwist.explainer(for:on:)` takes the day, for the briefing card and the pause menu alike.
+- **Yesterday's result, the first time the app opens after it** (daily spec §11.6). James: "a
+  pop-up should appear that tells the user how they did with respect to the Game Center
+  leaderboard, showing the top few global scores plus the user's score and global ranking ...
+  If the user is the top scorer, the pop up should show that, be more bold and colourful."
+  `DailyResultReport` decides and words it; `GameCenterHandler.loadDailyBoardReport` asks;
+  the menu shows it. The top three, a gap, the player's own place picked out, and "You finished
+  17th of 240"; Leaderboard opens Game Center on *that day's* board, Close closes. A player
+  who topped the day gets `GigaBallAlert`'s new `celebrating` card: lime glass, a crown, the
+  words and the Close button in the dark purple, the Leaderboard button purple with lime
+  letters. Looked at in both dresses on the simulator before it was committed.
+- **The pair sweep can see now.** `PowerUpPairInteractionTests` collects every power-up on top
+  of every other and had collected Wrecking Ball then Cluster all along - and passed it,
+  because every check it made was a number and both catches landed inside one frame, before
+  the spikes went on. It ticks a frame between the two catches now, as play does, and asks that
+  every ball in play has something to draw. Run against the old pellet code it names the pair.
+
 **Open after round 344:**
 
 | Item | What is known |

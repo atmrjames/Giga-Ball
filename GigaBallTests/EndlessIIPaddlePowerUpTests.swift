@@ -1818,6 +1818,33 @@ final class EndlessIIClusterPowerUpTests: XCTestCase {
         }
     }
 
+    func testABurstUnderAWreckingBallCanBeSeen() {
+        // James, round 358b: "I got the cluster power up when I already had the wrecking ball
+        // power up and no cluster balls appeared. The sound effect played but that's it." The
+        // spikes take the ball's own texture away, and the pellets copied it
+        let scene = mayhem()
+        scene.addChild(scene.ball)
+        scene.ball.texture = scene.ballTexture
+        scene.endlessIICollectWreckingBall()
+        scene.refreshEndlessIIWreckingBall()
+        XCTAssertNil(scene.ball.texture, "the spiked ball, as the scene draws it")
+
+        scene.endlessIIReleaseCluster()
+
+        for pellet in pellets(scene) {
+            XCTAssertEqual(pellet.texture, scene.ballTexture,
+                           "a plain ball, not spiked and not invisible")
+        }
+    }
+
+    func testABurstWearsTheBallsDress() {
+        // "A themed run bursts in its own theme" - and a Giga-Ball bursts as Giga-Balls
+        let scene = mayhem()
+        scene.ballDress = .giga
+        scene.endlessIIReleaseCluster()
+        XCTAssertTrue(pellets(scene).allSatisfy { $0.texture == scene.gigaBallTexture })
+    }
+
     func testEveryBallLeavesUpwardsAtItsOwnAngle() {
         let scene = mayhem()
         scene.endlessIIReleaseCluster()

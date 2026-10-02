@@ -1253,7 +1253,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
         if hapticsSetting { interfaceHaptic.impactOccurred() }
         InterfaceSound.click()
 
-        let body = DailyTwist.explainer(for: challenge.twists)
+        let body = DailyTwist.explainer(for: challenge.twists, on: challenge.dateKey)
         // Built by `DailyTwist.explainer` since round 308, because the briefing card now shows
         // the same pop-up and two copies of this block would be two copies of a decision
 

@@ -1304,10 +1304,16 @@ extension DailyTwist {
     /// The badge goes in front of the name, as every other screen that names a twist does
     /// (play-test round 17) - the briefing, the pause summary and the level intro all read
     /// icon-then-name, and the explainer was the one place that did not.
-    static func explainer(for twists: [DailyTwist]) -> NSAttributedString {
+    ///
+    /// **Named for the day** (James, round 358b: "when clicking the twists on the daily
+    /// challenge - it should show the theme that's been applied - e.g. glass"). The card has
+    /// said "Glass Theme" since round 321, and the pop-up asked each twist for its plain name
+    /// and blurb - "Theme", "One theme is applied" - so the one place a player went for the
+    /// detail was the one place that did not have it.
+    static func explainer(for twists: [DailyTwist], on key: String) -> NSAttributedString {
         let named: [(icon: UIImage, name: String, blurb: String)] = twists.isEmpty
             ? [(PowerUpIcon.twistVanilla, DailyTwist.vanillaName, DailyTwist.vanillaBlurb)]
-            : twists.map { ($0.icon, $0.displayName, $0.blurb) }
+            : twists.map { ($0.icon, $0.displayName(forKey: key), $0.blurb(forKey: key)) }
 
         let body = NSMutableAttributedString()
         for (position, twist) in named.enumerated() {

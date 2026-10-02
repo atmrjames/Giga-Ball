@@ -255,6 +255,7 @@ enum GigaBallAlert {
     static func show(on presenter: UIViewController, title: String,
                      attributed message: NSAttributedString,
                      symbol: String? = nil,
+                     celebrating: Bool = false,
                      dismissTitle: String = "OK",
                      dismiss: (() -> Void)? = nil,
                      confirmTitle: String? = nil,
@@ -267,6 +268,7 @@ enum GigaBallAlert {
                                                 confirmTitle: confirmTitle,
                                                 confirm: confirm, dismiss: dismiss,
                                                 otherTitle: otherTitle, other: other)
+        alert.celebrating = celebrating
         alert.stoodDown = UIView.standDownParallax(under: presenter.view)
         // Before the alert's own view goes in, so the search finds the screen behind it and
         // not the card about to sit on top. Put back when the pop-up closes
@@ -298,6 +300,13 @@ final class GigaBallAlertViewController: UIViewController {
     /// back when it closes. Empty when the player has parallax off, or when whatever raised
     /// this never had any.
     var stoodDown: [UIView] = []
+
+    /// The lime card, for news worth shouting about (round 358b: the daily result pop-up for
+    /// a player who topped the day's board - James: "be more bold and colourful"). The same
+    /// dress the daily card wears for a day the player leads (`DailyCardView.dress`): lime
+    /// glass, the words in the app's dark purple, and the green button turned purple, because
+    /// a lime button on a lime card is a button nobody can find.
+    var celebrating = false
 
     private let hapticsSetting = UserDefaults.standard.bool(forKey: "hapticsSetting")
     private let parallaxSetting = UserDefaults.standard.bool(forKey: "parallaxSetting")
@@ -347,7 +356,9 @@ final class GigaBallAlertViewController: UIViewController {
 
         if #available(iOS 26.0, *) {
             let effect = UIGlassEffect(style: .regular)
-            effect.tintColor = UIColor(red: 0.16, green: 0, blue: 0.24, alpha: 0.34)
+            effect.tintColor = celebrating
+                ? SettingsTableViewCell.prominentTint.withAlphaComponent(0.85)
+                : UIColor(red: 0.16, green: 0, blue: 0.24, alpha: 0.34)
             let glass = UIVisualEffectView(effect: effect)
             glass.isUserInteractionEnabled = false
             glass.translatesAutoresizingMaskIntoConstraints = false
@@ -368,6 +379,8 @@ final class GigaBallAlertViewController: UIViewController {
             // No border either. The hairline the flat card wore was standing in for an edge it
             // could not otherwise have; glass lights its own, and drawing both gives a card
             // two rims
+        } else if celebrating {
+            card.backgroundColor = SettingsTableViewCell.prominentTint
         } else {
             card.backgroundColor = UIColor(white: 1, alpha: 0.08)
             card.layer.borderWidth = 1
@@ -381,6 +394,10 @@ final class GigaBallAlertViewController: UIViewController {
         titleLabel.textAlignment = .center
         titleLabel.numberOfLines = 0
         titleLabel.applyGigaBallGlow(radius: 10, opacity: 0.35)
+        if celebrating {
+            titleLabel.textColor = DailyCardView.onLime
+            titleLabel.layer.shadowOpacity = 0
+        }
 
         let bodyLabel = UILabel()
         bodyLabel.font = .systemFont(ofSize: 15)
@@ -388,6 +405,9 @@ final class GigaBallAlertViewController: UIViewController {
         bodyLabel.textAlignment = .center
         bodyLabel.numberOfLines = 0
         bodyLabel.attributedText = body
+        // A celebrating card's words come coloured by whoever wrote them: the daily result
+        // sets its own lines in the dark purple, and a blanket colour here would flatten the
+        // player's own row into the rest
         // Set after the font and colour, not before: a plain-string message arrives with no
         // attributes of its own and would otherwise land as unstyled black text
 
@@ -423,6 +443,11 @@ final class GigaBallAlertViewController: UIViewController {
         // Only the pale one. The green button is the one that does the thing, and its colour
         // is how the pop-up says so - putting both behind the same material would make a
         // choice out of two identical shapes
+        if celebrating, confirmTitle != nil {
+            button.setTitleColor(DailyCardView.onLime, for: .normal)
+        }
+        // The step-back's pale letters were made for the dark card; on lime they all but
+        // vanish, so a celebrating card letters it in the card's own purple
         button.addTarget(self, action: #selector(dismissTapped), for: .touchUpInside)
 
         var third: UIButton?
@@ -463,6 +488,14 @@ final class GigaBallAlertViewController: UIViewController {
             // noticed - and the pale one beside it stays plain glass, which is what keeps the
             // pair a choice rather than two shouts. Below iOS 26 both keep the flat colours
             // they have always had
+            if celebrating {
+                confirmButton.subviews.filter { $0 is UIVisualEffectView }
+                    .forEach { $0.removeFromSuperview() }
+                confirmButton.backgroundColor = DailyCardView.onLime
+                confirmButton.setTitleColor(SettingsTableViewCell.prominentTint, for: .normal)
+            }
+            // Purple with lime letters on the lime card - the same pair turned round, so it
+            // is still the button that does the thing and can still be seen
             confirmButton.addTarget(self, action: #selector(confirmTapped), for: .touchUpInside)
             go = confirmButton
         }
@@ -505,6 +538,10 @@ final class GigaBallAlertViewController: UIViewController {
             icon.layer.shadowRadius = 10
             icon.layer.shadowOffset = .zero
             icon.layer.masksToBounds = false
+            if celebrating {
+                icon.tintColor = DailyCardView.onLime
+                icon.layer.shadowOpacity = 0
+            }
             pieces.insert(icon, at: 0)
             // The app's green and the same glow the title wears, so the pair read as one
             // heading rather than as a picture with a caption. `.center` and no clipping,

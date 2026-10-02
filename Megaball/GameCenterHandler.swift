@@ -216,6 +216,25 @@ final class GameCenterHandler: NSObject {
     func loadDailyBoardTop(forKey key: String, count: Int,
                            completion: @escaping ((leaders: [DailyBoardRow],
                                                    local: DailyBoardRow?)?) -> Void) {
+        loadDailyBoardReport(forKey: key, count: count) { report in
+            completion(report.map { (leaders: $0.leaders, local: $0.local) })
+        }
+        // The report's first two answers - one request either way, and one copy of how a day's
+        // occurrence is found (round 358b)
+    }
+
+    /// Everything the daily result pop-up needs about a closed day (round 358b): the leading
+    /// places, the player's own, how many played, and the board itself, so the pop-up's
+    /// button can open Game Center on *that* day rather than on today's.
+    ///
+    /// The same reach as `loadDailyBoardTop` - today's board and yesterday's - and nil for the
+    /// same reasons. `GKGameCenterViewController(leaderboardID:)` can only open the current
+    /// occurrence, which is why the board object is handed back: a closed day is opened with
+    /// `GKGameCenterViewController(leaderboard:playerScope:)`, which takes the occurrence.
+    func loadDailyBoardReport(forKey key: String, count: Int,
+                              completion: @escaping ((leaders: [DailyBoardRow],
+                                                      local: DailyBoardRow?, players: Int,
+                                                      board: GKLeaderboard)?) -> Void) {
         let session = DailyChallengeSession.shared
         guard GKLocalPlayer.local.isAuthenticated,
               let occurrence = DailyChallengeSession.boardOccurrence(forKey: key,
@@ -226,12 +245,13 @@ final class GameCenterHandler: NSObject {
             DailyBoardRow(rank: entry.rank, name: entry.player.displayName, score: entry.score,
                           isLocalPlayer: entry.player.gamePlayerID == me)
         }
-        func top(of board: GKLeaderboard) {
+        func report(on board: GKLeaderboard) {
             board.loadEntries(for: .global, timeScope: .allTime,
                               range: NSRange(location: 1, length: max(1, count))) {
-                localEntry, entries, _, error in
+                localEntry, entries, players, error in
                 let answer = error == nil || entries != nil
-                    ? (leaders: (entries ?? []).map(row), local: localEntry.map(row))
+                    ? (leaders: (entries ?? []).map(row), local: localEntry.map(row),
+                       players: players, board: board)
                     : nil
                 DispatchQueue.main.async { completion(answer) }
             }
@@ -242,14 +262,14 @@ final class GameCenterHandler: NSObject {
                 return
             }
             switch occurrence {
-            case .current: top(of: board)
+            case .current: report(on: board)
             case .previous:
                 board.loadPreviousOccurrence { previous, _ in
                     guard let previous else {
                         DispatchQueue.main.async { completion(nil) }
                         return
                     }
-                    top(of: previous)
+                    report(on: previous)
                 }
             }
         }

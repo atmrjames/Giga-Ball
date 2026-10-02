@@ -3947,3 +3947,128 @@ final class DailyScoresReadAlikeTests: XCTestCase {
                        "one score grouped and the other not is the report")
     }
 }
+
+/// James, round 358b: "when clicking the twists on the daily challenge - it should show the
+/// theme that's been applied - e.g. glass." The pop-up asked each twist for its plain name and
+/// blurb, so a Theme day explained itself as "Theme - One theme is applied".
+final class TwistExplainerNamesTheThemeTests: XCTestCase {
+
+    func testAThemeDaysPopUpNamesTheTheme() {
+        let key = "2026-10-02"
+        let theme = DailyTwist.themeName(forKey: key)
+        XCTAssertFalse(theme.isEmpty)
+        let text = DailyTwist.explainer(for: [.dailyTheme, .oneLife], on: key).string
+        XCTAssertTrue(text.contains(theme + " Theme"), text)
+        XCTAssertTrue(text.contains("The whole run is played in the \(theme) theme"), text)
+        XCTAssertFalse(text.contains(DailyTwist.dailyTheme.blurb), "not the generic promise")
+        XCTAssertTrue(text.contains(DailyTwist.oneLife.blurb), "and the others as they were")
+    }
+
+    func testEachDayNamesItsOwnTheme() {
+        // The pop-up is built for the *browsed* day, which is usually not today
+        let keys = (1...20).map { String(format: "2026-09-%02d", $0) }
+        let named = Set(keys.map { DailyTwist.explainer(for: [.dailyTheme], on: $0).string })
+        XCTAssertGreaterThan(named.count, 1)
+    }
+}
+
+/// James, round 358b: "When opening the app for the first time after a played daily challenge
+/// has closed, a pop-up should appear that tells the user how they did ... If the user is the
+/// top scorer, the pop up should show that, be more bold and colourful."
+final class DailyResultReportTests: XCTestCase {
+
+    private let today = "2026-10-02"
+    private let yesterday = "2026-10-01"
+
+    private func record(_ key: String, posted: Bool) -> DailyChallengeRecord {
+        var record = DailyChallengeRecord(dateKey: key)
+        record.posted = posted
+        record.firstAttemptScore = 4200
+        return record
+    }
+
+    private func row(_ rank: Int, _ name: String, _ score: Int, me: Bool = false) -> DailyBoardRow {
+        DailyBoardRow(rank: rank, name: name, score: score, isLocalPlayer: me)
+    }
+
+    // MARK: - Which day
+
+    func testYesterdaysPostedRunIsReportedOnce() {
+        let records = [record(yesterday, posted: true)]
+        XCTAssertEqual(DailyResultReport.dayToReport(in: records, today: today,
+                                                     lastReported: nil), yesterday)
+        XCTAssertEqual(DailyResultReport.dayToReport(in: records, today: today,
+                                                     lastReported: "2026-09-30"), yesterday)
+        XCTAssertNil(DailyResultReport.dayToReport(in: records, today: today,
+                                                   lastReported: yesterday), "once a day")
+    }
+
+    func testOnlyARunThatReachedTheBoardIsReported() {
+        // A free run, a forfeit or a miss has no place on the board to tell anybody about
+        XCTAssertNil(DailyResultReport.dayToReport(in: [record(yesterday, posted: false)],
+                                                   today: today, lastReported: nil))
+    }
+
+    func testOnlyYesterdayCanBeReported() {
+        // Game Center keeps one closed occurrence of a recurring board: the one that ended last
+        XCTAssertNil(DailyResultReport.dayToReport(in: [record("2026-09-29", posted: true)],
+                                                   today: today, lastReported: nil))
+        XCTAssertNil(DailyResultReport.dayToReport(in: [record(today, posted: true)],
+                                                   today: today, lastReported: nil),
+                     "today is still open")
+    }
+
+    // MARK: - What it says
+
+    func testNoPlaceOnTheBoardIsNoReport() {
+        XCTAssertNil(DailyResultReport(leaders: [row(1, "Ana", 900)], local: nil,
+                                       players: 10, unit: ""))
+    }
+
+    func testTheTopFewThenTheGapThenThePlayer() {
+        let leaders = [row(1, "Ana", 9000), row(2, "Bo", 8000), row(3, "Cy", 7000)]
+        let report = DailyResultReport(leaders: leaders, local: row(17, "Me", 4200, me: true),
+                                       players: 240, unit: "")!
+        XCTAssertEqual(report.rows.map(\.rank), [1, 2, 3, 17])
+        XCTAssertFalse(report.won)
+        XCTAssertEqual(report.finishLine, "You finished 17th of 240")
+        let text = report.body().string
+        XCTAssertTrue(text.contains("1. Ana  9000"), text)
+        XCTAssertTrue(text.contains("3. Cy  7000\n\n17. Me  4200"), "a gap before a place further down")
+        XCTAssertTrue(text.hasSuffix("You finished 17th of 240"))
+    }
+
+    func testAPlayerAmongTheLeadersIsNotListedTwice() {
+        let leaders = [row(1, "Ana", 9000), row(2, "Me", 8000, me: true), row(3, "Cy", 7000)]
+        let report = DailyResultReport(leaders: leaders, local: row(2, "Me", 8000, me: true),
+                                       players: 12, unit: "m")!
+        XCTAssertEqual(report.rows.map(\.rank), [1, 2, 3])
+        XCTAssertTrue(report.body().string.contains("2. Me  8000m"), "an endless day's metres")
+    }
+
+    func testTheWinnersReportCelebrates() {
+        let report = DailyResultReport(leaders: [row(1, "Me", 9000, me: true), row(2, "Bo", 10)],
+                                       local: row(1, "Me", 9000, me: true),
+                                       players: 50, unit: "")!
+        XCTAssertTrue(report.won)
+        XCTAssertEqual(report.title, "You Won Yesterday")
+        XCTAssertEqual(report.symbol, "crown.fill")
+        XCTAssertEqual(report.finishLine, "You finished 1st of 50")
+        let body = report.body()
+        let colour = body.attribute(.foregroundColor, at: 0, effectiveRange: nil) as? UIColor
+        XCTAssertEqual(colour, DailyCardView.onLime, "purple words on the lime card")
+    }
+
+    func testAnotherPlayersReportIsTheOrdinaryOne() {
+        let report = DailyResultReport(leaders: [row(1, "Ana", 9000)],
+                                       local: row(5, "Me", 100, me: true), players: 0, unit: "")!
+        XCTAssertEqual(report.title, "Yesterday's Challenge")
+        XCTAssertEqual(report.finishLine, "You finished 5th", "no field size when none was given")
+    }
+
+    func testPlacesAreSaidTheWayPeopleSayThem() {
+        let said = [1, 2, 3, 4, 11, 12, 13, 21, 22, 23, 101, 111, 112].map(DailyResultReport.ordinal)
+        XCTAssertEqual(said, ["1st", "2nd", "3rd", "4th", "11th", "12th", "13th", "21st", "22nd",
+                              "23rd", "101st", "111th", "112th"])
+    }
+}

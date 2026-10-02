@@ -878,7 +878,7 @@ extension DailyChallengeViewController: UICollectionViewDataSource,
                        boardBest: boardBests[key]
                            ?? totalStatsArray[0].dailyRecord(forKey: key)?.closingBoardBest,
                        board: boardTops[key] ?? [])
-        cell.card.twistTapped = { [weak self] twist in self?.explain(twist) }
+        cell.card.twistTapped = { [weak self] twist in self?.explain(twist, on: key) }
         cell.card.twistsExplainerTapped = { [weak self] in self?.explainTheDaysTwists(on: key) }
         // The card lists the day's twists by icon and name only since round 308, so the block
         // answers a tap with the same pop-up the pause menu shows
@@ -920,11 +920,11 @@ extension DailyChallengeViewController: UICollectionViewDataSource,
     /// What a twist does, when its name is tapped (play-test round 15). The same words the
     /// card already shows, in a pop-up - so a twist met mid-run can be looked up rather
     /// than remembered.
-    func explain(_ twist: DailyTwist) {
+    func explain(_ twist: DailyTwist, on key: String) {
         if hapticsSetting { interfaceHaptic.impactOccurred() }
         InterfaceSound.click()
-        GigaBallAlert.show(on: self, title: twist.displayName, message: twist.blurb,
-                           symbol: "dice.fill")
+        GigaBallAlert.show(on: self, title: twist.displayName(forKey: key),
+                           message: twist.blurb(forKey: key), symbol: "dice.fill")
     }
 
     /// Every twist the shown day has, badged and blurbed - the pause menu's pop-up, here.
@@ -936,7 +936,8 @@ extension DailyChallengeViewController: UICollectionViewDataSource,
         InterfaceSound.click()
         let challenge = DailyChallengeGenerator.challenge(forKey: key)
         GigaBallAlert.show(on: self, title: "Today's Twists",
-                           attributed: DailyTwist.explainer(for: challenge.twists),
+                           attributed: DailyTwist.explainer(for: challenge.twists,
+                                                            on: key),
                            symbol: "dice.fill")
     }
 }

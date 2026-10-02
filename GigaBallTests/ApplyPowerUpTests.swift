@@ -54,6 +54,10 @@ final class ApplyPowerUpTests: XCTestCase {
         // everything while that is so - which is right, and is also how the first draft of the
         // multiplier test below spent two runs measuring nothing
         scene.powerUpTextureArray = scene.powerUpTexturesInOrder
+        scene.ball.texture = scene.ballTexture
+        scene.ball.name = BallCategoryName
+        // Dressed and named as `didMove` leaves a live ball (round 359): the sweep now asks
+        // whether every ball can be seen, and a bare scene's ball has no picture to see
         scene.addChild(scene.ball)
         scene.ball.physicsBody = SKPhysicsBody(circleOfRadius: 6)
         scene.addChild(scene.paddle)
@@ -399,6 +403,21 @@ final class PowerUpPairInteractionTests: XCTestCase {
         scene.applyPowerUp(node: node, silently: true)
     }
 
+    /// One frame's worth of the power-ups' own ticking.
+    ///
+    /// **Between the two catches as well as after them** (round 359). A pair collected inside
+    /// one frame is not how a pair is met: the first power-up has a frame or more to take
+    /// effect before the second arrives, and some of what it does only happens on that frame -
+    /// a Wrecking Ball's spikes go on, and the ball's own texture comes off, in
+    /// `tickEndlessIIFieldPowerUps`. Without the frame between, the sweep collected Wrecking
+    /// Ball then Cluster on a ball that was not spiked yet, and passed the pair James found
+    /// broken.
+    private func frame(_ scene: GameScene) {
+        scene.tickEndlessIIPaddlePowerUps(1.0/60)
+        scene.tickEndlessIIFieldPowerUps()
+        scene.tickEndlessIIRescue(1.0/60)
+    }
+
     /// What must be true of the scene whatever has just been collected.
     private func survives(_ scene: GameScene, _ pair: String) -> [String] {
         var broken: [String] = []
@@ -420,6 +439,21 @@ final class PowerUpPairInteractionTests: XCTestCase {
             broken.append("the ball is \(scene.ballSize)pt")
         }
         if scene.numberOfLives < 0 { broken.append("the rack is \(scene.numberOfLives)") }
+        var unseen = 0
+        for name in [BallCategoryName, ClusterCategoryName] {
+            scene.enumerateChildNodes(withName: name) { node, _ in
+                guard let sprite = node as? SKSpriteNode else { return }
+                let drawn = sprite.texture != nil
+                    || sprite.children.contains { ($0 as? SKSpriteNode)?.texture != nil }
+                if drawn == false { unseen += 1 }
+            }
+        }
+        if unseen > 0 { broken.append("\(unseen) ball(s) in play have nothing to draw") }
+        // **Every ball can be seen** (round 359: "I got the cluster power up when I already had
+        // the wrecking ball power up and no cluster balls appeared"). The pellets copied a
+        // texture the spikes had taken away, and every check above was about numbers - so the
+        // sweep collected exactly that pair and passed it. A Wrecking Ball's own ball is drawn
+        // by its spikes child, which is why a child's picture counts
         if scene.multiplier.isFinite == false || scene.multiplier <= 0 {
             broken.append("the multiplier is \(scene.multiplier)")
         }
@@ -466,9 +500,9 @@ final class PowerUpPairInteractionTests: XCTestCase {
                 pairUnderTest = pair
                 putBack(scene)
                 collect(first, on: scene)
+                frame(scene)
                 collect(second, on: scene)
-                scene.tickEndlessIIPaddlePowerUps(1.0/60)
-                scene.tickEndlessIIRescue(1.0/60)
+                frame(scene)
                 if survives(scene, pair).isEmpty == false {
                     suspects.append((first, second, pair))
                 }
@@ -483,9 +517,9 @@ final class PowerUpPairInteractionTests: XCTestCase {
                 let fresh = self.scene(mode: mode)
                 pairUnderTest = suspect.pair
                 collect(suspect.first, on: fresh)
+                frame(fresh)
                 collect(suspect.second, on: fresh)
-                fresh.tickEndlessIIPaddlePowerUps(1.0/60)
-                fresh.tickEndlessIIRescue(1.0/60)
+                frame(fresh)
                 faults.append(contentsOf: survives(fresh, suspect.pair))
                 retire(fresh)
                 pairUnderTest = nil

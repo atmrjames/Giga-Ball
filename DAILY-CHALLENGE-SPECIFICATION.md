@@ -605,6 +605,28 @@ briefing screen (§6).
 - **App Store in-app events** (ideas list): a fit for special weeks once the mode is live —
   App Store Connect work, James's side, noted in §13.
 
+### 11.6 Yesterday's result (round 359, built)
+
+James: "When opening the app for the first time after a played daily challenge has closed, a
+pop-up should appear that tells the user how they did with respect to the Game Center
+leaderboard, showing the top few global scores plus the user's score and global ranking.
+There should be a button that allows the user to open Game Center at the leaderboard for that
+daily challenge and another button that dismisses the pop up. If the user is the top scorer,
+the pop up should show that, be more bold and colourful."
+
+- **Which day:** only yesterday, and only when yesterday's scoring run posted
+  (`DailyResultReport.dayToReport`). The board recurs, and Game Center keeps exactly one closed
+  occurrence - the one that ended last - so a player back after three days has no board left
+  to be told about. Told once: the day reported is kept under `dailyResultReportedKey`.
+- **When:** as the splash ends, and again when Game Center sign-in completes, since it can
+  finish later. Only onto a menu with nothing in front of it - not over a resume, a game, a
+  screen already opened or another pop-up - and a day that could not be shown is not marked
+  told, so the next launch the same day tries again.
+- **What:** the top three, the player's own place after a gap when it is further down, and
+  "You finished 17th of 240". Scores are ungrouped, as every score is. Leaderboard opens Game
+  Center on the closed day's occurrence (`GKGameCenterViewController(leaderboard:)` - the
+  identifier would open today's). A winner's card is lime with a crown.
+
 ## 12. Build phases
 
 | Phase | What lands | What you can test |

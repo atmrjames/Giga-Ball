@@ -244,6 +244,11 @@ its `PBXGroup`, and — the one that is easy to miss — the **right target's** 
   filled with the background colour, then write the PNG to the scratchpad and read it.
   `drawHierarchy` returns a blank image off-screen, and without the fill the white labels are
   drawn on nothing. Keep such a test out of the commit - it is a look, not a check.
+  **`layer.render` cannot draw blur or glass**, so a pop-up comes out as a white sheet. Round
+  358b's answer for those: give the window the app's scene
+  (`window.windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene`),
+  `makeKeyAndVisible()`, let the run loop turn a few times, and then `drawHierarchy(in:
+  afterScreenUpdates: true)` draws it exactly as the simulator shows it.
 
 - **Tests are written from play-test reports.** When a bug is described, the test says what
   was reported, in the comment, in the reporter's terms. That is what stops a fix regressing

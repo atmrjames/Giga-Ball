@@ -51,10 +51,16 @@ extension GameScene {
         // be a burst rather than twelve balls hanging in the air
 
         let size = ballSize*0.45
+        let look = ballDressTexture(ballDress)
         // Tiny, and visibly the ball's own species rather than the laser's: the texture is
-        // whatever the ball is currently dressed as, so a themed run bursts in its own theme
+        // whatever the ball is currently dressed as, so a themed run bursts in its own theme.
+        // **The dress, not `ball.texture`** (James, round 358b: "I got the cluster power up
+        // when I already had the wrecking ball power up and no cluster balls appeared. The
+        // sound effect played but that's it"). A Wrecking Ball draws its spikes on a node of
+        // its own and takes the ball's texture away, so twelve pellets copied nothing and were
+        // released invisible
         for _ in 0..<GameScene.endlessIIClusterCount {
-            let pellet = SKSpriteNode(texture: ball.texture)
+            let pellet = SKSpriteNode(texture: look)
             pellet.size = CGSize(width: size, height: size)
             pellet.position = CGPoint(x: paddle.position.x,
                                       y: paddle.position.y + paddle.size.height/2 + size)

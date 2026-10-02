@@ -199,6 +199,69 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
                            symbol: "sparkles")
     }
 
+    /// Tells the player how yesterday's daily went, once, on the first launch after it closed.
+    ///
+    /// **James, round 358b:** "When opening the app for the first time after a played daily
+    /// challenge has closed, a pop-up should appear that tells the user how they did with
+    /// respect to the Game Center leaderboard ... If the user is the top scorer, the pop up
+    /// should show that, be more bold and colourful." Which day, and the words, are
+    /// `DailyResultReport`'s; this is only the when and the where.
+    ///
+    /// Only onto a menu with nothing in front of it - not over a resume, a game, a screen the
+    /// player has already opened, or another pop-up such as What's New. A day that cannot be
+    /// shown now is not marked as told, so the next launch on the same day tries again.
+    func reportYesterdaysDailyIfDue() {
+        guard GameCenterHandler.isRunningTests == false, splashScreenIsShowing == false,
+              resumeGameToLoad == false, askingForTheDailyReport == false,
+              GKLocalPlayer.local.isAuthenticated, somethingIsInFront == false,
+              let stats = totalStatsArray.first,
+              let key = DailyResultReport.dayToReport(
+                in: stats.dailyRecords, today: DailyChallengeSession.shared.todayKey,
+                lastReported: defaults.string(forKey: DailyResultReport.reportedKey))
+        else { return }
+
+        askingForTheDailyReport = true
+        let unit = DailyChallengeGenerator.challenge(forKey: key).mode == .classic ? "" : "m"
+        GameCenterHandler().loadDailyBoardReport(forKey: key,
+                                                 count: DailyResultReport.leadersShown) {
+            [weak self] answer in
+            guard let self else { return }
+            self.askingForTheDailyReport = false
+            guard let answer,
+                  let report = DailyResultReport(leaders: answer.leaders, local: answer.local,
+                                                 players: answer.players, unit: unit),
+                  self.somethingIsInFront == false, splashScreenIsShowing == false
+            else { return }
+            // Asked again after the answer: it is a network round trip, and the player may
+            // have opened something in the meantime
+
+            self.defaults.set(key, forKey: DailyResultReport.reportedKey)
+            GigaBallAlert.show(on: self, title: report.title, attributed: report.body(),
+                               symbol: report.symbol, celebrating: report.won,
+                               dismissTitle: "Close", confirmTitle: "Leaderboard",
+                               confirm: { [weak self] in self?.openClosedDailyBoard(answer.board) })
+        }
+    }
+
+    /// Whether the daily report is out asking Game Center, so a second trigger does not ask
+    /// twice and show two pop-ups.
+    private var askingForTheDailyReport = false
+
+    /// A screen, a game or a pop-up over the menu. A child screen's view leaves the window
+    /// when it closes, so a child still on screen is one still in front.
+    private var somethingIsInFront: Bool {
+        presentedViewController != nil
+            || children.contains { $0.viewIfLoaded?.superview != nil }
+    }
+
+    /// Game Center on a closed day's board - the occurrence itself, because opening the board
+    /// by its identifier shows today's.
+    private func openClosedDailyBoard(_ board: GKLeaderboard) {
+        let boards = GKGameCenterViewController(leaderboard: board, playerScope: .global)
+        boards.gameCenterDelegate = self
+        present(boards, animated: true)
+    }
+
     override func viewWillLayoutSubviews() {
         super.viewWillLayoutSubviews()
         fitTheMenuToTheWindow()
@@ -947,6 +1010,9 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
             gameCenterSetting = false
         }
         defaults.set(gameCenterSetting, forKey: "gameCenterSetting")
+        reportYesterdaysDailyIfDue()
+        // Signing in can finish after the splash has gone, and the report needs Game Center -
+        // so it is asked again here, and its own guards decide whether now is the moment
     }
     // Sets up game center
     
@@ -1077,6 +1143,7 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
             }
         } else {
             askForAReviewIfItIsTime()
+            reportYesterdaysDailyIfDue()
         }
         // **The test host does not resume the simulator's saved game** (round 325). The suite
         // launches the app, and the app reads its own settings, so a save left by playing on
@@ -1209,3 +1276,9 @@ extension Notification.Name {
     public static let iAPIncompleteNotification = Notification.Name(rawValue: "iAPIncompleteNotification")
 }
 // Notification setup
+
+extension MenuViewController: GKGameCenterControllerDelegate {
+    func gameCenterViewControllerDidFinish(_ gameCenterViewController: GKGameCenterViewController) {
+        gameCenterViewController.dismiss(animated: true)
+    }
+}

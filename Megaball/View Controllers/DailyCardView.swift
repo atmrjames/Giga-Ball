@@ -821,3 +821,32 @@ enum DailyRetroLevelPreview {
         return UIImage(cgImage: texture.cgImage())
     }
 }
+
+extension DailyResultReport {
+
+    /// The board as the pop-up prints it: the leaders, a gap where the player's place is
+    /// further down, the player's own row picked out, and the finish line under it all.
+    func body() -> NSAttributedString {
+        let ink = won ? DailyCardView.onLime : UIColor(white: 1, alpha: 0.8)
+        let mine = won ? DailyCardView.onLime : SettingsTableViewCell.prominentTint
+        let text = NSMutableAttributedString()
+        for (position, row) in rows.enumerated() {
+            if position > 0 {
+                let gap = row.isLocalPlayer && row.rank > rows[position - 1].rank + 1
+                text.append(NSAttributedString(string: gap ? "\n\n" : "\n"))
+            }
+            text.append(NSAttributedString(string: row.line(unit: unit), attributes: [
+                .font: row.isLocalPlayer ? UIFont.boldSystemFont(ofSize: 16)
+                                         : UIFont.systemFont(ofSize: 15),
+                .foregroundColor: row.isLocalPlayer ? mine : ink]))
+        }
+        text.append(NSAttributedString(string: "\n\n" + finishLine, attributes: [
+            .font: UIFont.boldSystemFont(ofSize: won ? 18 : 15),
+            .foregroundColor: won ? DailyCardView.onLime : UIColor.white]))
+        let centred = NSMutableParagraphStyle()
+        centred.alignment = .center
+        text.addAttribute(.paragraphStyle, value: centred,
+                          range: NSRange(location: 0, length: text.length))
+        return text
+    }
+}

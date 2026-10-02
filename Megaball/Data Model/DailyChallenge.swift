@@ -1770,3 +1770,80 @@ struct DailyBoardRow: Equatable {
         "\(rank). \(name)  \(score)\(unit)"
     }
 }
+
+/// How yesterday's daily went, told the first time the app opens after it closed.
+///
+/// **James, round 358b:** "When opening the app for the first time after a played daily
+/// challenge has closed, a pop-up should appear that tells the user how they did with respect
+/// to the Game Center leaderboard, showing the top few global scores plus the user's score and
+/// global ranking. There should be a button that allows the user to open Game Center at the
+/// leaderboard for that daily challenge and another button that dismisses the pop up. If the
+/// user is the top scorer, the pop up should show that, be more bold and colourful."
+///
+/// Everything here is the deciding and the wording; the asking is `GameCenterHandler`'s and
+/// the showing is the menu's, so the rules can be tested without a network or a screen.
+struct DailyResultReport: Equatable {
+
+    /// The last day reported, so each day is told about once.
+    static let reportedKey = "dailyResultReportedKey"
+
+    /// How many of the leaders the pop-up lists before the player's own place.
+    static let leadersShown = 3
+
+    /// The day to report, if there is one.
+    ///
+    /// **Only ever yesterday**, for the reason `dayToVerify` gives: the daily board recurs, and
+    /// Game Center hands back exactly one closed occurrence - the one that ended last. A
+    /// player who stays away for three days has no board left to be told about. And only a
+    /// day whose scoring run *posted*: a free run, a forfeit or a miss is not on the board, so
+    /// there is no place to report.
+    static func dayToReport(in records: [DailyChallengeRecord], today: String,
+                            lastReported: String?) -> String? {
+        guard let yesterday = DailyDay.dayBefore(today), lastReported != yesterday,
+              let record = records.first(where: { $0.dateKey == yesterday }),
+              record.posted else { return nil }
+        return yesterday
+    }
+
+    let rows: [DailyBoardRow]
+    let local: DailyBoardRow
+    let players: Int
+    let unit: String
+
+    /// The report for a board, or nil when the player has no place on it to report.
+    init?(leaders: [DailyBoardRow], local: DailyBoardRow?, players: Int, unit: String) {
+        guard let local else { return nil }
+        self.rows = DailyBoardRow.shown(leaders: leaders, local: local,
+                                        limit: DailyResultReport.leadersShown)
+        self.local = local
+        self.players = players
+        self.unit = unit
+    }
+
+    /// Whether the player topped the day - shared first counts, because Game Center ranks a
+    /// tie the same.
+    var won: Bool { local.rank == 1 }
+
+    var title: String { won ? "You Won Yesterday" : "Yesterday's Challenge" }
+    var symbol: String { won ? "crown.fill" : "trophy.fill" }
+
+    /// "You finished 17th of 240", or without the field's size when Game Center did not give
+    /// one.
+    var finishLine: String {
+        let place = "You finished \(DailyResultReport.ordinal(local.rank))"
+        return players > 0 ? "\(place) of \(players)" : place
+    }
+
+    /// 1st, 2nd, 3rd, 4th - and 11th, 12th, 13th, which take "th" whatever they end in.
+    static func ordinal(_ number: Int) -> String {
+        let suffix: String
+        switch (number % 100, number % 10) {
+        case (11...13, _): suffix = "th"
+        case (_, 1): suffix = "st"
+        case (_, 2): suffix = "nd"
+        case (_, 3): suffix = "rd"
+        default: suffix = "th"
+        }
+        return "\(number)\(suffix)"
+    }
+}
