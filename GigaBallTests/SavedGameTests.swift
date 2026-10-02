@@ -2355,3 +2355,101 @@ final class LosingABallTests: XCTestCase {
         XCTAssertTrue(laser.hasActions())
     }
 }
+
+/// Coming back from the pause menu (`playFromPause`). Round 358b's coverage list had it at
+/// nothing, and round 356's resume report was about exactly this road back into play.
+final class PlayFromPauseTests: XCTestCase {
+
+    override func tearDown() {
+        UserDefaults().removePersistentDomain(forName: GameScene.testSettingsSuite)
+        super.tearDown()
+    }
+
+    private func paused() -> GameScene {
+        let scene = GameScene()
+        scene.totalStatsArray = [TotalStats()]
+        scene.gameMode = .classic
+        scene.gameState.enter(Playing.self)
+        scene.gameWidth = 440
+        scene.brickWidth = 40
+        scene.brickHeight = 20
+        scene.ballSpeedLimit = 600
+        scene.numberOfLives = 2
+        scene.addChild(scene.paddle)
+        scene.paddle.position = CGPoint(x: 0, y: -300)
+        scene.ball.name = BallCategoryName
+        scene.addChild(scene.ball)
+        scene.ball.physicsBody = SKPhysicsBody(circleOfRadius: 6)
+        scene.ballIsOnPaddle = false
+        scene.isPaused = true
+        return scene
+    }
+
+    func testTheBallCarriesOnAsItWasGoing() {
+        let scene = paused()
+        scene.pauseBallVelocityX = -210
+        scene.pauseBallVelocityY = 560
+        scene.playFromPause()
+        XCTAssertFalse(scene.isPaused)
+        XCTAssertEqual(scene.ball.physicsBody!.velocity.dx, -210, accuracy: 0.01)
+        XCTAssertEqual(scene.ball.physicsBody!.velocity.dy, 560, accuracy: 0.01)
+    }
+
+    func testABallWithNoHeadingIsSentOffNearlyStraightUp() {
+        // A run resumed from a save in flight has no paused velocity to give back
+        var lefts = 0
+        for _ in 0..<30 {
+            let scene = paused()
+            scene.playFromPause()
+            let v = scene.ball.physicsBody!.velocity
+            XCTAssertEqual(hypot(v.dx, v.dy), 600, accuracy: 0.5)
+            let angle = atan2(Double(v.dy), Double(v.dx))*180/Double.pi
+            XCTAssertTrue(abs(angle - 80) < 0.01 || abs(angle - 100) < 0.01, "\(angle)")
+            if angle > 90 { lefts += 1 }
+        }
+        XCTAssertTrue((1...29).contains(lefts))
+    }
+
+    func testEachExtraBallKeepsItsOwnHeading() {
+        // "Without this every ball in play was given the first one's - four balls travelling
+        // as one"
+        let scene = paused()
+        scene.gameMode = .endlessII
+        scene.pauseBallVelocityX = 100
+        scene.pauseBallVelocityY = 500
+        let extras = (0..<2).map { _ -> SKSpriteNode in
+            let extra = SKSpriteNode(color: .white, size: CGSize(width: 12, height: 12))
+            extra.name = BallCategoryName
+            extra.physicsBody = SKPhysicsBody(circleOfRadius: 6)
+            scene.addChild(extra)
+            return extra
+        }
+        scene.endlessIIExtraBalls = extras
+        scene.pauseExtraBallVelocities = [CGVector(dx: -300, dy: 400), CGVector(dx: 50, dy: -590)]
+
+        scene.playFromPause()
+
+        XCTAssertEqual(scene.ball.physicsBody!.velocity.dx, 100, accuracy: 0.01)
+        XCTAssertEqual(extras[0].physicsBody!.velocity.dx, -300, accuracy: 0.01)
+        XCTAssertEqual(extras[1].physicsBody!.velocity.dy, -590, accuracy: 0.01)
+    }
+
+    func testAResetBallComesBackToThePaddleWithoutCostingALife() {
+        // The pause menu's Reset Ball: a stuck ball put back, and the life it would have
+        // spent handed back first
+        let scene = paused()
+        scene.killBall = true
+        scene.playFromPause()
+        XCTAssertTrue(scene.ballIsOnPaddle)
+        XCTAssertFalse(scene.killBall)
+        XCTAssertEqual(scene.numberOfLives, 3, "one handed back, and the loss's own drop to come")
+        XCTAssertTrue(scene.lifeLossPending)
+    }
+
+    func testTheDirectionMarkerIsPutAway() {
+        let scene = paused()
+        scene.directionMarker.isHidden = false
+        scene.playFromPause()
+        XCTAssertTrue(scene.directionMarker.isHidden)
+    }
+}

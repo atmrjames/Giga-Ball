@@ -1325,3 +1325,130 @@ final class BricksHitCountTests: XCTestCase {
         }
     }
 }
+
+/// A Wrecking Ball's hit, through `hitBrick` rather than through the predicate the field
+/// power-up tests ask. Round 358b's coverage pass found the branch itself unrun: the part that
+/// overrules an Indestructible ("`force` is what makes 'whatever it struck' true", play-test
+/// round 39) and counts the hit.
+final class WreckingBallHitTests: XCTestCase {
+
+    private let cell = CGSize(width: 40, height: 20)
+
+    private func scene() -> GameScene {
+        let scene = GameScene(size: CGSize(width: 500, height: 900))
+        scene.gameWidth = 440
+        scene.brickWidth = cell.width
+        scene.brickHeight = cell.height
+        scene.numberOfBrickColumns = 11
+        scene.numberOfBrickRows = 22
+        scene.yBrickOffsetEndless = 300
+        scene.finalBrickRowHeight = 300 - cell.height*21
+        scene.gameMode = .endlessII
+        scene.endlessMode = true
+        scene.totalStatsArray = [TotalStats()]
+        scene.endlessIICollectWreckingBall()
+        return scene
+    }
+
+    private func wall(_ scene: GameScene) -> SKSpriteNode {
+        let node = SKSpriteNode(texture: scene.brickIndestructible2Texture, size: cell)
+        node.position = CGPoint(x: 20, y: 200)
+        node.name = BrickCategoryName
+        scene.addChild(node)
+        return node
+    }
+
+    func testTheBallGoesThroughAnIndestructibleAndItCounts() {
+        let scene = scene()
+        let target = wall(scene)
+        scene.hitBrick(node: target, sprite: target, struckBy: scene.ball)
+        XCTAssertNotEqual(target.name, BrickCategoryName, "on its way out of the field")
+        XCTAssertEqual(scene.totalStatsArray[0].bricksHit[0], 1)
+        XCTAssertEqual(scene.totalStatsArray[0].bricksDestroyed[0], 1)
+    }
+
+    func testALaserIsNotTheBallAndTheWallStands() {
+        let scene = scene()
+        let target = wall(scene)
+        let laser = SKSpriteNode(color: .white, size: CGSize(width: 2, height: 10))
+        scene.addChild(laser)
+        scene.hitBrick(node: target, sprite: target, laserNode: laser, laserSprite: laser)
+        XCTAssertEqual(target.name, BrickCategoryName)
+        XCTAssertEqual(target.texture, scene.brickIndestructible2Texture)
+        XCTAssertNil(laser.parent, "and the laser stops on it")
+    }
+}
+
+/// Which bricks a row's size pass turns Tiny (`applyEndlessIISizes`). Round 358b's coverage
+/// pass found it nearly unrun in a scene. A Miniatures phase makes the roll a certainty, which
+/// is what lets these ask about the *guards* rather than about luck.
+final class TinyPassTests: XCTestCase {
+
+    private let cell = CGSize(width: 40, height: 20)
+
+    private func scene() -> GameScene {
+        let scene = GameScene(size: CGSize(width: 500, height: 900))
+        scene.gameWidth = 440
+        scene.brickWidth = cell.width
+        scene.brickHeight = cell.height
+        scene.numberOfBrickColumns = 11
+        scene.numberOfBrickRows = 22
+        scene.yBrickOffsetEndless = 300
+        scene.finalBrickRowHeight = 300 - cell.height*21
+        scene.gameMode = .endlessII
+        scene.totalStatsArray = [TotalStats()]
+        scene.endlessIIPhase = .miniatures
+        return scene
+    }
+
+    private func brick(_ scene: GameScene, column: Int, texture: SKTexture? = nil,
+                       size: CGSize? = nil) -> SKSpriteNode {
+        let node = SKSpriteNode(texture: texture ?? scene.brickNormalTexture, size: size ?? cell)
+        node.position = CGPoint(x: -scene.gameWidth/2 + cell.width*(CGFloat(column) + 0.5),
+                                y: scene.yBrickOffsetEndless)
+        node.name = BrickCategoryName
+        scene.addChild(node)
+        return node
+    }
+
+    func testAMiniaturesRowTurnsEveryPlainBrickTiny() {
+        // Into four quarters, or one time in three a diagonal pair (`endlessIITinyLayout`)
+        let scene = scene()
+        let originals = (0..<3).map { brick(scene, column: $0) }
+        var row: [SKNode] = originals
+        scene.applyEndlessIISizes(to: &row)
+        XCTAssertTrue((6...12).contains(row.count), "\(row.count) pieces from three bricks")
+        XCTAssertTrue(row.compactMap { $0 as? SKSpriteNode }.allSatisfy {
+            $0.size.width < self.cell.width/2 + 0.01 })
+        XCTAssertTrue(originals.allSatisfy { $0.size.width < self.cell.width/2 + 0.01 },
+                      "each original became one of its own quarters")
+    }
+
+    func testOnlyOrdinaryWholeCellBricksAreShrunk() {
+        let scene = scene()
+        let multi = brick(scene, column: 0, texture: scene.brickMultiHit1Texture)
+        let starter = brick(scene, column: 1)
+        starter.endlessIIStaysPlain = true
+        let big = brick(scene, column: 2, size: CGSize(width: 80, height: 40))
+        let spinner = brick(scene, column: 4)
+        scene.makeSpinning(spinner)
+        var row: [SKNode] = [multi, starter, big, spinner]
+
+        scene.applyEndlessIISizes(to: &row)
+
+        XCTAssertEqual(row.count, 4, "nothing added")
+        XCTAssertEqual(multi.size, cell)
+        XCTAssertEqual(starter.size, cell, "the first ball's target stays a brick")
+        XCTAssertEqual(big.size, CGSize(width: 80, height: 40), "already resized")
+        XCTAssertEqual(spinner.size, cell,
+                       "four quarter-cell spinners sweep straight through one another")
+    }
+
+    func testOnlyMayhemHasTinyBricks() {
+        let scene = scene()
+        scene.gameMode = .endless
+        var row: [SKNode] = [brick(scene, column: 0)]
+        scene.applyEndlessIISizes(to: &row)
+        XCTAssertEqual(row.count, 1)
+    }
+}

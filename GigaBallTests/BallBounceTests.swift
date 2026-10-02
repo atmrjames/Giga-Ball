@@ -1091,3 +1091,93 @@ final class MissedPowerUpTests: XCTestCase {
         XCTAssertFalse(scene.totalStatsArray[0].achievementsUnlockedArray[31])
     }
 }
+
+/// The serve (`releaseBall`). Round 358b's coverage list had it at nothing, and every ball in
+/// every mode leaves the paddle through it. The angle is the paddle's oldest rule: straight up
+/// less up to sixty degrees for how far from the middle the ball sits, and always at least ten
+/// off vertical, so no serve goes straight up and straight back down.
+final class ServeTests: XCTestCase {
+
+    private func onThePaddle(at offset: CGFloat) -> GameScene {
+        let scene = GameScene()
+        scene.gameMode = .classic
+        scene.totalStatsArray = [TotalStats()]
+        scene.ballSpeedLimit = 600
+        scene.addChild(scene.paddle)
+        scene.paddle.size = CGSize(width: 100, height: 12)
+        scene.paddle.position = CGPoint(x: 20, y: -300)
+        scene.addChild(scene.ball)
+        scene.ball.physicsBody = SKPhysicsBody(circleOfRadius: 6)
+        scene.ball.position = CGPoint(x: 20 + offset*50, y: -288)
+        scene.ballIsOnPaddle = true
+        scene.ballLostBool = true
+        return scene
+    }
+
+    private func degrees(_ scene: GameScene) -> Double {
+        let v = scene.ball.physicsBody!.velocity
+        return atan2(Double(v.dy), Double(v.dx))*180/Double.pi
+    }
+
+    func testTheBallLeavesAtTheSpeedLimitAndIsInPlay() {
+        let scene = onThePaddle(at: 0.3)
+        scene.brickBounceCounter = 7
+        scene.releaseBall()
+        let v = scene.ball.physicsBody!.velocity
+        XCTAssertEqual(hypot(v.dx, v.dy), 600, accuracy: 0.5)
+        XCTAssertFalse(scene.ballIsOnPaddle)
+        XCTAssertFalse(scene.ballLostBool)
+        XCTAssertEqual(scene.brickBounceCounter, 0)
+    }
+
+    func testTheSpotOnThePaddleSetsTheAngle() {
+        // Right of the middle sends it right, left sends it left, further out is shallower
+        for (offset, expected) in [(0.5, 50.0), (1.0, 20.0), (-0.5, 130.0), (-1.0, 160.0)] {
+            let scene = onThePaddle(at: CGFloat(offset))
+            scene.releaseBall()
+            XCTAssertEqual(degrees(scene), expected, accuracy: 0.01, "offset \(offset)")
+        }
+    }
+
+    func testABallPastTheEndIsServedAsIfFromTheEnd() {
+        let scene = onThePaddle(at: 1.6)
+        scene.releaseBall()
+        XCTAssertEqual(degrees(scene), 20, accuracy: 0.01)
+    }
+
+    func testTheMiddleGoesEitherWayButNeverStraightUp() {
+        var lefts = 0
+        for _ in 0..<40 {
+            let scene = onThePaddle(at: 0)
+            scene.releaseBall()
+            let angle = degrees(scene)
+            XCTAssertTrue(abs(angle - 80) < 0.01 || abs(angle - 100) < 0.01, "\(angle)")
+            if angle > 90 { lefts += 1 }
+        }
+        XCTAssertTrue((1...39).contains(lefts), "\(lefts) of 40 went left")
+    }
+
+    func testAServedBallMeetsThePaddleAgain() {
+        // A waiting ball is taken out of the paddle's collisions so the engine cannot shove it
+        // along a shaped paddle; "only a launch can put it back"
+        let scene = onThePaddle(at: 0.3)
+        scene.setEndlessIIHeldBallRestsOnPaddle(true, for: scene.ball)
+        let paddle = CollisionTypes.paddleCategory.rawValue
+        XCTAssertEqual(scene.ball.physicsBody!.collisionBitMask & paddle, 0)
+
+        scene.releaseBall()
+
+        XCTAssertNotEqual(scene.ball.physicsBody!.collisionBitMask & paddle, 0)
+        XCTAssertNotEqual(scene.ball.physicsBody!.contactTestBitMask & paddle, 0)
+    }
+
+    func testAnInertCatchLaunchesAtTheWallsAngleOnce() {
+        // "A ball caught while the paddle was inert launches at the angle the inert bounce
+        // would have given (James's design) - the wall's answer, not the paddle's"
+        let scene = onThePaddle(at: 0.9)
+        scene.stickyInertLaunchAngleRad = 63*Double.pi/180
+        scene.releaseBall()
+        XCTAssertEqual(degrees(scene), 63, accuracy: 0.01)
+        XCTAssertNil(scene.stickyInertLaunchAngleRad, "spent on the one launch")
+    }
+}

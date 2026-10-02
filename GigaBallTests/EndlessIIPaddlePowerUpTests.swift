@@ -6436,3 +6436,80 @@ final class AimedStickySoundTests: XCTestCase {
         XCTAssertFalse(scene.endlessIIAimedCatchWillHappen)
     }
 }
+
+/// Ball Steering in a scene, frame by frame (`applyEndlessIIBallSteering`). The arithmetic
+/// (`steeredTowards`, `steeringLead`) is pinned above; round 358b's coverage pass found the
+/// tick that applies it to the balls in play run by nothing.
+final class BallSteeringTickTests: XCTestCase {
+
+    private func steering() -> GameScene {
+        let scene = GameScene(size: CGSize(width: 500, height: 900))
+        scene.gameMode = .endlessII
+        scene.endlessMode = true
+        scene.totalStatsArray = [TotalStats()]
+        scene.gameWidth = 440
+        scene.gameState.enter(Playing.self)
+        scene.addChild(scene.paddle)
+        scene.paddle.size = CGSize(width: 90, height: 12)
+        scene.paddle.position = CGPoint(x: 120, y: -300)
+        scene.addChild(scene.ball)
+        scene.ball.size = CGSize(width: 12, height: 12)
+        scene.ball.physicsBody = SKPhysicsBody(circleOfRadius: 6)
+        scene.ball.position = CGPoint(x: -150, y: 0)
+        scene.ballIsOnPaddle = false
+        scene.endlessIIPaddleFrameDelta = 1.0/60
+        scene.endlessIICollectBallSteering()
+        return scene
+    }
+
+    private func frames(_ scene: GameScene, _ count: Int) {
+        for _ in 0..<count { scene.applyEndlessIIPaddlePhysics() }
+    }
+
+    func testTheBallIsDrawnTowardThePaddlesColumn() {
+        let scene = steering()
+        frames(scene, 30)
+        XCTAssertGreaterThan(scene.ball.position.x, -150, "pulled right, toward the paddle")
+        XCTAssertNotNil(scene.endlessIISteeringVelocities[ObjectIdentifier(scene.ball)],
+                        "and the swing carried to the next frame")
+    }
+
+    func testABallOnThePaddleIsLeftWhereItIs() {
+        let scene = steering()
+        scene.ballIsOnPaddle = true
+        frames(scene, 30)
+        XCTAssertEqual(scene.ball.position.x, -150)
+    }
+
+    func testAHeldExtraIsNotSteeredTwice() {
+        // "A held ball already rides the paddle; steering it twice doubles the ride"
+        let scene = steering()
+        let extra = SKSpriteNode(color: .white, size: CGSize(width: 12, height: 12))
+        extra.physicsBody = SKPhysicsBody(circleOfRadius: 6)
+        extra.position = CGPoint(x: -100, y: 50)
+        scene.addChild(extra)
+        scene.endlessIIExtraBalls = [extra]
+        scene.endlessIIHeldBalls = [extra]
+        scene.endlessIIHeldOffsets = [0]
+        frames(scene, 30)
+        XCTAssertEqual(extra.position.x, -100)
+    }
+
+    func testTheWindUpIsForgottenWhenTheClockStops() {
+        // "A spring that kept its wind-up between two runs of the power-up would hand the
+        // second one a shove nobody gave it"
+        let scene = steering()
+        frames(scene, 10)
+        XCTAssertFalse(scene.endlessIISteeringVelocities.isEmpty)
+        scene.endlessIIBallSteeringClock = EndlessIIClock()
+        frames(scene, 1)
+        XCTAssertTrue(scene.endlessIISteeringVelocities.isEmpty)
+    }
+
+    func testOnlyMayhemSteers() {
+        let scene = steering()
+        scene.gameMode = .endless
+        frames(scene, 30)
+        XCTAssertEqual(scene.ball.position.x, -150)
+    }
+}

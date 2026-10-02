@@ -2921,6 +2921,18 @@ testers:
   a generic iOS device (no errors, no warnings, 1.3 (83), privacy manifest in), and the app on
   the simulator - a run saved that morning resumed onto the same field, played to a game over,
   and its summary and Statistics page read right.
+- **After the push, more of the 0% list:** the serve (`releaseBall` - the angle rule, the
+  clamp past the paddle's end, an inert catch's angle used once, and the paddle put back into a
+  served ball's collisions), a Wrecking Ball's hit through `hitBrick` (through an
+  Indestructible and counted; a laser still stopped), coming back from pause (`playFromPause` -
+  each ball's own heading, a heading made up for a ball resumed from a save, and Reset Ball
+  handing its life back), and the Tiny pass (`applyEndlessIISizes` - which bricks it may
+  shrink). `releaseBall` mutated 8 of 13 before the collision test; the five left were three
+  boundary flips that give the same angle, one line inside an animation's completion, and the
+  collision one the new test is for. The Tiny test's first draft expected four quarters a
+  brick and got ten pieces from three: one time in three a Tiny brick is a diagonal pair, by
+  design (`endlessIITinyLayout`), and the test was wrong. The Tiny pass mutated 7 of 8; the eighth is the
+  roll's `<=` turned to `<`, which a Miniatures certainty only misses on a hundred.
 - **A fixture trap, recorded so it is not mistaken for a bug:** `saveCurrentGame` divides a
   falling power-up's position by `brickWidth`, so a bare `GameScene()` with a power-up on
   screen traps converting NaN to Int. A real scene is always laid out before play.
