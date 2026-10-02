@@ -212,6 +212,7 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
     /// shown now is not marked as told, so the next launch on the same day tries again.
     func reportYesterdaysDailyIfDue() {
         guard GameCenterHandler.isRunningTests == false, splashScreenIsShowing == false,
+              DailyResultReport.isOn(in: defaults),
               resumeGameToLoad == false, askingForTheDailyReport == false,
               GKLocalPlayer.local.isAuthenticated, somethingIsInFront == false,
               let stats = totalStatsArray.first,

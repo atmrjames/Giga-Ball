@@ -66,7 +66,7 @@ final class GameCenterHandler: NSObject {
         loadData()
         
         if totalStatsArray[0].cumulativeScore > 0 {
-            submit(totalStatsArray[0].cumulativeScore, to: "leaderboardTotalScore")
+            submit(totalStatsArray[0].cumulativeScore, to: GameMode.classicTotalScoreLeaderboard)
         }
         // Leaderboard Total Score
 
@@ -215,9 +215,9 @@ final class GameCenterHandler: NSObject {
     /// on.
     func loadDailyBoardTop(forKey key: String, count: Int,
                            completion: @escaping ((leaders: [DailyBoardRow],
-                                                   local: DailyBoardRow?)?) -> Void) {
+                                                   local: DailyBoardRow?, players: Int)?) -> Void) {
         loadDailyBoardReport(forKey: key, count: count) { report in
-            completion(report.map { (leaders: $0.leaders, local: $0.local) })
+            completion(report.map { (leaders: $0.leaders, local: $0.local, players: $0.players) })
         }
         // The report's first two answers - one request either way, and one copy of how a day's
         // occurrence is found (round 358b)
@@ -235,17 +235,13 @@ final class GameCenterHandler: NSObject {
                               completion: @escaping ((leaders: [DailyBoardRow],
                                                       local: DailyBoardRow?, players: Int,
                                                       board: GKLeaderboard)?) -> Void) {
-        let session = DailyChallengeSession.shared
-        guard GKLocalPlayer.local.isAuthenticated,
-              let occurrence = DailyChallengeSession.boardOccurrence(forKey: key,
-                                                                    todayKey: session.todayKey)
-        else { completion(nil); return }
         let me = GKLocalPlayer.local.gamePlayerID
         func row(_ entry: GKLeaderboard.Entry) -> DailyBoardRow {
             DailyBoardRow(rank: entry.rank, name: entry.player.displayName, score: entry.score,
                           isLocalPlayer: entry.player.gamePlayerID == me)
         }
-        func report(on board: GKLeaderboard) {
+        loadDailyBoardOccurrence(forKey: key) { board in
+            guard let board else { completion(nil); return }
             board.loadEntries(for: .global, timeScope: .allTime,
                               range: NSRange(location: 1, length: max(1, count))) {
                 localEntry, entries, players, error in
@@ -256,20 +252,34 @@ final class GameCenterHandler: NSObject {
                 DispatchQueue.main.async { completion(answer) }
             }
         }
+    }
+
+    /// A day's own occurrence of the recurring daily board - today's, or yesterday's closed
+    /// one - answered on the main queue, or nil where Game Center cannot say: an older day, a
+    /// signed-out player, no network.
+    ///
+    /// Its own call since round 360, so a button can open the day it is showing (James: "Is it
+    /// possible when clicking on the leaderboard of yesterday's daily challenge that it opens
+    /// up the Game Center leaderboard for yesterday's challenge rather than today's by
+    /// default?"). The board's identifier alone always opens the current occurrence.
+    func loadDailyBoardOccurrence(forKey key: String,
+                                  completion: @escaping (GKLeaderboard?) -> Void) {
+        let session = DailyChallengeSession.shared
+        guard GKLocalPlayer.local.isAuthenticated,
+              let occurrence = DailyChallengeSession.boardOccurrence(forKey: key,
+                                                                    todayKey: session.todayKey)
+        else { completion(nil); return }
         GKLeaderboard.loadLeaderboards(IDs: [DailyChallengeBoards.daily]) { boards, _ in
             guard let board = boards?.first else {
                 DispatchQueue.main.async { completion(nil) }
                 return
             }
             switch occurrence {
-            case .current: report(on: board)
+            case .current:
+                DispatchQueue.main.async { completion(board) }
             case .previous:
                 board.loadPreviousOccurrence { previous, _ in
-                    guard let previous else {
-                        DispatchQueue.main.async { completion(nil) }
-                        return
-                    }
-                    report(on: previous)
+                    DispatchQueue.main.async { completion(previous) }
                 }
             }
         }

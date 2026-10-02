@@ -162,6 +162,8 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         case paddleSpeed, swipeUpToPause, reset
         case interfaceSound
         // Last, so every row that already existed keeps the number the switches below read
+        case dailyResult
+        // After that for the same reason (round 360)
     }
 
     /// Whether a row clicks the moment it lights up, before the tap has changed anything.
@@ -189,6 +191,10 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         // two sound switches still sit together
         if SettingsViewController.deviceHasHaptics { rows.append(.haptics) }
         rows += [.perspective, .paddleSpeed, .swipeUpToPause]
+        if navigatedFrom != "PauseMenu" { rows.append(.dailyResult) }
+        // **The daily result pop-up's switch, from the main menu only** (James, round 360: "not
+        // available in-game"). It answers a question asked on the menus, about a pop-up that
+        // only ever appears on them
 
         if navigatedFrom == "PauseMenu" { rows.append(.reset) }
         // Reset Ball from the pause menu, which works. From the main menu the same row is
@@ -198,6 +204,32 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
     }
 
 
+
+    /// The daily result row's icon: James's own once it exists, a placeholder until then
+    /// (round 360: "create a placeholder icon for this setting for now, I will create a custom
+    /// one later"). Asked for by name first, so his artwork takes over the day it is added to
+    /// the asset catalogue as `iconDailyResult` and `iconDailyResultOff`, with no code to change.
+    static func dailyResultIcon(on: Bool) -> UIImage {
+        if let drawn = UIImage(named: on ? "iconDailyResult" : "iconDailyResultOff") { return drawn }
+        let symbol = on ? "trophy.fill" : "trophy"
+        guard let glyph = UIImage(systemName: symbol, withConfiguration:
+                                    UIImage.SymbolConfiguration(pointSize: 40, weight: .bold))
+        else { return UIImage() }
+        let side: CGFloat = 60
+        let inset: CGFloat = 0.16
+        let drawn = UIGraphicsImageRenderer(size: CGSize(width: side, height: side)).image { _ in
+            let room = side*(1 - inset*2)
+            let scale = min(room/glyph.size.width, room/glyph.size.height)
+            let size = CGSize(width: glyph.size.width*scale, height: glyph.size.height*scale)
+            glyph.withTintColor(.white).draw(in: CGRect(x: (side - size.width)/2,
+                                                        y: (side - size.height)/2,
+                                                        width: size.width, height: size.height))
+        }
+        return drawn.withRenderingMode(.alwaysTemplate)
+        // Drawn into a square with a margin, because a symbol fills its own box to the edges
+        // and James's icons leave room round theirs - the bare trophy stood a size larger
+        // than every icon above it
+    }
 
     /// The row as the switches below number them, which is the main menu's numbering.
     private func settingRow(for indexPath: IndexPath) -> Int {
@@ -277,6 +309,15 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
                 cell.centreLabel.text = ""
                 cell.setIcon(UIImage(named: on ? "iconUISound" : "iconUISoundOff")!, recolour: true)
                 // James's own artwork (round 351), in place of two SF Symbols
+                cell.settingState.text = on ? "on" : "off"
+                cell.setStateColour(on ? #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1)
+                                       : #colorLiteral(red: 0.6000000238, green: 0.6000000238, blue: 0.6000000238, alpha: 1))
+            case SettingRow.dailyResult.rawValue:
+            // The daily result pop-up
+                let on = DailyResultReport.isOn(in: defaults)
+                cell.settingDescription.text = "Daily Result Pop-Up"
+                cell.centreLabel.text = ""
+                cell.setIcon(SettingsViewController.dailyResultIcon(on: on), recolour: true)
                 cell.settingState.text = on ? "on" : "off"
                 cell.setStateColour(on ? #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1)
                                        : #colorLiteral(red: 0.6000000238, green: 0.6000000238, blue: 0.6000000238, alpha: 1))
@@ -688,6 +729,9 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
                 defaults.set(!InterfaceSound.isOn(in: defaults), forKey: InterfaceSound.settingKey)
                 InterfaceSound.click(in: defaults)
                 // Clicks as it comes on, which is the one way to say what it just turned on
+            case SettingRow.dailyResult.rawValue:
+            // The daily result pop-up
+                defaults.set(!DailyResultReport.isOn(in: defaults), forKey: DailyResultReport.settingKey)
             case 2:
             // Sounds
                 soundsSetting = !soundsSetting

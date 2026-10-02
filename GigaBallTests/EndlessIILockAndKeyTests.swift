@@ -677,10 +677,14 @@ final class EndlessIILockHoldsEverythingTests: XCTestCase {
     }
 
     func testUnderALockARetreatStaysOnAndTheFieldStillDescends() {
+        // Round 356 let the field descend under a Lock; round 360 lets it descend always
+        // (James: "Quicksand just moves the lowest row down ... It's the same with brick
+        // retreat, that just raises the bottom row, but the same row rules apply")
         let scene = mayhem()
         scene.gameState.enter(Playing.self)
         scene.endlessIIClearAndRetreatClock.collect(1)
-        XCTAssertTrue(scene.endlessIIFieldIsHeld, "without a Lock, a Retreat holds the field")
+        XCTAssertFalse(scene.endlessIIFieldIsHeld,
+                       "a settled field descends against the raised floor, Lock or no Lock")
 
         scene.endlessIICollectLock()
         XCTAssertFalse(scene.endlessIIFieldIsHeld,
@@ -692,7 +696,7 @@ final class EndlessIILockHoldsEverythingTests: XCTestCase {
                       "the Retreat stays on while the Lock holds it")
 
         scene.endlessIITurnKey()
-        XCTAssertTrue(scene.endlessIIFieldIsHeld, "and holds the field again once it is unlocked")
+        XCTAssertFalse(scene.endlessIIFieldIsHeld, "and nothing changes once it is unlocked")
     }
 
     func testANewRowArrivesOnTheTopRowWhereverTheShiftHasPutIt() {

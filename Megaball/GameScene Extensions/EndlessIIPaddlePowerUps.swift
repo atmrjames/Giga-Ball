@@ -591,6 +591,20 @@ extension GameScene {
         endlessIIPaddleSurfaceClock.isRunning && endlessIIPaddleShapeArtName != nil
     }
 
+    /// The launch a shaped face gives a ball held on it, or nil where the paddle is flat.
+    ///
+    /// Only the shapes (round 360): "For the regular flat paddle, the current behaviour should
+    /// stay the same, this change is only for the 5 different paddle shape power ups." A flat
+    /// face's normal is straight up everywhere, which is not the paddle's launch rule, so the
+    /// flat paddle never reaches the face at all.
+    func endlessIIShapedLaunchAngle(for subject: SKSpriteNode) -> Double? {
+        guard endlessIIShapeOwnsTheBounce, let texture = paddle.texture else { return nil }
+        return PaddleOutline.launchAngle(for: texture, size: paddle.size,
+                                         atOffsetFromCentre: subject.position.x - paddle.position.x,
+                                         ballRadius: subject.size.width/2,
+                                         minimumDeg: minAngleDeg)
+    }
+
     /// Tidies up what the engine's reflection off a shaped face gave, without replacing it.
     ///
     /// The engine has already bounced the ball off the silhouette by the time a contact is
@@ -1142,11 +1156,11 @@ extension GameScene {
 
             if subject === ball { crookedBallNote("paddle-portal") }
             if let portal = endlessIIPortals().randomElement() {
-                let from = subject.position
                 subject.position = CGPoint(x: portal.position.x,
                                            y: portal.frame.maxY + subject.size.height)
                 body.velocity = CGVector(dx: cos(angleRad)*speed, dy: sin(angleRad)*speed)
-                endlessIIShowPortalJump(from: from, to: subject.position)
+                endlessIIShowPortalJump(from: paddle.position, to: endlessIIPortalCentre(portal))
+                // Paddle to the portal's centre, as every portal line now runs (round 360)
                 portal.run(.sequence([.fadeAlpha(to: 0.35, duration: 0.08),
                                       .fadeAlpha(to: 1, duration: 0.12)]))
                 // The network: with Portal bricks in play the paddle connects to them, one

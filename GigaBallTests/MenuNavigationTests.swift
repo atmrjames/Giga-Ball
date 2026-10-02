@@ -1785,6 +1785,31 @@ final class SettingsRowTapTests: XCTestCase {
 
     /// And round 354: "move music above the sound settings"; and round 356: "swap UI sound and
     /// in-game sound rows around in settings".
+    /// James, round 360: "add a setting to the settings screen, not available in-game that
+    /// allows the user to turn on or off the daily challenge pop-up - it should be on by default."
+    func testTheDailyResultPopUpHasItsOwnSwitchOnByDefault() throws {
+        let (screen, defaults) = try settings()
+        defaults.removeObject(forKey: DailyResultReport.settingKey)
+        XCTAssertTrue(DailyResultReport.isOn(in: defaults), "on for a player who never touched it")
+        XCTAssertTrue(screen.settingRows.contains(.dailyResult))
+
+        try tap(.dailyResult, on: screen)
+        XCTAssertFalse(DailyResultReport.isOn(in: defaults))
+        try tap(.dailyResult, on: screen)
+        XCTAssertTrue(DailyResultReport.isOn(in: defaults))
+    }
+
+    func testTheDailyResultSwitchIsNotOfferedInGame() throws {
+        let (screen, _) = try settings()
+        screen.navigatedFrom = "PauseMenu"
+        XCTAssertFalse(screen.settingRows.contains(.dailyResult))
+    }
+
+    func testTheDailyResultRowHasAnIcon() {
+        XCTAssertGreaterThan(SettingsViewController.dailyResultIcon(on: true).size.width, 0)
+        XCTAssertGreaterThan(SettingsViewController.dailyResultIcon(on: false).size.width, 0)
+    }
+
     func testTheSoundRowsReadMusicThenInGameSoundThenUISound() throws {
         let (screen, _) = try settings()
         let rows = screen.settingRows

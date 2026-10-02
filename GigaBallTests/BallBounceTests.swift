@@ -1181,3 +1181,90 @@ final class ServeTests: XCTestCase {
         XCTAssertNil(scene.stickyInertLaunchAngleRad, "spent on the one launch")
     }
 }
+
+/// A ball held on a shaped paddle leaves along the face, not by where it sits.
+///
+/// **James, round 360:** "With a shaped paddle and sticky paddle power ups active together, the
+/// launch angle of the ball should be based on the angle of the paddle at the position of the
+/// ball, not based on the position of the ball on the paddle. For example a wedge left paddle
+/// would always fire the ball to the left wherever the ball was positioned on the paddle
+/// because that's the way the paddle is facing. For the regular flat paddle, the current
+/// behaviour should stay the same."
+final class ShapedPaddleLaunchTests: XCTestCase {
+
+    private func held(on surface: PaddleBounce.Surface?, at offset: CGFloat) -> GameScene {
+        let scene = GameScene()
+        scene.gameMode = .endlessII
+        scene.totalStatsArray = [TotalStats()]
+        scene.ballSpeedLimit = 600
+        scene.minAngleDeg = 15
+        scene.paddleHeight = 12
+        scene.addChild(scene.paddle)
+        scene.paddle.texture = scene.paddleTexture
+        scene.paddle.size = CGSize(width: 90, height: 12)
+        scene.paddle.position = CGPoint(x: 20, y: -300)
+        scene.paddle.physicsBody = SKPhysicsBody(rectangleOf: scene.paddle.size)
+        if let surface {
+            scene.endlessIICollectPaddleSurface(surface)
+            scene.refreshEndlessIIPaddleShapeArt()
+        }
+        scene.addChild(scene.ball)
+        scene.ball.size = CGSize(width: 12, height: 12)
+        scene.ball.physicsBody = SKPhysicsBody(circleOfRadius: 6)
+        scene.ball.position = CGPoint(x: 20 + offset, y: -288)
+        scene.ballIsOnPaddle = true
+        return scene
+    }
+
+    private func launched(on surface: PaddleBounce.Surface?, at offset: CGFloat) -> Double {
+        let scene = held(on: surface, at: offset)
+        scene.releaseBall()
+        let v = scene.ball.physicsBody!.velocity
+        return atan2(Double(v.dy), Double(v.dx))*180/Double.pi
+    }
+
+    func testAWedgeLeftAlwaysFiresLeft() {
+        for offset: CGFloat in [-35, -15, 0, 15, 35] {
+            XCTAssertGreaterThan(launched(on: .wedgeLeft, at: offset), 90, "from \(offset)")
+        }
+    }
+
+    func testAWedgeRightAlwaysFiresRight() {
+        for offset: CGFloat in [-35, -15, 0, 15, 35] {
+            XCTAssertLessThan(launched(on: .wedgeRight, at: offset), 90, "from \(offset)")
+        }
+    }
+
+    func testADomeFiresOutwardFromEachSide() {
+        XCTAssertGreaterThan(launched(on: .convex, at: -30), 90, "the left of a dome faces left")
+        XCTAssertLessThan(launched(on: .convex, at: 30), 90, "and the right faces right")
+    }
+
+    func testADishFiresInwardFromEachSide() {
+        XCTAssertLessThan(launched(on: .concave, at: -30), 90, "the left of a dish faces right")
+        XCTAssertGreaterThan(launched(on: .concave, at: 30), 90)
+    }
+
+    func testAShapedLaunchIsNeverFlat() {
+        for surface in PaddleBounce.Surface.allCases {
+            for offset: CGFloat in [-40, -20, 0, 20, 40] {
+                let angle = launched(on: surface, at: offset)
+                XCTAssertGreaterThanOrEqual(angle, 15 - 0.01, "\(surface) at \(offset)")
+                XCTAssertLessThanOrEqual(angle, 165 + 0.01, "\(surface) at \(offset)")
+            }
+        }
+    }
+
+    func testTheFlatPaddleKeepsItsOwnRule() {
+        // Halfway to the right end: the old rule's 50 degrees, not a face's straight up
+        XCTAssertEqual(launched(on: nil, at: 22.5), 50, accuracy: 0.01)
+    }
+
+    func testAShapeThatHasRunOutLaunchesFlat() {
+        let scene = held(on: .wedgeLeft, at: 22.5)
+        scene.endlessIIPaddleSurfaceClock = EndlessIIClock()
+        scene.releaseBall()
+        let v = scene.ball.physicsBody!.velocity
+        XCTAssertEqual(atan2(Double(v.dy), Double(v.dx))*180/Double.pi, 50, accuracy: 0.01)
+    }
+}

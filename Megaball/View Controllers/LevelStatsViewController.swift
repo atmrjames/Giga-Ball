@@ -741,9 +741,16 @@ class LevelStatsViewController: UIViewController, UICollectionViewDelegate, UICo
         // Save scores to game center
         let viewController = self.view.window?.rootViewController
 
-        let gcViewController = GKGameCenterViewController(leaderboardID: LevelPackSetup().levelLeaderboardsArray[levelNumber!], playerScope: .global, timeScope: .allTime)
+        let board = packNumber == 1 ? GameMode.current(in: defaults).modeLeaderboard : nil
+        let gcViewController = GKGameCenterViewController(
+            leaderboardID: board ?? LevelPackSetup().levelLeaderboardsArray[levelNumber!],
+            playerScope: .global, timeScope: .allTime)
         gcViewController.gameCenterDelegate = self
-        // Show corresponding leaderboard for the current level
+        // **The mode's own best-height board** (James, round 360: "The Game Center button to
+        // the right of the play button should link to the leaderboard for that specific game
+        // mode. It should link to the best height / best score leaderboard for the current game
+        // mode"). Both endless modes open this screen as pack 1, and the per-level array's
+        // entry for it is the original Endless board - so Mayhem's button opened Endless's
 
         viewController?.present(gcViewController, animated: true, completion: nil)
     }

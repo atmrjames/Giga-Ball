@@ -278,6 +278,8 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
             if hapticsSetting {
                 interfaceHaptic.impactOccurred(intensity: 0.5)
             }
+            TallySound.beep(tick: tick, of: ScoreTally.hapticTicks)
+            // The beeps on the ticks the haptic marks (James, round 360) - see `TallySound`
         }
     }
 

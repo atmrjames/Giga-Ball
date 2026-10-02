@@ -196,7 +196,10 @@ extension GameScene {
         // Read off the ball's live position rather than out of the queue, because the two agree
         // now and the live one is also right for a ball the player has watched move: a ball
         // carried by a resize leaves at the angle where it *is*
-        let angle = endlessIILaunchAngle(atPaddleOffset: offset)
+        let angle = (endlessIIIsHeldOnSafetyBar(extra) ? nil : endlessIIShapedLaunchAngle(for: extra))
+            ?? endlessIILaunchAngle(atPaddleOffset: offset)
+        // A shaped face sends a held extra along its normal too, as it does the first ball
+        // (round 360); the safety bar keeps its own rule
         // **The same arithmetic off a different surface** (James, round 284: a sticky safety
         // paddle's ball "goes up, like it would from the paddle"). All that changes is whose
         // width the landing spot is a fraction of - the angle rule itself is the one written

@@ -387,7 +387,7 @@ final class PowerUpDurationTextTests: XCTestCase {
     func testTheFourTheReferencePageHadWrong() {
         XCTAssertEqual(setup.powerUpTimerArray[index("Landing Marker")], "5 paddle hits")
         XCTAssertEqual(setup.powerUpTimerArray[index("Ball Control")], "10s")
-        XCTAssertEqual(setup.powerUpTimerArray[index("Brick Retreat")], "10s")
+        XCTAssertEqual(setup.powerUpTimerArray[index("Retreat")], "10s")
         XCTAssertEqual(setup.powerUpTimerArray[index("Backstop")], "1 backstop hit")
     }
 
@@ -407,9 +407,12 @@ final class PowerUpDurationTextTests: XCTestCase {
     }
 
     /// Nothing anywhere still carries a name the workbook renamed.
+    ///
+    /// "Retreat" was on this list until round 360, when James asked for it back ("Rename Brick
+    /// Retreat power-up to Retreat"), so it is "Brick Retreat" that is retired now.
     func testNoRenamedNameSurvives() {
         let gone = ["Fast Ball", "Trajectory Line", "Portal Paddle", "Paddle Halo",
-                    "Ball Steering", "Flipped Angle", "Reversed Controls", "Cull", "Retreat",
+                    "Ball Steering", "Flipped Angle", "Reversed Controls", "Cull", "Brick Retreat",
                     "Aura", "Infill", "Descent", "Randomised Bounce", "Wave Paddle"]
         for name in gone {
             XCTAssertFalse(setup.powerUpNameArray.contains(name),

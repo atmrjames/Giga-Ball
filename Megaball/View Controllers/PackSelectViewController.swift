@@ -484,7 +484,11 @@ class PackSelectViewController: UIViewController, UICollectionViewDelegate, UICo
         InterfaceSound.click()
         GameCenterHandler().gameCenterSave()
         // Standing bests go up first, the same as every other leaderboard button
-        let boards = GKGameCenterViewController(state: .leaderboards)
+        let boards = GKGameCenterViewController(leaderboardID: GameMode.classic.modeLeaderboard,
+                                                playerScope: .global, timeScope: .allTime)
+        // **Classic's own board** (James, round 360: "It should link to the best height / best
+        // score leaderboard for the current game mode"). Classic's mode-wide board is the total
+        // across every pack; a pack's own board is a tap away in the pack's level list
         boards.gameCenterDelegate = self
         view.window?.rootViewController?.present(boards, animated: true)
     }

@@ -1300,7 +1300,6 @@ extension GameScene {
         let ball = traveller ?? self.ball
         endlessIIPortalTraveller = ball
         // The ball that arrived, which with more than one in play is not always the first
-        let from = ball.position
 
         // How it was travelling *before* this step, not now. A Portal is built on an
         // Indestructible brick, so by the time the contact is reported the engine has already
@@ -1365,7 +1364,22 @@ extension GameScene {
         // effects showed because they are separate nodes and nothing was undoing them.
         // Applied in `didSimulatePhysics` instead, which is the first moment after the step
 
-        endlessIIShowPortalJump(from: from, to: to)
+        let entry = endlessIIPortalCentre(brick)
+        let exit: CGPoint
+        if endlessIIPortalPaddleClock.isRunning {
+            exit = paddle.position
+        } else if let partner {
+            exit = endlessIIPortalCentre(partner)
+        } else {
+            exit = CGPoint(x: entry.x, y: to.y)
+        }
+        endlessIIShowPortalJump(from: entry, to: exit)
+        // **Centre to centre** (James, round 360: "For the line that shows up when the ball moves
+        // between portals (bricks, paddle, top), draw the line to and from the center of the
+        // respective bricks rather than from the ball's contact position"). The ball meets a
+        // portal anywhere on its edge and leaves from beside the other, so a line between those
+        // two points slanted differently every time and rarely touched either brick's middle.
+        // A lone portal's lift goes straight up from its own centre
         if hapticsSetting { mediumHaptic.impactOccurred() }
         playMayhemSound("brickPortal", or: "portalJump")
         partner?.run(.sequence([.fadeAlpha(to: 0.35, duration: 0.08),
@@ -1720,6 +1734,13 @@ extension GameScene {
     /// round 327b drew the line between the two, and since then they have been saying it a
     /// second time, in a colour nothing else in the jump uses. Both went, not only the one he
     /// named - a ring at the exit alone would mark one end of a line that already marks both.
+    /// Where a portal's line starts or ends: the middle of the cells it fills, which for a Big
+    /// portal is not where its node is (round 360).
+    func endlessIIPortalCentre(_ portal: SKSpriteNode) -> CGPoint {
+        let rect = endlessIIFieldRect(of: portal)
+        return CGPoint(x: rect.midX, y: rect.midY)
+    }
+
     func endlessIIShowPortalJump(from: CGPoint, to: CGPoint) {
         let path = CGMutablePath()
         path.move(to: from)

@@ -66,3 +66,48 @@ enum InterfaceSound {
         // player is concerned, and two copies of one short recording comb filter (round 334)
     }
 }
+
+/// The beeps a result screen makes while its numbers count up.
+///
+/// **James, round 360:** "On the game over / complete screen make a subtle sound effect that
+/// plays when the tally animation is happening on the scores. It should be a rapid sequence of
+/// beeps similar to the 3, 2, 1 beeps but in faster succession."
+///
+/// The countdown's own recording, one beep on each of the tally's ticks - the same ten the
+/// haptic has always marked - so what is heard and what is felt land together. Each beep a
+/// little higher than the last, the way a counter climbing sounds, and quieter than the
+/// countdown, because the countdown is an instruction and this is decoration.
+enum TallySound {
+
+    static let volume: Float = 0.3
+
+    /// How far the last beep is pitched above the first.
+    static let climb: Float = 0.45
+
+    /// The pitch for one tick of a tally that has `ticks` of them.
+    static func rate(forTick tick: Int, of ticks: Int) -> Float {
+        let share = ticks > 1 ? Float(min(max(tick, 0), ticks - 1))/Float(ticks - 1) : 0
+        return 1 + climb*share
+    }
+
+    private static var player: AVAudioPlayer? = {
+        guard let url = Bundle.main.url(forResource: "countdownTick", withExtension: "m4a"),
+              let made = try? AVAudioPlayer(contentsOf: url) else { return nil }
+        made.volume = volume
+        made.enableRate = true
+        made.prepareToPlay()
+        return made
+    }()
+
+    /// One beep, if the player has the game's sound on - this is the game's result talking,
+    /// not a button, so it answers to In-Game Sound rather than to UI Sound.
+    static func beep(tick: Int, of ticks: Int, in defaults: UserDefaults = .standard) {
+        guard GameCenterHandler.isRunningTests == false,
+              defaults.bool(forKey: "soundsSetting"), let player else { return }
+        player.rate = rate(forTick: tick, of: ticks)
+        player.currentTime = 0
+        player.play()
+        // Restarted rather than overlapped, as the click is: the beeps are seventy
+        // milliseconds apart and each is fifty long, so they never needed to overlap
+    }
+}

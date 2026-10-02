@@ -989,6 +989,51 @@ final class EndlessIIFieldPowerUpTests: XCTestCase {
 
     // MARK: - The portal network
 
+    /// The streak a jump leaves, as the two ends of the line it was drawn along.
+    private func jumpLine(in scene: GameScene) -> CGRect? {
+        scene.children.compactMap { ($0 as? SKShapeNode)?.path?.boundingBox }
+            .first { $0.width > 1 || $0.height > 1 }
+    }
+
+    /// James, round 360: "For the line that shows up when the ball moves between portals
+    /// (bricks, paddle, top), draw the line to and from the center of the respective bricks
+    /// rather than from the ball's contact position."
+    func testAJumpBetweenTwoPortalsIsDrawnCentreToCentre() throws {
+        let scene = fieldScene()
+        let near = brick(in: scene, x: -80, y: 40, role: .portal)
+        let far = brick(in: scene, x: 120, y: 160, role: .portal)
+        scene.ball.position = CGPoint(x: -95, y: 28)
+        // Struck low on its left corner, nowhere near its middle
+        scene.ballStateBeforeStep[ObjectIdentifier(scene.ball)] =
+            BallState(position: scene.ball.position, velocity: CGVector(dx: 40, dy: 60))
+
+        scene.endlessIIEnterPortal(near, entering: scene.ball)
+
+        let line = try XCTUnwrap(jumpLine(in: scene))
+        let a = scene.endlessIIPortalCentre(near), b = scene.endlessIIPortalCentre(far)
+        XCTAssertEqual(line.minX, min(a.x, b.x), accuracy: 0.5)
+        XCTAssertEqual(line.maxX, max(a.x, b.x), accuracy: 0.5)
+        XCTAssertEqual(line.minY, min(a.y, b.y), accuracy: 0.5)
+        XCTAssertEqual(line.maxY, max(a.y, b.y), accuracy: 0.5)
+    }
+
+    func testALonePortalsLiftRisesFromItsOwnCentre() throws {
+        let scene = fieldScene()
+        scene.yBrickOffsetEndless = 300
+        // The top row above the portal, as a field has it
+        let lone = brick(in: scene, x: 40, y: 40, role: .portal)
+        scene.ball.position = CGPoint(x: 58, y: 28)
+        scene.ballStateBeforeStep[ObjectIdentifier(scene.ball)] =
+            BallState(position: scene.ball.position, velocity: CGVector(dx: 10, dy: 60))
+
+        scene.endlessIIEnterPortal(lone, entering: scene.ball)
+
+        let line = try XCTUnwrap(jumpLine(in: scene))
+        XCTAssertEqual(line.midX, scene.endlessIIPortalCentre(lone).x, accuracy: 0.5)
+        XCTAssertLessThan(line.width, 0.5, "straight up")
+        XCTAssertEqual(line.minY, scene.endlessIIPortalCentre(lone).y, accuracy: 0.5)
+    }
+
     func testABrickHitExitsAtThePaddleWhileThePortalPaddleRuns() {
         let scene = fieldScene()
         scene.paddle.position = CGPoint(x: 30, y: -300)
@@ -1774,7 +1819,8 @@ final class RandomisedBounceTests: XCTestCase {
 
         scene.endlessIICollectClearAndRetreat()
         settleRetreat(scene)
-        XCTAssertTrue(scene.endlessIIFieldIsHeld, "held by the clock, as it always was")
+        XCTAssertFalse(scene.endlessIIFieldIsHeld,
+                       "landed, the raised field descends against its raised floor (round 360)")
 
         scene.endlessIIClearAndRetreatClock.run(down: GameScene.endlessIIClearAndRetreatDuration)
         scene.tickEndlessIIFieldShift(1.0/60.0)
@@ -2392,6 +2438,40 @@ final class EndlessIIQuicksandTests: XCTestCase {
         node.position = CGPoint(x: 0, y: y)
         scene.addChild(node)
         return node
+    }
+
+    /// James, round 360: "With the quicksand power ups, empty rows are not reliably descending
+    /// so there is a brick in the bottom row. Quicksand just moves the lowest row down, it
+    /// should still contain a brick, and if not, the empty row should disappear with the rows
+    /// above moving down 1 row until there is an active brick in the bottom row."
+    func testAnEmptyBottomRowClosesUpWhileTheFieldIsSunk() {
+        let scene = mayhem()
+        scene.endlessMode = true
+        scene.finalBrickRowHeight = 0
+        brick(scene, y: 80)
+        // Four rows above the floor, so the bottom row is empty
+        XCTAssertEqual(scene.endlessHeight, 0)
+        scene.endlessIICollectQuicksand()
+        for _ in 0..<200 { scene.tickEndlessIIFieldShift(1/60) }
+        XCTAssertTrue(scene.endlessIIFieldShiftHasSettled)
+        XCTAssertTrue(scene.endlessIIQuicksandClock.isRunning)
+        XCTAssertFalse(scene.endlessIIFieldIsHeld, "the sunk field is free to close its gap")
+
+        XCTAssertGreaterThan(scene.endlessHeight, 0,
+                             "a row stepped down onto the sunk floor, on the frame it landed")
+    }
+
+    func testAFieldWithABrickOnTheSunkFloorStaysPut() {
+        let scene = mayhem()
+        scene.endlessMode = true
+        scene.finalBrickRowHeight = 0
+        brick(scene, y: 0)
+        scene.endlessIICollectQuicksand()
+        for _ in 0..<200 { scene.tickEndlessIIFieldShift(1/60) }
+
+        let height = scene.endlessHeight
+        scene.countBricks()
+        XCTAssertEqual(scene.endlessHeight, height, "the bottom row has its brick; nothing moves")
     }
 
     /// The field steps two rows toward the paddle, and the line it dies on comes with it.

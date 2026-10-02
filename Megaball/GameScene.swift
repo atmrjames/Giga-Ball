@@ -1288,6 +1288,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	/// Whether this run has already passed the stored best - see `refreshEndlessIIBest`.
 	/// Cleared with the run, not with the level.
 	var endlessBestBeaten = false
+	/// Whether the height has had its beat for passing the best this run (round 360).
+	var endlessBestBeatenPulsed = false
 	/// Which frame this is, counted in `update`.
 	var frameNumber: Int = 0
 	/// The frame each ball's last counted paddle landing was in.
@@ -1578,7 +1580,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 
 	/// When each Mayhem sound was last started, for the throttle in `playOnce`. Per scene
 	/// rather than static: a new run starts with nothing to remember.
-	private var mayhemSoundLastPlayed: [String: TimeInterval] = [:]
+	private(set) var mayhemSoundLastPlayed: [String: TimeInterval] = [:]
 
 	/// What a delivered sound may be, in the order the bundle is asked (round 327b).
 	///
@@ -3140,13 +3142,20 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         defer { passed = milestone }
         guard milestone > passed, value > 0 else { return }
 
-        label.removeAction(forKey: "milestonePulse")
+        pulse(label)
+    }
+
+    /// The beat itself, shared by every milestone a HUD number marks.
+    func pulse(_ label: SKLabelNode) {
+        label.removeAction(forKey: GameScene.milestonePulseKey)
         label.setScale(1)
         label.run(.sequence([
             .scale(to: 1.25, duration: 0.09),
             .scale(to: 1, duration: 0.18),
-        ]), withKey: "milestonePulse")
+        ]), withKey: GameScene.milestonePulseKey)
     }
+
+    static let milestonePulseKey = "milestonePulse"
 
     func showMultiplier() {
         guard endlessMode == false else { return }
@@ -3272,6 +3281,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             // A ball caught while the paddle was inert launches at the angle the inert
             // bounce would have given (James's design) - the wall's answer, not the
             // paddle's
+        } else if let shaped = endlessIIShapedLaunchAngle(for: ball) {
+            ballLaunchAngleRad = shaped
+            // A shaped face launches along its own normal where the ball sits (James, round
+            // 360) - see `endlessIIShapedLaunchAngle`. The flat paddle answers nil and keeps
+            // the rule below
         } else if ballPositionOnPaddle == 0 {
             let randomLaunchDirection = Bool.random()
             if randomLaunchDirection {
@@ -5236,21 +5250,23 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	/// movement being visible at all.
 	var endlessIIFieldIsHeld: Bool {
 		endlessIIAimedStickyOwedTurn
-			|| (endlessIIShiftHoldsTheField
-				&& (endlessIIClearAndRetreatClock.isRunning || endlessIIQuicksandClock.isRunning))
 			|| (gameMode == .endlessII && endlessIIFieldShiftHasSettled == false)
 	}
-
-	/// Whether a running Retreat or Quicksand holds the field: always, except under a Lock.
-	///
-	/// **James, round 356: "Retreat and quicksand can remain on during lock, so long as the
-	/// bricks keep descending to the bottom row, even if that bottom row is higher or lower due
-	/// to the power-up."** A Lock freezes both clocks, and a Lock has no timer of its own - so a
-	/// held field under a Lock was held until a Key, and Keys come from the bricks a held field
-	/// never makes. Under a Lock the field descends as ever, against the floor wherever the
-	/// shift has put it, and new rows arrive on the shifted top row (`endlessNewRowY`). The
-	/// glide itself still holds it: mid-glide every brick is between rows (§8.6).
-	var endlessIIShiftHoldsTheField: Bool { endlessIILocked == false }
+	// **A running Retreat or Quicksand no longer holds the field - only its glide does** (James,
+	// round 360: "With the quicksand power ups, empty rows are not reliably descending so there
+	// is a brick in the bottom row. Quicksand just moves the lowest row down, it should still
+	// contain a brick, and if not, the empty row should disappear with the rows above moving
+	// down 1 row until there is an active brick in the bottom row. It's the same with brick
+	// retreat, that just raises the bottom row, but the same row rules apply").
+	//
+	// The hold dates from when the floor stayed put while the field moved: then, the descent
+	// would have closed Retreat's two rows of room straight away, so the clock stopped it. The
+	// floor has moved with the field ever since (`tickEndlessIIFieldShift` moves
+	// `finalBrickRowHeight` by the same amount), so the descent already steps against the
+	// shifted floor and leaves the room alone - which round 356 found and allowed only under
+	// a Lock. Held, an emptied bottom row stayed empty for the length of the clock. The glide
+	// still holds it, for the third of a second each end when every brick is between rows
+	// (§8.6), and new rows arrive on the shifted top row (`endlessNewRowY`)
 
 	/// Where the endless modes build their next row: the top row, moved with the field while a
 	/// Retreat or Quicksand has it shifted (round 356). Nought shift outside Mayhem, and inside

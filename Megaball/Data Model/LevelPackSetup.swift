@@ -771,7 +771,7 @@ class LevelPackSetup {
         "Flipped Bounce Angle",
         "Reversed Paddle Control",
         "Brick Cull",
-        "Brick Retreat",
+        "Retreat",
         "Laser Beam",
         "Wrecking Ball",
         "Ball Aura",

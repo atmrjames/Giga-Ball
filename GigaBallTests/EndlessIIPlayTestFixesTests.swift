@@ -1248,3 +1248,78 @@ final class FieldBuildInTests: XCTestCase {
         XCTAssertFalse(scene.endlessIIBuildingIn)
     }
 }
+
+/// James, round 360: "In endless mode and endless mayhem, the score height label should animate
+/// every time the height passes a multiple of 100, similar to how the score label animates on
+/// classic mode. It should also animate in the same way when the height passes the current hi
+/// score." The hundreds had the Classic thousands' beat since August, untested; the best is new.
+final class HeightLabelBeatTests: XCTestCase {
+
+    private func endless(_ mode: GameMode = .endlessII, best: [Int] = [150]) -> GameScene {
+        let scene = GameScene()
+        scene.gameMode = mode
+        scene.endlessMode = true
+        scene.totalStatsArray = [TotalStats()]
+        if mode == .endlessII {
+            scene.totalStatsArray[0].endlessIIModeHeight = best
+        } else {
+            scene.totalStatsArray[0].endlessModeHeight = best
+        }
+        return scene
+    }
+
+    private func pulsing(_ label: SKLabelNode) -> Bool {
+        label.action(forKey: GameScene.milestonePulseKey) != nil
+    }
+
+    func testEveryHundredMetresGetsABeat() {
+        for mode in [GameMode.endless, .endlessII] {
+            let scene = endless(mode, best: [])
+            scene.endlessHeight = 99
+            scene.showHeightLabel()
+            scene.scoreLabel.removeAllActions()
+
+            scene.endlessHeight = 100
+            scene.showHeightLabel()
+            XCTAssertTrue(pulsing(scene.scoreLabel), "\(mode): 100m")
+
+            scene.scoreLabel.removeAllActions()
+            scene.endlessHeight = 101
+            scene.showHeightLabel()
+            XCTAssertFalse(pulsing(scene.scoreLabel), "\(mode): not every metre")
+
+            scene.endlessHeight = 200
+            scene.showHeightLabel()
+            XCTAssertTrue(pulsing(scene.scoreLabel), "\(mode): and the next hundred")
+        }
+    }
+
+    func testClassicThousandsKeepTheSameBeat() {
+        let scene = GameScene()
+        scene.gameMode = .classic
+        scene.totalScore = 990
+        scene.showScoreLabel()
+        scene.scoreLabel.removeAllActions()
+        scene.levelScore = 20
+        scene.showScoreLabel()
+        XCTAssertTrue(pulsing(scene.scoreLabel), "the beat the hundreds are modelled on")
+    }
+
+    func testPassingTheBestGetsTheSameBeatOnce() {
+        let scene = endless(best: [150])
+        scene.showEndlessIIBest()
+        scene.endlessHeight = 150
+        scene.refreshEndlessIIBest()
+        XCTAssertFalse(pulsing(scene.scoreLabel), "level with the best is not past it")
+
+        scene.endlessHeight = 151
+        scene.refreshEndlessIIBest()
+        XCTAssertTrue(pulsing(scene.scoreLabel))
+        XCTAssertEqual(scene.multiplierLabel.text, "NEW HI-SCORE")
+
+        scene.scoreLabel.removeAllActions()
+        scene.endlessHeight = 152
+        scene.refreshEndlessIIBest()
+        XCTAssertFalse(pulsing(scene.scoreLabel), "once a run, not every metre after")
+    }
+}

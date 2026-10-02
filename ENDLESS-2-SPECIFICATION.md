@@ -2959,6 +2959,51 @@ testers:
   falling power-up's position by `brickWidth`, so a bare `GameScene()` with a power-up on
   screen traps converting NaN to Int. A real scene is always laid out before play.
 
+**Round 360: James's overnight list - thirteen play-test notes and a setting.**
+
+- **A shaped paddle launches along its face** (`PaddleOutline.launchAngle`, asked first by
+  `releaseBall` and by a held extra). "The launch angle of the ball should be based on the angle
+  of the paddle at the position of the ball ... a wedge left paddle would always fire the ball
+  to the left." Read off the same silhouette the body is built from, across the ball's own width
+  and kept off the rounded ends (the first test found a wedge's high end firing the wrong way,
+  off its cap). **The launch is the bounce a ball dropped straight onto that spot would get** -
+  twice the face's tilt - because the wedge's face tilts eight degrees and its bare normal fired
+  at 98, which is "left" to a protractor and straight up to the eye. A wedge now fires at 105 or
+  75, a dome 62 to 118 across its width. The flat paddle never reaches it.
+- **Quicksand and Retreat no longer hold the field** - only their third-of-a-second glide does.
+  "Quicksand just moves the lowest row down, it should still contain a brick, and if not, the
+  empty row should disappear with the rows above moving down 1 row until there is an active
+  brick in the bottom row. It's the same with brick retreat." The hold was older than the moving
+  floor: `tickEndlessIIFieldShift` has moved `finalBrickRowHeight` with the field since the shift
+  was built, so the descent already steps against the shifted floor and keeps Retreat's room.
+  Round 356 let it do so under a Lock; it does always now. Three tests that pinned the hold were
+  rewritten to say the new rule.
+- **Retreat** is the power-up's name again (the workbook had taken it to Brick Retreat). The
+  website's copy is renamed in a local commit, unpushed.
+- **Portal lines run centre to centre** (`endlessIIPortalCentre`): brick to brick, paddle to
+  brick, and a lone portal's lift straight up from its own middle.
+- **The height label beats on passing the best**, once a run, as it has beaten every hundred
+  metres since August - Classic's thousand-point beat, `pulse(_:)`, shared.
+- **Tally beeps** (`TallySound`): the countdown's own beep on each of the ten ticks a result
+  screen's count-up already marked with a haptic, each a little higher, on the game-over, the
+  daily's breakdown and the between-levels screens. In-Game Sound, not UI Sound.
+- **Game Center links go to the mode's board.** The game-over GAME CENTER caption is now
+  "Game Center" with the trophy and a chevron, dressed as Statistics is, and opens the run's
+  board on every ending; the button beside it does too. `GameMode.modeLeaderboard` is what the
+  mode screens open: Endless's and Mayhem's best height (Mayhem's had been opening Endless's,
+  as pack 1's entry in the per-level array) and Classic's total.
+- **Sounds:** Laser Beam +6 dB and Cluster +5 dB, in the files (`tools/sound-gain.swift`; the
+  first pass wrote m4a files nothing could open, because an `AVAudioFile` is finalised only when
+  closed). The Laser Beam file is byte for byte the one James supplied on 19 September, so "isn't
+  the right sound effect" is a question back to him. Infill's file is loud (-3.9 dBFS peak) and
+  `InfillSpeaksTests` proves the catch, the brick and the call all ask for it - also back to him.
+- **And the daily** - player counts, the pop-up's switch, yesterday's board from yesterday's
+  card - in DAILY-CHALLENGE-SPECIFICATION.md §11.6.
+- **Numbers:** 2,944 tests, no failures, no relaunches; coverage 79.1% (78.1% at round 358b);
+  88 functions over a CRAP of 30 (97). Mutation: the launch angle 12 of 14 (the two left are a
+  sub-point ball and a clamp no shipped face reaches), the tally pitch 6 of 6, the player count
+  1 of 1.
+
 **Round 359: a Cluster you can see, the day's theme by name, and yesterday's result.**
 
 James, after the round 358b push: three play-test notes.
@@ -2995,7 +3040,7 @@ James, after the round 358b push: three play-test notes.
 |---|---|
 | ~~The game view following an iPad or Mac window~~ | **Seen working, 2 October** - James on his iPad: "it's working perfectly" |
 | ~~The settings list keeping its place~~ | **Seen fixed, 2 October**, on his phone and his iPad |
-| Descent's pace | Round 357's three seconds a row. James is playing it: "maybe a bit slow, let's see". `endlessIIDescentStep` is the one figure to change |
+| ~~Descent's pace~~ | **Settled, round 360** - James: "The Descent pace seemed fine". Three seconds a row stays |
 | ~~"Bricks hit" counts an ordinary brick's last hit twice~~ | **Fixed, round 358b** (James: "fix the bricks hit count"). The `default` and `brickInvisibleTexture` cases of `hitBrick` counted the breaking hit twice from July 2020; the second count is gone and `BricksHitCountTests` pins one hit a hit for every brick type. Totals already held stay as they are - they are lifetime figures and the iCloud merge takes the larger - so the figure grows at the honest rate from 1.3 on |
 | ~~Four old power-up achievements can be earned in a daily~~ | **Answered, round 358b**: James, "leave the daily achievements". First Power-Up, Max Paddle Size and the two Power-Up Leavers stay earnable in a daily; they are about power-ups rather than levels, which is what daily spec §9 protects |
 | ~~The iPad paddle-speed field in the column~~ | **Seen working, round 348**, on an iPad Pro 11-inch (M5) simulator on iOS 26.5: the field sits in the column as a scaled model of the play area, the slider reads x2.00 a quarter of the way along, and a 100-point drag carried the paddle from the centre to near the right edge |

@@ -1769,6 +1769,19 @@ struct DailyBoardRow: Equatable {
     func line(unit: String) -> String {
         "\(rank). \(name)  \(score)\(unit)"
     }
+
+    /// "240 players", for the day's board - how many posted to it (James, round 360: "Show
+    /// total players who have completed the daily challenge on the leaderboard views"). A count
+    /// rather than a score, so it is grouped in the reader's own way, as every count is. Nil
+    /// when Game Center gave no figure, which is a board to show without a headcount.
+    static func playersLine(_ players: Int, locale: Locale = .current) -> String? {
+        guard players > 0 else { return nil }
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .decimal
+        formatter.locale = locale
+        let count = formatter.string(from: NSNumber(value: players)) ?? String(players)
+        return players == 1 ? "1 player" : "\(count) players"
+    }
 }
 
 /// How yesterday's daily went, told the first time the app opens after it closed.
@@ -1786,6 +1799,18 @@ struct DailyResultReport: Equatable {
 
     /// The last day reported, so each day is told about once.
     static let reportedKey = "dailyResultReportedKey"
+
+    /// The switch in Settings (James, round 360: "add a setting to the settings screen, not
+    /// available in-game that allows the user to turn on or off the daily challenge pop-up -
+    /// it should be on by default").
+    static let settingKey = "dailyResultPopUpSetting"
+
+    /// Whether it is on. A key never written reads as on - `bool(forKey:)` would answer false
+    /// and switch the pop-up off for everyone on the day it arrived, the trap `InterfaceSound`
+    /// names for its own switch.
+    static func isOn(in defaults: UserDefaults = .standard) -> Bool {
+        defaults.object(forKey: settingKey) as? Bool ?? true
+    }
 
     /// How many of the leaders the pop-up lists before the player's own place.
     static let leadersShown = 3

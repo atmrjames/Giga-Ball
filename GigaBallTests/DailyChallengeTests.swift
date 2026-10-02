@@ -4072,3 +4072,63 @@ final class DailyResultReportTests: XCTestCase {
                               "23rd", "101st", "111th", "112th"])
     }
 }
+
+/// James, round 360: "The Game Center button to the right of the play button should link to the
+/// leaderboard for that specific game mode. It should link to the best height / best score
+/// leaderboard for the current game mode."
+final class ModeLeaderboardTests: XCTestCase {
+
+    func testEachModeOpensItsOwnBoard() {
+        XCTAssertEqual(GameMode.endless.modeLeaderboard, GameMode.endlessBestHeightLeaderboard)
+        XCTAssertEqual(GameMode.endlessII.modeLeaderboard, GameMode.endlessIIBestHeightLeaderboard,
+                       "Mayhem's screen opened the original Endless board, as pack 1's entry")
+        XCTAssertEqual(GameMode.classic.modeLeaderboard, GameMode.classicTotalScoreLeaderboard)
+        XCTAssertEqual(GameMode.daily.modeLeaderboard, DailyChallengeBoards.daily)
+    }
+
+    func testNoTwoModesShareABoard() {
+        let boards = GameMode.allCases.map(\.modeLeaderboard)
+        XCTAssertEqual(Set(boards).count, boards.count)
+    }
+
+    func testTheEndlessModesRunAndModeBoardsAgree() {
+        // An endless run's board and its mode's board are the same board: height is the only
+        // thing either posts
+        for mode in [GameMode.endless, .endlessII] {
+            XCTAssertEqual(mode.runLeaderboard(packNumber: 1)?.id, mode.modeLeaderboard)
+        }
+    }
+
+    func testTheGameOverCaptionReadsGameCenterAsALink() {
+        let caption = PauseMenuViewController.gameCentreCaption()
+        XCTAssertTrue(caption.string.contains("Game Center"))
+        var attachments = 0
+        caption.enumerateAttribute(.attachment, in: NSRange(location: 0, length: caption.length)) {
+            value, _, _ in if value != nil { attachments += 1 }
+        }
+        XCTAssertEqual(attachments, 2, "the trophy before it and the chevron after, as Statistics")
+    }
+}
+
+/// James, round 360: "Show total players who have completed the daily challenge on the
+/// leaderboard views - daily challenge menu view, end of game view, yesterday results pop up."
+final class DailyBoardPlayersTests: XCTestCase {
+
+    func testTheCountIsACountGroupedLikeOne() {
+        let english = Locale(identifier: "en_GB")
+        XCTAssertEqual(DailyBoardRow.playersLine(240, locale: english), "240 players")
+        XCTAssertEqual(DailyBoardRow.playersLine(1_240, locale: english), "1,240 players",
+                       "counts are grouped; scores are not")
+        XCTAssertEqual(DailyBoardRow.playersLine(1, locale: english), "1 player")
+    }
+
+    func testNoFigureIsNoLine() {
+        XCTAssertNil(DailyBoardRow.playersLine(0))
+        XCTAssertEqual(DailyCardView.boardHeading(players: 0), "LEADERBOARD")
+    }
+
+    func testTheMenuCardsHeadingCarriesIt() {
+        XCTAssertTrue(DailyCardView.boardHeading(players: 240).hasPrefix("LEADERBOARD · 240"))
+        XCTAssertTrue(DailyCardView.boardHeading(players: 240).hasSuffix("PLAYERS"))
+    }
+}

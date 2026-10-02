@@ -573,6 +573,46 @@ extension PaddleOutline {
         return run
     }
 
+    /// The way a shaped face sends a ball it is launching from rest: as the face would bounce a
+    /// ball dropped straight onto the ball's spot, in radians from the right, never flatter than
+    /// `minimumDeg` either side.
+    ///
+    /// **James, round 360:** "With a shaped paddle and sticky paddle power ups active together,
+    /// the launch angle of the ball should be based on the angle of the paddle at the position
+    /// of the ball, not based on the position of the ball on the paddle. For example a wedge
+    /// left paddle would always fire the ball to the left wherever the ball was positioned on
+    /// the paddle because that's the way the paddle is facing."
+    ///
+    /// The slope is read off the same silhouette the body is built from (`top`), across the
+    /// width of the ball rather than at one point, because the ball sits on a stretch of the
+    /// face rather than a point of it - and the jagged face turns a corner every fifth of the
+    /// paddle, where a single point's slope would be a coin toss.
+    static func launchAngle(for texture: SKTexture, size: CGSize, atOffsetFromCentre offset: CGFloat,
+                            ballRadius: CGFloat, minimumDeg: Double) -> Double? {
+        let reach = max(ballRadius, 1)
+        let face = max(0, size.width/2 - size.height/2 - reach)
+        let spot = min(max(offset, -face), face)
+        // **The rounded ends are not the face.** Every paddle is a capsule, and its ends curve
+        // down whatever the face between them does - so a ball held near the high end of a
+        // wedge read the cap's slope and went the wrong way, which the first test run found
+        // at 35 points out on a 90-point wedge. The cap is about half the paddle's height wide;
+        // a ball sitting over it takes the slope of the face where the cap begins
+        guard let left = top(for: texture, size: size, atOffsetFromCentre: spot - reach),
+              let right = top(for: texture, size: size, atOffsetFromCentre: spot + reach)
+        else { return nil }
+        let slope = Double((right - left)/(2*reach))
+        let normal = atan2(1, -slope)
+        // The face rising to the right leans its normal to the left, and the other way round
+        let launch = Double.pi/2 + 2*(normal - Double.pi/2)
+        // **The bounce a ball dropped straight onto that spot would get** - the reflection,
+        // which leans twice as far as the face does. The normal alone was tried first and a
+        // wedge, whose face tilts eight degrees, launched at 98: "always fire to the left" by
+        // the letter and straight up to the eye. Twice the tilt is also exactly what the same
+        // face does to a ball falling onto it, so a held ball and a bounced one agree
+        let minimum = minimumDeg*Double.pi/180
+        return min(max(launch, minimum), Double.pi - minimum)
+    }
+
     /// Where the surface is, at one distance from the paddle's centre, in points about the
     /// paddle's own centre.
     ///

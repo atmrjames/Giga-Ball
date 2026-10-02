@@ -161,6 +161,9 @@ background: piping `xcodebuild` straight into `grep` has hung twice.
   small bug at a time into a file and runs that file's tests to see whether they notice. Both
   explain themselves in their headers. They were rebuilt in round 345 because the first ones
   lived in a session's scratch directory and were lost with it.
+  Round 360 added two for sound, `sound-loudness.swift` and `sound-gain.swift`: the simulator
+  plays nothing, so "too quiet" is judged against the other files in dBFS and a level is changed
+  in the file itself - `playSoundFileNamed` has no volume.
   **Before round 358b `mutate.py` called a crashing mutant a survivor**: the relaunched test
   host printed `Selected tests' passed` for the tests left after the crash, and that line was
   read first. A Swift `Fatal error:` now counts as killed. A survivor that looks as if it ought

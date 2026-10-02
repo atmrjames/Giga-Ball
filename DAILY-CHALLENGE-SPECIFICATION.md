@@ -626,6 +626,26 @@ the pop up should show that, be more bold and colourful."
   "You finished 17th of 240". Scores are ungrouped, as every score is. Leaderboard opens Game
   Center on the closed day's occurrence (`GKGameCenterViewController(leaderboard:)` - the
   identifier would open today's). A winner's card is lime with a crown.
+- **Opening the app two or more days later shows nothing** (James asked, round 360). Game
+  Center keeps one closed occurrence of a recurring board - the one that ended last - so the
+  day before yesterday has no board left to read a place from, and a pop-up with no place in it
+  is not the pop-up asked for. The day is not marked told, which costs nothing: it can never
+  become yesterday again.
+- **Its own switch, round 360** ("add a setting to the settings screen, not available in-game
+  that allows the user to turn on or off the daily challenge pop-up - it should be on by
+  default"). Daily Result Pop-Up, last on the main menu's Settings and absent from the pause
+  menu's, stored as `dailyResultPopUpSetting` and read as on when it has never been written.
+  Its icon is a placeholder trophy until James's `iconDailyResult` and `iconDailyResultOff` are
+  in the asset catalogue, when they take over with no code to change.
+- **How many played, round 360** ("Show total players who have completed the daily challenge on
+  the leaderboard views - daily challenge menu view, end of game view, yesterday results pop
+  up"): LEADERBOARD · 240 PLAYERS over the menu card's rows, "240 players" small under the
+  ending's rows, and "You finished 17th of 240" in the pop-up. A count, so grouped ("1,240").
+- **Yesterday's card opens yesterday's board, round 360** ("Is it possible when clicking on the
+  leaderboard of yesterday's daily challenge that it opens up the Game Center leaderboard for
+  yesterday's challenge rather than today's by default?"). Yes for yesterday, through the same
+  occurrence the pop-up opens (`GameCenterHandler.loadDailyBoardOccurrence`); an older day has
+  none left and opens today's, as every day did before.
 
 ## 12. Build phases
 

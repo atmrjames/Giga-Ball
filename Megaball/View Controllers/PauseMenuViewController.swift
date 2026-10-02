@@ -537,6 +537,8 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
     var standing: LeaderboardStanding?
     /// The day's leading places, for a daily's end screen (round 354).
     var dailyBoard: [DailyBoardRow] = []
+    /// How many have posted to the day's board, from the same answer (round 360).
+    var dailyBoardPlayers = 0
     /// How many places the end screen lists. Three rather than the menu's five: this screen
     /// is already full on the smallest phone, and the rest are one tap away on Game Center.
     static let dailyBoardRowsShown = 3
@@ -715,6 +717,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
             guard let self, let answer else { return }
             self.dailyBoard = DailyBoardRow.shown(leaders: answer.leaders, local: answer.local,
                                                   limit: shown)
+            self.dailyBoardPlayers = answer.players
             self.updateResultLine()
         }
     }
@@ -767,9 +770,12 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
         // line names a board the Game Center button beside it already opens
         leaderboardTitle.translatesAutoresizingMaskIntoConstraints = false
         leaderboardTitle.textAlignment = .center
-        leaderboardTitle.font = .boldSystemFont(ofSize: 11)
-        leaderboardTitle.textColor = UIColor(white: 1, alpha: 0.38)
-        leaderboardTitle.text = "GAME CENTER"
+        leaderboardTitle.attributedText = PauseMenuViewController.gameCentreCaption()
+        // **Dressed as the Statistics button is, and a door the same way** (James, round 360:
+        // "The game centre section on the Game Over view, the Game Centre label should be like
+        // the statistics label with an icon and a button to link to the Game Center leaderboard
+        // for that game mode"). It was a pale small-caps caption over the placing, which
+        // labelled the block and offered nothing; it is now the block's way into its board
         leaderboardTitle.isHidden = true
         containterView.addSubview(leaderboardTitle)
         // Shown and hidden with the line it heads - `updateResultLabel` owns both
@@ -1304,6 +1310,14 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
             }
             // **The day's top places, under the placing** (round 354), the player's own in lime.
             // Three at most, one line each, so the block still fits above the buttons on an SE
+            if dailyBoard.isEmpty == false, let count = DailyBoardRow.playersLine(dailyBoardPlayers) {
+                text.append(NSAttributedString(
+                    string: "\n" + count,
+                    attributes: [.foregroundColor: UIColor(white: 1, alpha: 0.5),
+                                 .font: UIFont.systemFont(ofSize: 11)]))
+            }
+            // **And how many posted** (James, round 360: "Show total players who have completed
+            // the daily challenge on the leaderboard views"), small and pale under the rows
             let empty = text.length == 0
             resultLabel.isHidden = empty
             leaderboardTitle.isHidden = empty
@@ -2141,15 +2155,54 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
         guard GKLocalPlayer.local.isAuthenticated else { return }
         if hapticsSetting { interfaceHaptic.impactOccurred() }
         InterfaceSound.click()
-        let boards = GKGameCenterViewController(state: .leaderboards)
+        let boards = runBoard.map {
+            GKGameCenterViewController(leaderboardID: $0.id, playerScope: .global,
+                                       timeScope: .allTime)
+        } ?? GKGameCenterViewController(state: .leaderboards)
+        // **The run's own board** (James, round 360: "It should link to the best height / best
+        // score leaderboard for the current game mode"), the one the placing above it was read
+        // from. It opened the list of every board, which is one more tap to the same place
         boards.gameCenterDelegate = self
         view.window?.rootViewController?.present(boards, animated: true)
     }
 
     /// briefing screen's leaderboard button shows, so the two doors open the same room.
     @objc private func gameCentreBlockTapped() {
-        guard isDailyChallenge, sender != "Pause" else { return }
-        openDailyLeaderboard()
+        guard sender != "Pause" else { return }
+        if isDailyChallenge {
+            openDailyLeaderboard()
+        } else {
+            gameCentreTapped()
+        }
+        // Every ending now, not just the daily's (round 360) - the caption over the placing
+        // reads as a button, so it has to be one wherever it shows
+    }
+
+    /// "Game Center", with the leaderboard button's own trophy before it and a chevron after -
+    /// the Statistics button's dress, so the two read as a pair of doors (round 360).
+    static func gameCentreCaption() -> NSAttributedString {
+        let lime = #colorLiteral(red: 0.8235294118, green: 1, blue: 0, alpha: 1)
+        let font = UIFont.boldSystemFont(ofSize: 14)
+        let line = NSMutableAttributedString()
+        if let trophy = UIImage(systemName: MainMenuCollectionViewCell.systemGlyph["ButtonLeaderboard"]
+                                    ?? "trophy.fill",
+                                withConfiguration: UIImage.SymbolConfiguration(
+                                    pointSize: 13, weight: .bold))?
+            .withTintColor(lime, renderingMode: .alwaysOriginal) {
+            line.append(NSAttributedString(attachment: NSTextAttachment(image: trophy)))
+            line.append(NSAttributedString(string: " "))
+        }
+        line.append(NSAttributedString(string: "Game Center"))
+        if let chevron = UIImage(systemName: "chevron.right",
+                                 withConfiguration: UIImage.SymbolConfiguration(
+                                    pointSize: 12, weight: .bold))?
+            .withTintColor(lime, renderingMode: .alwaysOriginal) {
+            line.append(NSAttributedString(string: " "))
+            line.append(NSAttributedString(attachment: NSTextAttachment(image: chevron)))
+        }
+        line.addAttributes([.font: font, .foregroundColor: lime],
+                           range: NSRange(location: 0, length: line.length))
+        return line
     }
 
     /// Puts a daily ending's Game Center block under the score and the Statistics button under
@@ -2166,9 +2219,11 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
         gameCentreUnderTheLives.isActive = daily == false
         gameCentreWellUnderTheLives.isActive = daily == false
         if daily { gameCentreUnderTheStatsButton.isActive = false }
+        let ending = sender != "Pause"
         for label in [leaderboardTitle, resultLabel] {
-            label.accessibilityTraits = daily ? [.staticText, .button] : .staticText
-            label.accessibilityHint = daily ? "Opens the day's leaderboard" : nil
+            label.accessibilityTraits = ending ? [.staticText, .button] : .staticText
+            label.accessibilityHint = daily ? "Opens the day's leaderboard"
+                : ending ? "Opens this mode's leaderboard" : nil
         }
         // VoiceOver says it can be pressed where it can: a tappable label is otherwise read as
         // plain text, and the board behind it is one nobody using VoiceOver would find
@@ -2376,6 +2431,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
         if tick != breakdownLastTick {
             breakdownLastTick = tick
             if hapticsSetting { interfaceHaptic.impactOccurred(intensity: 0.5) }
+            TallySound.beep(tick: tick, of: ScoreTally.hapticTicks)
         }
     }
 
@@ -2422,6 +2478,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
         if tick != heightTallyLastTick {
             heightTallyLastTick = tick
             if hapticsSetting { interfaceHaptic.impactOccurred(intensity: 0.5) }
+            TallySound.beep(tick: tick, of: PauseMenuViewController.heightTallyTicks)
         }
     }
 

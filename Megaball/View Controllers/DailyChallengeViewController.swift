@@ -58,6 +58,8 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
     var boardBests: [String: Int] = [:]
     /// The rows each day's card lists, by day (round 354).
     var boardTops: [String: [DailyBoardRow]] = [:]
+    /// How many posted to each day's board, as Game Center reported it (round 360).
+    var boardPlayers: [String: Int] = [:]
     /// How many places a card lists before the player's own.
     ///
     /// Three: at five, with the player's own place under them, the list ran off the bottom of
@@ -650,6 +652,7 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
             self.boardTops[key] = DailyBoardRow.shown(
                 leaders: answer.leaders, local: answer.local,
                 limit: DailyChallengeViewController.boardRowsShown)
+            self.boardPlayers[key] = answer.players
             if let best = answer.leaders.first?.score {
                 self.boardBests[key] = best
                 self.keepTheClosingBest(best, forKey: key)
@@ -808,10 +811,20 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
         guard GKLocalPlayer.local.isAuthenticated else { return }
         if hapticsSetting { interfaceHaptic.impactOccurred() }
         InterfaceSound.click()
-        let boards = GKGameCenterViewController(leaderboardID: DailyChallengeBoards.daily,
-                                                playerScope: .global, timeScope: .allTime)
-        boards.gameCenterDelegate = self
-        view.window?.rootViewController?.present(boards, animated: true)
+        GameCenterHandler().loadDailyBoardOccurrence(forKey: viewedKey) { [weak self] day in
+            guard let self else { return }
+            let boards = day.map { GKGameCenterViewController(leaderboard: $0, playerScope: .global) }
+                ?? GKGameCenterViewController(leaderboardID: DailyChallengeBoards.daily,
+                                              playerScope: .global, timeScope: .allTime)
+            boards.gameCenterDelegate = self
+            self.view.window?.rootViewController?.present(boards, animated: true)
+        }
+        // **The day on screen, not today** (James, round 360: "Is it possible when clicking on
+        // the leaderboard of yesterday's daily challenge that it opens up the Game Center
+        // leaderboard for yesterday's challenge rather than today's by default?"). It is, for
+        // yesterday: Game Center keeps the occurrence that closed last, and the board opened
+        // by its occurrence rather than its identifier shows that day. A day older than that
+        // has no occurrence left to open, and gets today's, which is what it always got
     }
 
     // The test rig's four handlers - RESET ATTEMPTS, and the day stepper's back, forward and
@@ -877,7 +890,7 @@ extension DailyChallengeViewController: UICollectionViewDataSource,
                        standing: isToday ? todayStanding : nil,
                        boardBest: boardBests[key]
                            ?? totalStatsArray[0].dailyRecord(forKey: key)?.closingBoardBest,
-                       board: boardTops[key] ?? [])
+                       board: boardTops[key] ?? [], players: boardPlayers[key] ?? 0)
         cell.card.twistTapped = { [weak self] twist in self?.explain(twist, on: key) }
         cell.card.twistsExplainerTapped = { [weak self] in self?.explainTheDaysTwists(on: key) }
         // The card lists the day's twists by icon and name only since round 308, so the block

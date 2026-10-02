@@ -772,3 +772,87 @@ final class DailyAlwaysOnKeepsItsPowerUpTests: XCTestCase {
                        "an ordinary catch in that window is still refused, as it always was")
     }
 }
+
+/// James, round 360: "a rapid sequence of beeps similar to the 3, 2, 1 beeps but in faster
+/// succession" while a result screen's numbers count up.
+final class TallySoundTests: XCTestCase {
+
+    func testTheBeepsClimbFromTheCountdownsOwnPitch() {
+        let ticks = ScoreTally.hapticTicks
+        let rates = (0..<ticks).map { TallySound.rate(forTick: $0, of: ticks) }
+        XCTAssertEqual(rates.first, 1, "the first is the countdown's own beep")
+        XCTAssertEqual(rates.last ?? 0, 1 + TallySound.climb, accuracy: 0.0001)
+        XCTAssertEqual(rates, rates.sorted(), "and each one higher than the last")
+        XCTAssertLessThanOrEqual(1 + TallySound.climb, 2, "AVAudioPlayer's rate stops at two")
+    }
+
+    func testAStrayTickIsHeldInRange() {
+        XCTAssertEqual(TallySound.rate(forTick: -3, of: 10), 1)
+        XCTAssertEqual(TallySound.rate(forTick: 40, of: 10), 1 + TallySound.climb, accuracy: 0.0001)
+        XCTAssertEqual(TallySound.rate(forTick: 0, of: 1), 1)
+    }
+
+    func testTheyAreFasterThanTheCountdown() {
+        // The countdown beeps once a second; ten across a tally of under a second is the
+        // "faster succession" asked for
+        XCTAssertLessThan(ScoreTally.duration/Double(ScoreTally.hapticTicks), 0.15)
+        let heightGap = PauseMenuViewController.heightTallyDuration
+            / Double(PauseMenuViewController.heightTallyTicks)
+        XCTAssertLessThan(heightGap, 0.15)
+    }
+
+    func testTheBeepIsInTheBundle() {
+        XCTAssertNotNil(Bundle.main.url(forResource: "countdownTick", withExtension: "m4a"))
+    }
+}
+
+/// James, round 360: "I couldn't hear the brick infill power up sound effect. Either it's too
+/// quiet or didn't play at all." The recording is not quiet - it peaks at -3.9 dBFS, louder
+/// than most of the game, since round 351 raised it eight decibels - so this asks the other
+/// half: that catching the power-up asks for the sound, by either door.
+final class InfillSpeaksTests: XCTestCase {
+
+    private func mayhem() -> GameScene {
+        let scene = GameScene(size: CGSize(width: 500, height: 900))
+        scene.gameMode = .endlessII
+        scene.totalStatsArray = [TotalStats()]
+        scene.soundsSetting = true
+        scene.gameWidth = 440
+        scene.brickWidth = 40
+        scene.brickHeight = 20
+        scene.numberOfBrickColumns = 11
+        scene.numberOfBrickRows = 22
+        scene.yBrickOffsetEndless = 300
+        scene.finalBrickRowHeight = 300 - 20*21
+        scene.powerUpTextureArray = scene.powerUpTexturesInOrder
+        scene.ballLostBool = false
+        // A ball in play: `applyPowerUp` refuses whatever arrives while one is being lost
+        return scene
+    }
+
+    func testInfillAsksForItsSound() {
+        let scene = mayhem()
+        scene.endlessIIInfill()
+        XCTAssertNotNil(scene.mayhemSoundLastPlayed["infill"])
+    }
+
+    func testCatchingInfillAsksForItAndNotTheChime() throws {
+        let scene = mayhem()
+        let index = try XCTUnwrap(LevelPackSetup().powerUpNameArray.firstIndex(of: "Brick Infill"))
+        XCTAssertNotNil(GameScene.mayhemSound("infill"), "the recording ships")
+        XCTAssertTrue(scene.endlessIIHasItsOwnVoice(scene.powerUpTexturesInOrder[index]),
+                      "so the chime stands down for it")
+        let node = SKSpriteNode(texture: scene.powerUpTexturesInOrder[index])
+        node.name = PowerUpCategoryName
+        scene.addChild(node)
+        scene.applyPowerUp(node: node)
+        XCTAssertNotNil(scene.mayhemSoundLastPlayed["infill"])
+    }
+
+    func testABrickThatHoldsInfillAsksForItToo() throws {
+        let scene = mayhem()
+        let index = try XCTUnwrap(LevelPackSetup().powerUpNameArray.firstIndex(of: "Brick Infill"))
+        scene.endlessIIApplyBrickPowerUp(index, at: .zero)
+        XCTAssertNotNil(scene.mayhemSoundLastPlayed["infill"])
+    }
+}

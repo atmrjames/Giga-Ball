@@ -115,6 +115,10 @@ enum GameMode: Int, CaseIterable {
     /// The original Endless mode's boards, which have existed since 2020 and hold years of
     /// climbs. Named here beside Endless 2.0's so the four read as one set.
     static let endlessBestHeightLeaderboard = "leaderboardBestHeight"
+
+    /// Classic's mode-wide board: every pack's score added up. What the Classic pack screen's
+    /// leaderboard button opens (round 360), where each pack's own board belongs to that pack.
+    static let classicTotalScoreLeaderboard = "leaderboardTotalScore"
     static let endlessTotalHeightLeaderboard = "leaderboardTotalHeight"
 
     /// The board a finished run is measured against, and the name the screen printing that
@@ -146,6 +150,19 @@ enum GameMode: Int, CaseIterable {
             return (GameMode.endlessIIBestHeightLeaderboard, name)
         case .daily:
             return nil
+        }
+    }
+
+    /// The board a mode's own screen opens: best height for the endless modes, the total
+    /// across every pack for Classic, and the day's board for the daily (James, round 360:
+    /// "It should link to the best height / best score leaderboard for the current game mode").
+    /// A *run's* board is `runLeaderboard`, which for Classic is the pack the run was in.
+    var modeLeaderboard: String {
+        switch self {
+        case .classic: return GameMode.classicTotalScoreLeaderboard
+        case .endless: return GameMode.endlessBestHeightLeaderboard
+        case .endlessII: return GameMode.endlessIIBestHeightLeaderboard
+        case .daily: return DailyChallengeBoards.daily
         }
     }
 

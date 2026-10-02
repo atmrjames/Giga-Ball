@@ -225,7 +225,7 @@ final class DailyCardView: UIView {
     /// can be reused for any day the pager scrolls to.
     func show(key: String, isToday: Bool, record: DailyChallengeRecord?,
               standing: LeaderboardStanding?, boardBest: Int? = nil,
-              board: [DailyBoardRow] = []) {
+              board: [DailyBoardRow] = [], players: Int = 0) {
         let challenge = DailyChallengeGenerator.challenge(forKey: key)
 
         modeLabel.text = challenge.mode.name.uppercased()
@@ -279,7 +279,7 @@ final class DailyCardView: UIView {
         }
 
         showTwists(challenge)
-        showBoard(board, unit: challenge.mode == .classic ? "" : "m")
+        showBoard(board, unit: challenge.mode == .classic ? "" : "m", players: players)
         if board.isEmpty {
             showResult(record, mode: challenge.mode, isToday: isToday, standing: standing,
                        boardBest: boardBest)
@@ -298,9 +298,10 @@ final class DailyCardView: UIView {
     /// Rank, name and score in three columns so the scores line up down the right, and the
     /// player's own row in lime - which is also how a player placed below the rows shown finds
     /// themselves, added under them by `DailyBoardRow.shown`.
-    private func showBoard(_ rows: [DailyBoardRow], unit: String) {
+    private func showBoard(_ rows: [DailyBoardRow], unit: String, players: Int = 0) {
         boardRows.arrangedSubviews.forEach { $0.removeFromSuperview() }
         boardCard.isHidden = rows.isEmpty
+        boardTitle.text = DailyCardView.boardHeading(players: players)
         let lime = #colorLiteral(red: 0.8235294118, green: 1, blue: 0, alpha: 1)
         let leading = rows.first?.isLocalPlayer == true
         DailyCardView.dress(boardCard, glass: boardGlass, lime: leading)
@@ -381,6 +382,14 @@ final class DailyCardView: UIView {
     /// the card itself is filled.
     private func dressTheResultCard(leading: Bool) {
         DailyCardView.dress(resultCard, glass: resultGlass, lime: leading)
+    }
+
+    /// "LEADERBOARD · 240 PLAYERS", or plain "LEADERBOARD" before Game Center has said how
+    /// many (round 360: "Show total players who have completed the daily challenge on the
+    /// leaderboard views").
+    static func boardHeading(players: Int) -> String {
+        guard let count = DailyBoardRow.playersLine(players) else { return "LEADERBOARD" }
+        return "LEADERBOARD · " + count.uppercased()
     }
 
     /// The dark purple the lime card's words are set in.

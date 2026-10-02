@@ -244,6 +244,14 @@ extension GameScene {
         clearPlacedDigits(from: multiplierLabel)
         multiplierLabel.text = "NEW HI-SCORE"
         multiplierLabel.fontColor = brickGreenGigaball
+        if endlessBestBeatenPulsed == false {
+            endlessBestBeatenPulsed = true
+            pulse(scoreLabel)
+        }
+        // **The height takes the same beat a hundred metres gets** (James, round 360: "It
+        // should also animate in the same way when the height passes the current hi score").
+        // Once a run, on the metre it happens - this is asked again on every metre after it
+        // and on a resume, and a pulse each time would be a label that never stops beating
         // Left showing rather than removed - the run is now writing the number that will be
         // sitting there next time
     }

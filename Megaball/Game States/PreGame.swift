@@ -88,6 +88,7 @@ class PreGame: GKState {
         // settle clock must not read it as a gap to close (round 350, `endlessFieldIsLaidOut`)
         scene.totalScore = 0
         scene.endlessBestBeaten = false
+        scene.endlessBestBeatenPulsed = false
         // A new run has not beaten anything yet - see `refreshEndlessIIBest`, where the flag is
         // sticky *within* a run so a resume cannot take the news back
         InGameRecents.shared.reset()

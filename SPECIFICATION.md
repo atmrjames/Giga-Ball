@@ -467,6 +467,13 @@ that screen, whose Continue starts the next level. `ResumeTransitionTests` drive
   day's board when tapped. The daily menu's card shows the same board, lime when the player
   leads, in place of the posted score once there is a board to show.
 
+- **Every leaderboard button opens its own board** (round 360): a game over's Game Center
+  heading - trophy, words and chevron, dressed as Statistics - and its button open the run's
+  board; Endless's and Mayhem's screens open their best height (`GameMode.modeLeaderboard`) and
+  Classic's pack screen its total. Only the information screen still opens the full list.
+- **Result screens beep as they count** (round 360): the countdown's beep on each tick of the
+  count-up, rising, under In-Game Sound (`TallySound`).
+
 Game Center can be disabled in settings.
 
 ---
@@ -485,6 +492,7 @@ Game Center can be disabled in settings.
 | Perspective Zoom | on / off: the tilt-based motion on menu backgrounds (was "Parallax"), and off whenever the system's Reduce Motion is on |
 | Paddle Speed | a slider from 1.0 to 5.0 in quarter steps, with a practice field (5.0 from round 346) |
 | Swipe Up To Pause | on / off |
+| Daily Result Pop-Up | on / off, on by default: the main menu's Settings only. Whether the first launch after a posted daily closes says how it went (round 360, daily spec §11.6) |
 | Reset Ball | the pause menu's settings only: puts a stuck ball back on the paddle |
 
 From the pause menu, App Icon and Ball & Paddle Theme are left out, because both restyle a game

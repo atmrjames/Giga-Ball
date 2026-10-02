@@ -325,9 +325,9 @@ extension GameScene {
     func endlessIIPortalTheAimedLaunch(_ target: SKSpriteNode, angle: Double) {
         endlessIIPortalPaddleOwedTurn = false
         let speed = Double(ballSpeedLimit)
-        let from = target.position
+        let portal = endlessIIPortals().randomElement()
 
-        if let portal = endlessIIPortals().randomElement() {
+        if let portal {
             target.position = CGPoint(x: portal.position.x,
                                       y: portal.frame.maxY + target.size.height)
             target.physicsBody?.velocity = CGVector(dx: cos(angle)*speed,
@@ -341,7 +341,10 @@ extension GameScene {
             target.physicsBody?.velocity = CGVector(dx: cos(angle)*speed,
                                                     dy: -abs(sin(angle)*speed))
         }
-        endlessIIShowPortalJump(from: from, to: target.position)
+        endlessIIShowPortalJump(from: paddle.position,
+                                to: portal.map(endlessIIPortalCentre) ?? target.position)
+        // From the paddle's centre to the portal's, or to where the ball re-enters at the top
+        // when there is no portal to go through (round 360)
         if hapticsSetting { mediumHaptic.impactOccurred() }
         playMayhemSound("paddlePortal", or: "portalJump")
     }
