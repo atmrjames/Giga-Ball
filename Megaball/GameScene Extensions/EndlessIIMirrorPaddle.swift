@@ -17,10 +17,14 @@
 //
 //  Four decisions, each of which was a way of getting it wrong:
 //
-//  - **Its own collision category**, the Safety Paddle's lesson applied a second time. The
-//    paddle's would spend a paddle turn and count a landing, and Aimed Sticky, Portal Paddle
-//    and Magnetism all answer paddle contacts - a ball caught by a power-up on a paddle the
-//    player is not touching is a ball nobody can launch.
+//  - **Its own collision category**, the Safety Paddle's lesson applied a second time - kept
+//    for the bounce, which is the mirror's own. **What a landing *means* is the paddle's
+//    since round 362** (James: "mirror paddle should act just like the main paddle - collect
+//    power ups, have power ups applied, etc"): it spends every paddle-hit turn, counts as a
+//    paddle hit, and holds the ball for Sticky and Aimed Sticky. The first version refused
+//    all three on the grounds that "a ball caught on a paddle the player is not touching is a
+//    ball nobody can launch" - but a launch is a tap, wherever the ball is waiting, and the
+//    Safety Paddle has held balls that way since round 285.
 //  - **It bounces like a paddle, not like a wall.** The Safety Paddle uses the backstop's
 //    arithmetic because it is furniture; this is a paddle, so it bends the bounce by where the
 //    ball landed across its face, through the same `PaddleBounce` call the real one makes. A
@@ -43,8 +47,8 @@ extension GameScene {
     /// It was twelve seconds, but the seconds were never wired to any run-down loop, so the
     /// mirror simply never left and its ring never moved (James, round 180: "it wasn't
     /// counting down it's segments, it just remained on the whole time"). Paddle hits now,
-    /// like the rest of the paddle batch - and hits on the *real* paddle only, because
-    /// `endlessIIMirrorPaddleHit` deliberately spends nothing.
+    /// like the rest of the paddle batch - on either paddle since round 362, when a landing on
+    /// the twin became a landing like any other.
     static let endlessIIMirrorPaddleTurns = Int(GameScene.endlessIIPaddlePowerUpTurns)
 
     static let endlessIIMirrorPaddleName = "endlessIIMirrorPaddle"
@@ -419,6 +423,7 @@ extension GameScene {
                 as? SKSpriteNode else { return }
 
         guard endlessIIMirrorPaddleIsUp else {
+            endlessIIHandMirrorHeldBallsToThePaddle()
             mirror.name = nil
             // Renamed first, so a second tick before the fade finishes does not queue a
             // second removal on the same node
@@ -460,6 +465,15 @@ extension GameScene {
         }
         dressEndlessIIMirrorTurrets(mirror)
         tickEndlessIIMirrorWrapGhost(mirror)
+        endlessIIMirrorCollectsDrops(mirror)
+        if let ghost = childNode(withName: GameScene.endlessIIMirrorWrapGhostName)
+            as? SKSpriteNode {
+            endlessIIMirrorCollectsDrops(ghost)
+        }
+        // **Every frame** (James, round 362: "mirror paddle should ... collect power ups"). The
+        // overlap test round 312 wrote is right, and it was only ever asked once - as the
+        // mirror appeared - so from its second frame on the twin caught nothing. The wrap
+        // ghost is asked too, as the paddle's own ghost catches like the paddle
         showEndlessIIPaddleShadow()
         // Every frame: it follows the paddle's position and its drawn size, which is a
         // position and a size write rather than anything rebuilt
@@ -472,16 +486,20 @@ extension GameScene {
         // the sprite carries - one missed frame here and the mirror flashes white
     }
 
-    /// The ball met the mirror. Returns it the way the paddle would have.
+    /// The ball met the mirror. Takes the landing the way the paddle would, and returns the ball
+    /// the way the paddle would have.
     ///
     /// `PaddleBounce`'s own call, at influence 1: where the ball lands across the mirror's
     /// face is exactly as much of the answer as it is on the real paddle. The heading is
     /// sampled from before the step (§8.6) - a contact reports the velocity the engine has
     /// already bounced, and bending that one bends it twice.
     ///
-    /// Nothing here spends a paddle turn, counts a paddle hit, or touches the aim. Every
-    /// power-up that answers a paddle contact stays out of it, which is the whole reason this
-    /// surface has a category of its own.
+    /// **A landing like the paddle's since round 362** (James: "Paddle hit counter power ups
+    /// not lowering by 1 count when the ball hits the mirror paddle", and "mirror paddle should
+    /// act just like the main paddle"). It used to spend nothing and count nothing, on purpose,
+    /// which made the twin the way to make every paddle-hit power-up last for ever. It now goes
+    /// through `countPaddleLanding` - the turns, the hit tallies, and the once-a-frame guard
+    /// shared with the paddle - and holds the ball where Sticky or Aimed Sticky would.
     func endlessIIMirrorPaddleHit(_ subject: SKSpriteNode) {
         guard let mirror = childNode(withName: GameScene.endlessIIMirrorPaddleName)
                 as? SKSpriteNode else { return }
@@ -489,38 +507,60 @@ extension GameScene {
         guard subject.position.y >= mirror.position.y else { return }
         // The top face only, as on the real paddle: a ball meeting the end or the underside
         // keeps whatever the engine gave it
+        guard endlessIIHeldBalls.contains(where: { $0 === subject }) == false else { return }
+        guard subject !== ball || ballIsOnPaddle == false else { return }
+        // A ball already held is resting, not landing - and a primary ball waiting on the
+        // paddle is not on the twin at all, whatever a contact says, as `paddleHit` refuses it
 
-        if soundsSetting { run(ballPaddleHitSound) }
+        endlessIINotedProgress()
+        if subject === ball {
+            ballLoopDetector.playerIntervened()
+            endlessIIPortalDriftDegrees = 0
+        }
+        // The same evidence of a live rally the paddle gives - see `paddleHit`
+        guard countPaddleLanding(subject) else { return }
+
+        let caught = endlessIIMirrorCaught(subject, on: mirror)
+        endlessIIAimedStickyOwedTurn = false
+        // Spent by this contact whichever way the catch went, as the paddle spends it (round
+        // 275's field-hold fault, which a snapshot left set would bring straight back)
+        if caught { return }
+
+        if soundsSetting {
+            if endlessIIBallSpinIsRunning, let spin = GameScene.mayhemSound("ballSpinPaddleHit") {
+                run(spin)
+            } else {
+                run(ballPaddleHitSound)
+            }
+        }
         if hapticsSetting { lightHaptic.impactOccurred() }
 
-        if endlessIIApplyShapedBounce(to: subject) { return }
-        // **The shape decides here too, exactly as it does on the paddle** (round 213). The
-        // engine has already reflected the ball off the mirror's traced silhouette by the time
-        // this contact is reported, and that reflection *is* the answer - so the formula below
-        // stands down rather than being layered on top of it. Round 211 gave the mirror the
-        // shaped face through `PaddleBounce.shaped`, which was right until the shapes stopped
-        // being formulas: left alone, the twin would have gone on giving the old curve while
-        // the paddle beside it gave the artwork's
-
         let arriving = ballStateBeforeStep[ObjectIdentifier(subject)]?.velocity ?? body.velocity
-        var twinX = mirror.position.x
-        if endlessIIWrapIsRunning, abs(subject.position.x - twinX) > gameWidth/2 {
-            twinX += subject.position.x > twinX ? gameWidth : -gameWidth
-        }
-        // Measured against whichever copy the ball met - the twin or its wrap ghost on the far
-        // side (`tickEndlessIIMirrorWrapGhost`) - as `endlessIIPaddleXNearest` does for the
-        // paddle. Against the twin a field away, a ghost landing is an edge hit at full angle
+        let twinX = endlessIIMirrorXNearest(to: subject.position.x, mirror: mirror)
         let collision = PaddleBounce.collision(ballX: subject.position.x,
                                                paddleX: twinX,
                                                paddleWidth: mirror.size.width)
         let clamped = min(max(collision, -1), 1)
 
-        if endlessIIMirrorPortalTook(subject, collision: clamped) { return }
+        if endlessIIPaddlePortalTook(subject, collision: clamped) { return }
         // **The twin has a portal of its own** (James, round 284: "yes - a mirrored paddle gets
-        // its own portal, and both send the ball to the top"). Asked before the bounce is
-        // written, exactly as the paddle asks it, because a portal is the paddle deciding not
-        // to bounce at all - and the ball is put back at the top from `didSimulatePhysics`,
-        // since a position written inside a contact is undone by the rest of the step (§8.6)
+        // its own portal, and both send the ball to the top"). The paddle's own question now,
+        // since round 362: the landing above has spent the Portal Paddle's turn like any other
+        // paddle hit, so the portal asks the owed turn exactly as the paddle's does - and the
+        // ball is put back at the top from `didSimulatePhysics`, since a position written inside
+        // a contact is undone by the rest of the step (§8.6)
+
+        if endlessIIApplyShapedBounce(to: subject) {
+            endlessIIGripBall(subject, collision: clamped)
+            _ = endlessIIApplyAutoAim(to: subject)
+            invisibleBrickFlash()
+            return
+        }
+        // **The shape decides here too, exactly as it does on the paddle** (round 213). The
+        // engine has already reflected the ball off the mirror's traced silhouette by the time
+        // this contact is reported, and that reflection *is* the answer - so the formula below
+        // stands down rather than being layered on top of it. After the portal, which is the
+        // paddle's order: a portal is the paddle deciding not to bounce at all
 
         body.velocity = PaddleBounce.velocity(arriving: arriving,
                                               collision: PaddleBounce.shaped(
@@ -531,21 +571,156 @@ extension GameScene {
                                               speed: hypot(arriving.dx, arriving.dy))
         _ = endlessIIApplyAutoAim(to: subject)
         endlessIIGripBall(subject, collision: clamped)
+        invisibleBrickFlash()
         // **The twin answers to the paddle's own power-ups** (round 225's matrix: the mirror
         // also becomes inert, also has the bounce angle flipped, and a ball is directed at the
-        // aimed brick "regardless of the paddle it bounces off"). The influence used to be a
-        // hard 1 here, which made the mirror the one surface in the mode an Inert Paddle could
-        // not reach - and a power-up that switches off half the paddles is a power-up that
-        // reads as broken. The aim and the grip follow the paddle's own order
-        // Clamped rather than refused past the ends: the engine only reports a contact where
-        // the bodies actually met, so a fraction outside the face is the corner of it.
+        // aimed brick "regardless of the paddle it bounces off"). The aim and the grip follow
+        // the paddle's own order. Clamped rather than refused past the ends: the engine only
+        // reports a contact where the bodies actually met, so a fraction outside the face is
+        // the corner of it.
         //
         // **Shaped like the paddle** (round 211): with a shaped face running, the mirror gives
-        // the same bounce the real paddle would - and shows the same curve. The twin follows
-        // the paddle, and a bounce surface that looked shaped and answered flat would be the
-        // one parity worth refusing.
-        //
-        // `shaped` is reached only by a face with no artwork, which is the same fallback the
-        // paddle keeps in `paddleHit` - the two answer a shape the same way at every step
+        // the same bounce the real paddle would - and shows the same curve. `shaped` is reached
+        // only by a face with no artwork, which is the same fallback the paddle keeps in
+        // `paddleHit`
+    }
+
+    /// The x of whichever copy of the twin a ball at `x` met: the twin itself, or its wrap
+    /// ghost a field's width away (`tickEndlessIIMirrorWrapGhost`), as
+    /// `endlessIIPaddleXNearest` answers for the paddle.
+    func endlessIIMirrorXNearest(to x: CGFloat, mirror: SKSpriteNode) -> CGFloat {
+        var twinX = mirror.position.x
+        if endlessIIWrapIsRunning, abs(x - twinX) > gameWidth/2 {
+            twinX += x > twinX ? gameWidth : -gameWidth
+        }
+        return twinX
+    }
+
+    // MARK: - Holding the ball
+
+    /// Holds a ball that has landed on the mirror, if Sticky or Aimed Sticky is running.
+    ///
+    /// James, round 362, choosing between three answers: the mirror **holds the ball**. It
+    /// rides the twin - the other way to the finger - and a tap launches it from there, by the
+    /// paddle's own launch arithmetic measured across the twin's width.
+    ///
+    /// Built on the Safety Paddle's catch (round 285), because the problem is the same one: a
+    /// ball waiting somewhere other than the paddle. It joins the one launch queue, oldest out
+    /// first, with its spot kept as a share of the twin's half-width, and
+    /// `endlessIIMirrorHeldBalls` says which surface it is a share of. The primary ball is
+    /// held there the same way, without `ballIsOnPaddle`, which is the flag for the ball the
+    /// 2020 code carries on the paddle itself.
+    ///
+    /// Sticky catches in the same band the paddle does, a third of a ball in from each end;
+    /// Aimed Sticky anywhere on the top face, and not while the paddle is inert - both the
+    /// paddle's own rules. Inert Paddle's launch angle is the paddle's main-ball refinement and
+    /// stays there: a held twin ball leaves by its spot, as a held extra does.
+    @discardableResult
+    func endlessIIMirrorCaught(_ subject: SKSpriteNode, on mirror: SKSpriteNode) -> Bool {
+        guard gameMode == .endlessII else { return false }
+        let aiming = endlessIIAimedCatchWillHappen
+        guard stickyPaddleCatches != 0 || aiming else { return false }
+        guard endlessIIHeldBalls.contains(where: { $0 === subject }) == false else { return false }
+
+        let twinX = endlessIIMirrorXNearest(to: subject.position.x, mirror: mirror)
+        let half = mirror.size.width/2
+        guard half > 0 else { return false }
+        if aiming == false {
+            guard abs(subject.position.x - twinX) < half - subject.size.width/3 else { return false }
+        }
+        // The sticky band, as `paddleHit` judges it; an aimed catch takes the whole top face
+
+        let share = min(max((subject.position.x - twinX)/half, -1), 1)
+        subject.physicsBody?.velocity = .zero
+        endlessIIHeldBalls.append(subject)
+        endlessIIHeldOffsets.append(share)
+        endlessIIMirrorHeldBalls.insert(ObjectIdentifier(subject))
+        setEndlessIIHeldBallRestsOnPaddle(true, for: subject)
+        endlessIIPlaceMirrorHeldBall(subject, share: share, on: mirror)
+
+        if aiming {
+            if endlessIIAimedStickyClock.hasTurns == false {
+                endlessIIAimedStickyOwedTurn = false
+                endlessIIAimOwedHold = true
+            }
+            endlessIIAimDefaultAngles[ObjectIdentifier(subject)] =
+                endlessIIWouldHaveBouncedAngle(subject, offSurfaceAt: twinX,
+                                               width: mirror.size.width,
+                                               surface: endlessIIMirrorPaddleSurface)
+            endlessIIBeginAimHold()
+            // The paddle's aimed catch in the same order: the last catch of an expired clock
+            // still catches, the arrow has a direction before the finger says anything, and the
+            // hold is what everything downstream asks. The aim's target is the head of the
+            // queue, so a ball on the twin is aimed from where it sits on the twin
+        }
+
+        if soundsSetting { run(stickyPaddleHitSound) }
+        if hapticsSetting { lightHaptic.impactOccurred() }
+        return true
+    }
+
+    /// Whether this ball is waiting on the Mirror Paddle.
+    func endlessIIIsHeldOnMirror(_ subject: SKSpriteNode) -> Bool {
+        endlessIIMirrorHeldBalls.contains(ObjectIdentifier(subject))
+    }
+
+    /// Puts a held ball at its spot on the twin, resting on the twin's face.
+    ///
+    /// The twin's face is the paddle's reflected, so its height at a spot is the paddle's at
+    /// the opposite spot - which is what `restingBallY` is asked for.
+    func endlessIIPlaceMirrorHeldBall(_ held: SKSpriteNode, share: CGFloat,
+                                      on mirror: SKSpriteNode) {
+        let across = share*mirror.size.width/2
+        held.position = CGPoint(x: mirror.position.x + across,
+                                y: restingBallY(atOffsetFromCentre: -across))
+        held.physicsBody?.velocity = .zero
+    }
+
+    /// The share across the twin a held ball sits at, for its launch angle. Nil when the twin
+    /// has gone, and the caller falls back to the paddle's arithmetic.
+    func endlessIIMirrorOffset(of subject: SKSpriteNode) -> Double? {
+        guard let mirror = childNode(withName: GameScene.endlessIIMirrorPaddleName)
+                as? SKSpriteNode, mirror.size.width > 0 else { return nil }
+        let twinX = endlessIIMirrorXNearest(to: subject.position.x, mirror: mirror)
+        return Double((subject.position.x - twinX)/(mirror.size.width/2))
+    }
+
+    /// The launch angle off a shaped twin: the paddle's face reflected, so the angle off the
+    /// spot opposite, turned the other way.
+    func endlessIIMirrorShapedLaunchAngle(for subject: SKSpriteNode) -> Double? {
+        guard endlessIIShapeOwnsTheBounce, let texture = paddle.texture,
+              let offset = endlessIIMirrorOffset(of: subject) else { return nil }
+        let across = CGFloat(offset)*paddle.size.width/2
+        guard let angle = PaddleOutline.launchAngle(for: texture, size: paddle.size,
+                                                    atOffsetFromCentre: -across,
+                                                    ballRadius: subject.size.width/2,
+                                                    minimumDeg: minAngleDeg)
+        else { return nil }
+        return Double.pi - angle
+    }
+
+    /// Moves what the twin was holding onto the paddle, as the twin goes.
+    ///
+    /// A catch spends the mirror's own turn, so its last catch takes it away with a ball on it.
+    /// The ball is not dropped or fired: it moves to the same spot on the paddle and waits for
+    /// its tap there, which is the one place a held ball is never in the way of anything. The
+    /// primary ball becomes the ball on the paddle again, as the 2020 code carries it.
+    func endlessIIHandMirrorHeldBallsToThePaddle() {
+        guard endlessIIMirrorHeldBalls.isEmpty == false else { return }
+        for (index, held) in endlessIIHeldBalls.enumerated() where endlessIIIsHeldOnMirror(held) {
+            endlessIIMirrorHeldBalls.remove(ObjectIdentifier(held))
+            let share = endlessIIHeldOffsets.indices.contains(index) ? endlessIIHeldOffsets[index] : 0
+            let across = share*endlessIIPaddleHalfWidth
+            held.position = CGPoint(x: paddle.position.x + across,
+                                    y: restingBallY(atOffsetFromCentre: across))
+            held.physicsBody?.velocity = .zero
+            if held === ball {
+                ballIsOnPaddle = true
+                ballRelativePositionOnPaddle = across
+                // The state a paddle catch leaves it in: on the paddle, and still in the queue,
+                // where `endlessIIFirstBallWasCaught` puts a primary ball the paddle catches
+            }
+        }
+        endlessIIMirrorHeldBalls.removeAll()
     }
 }

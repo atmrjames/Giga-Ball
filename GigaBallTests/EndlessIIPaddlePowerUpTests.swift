@@ -1366,15 +1366,20 @@ final class EndlessIIDoublePaddleTests: XCTestCase {
 /// row: "a mirrored second paddle that travels the other way".
 ///
 /// The queue priced this half as the expensive one - "somewhere else on the screen", so a real
-/// second surface with a real second contact path - and it is. What is worth pinning is that
-/// the second surface behaves like a paddle without *being* the paddle: no paddle turn, no
-/// landing, and none of the power-ups that answer a paddle contact answering this one.
+/// second surface with a real second contact path - and it is. It began as a surface that
+/// behaved like a paddle without *being* one: no paddle turn, no landing. **Since round 362 it
+/// is one** (James: "mirror paddle should act just like the main paddle - collect power ups,
+/// have power ups applied, etc", and "Paddle hit counter power ups not lowering by 1 count when
+/// the ball hits the mirror paddle"), and the tests at the foot of this class say so.
 final class EndlessIIMirrorPaddleTests: XCTestCase {
 
     private func mayhem() -> GameScene {
         let scene = GameScene()
         scene.gameMode = .endlessII
         scene.totalStatsArray = [TotalStats()]
+        scene.ballIsOnPaddle = false
+        // The ball in play: a fresh scene has it waiting on the paddle, and a waiting ball is
+        // refused by the twin as by the paddle (round 362)
         scene.paddle.size = CGSize(width: 120, height: 12)
         scene.paddle.position = CGPoint(x: 60, y: -300)
         scene.addChild(scene.paddle)
@@ -1556,6 +1561,9 @@ final class EndlessIIMirrorPaddleTests: XCTestCase {
         guard let mirror = mirror(scene) else { return XCTFail("a mirror stands") }
 
         func outgoing(landingAt x: CGFloat) -> CGFloat {
+            scene.frameNumber += 1
+            // A landing each, in a frame of its own - the twin counts a ball once a frame,
+            // as the paddle does (round 362)
             scene.ball.position = CGPoint(x: mirror.position.x + x, y: mirror.position.y + 8)
             scene.ball.physicsBody?.velocity = CGVector(dx: 0, dy: -300)
             scene.endlessIIMirrorPaddleHit(scene.ball)
@@ -1775,6 +1783,162 @@ final class EndlessIIMirrorPaddleTests: XCTestCase {
         scene.endlessIIMirrorPaddleHit(ball)
         XCTAssertEqual(ball.physicsBody?.velocity.dy ?? 0, arriving.dy, accuracy: 0.001,
                        "a ball meeting the underside keeps whatever the engine gave it")
+    }
+
+    // MARK: - Round 362: a paddle like the other one
+
+    /// A primary ball in play, landing on the twin's top face.
+    private func landOnTheMirror(_ scene: GameScene, mirror: SKSpriteNode, at x: CGFloat = 0) {
+        if scene.ball.parent == nil { scene.addChild(scene.ball) }
+        if scene.ball.physicsBody == nil { scene.ball.physicsBody = SKPhysicsBody(circleOfRadius: 7) }
+        scene.ball.size = CGSize(width: 14, height: 14)
+        scene.ballIsOnPaddle = false
+        // In play, not waiting on the paddle to be served
+        scene.frameNumber += 1
+        scene.ball.position = CGPoint(x: mirror.position.x + x, y: mirror.position.y + 8)
+        scene.ball.physicsBody?.velocity = CGVector(dx: 0, dy: -400)
+        scene.endlessIIMirrorPaddleHit(scene.ball)
+    }
+
+    /// "Paddle hit counter power ups not lowering by 1 count when the ball hits the mirror
+    /// paddle."
+    func testALandingOnTheMirrorSpendsEveryPaddleHitTurn() {
+        let scene = mayhem()
+        scene.endlessIICollectMirrorPaddle()
+        scene.endlessIICollectInertPaddle()
+        guard let mirror = mirror(scene) else { return XCTFail("a mirror stands") }
+        let inert = scene.endlessIIInertPaddleClock.remaining
+        let twin = scene.endlessIIMirrorPaddleClock.remaining
+
+        landOnTheMirror(scene, mirror: mirror)
+
+        XCTAssertEqual(scene.endlessIIInertPaddleClock.remaining, inert - 1, accuracy: 0.001)
+        XCTAssertEqual(scene.endlessIIMirrorPaddleClock.remaining, twin - 1, accuracy: 0.001,
+                       "the twin's own counter too, as the paddle's hits spend it")
+    }
+
+    /// A landing on the twin is a paddle hit on every tally the paddle keeps.
+    func testALandingOnTheMirrorCountsAsAPaddleHit() {
+        let scene = mayhem()
+        scene.endlessIICollectMirrorPaddle()
+        guard let mirror = mirror(scene) else { return XCTFail("a mirror stands") }
+        let hits = scene.totalStatsArray[0].ballHits
+        landOnTheMirror(scene, mirror: mirror)
+        XCTAssertEqual(scene.totalStatsArray[0].ballHits, hits + 1)
+    }
+
+    /// Where the two cross in the middle a ball can meet both in one frame: one landing.
+    func testOneBallMeetingBothPaddlesInAFrameIsOneLanding() {
+        let scene = mayhem()
+        scene.endlessIICollectMirrorPaddle()
+        guard let mirror = mirror(scene) else { return XCTFail("a mirror stands") }
+        let twin = scene.endlessIIMirrorPaddleClock.remaining
+        landOnTheMirror(scene, mirror: mirror)
+        XCTAssertFalse(scene.countPaddleLanding(scene.ball), "the paddle's contact, same frame")
+        XCTAssertEqual(scene.endlessIIMirrorPaddleClock.remaining, twin - 1, accuracy: 0.001)
+    }
+
+    /// "Mirror paddle should ... collect power ups." Round 312's overlap test was only ever
+    /// asked as the mirror appeared, so from its second frame on it caught nothing.
+    func testTheMirrorCatchesADropThatArrivesLater() {
+        let scene = mayhem()
+        scene.endlessIICollectMirrorPaddle()
+        guard let mirror = mirror(scene) else { return XCTFail("a mirror stands") }
+        scene.ballLostBool = false
+
+        scene.tickEndlessIIMirrorPaddle()
+        let drop = SKSpriteNode(color: .white, size: CGSize(width: 20, height: 20))
+        drop.name = PowerUpCategoryName
+        drop.zPosition = 2
+        drop.position = mirror.position
+        drop.physicsBody = SKPhysicsBody(rectangleOf: drop.size)
+        drop.physicsBody?.isDynamic = false
+        scene.addChild(drop)
+        scene.tickEndlessIIMirrorPaddle()
+
+        XCTAssertEqual(drop.zPosition, 1, "taken on a later frame, not only the first")
+    }
+
+    /// "Have power ups applied": with Sticky running, the twin holds the ball.
+    func testAStickyMirrorHoldsTheBallAndItRidesTheTwin() {
+        let scene = mayhem()
+        scene.endlessIICollectMirrorPaddle()
+        guard let mirror = mirror(scene) else { return XCTFail("a mirror stands") }
+        scene.stickyPaddleCatches = 3
+
+        landOnTheMirror(scene, mirror: mirror, at: 20)
+
+        XCTAssertTrue(scene.endlessIIIsHeldOnMirror(scene.ball), "held on the twin")
+        XCTAssertEqual(scene.ball.physicsBody?.velocity ?? .zero, .zero)
+        XCTAssertFalse(scene.ballIsOnPaddle, "on the twin, not the paddle")
+        XCTAssertTrue(scene.endlessIITapLaunchesHeldBall, "and a tap is what frees it")
+
+        scene.paddle.position.x += 30
+        scene.tickEndlessIIMirrorPaddle()
+        scene.tickEndlessIIHeldBalls()
+        XCTAssertEqual(scene.ball.position.x, mirror.position.x + 20, accuracy: 0.5,
+                       "it rides the twin, which went the other way")
+        XCTAssertEqual(mirror.position.x, -scene.paddle.position.x, accuracy: 0.001)
+    }
+
+    /// The tap launches it upward off the twin, by its spot, and spends a Sticky catch.
+    func testATapLaunchesTheTwinsBallAndSpendsACatch() {
+        let scene = mayhem()
+        scene.endlessIICollectMirrorPaddle()
+        guard let mirror = mirror(scene) else { return XCTFail("a mirror stands") }
+        scene.stickyPaddleCatches = 3
+        scene.ballSpeedLimit = 400
+        landOnTheMirror(scene, mirror: mirror, at: 30)
+
+        scene.endlessIILaunchHeldBall()
+
+        XCTAssertGreaterThan(scene.ball.physicsBody?.velocity.dy ?? 0, 0, "it went up")
+        XCTAssertGreaterThan(scene.ball.physicsBody?.velocity.dx ?? 0, 0,
+                             "right of the twin's middle sends it right, as on the paddle")
+        XCTAssertFalse(scene.endlessIIIsHeldOnMirror(scene.ball))
+        XCTAssertEqual(scene.stickyPaddleCatches, 2)
+    }
+
+    /// The twin's last turn takes it away with a ball still on it: the ball moves onto the
+    /// paddle and waits for its tap there.
+    func testABallOnAVanishingTwinIsHandedToThePaddle() {
+        let scene = mayhem()
+        scene.endlessIICollectMirrorPaddle()
+        guard let mirror = mirror(scene) else { return XCTFail("a mirror stands") }
+        scene.stickyPaddleCatches = 3
+        landOnTheMirror(scene, mirror: mirror, at: 10)
+
+        scene.endlessIIMirrorPaddleClock = EndlessIIClock()
+        scene.tickEndlessIIMirrorPaddle()
+
+        XCTAssertFalse(scene.endlessIIIsHeldOnMirror(scene.ball))
+        XCTAssertTrue(scene.ballIsOnPaddle, "the paddle has it now")
+        XCTAssertEqual(scene.ball.position.x, scene.paddle.position.x + 10, accuracy: 0.5)
+    }
+
+    /// With Aimed Sticky the twin catches for aiming, and the aim is the twin's ball.
+    func testAnAimedStickyTwinCatchesForAiming() {
+        let scene = mayhem()
+        scene.endlessIICollectMirrorPaddle()
+        scene.endlessIICollectAimedSticky()
+        guard let mirror = mirror(scene) else { return XCTFail("a mirror stands") }
+
+        landOnTheMirror(scene, mirror: mirror, at: 40)
+
+        XCTAssertTrue(scene.endlessIIIsHeldOnMirror(scene.ball))
+        XCTAssertTrue(scene.endlessIIAimHold, "aiming")
+        XCTAssertTrue(scene.endlessIIAimTarget === scene.ball)
+        XCTAssertFalse(scene.endlessIIAimedStickyOwedTurn, "the contact's snapshot is spent")
+    }
+
+    /// Without Sticky running it bounces, as it always has.
+    func testWithoutStickyTheTwinStillBounces() {
+        let scene = mayhem()
+        scene.endlessIICollectMirrorPaddle()
+        guard let mirror = mirror(scene) else { return XCTFail("a mirror stands") }
+        landOnTheMirror(scene, mirror: mirror)
+        XCTAssertFalse(scene.endlessIIIsHeldOnMirror(scene.ball))
+        XCTAssertGreaterThan(scene.ball.physicsBody?.velocity.dy ?? 0, 0)
     }
 }
 
@@ -4380,6 +4544,9 @@ final class PaddleFamilyParityTests: XCTestCase {
         let scene = GameScene()
         scene.gameMode = .endlessII
         scene.totalStatsArray = [TotalStats()]
+        scene.ballIsOnPaddle = false
+        // The ball in play: a fresh scene has it waiting on the paddle, and a waiting ball is
+        // refused by the twin as by the paddle (round 362)
         scene.layoutUnit = 40
         scene.ballSize = 14
         scene.paddleWidth = 120
@@ -4436,22 +4603,23 @@ final class PaddleFamilyParityTests: XCTestCase {
                           + "away free would make the mirror the way to farm the power-up")
     }
 
-    /// The mirror must not eat the promise the paddle made to itself.
-    func testAMirrorHitLeavesThePaddlesOwedPortalAlone() {
+    /// A landing on the twin spends the Portal Paddle's turn once - the landing pays for it and
+    /// the portal uses what was paid, exactly as on the paddle (round 362). Before, the landing
+    /// spent nothing and the portal spent its own; spending both would be two for one.
+    func testTheMirrorsPortalSpendsOneTurnNotTwo() {
         let scene = mayhem()
         scene.endlessIICollectMirrorPaddle()
         scene.endlessIICollectPortalPaddle()
         guard let mirror = mirror(scene) else { return XCTFail("a mirror stands") }
-        scene.endlessIIPortalPaddleOwedTurn = true
+        let before = scene.endlessIIPortalPaddleClock.remaining
 
         scene.ball.position = CGPoint(x: mirror.position.x, y: mirror.position.y + 8)
         scene.ball.physicsBody = SKPhysicsBody(circleOfRadius: 7)
         scene.ball.physicsBody?.velocity = CGVector(dx: 0, dy: -400)
         scene.endlessIIMirrorPaddleHit(scene.ball)
 
-        XCTAssertTrue(scene.endlessIIPortalPaddleOwedTurn,
-                      "that flag is the paddle's promise that an effect already paid for still "
-                      + "lands; a mirror contact in the same step must not consume it")
+        XCTAssertEqual(scene.endlessIIPortalPaddleClock.remaining, before - 1, accuracy: 0.001)
+        XCTAssertFalse(scene.endlessIIPortalPaddleOwedTurn, "and the turn it paid is used")
     }
 
     func testWithNoPortalRunningTheMirrorStillJustBounces() {

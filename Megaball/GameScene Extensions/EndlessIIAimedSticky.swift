@@ -222,7 +222,8 @@ extension GameScene {
     /// give different answers.
     func endlessIIWouldHaveBouncedAngle(_ subject: SKSpriteNode,
                                         offSurfaceAt surfaceX: CGFloat,
-                                        width: CGFloat) -> Double {
+                                        width: CGFloat,
+                                        surface: PaddleBounce.Surface?? = nil) -> Double {
         let arriving = ballStateBeforeStep[ObjectIdentifier(subject)]?.velocity
             ?? subject.physicsBody?.velocity ?? .zero
         guard width > 0 else {
@@ -233,7 +234,9 @@ extension GameScene {
         let degrees = PaddleBounce.angleDegrees(
             arriving: arriving,
             collision: PaddleBounce.shaped(min(max(collision, -1), 1),
-                                           by: endlessIIPaddleSurface),
+                                           by: surface ?? endlessIIPaddleSurface),
+            // The surface the ball met: the paddle's shape, or the Mirror Paddle's reflection
+            // of it (round 362)
             adjustmentK: angleAdjustmentK,
             influence: endlessIIPaddleAngleInfluence,
             minimumDeg: minAngleDeg)

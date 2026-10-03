@@ -53,6 +53,7 @@ extension GameScene {
         where endlessIIHeldBalls[index].parent == nil {
             setEndlessIIHeldBallRestsOnPaddle(false, for: endlessIIHeldBalls[index])
             endlessIISafetyHeldBalls.remove(ObjectIdentifier(endlessIIHeldBalls[index]))
+            endlessIIMirrorHeldBalls.remove(ObjectIdentifier(endlessIIHeldBalls[index]))
             endlessIIHeldBalls.remove(at: index)
             if endlessIIHeldOffsets.indices.contains(index) {
                 endlessIIHeldOffsets.remove(at: index)
@@ -67,7 +68,7 @@ extension GameScene {
     var endlessIITapLaunchesHeldBall: Bool {
         guard gameMode == .endlessII else { return false }
         guard let next = endlessIINextHeldBall else { return false }
-        return next !== ball || endlessIIIsHeldOnSafetyBar(next)
+        return next !== ball || endlessIIIsHeldOnSafetyBar(next) || endlessIIIsHeldOnMirror(next)
         // **The first ball counts too when it is on the safety bar** (round 285). It is excluded
         // here because a first ball resting on the *paddle* at the start of a life is launched
         // by `releaseBall`, which is six years of code this queue does not want to duplicate -
@@ -161,6 +162,10 @@ extension GameScene {
     func setEndlessIIHeldBallRestsOnPaddle(_ held: Bool, for subject: SKSpriteNode) {
         guard let body = subject.physicsBody else { return }
         let bit = CollisionTypes.paddleCategory.rawValue
+            | CollisionTypes.mirrorPaddleCategory.rawValue
+        // **Both paddles** (round 362): a held ball rides one of them, and the two pass through
+        // each other in the middle - a ball waiting on one is not something the other should
+        // shove, nor a fresh landing on it
         let collision = held ? body.collisionBitMask & ~bit : body.collisionBitMask | bit
         let contact = held ? body.contactTestBitMask & ~bit : body.contactTestBitMask | bit
         if body.collisionBitMask != collision { body.collisionBitMask = collision }
@@ -173,6 +178,7 @@ extension GameScene {
         endlessIIHeldBalls.remove(at: index)
         endlessIIHeldOffsets.remove(at: index)
         endlessIISafetyHeldBalls.remove(ObjectIdentifier(launched))
+        endlessIIMirrorHeldBalls.remove(ObjectIdentifier(launched))
         setEndlessIIHeldBallRestsOnPaddle(false, for: launched)
         endlessIIRefreshStickyPaddleLook()
     }
@@ -184,20 +190,17 @@ extension GameScene {
     /// middle leaves near enough straight up.
     func endlessIILaunchHeldBall() {
         guard let extra = endlessIINextHeldBall else { return }
-        guard extra !== ball || endlessIIIsHeldOnSafetyBar(extra) else { return }
+        guard extra !== ball || endlessIIIsHeldOnSafetyBar(extra)
+                || endlessIIIsHeldOnMirror(extra) else { return }
 
-        let offset: Double
-        if endlessIIIsHeldOnSafetyBar(extra) {
-            offset = endlessIISafetyBarOffset(of: extra)
-                ?? Double(endlessIIHeldShare(of: extra))
-        } else {
-            offset = Double(endlessIIHeldShare(of: extra))
-        }
+        let offset = endlessIIHeldLaunchOffset(of: extra)
         // Read off the ball's live position rather than out of the queue, because the two agree
         // now and the live one is also right for a ball the player has watched move: a ball
         // carried by a resize leaves at the angle where it *is*
-        let angle = (endlessIIIsHeldOnSafetyBar(extra) ? nil : endlessIIShapedLaunchAngle(for: extra))
-            ?? endlessIILaunchAngle(atPaddleOffset: offset)
+        let shaped = endlessIIIsHeldOnSafetyBar(extra) ? nil
+            : endlessIIIsHeldOnMirror(extra) ? endlessIIMirrorShapedLaunchAngle(for: extra)
+            : endlessIIShapedLaunchAngle(for: extra)
+        let angle = shaped ?? endlessIILaunchAngle(atPaddleOffset: offset)
         // A shaped face sends a held extra along its normal too, as it does the first ball
         // (round 360); the safety bar keeps its own rule
         // **The same arithmetic off a different surface** (James, round 284: a sticky safety
@@ -244,8 +247,18 @@ extension GameScene {
         pruneEndlessIIHeldBalls()
         guard endlessIIHeldBalls.isEmpty == false else { return }
 
-        for (index, held) in endlessIIHeldBalls.enumerated() where held !== ball {
+        let mirror = childNode(withName: GameScene.endlessIIMirrorPaddleName) as? SKSpriteNode
+        for (index, held) in endlessIIHeldBalls.enumerated()
+        where held !== ball || endlessIIIsHeldOnMirror(held) {
             guard held.parent != nil else { continue }
+            if endlessIIIsHeldOnMirror(held), let mirror {
+                let share = endlessIIHeldOffsets.indices.contains(index) ? endlessIIHeldOffsets[index] : 0
+                endlessIIPlaceMirrorHeldBall(held, share: share, on: mirror)
+                continue
+                // **A ball on the Mirror Paddle rides it** (round 362), the other way to the
+                // finger - the primary ball too, which the 2020 code only ever carries on the
+                // paddle. The twin has the paddle's width, so the share means the same thing
+            }
             if endlessIIIsHeldOnSafetyBar(held) {
                 held.physicsBody?.velocity = .zero
                 continue
@@ -325,9 +338,7 @@ extension GameScene {
             // And the flag has to come off, or the code that has kept the first ball on the
             // paddle since 2020 would carry it straight back down
 
-            let offset = endlessIIIsHeldOnSafetyBar(held)
-                ? (endlessIISafetyBarOffset(of: held) ?? Double(endlessIIHeldShare(of: held)))
-                : Double(endlessIIHeldShare(of: held))
+            let offset = endlessIIHeldLaunchOffset(of: held)
             // Whichever surface is holding it, the same way `endlessIILaunchHeldBall` asks
             let angle = endlessIILaunchAngle(atPaddleOffset: offset)
             held.physicsBody?.velocity = CGVector(dx: cos(angle)*Double(ballSpeedLimit),
@@ -352,7 +363,22 @@ extension GameScene {
         endlessIIHeldBalls.removeAll()
         endlessIIHeldOffsets.removeAll()
         endlessIISafetyHeldBalls.removeAll()
+        endlessIIMirrorHeldBalls.removeAll()
         // Every ball gets the paddle back, or a queue emptied by a Wipe would leave balls
         // falling through the paddle for the rest of the run
+    }
+
+    /// Where across its surface a held ball is, as a share of that surface's half-width - the
+    /// number its launch angle is read from. The safety bar's, the Mirror Paddle's (round 362)
+    /// or the paddle's, whichever it is waiting on; a surface that has gone answers with the
+    /// paddle's, which is the same arithmetic off a surface the same width.
+    func endlessIIHeldLaunchOffset(of held: SKSpriteNode) -> Double {
+        if endlessIIIsHeldOnSafetyBar(held), let offset = endlessIISafetyBarOffset(of: held) {
+            return offset
+        }
+        if endlessIIIsHeldOnMirror(held), let offset = endlessIIMirrorOffset(of: held) {
+            return offset
+        }
+        return Double(endlessIIHeldShare(of: held))
     }
 }

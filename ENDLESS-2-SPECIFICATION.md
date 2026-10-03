@@ -2959,6 +2959,35 @@ testers:
   falling power-up's position by `brickWidth`, so a bare `GameScene()` with a power-up on
   screen traps converting NaN to Int. A real scene is always laid out before play.
 
+**Round 362: the Mirror Paddle is a paddle.**
+
+James: "mirror paddle should act just like the main paddle - collect power ups, have power ups
+applied, etc", and "Paddle hit counter power ups not lowering by 1 count when the ball hits the
+mirror paddle". Asked how a sticky twin should hold the ball, he chose the full answer: it holds
+it. This supersedes the parity matrix's mirror row (rounds 200 to 285), which kept the twin
+apart from paddle contacts on purpose.
+
+- **It catches drops on every frame.** Round 312's overlap test (`endlessIIMirrorCollectsDrops`)
+  was right and was only ever asked as the mirror appeared, so from its second frame on the twin
+  caught nothing. The paddle tick asks it now, of the twin and of its wrap ghost.
+- **A landing on it is a paddle landing.** `countPaddleLanding`, pulled out of `paddleHit`, is
+  the one rule for both: every running paddle-hit turn is spent, the hit goes on the level's,
+  run's and ball's tallies, and the once-a-frame guard is shared, so a ball meeting both where
+  they cross is one landing. Its portal now asks the paddle's owed turn
+  (`endlessIIPaddlePortalTook`); the mirror's own portal spent a turn of its own, which with the
+  landing paying as well would have been two for one, and is gone.
+- **Sticky and Aimed Sticky hold the ball on it** (`endlessIIMirrorCaught`), built on the Safety
+  Paddle's catch: the ball joins the one launch queue with its spot as a share of the twin's
+  half-width, `endlessIIMirrorHeldBalls` says which surface it rides, and the held-ball tick
+  carries it with the twin, the other way to the finger - the primary ball too, held there
+  without `ballIsOnPaddle`. A tap launches it by the paddle's launch rule measured across the
+  twin (a shaped twin by its reflected face), and spends the Sticky catch. Aimed Sticky aims from
+  it, and the aim point is carried the other way as the twin moves. The twin's last turn takes it
+  away with a ball on it, and the ball is handed to the paddle at the same spot to wait for its
+  tap (`endlessIIHandMirrorHeldBallsToThePaddle`).
+- A held ball is taken out of both paddles' collisions while it waits, since the two pass
+  through each other in the middle.
+
 **Round 361: James's notes on round 360 - the daily board's link, the statistics, the achievement pages, and a second list the same day.**
 
 - **Game Center cannot show a closed day.** Round 360 opened yesterday's occurrence, and on

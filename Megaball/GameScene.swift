@@ -1113,6 +1113,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     /// and a second list would be a second order - and this says which surface's width each
     /// one's landing spot is a fraction of.
     var endlessIISafetyHeldBalls: Set<ObjectIdentifier> = []
+
+    /// Which held balls are riding the Mirror Paddle (round 362). In the same queue, for the
+    /// same reason; this says which surface they ride and which width their spot is a share of.
+    var endlessIIMirrorHeldBalls: Set<ObjectIdentifier> = []
 	var powerUpProximity: Bool = false
     // Power up properties
     
@@ -2728,8 +2732,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			// Sets the paddle to match the new calculated position
 
 			if endlessIIAimHold, endlessIIAimTouched {
-				endlessIIAimTouchX += carried
+				let ridesTheMirror = endlessIIAimTarget.map(endlessIIIsHeldOnMirror) ?? false
+				endlessIIAimTouchX += ridesTheMirror ? -carried : carried
 			}
+			// A ball held on the Mirror Paddle rides it the other way (round 362), so the
+			// point it aims at is carried the other way too, or its angle swings as it moves
 			// **The aim rides the paddle** (James, play-test round 275: "when moving the
 			// paddle the aim arrow can snap down to a low angle").
 			//
@@ -5501,6 +5508,59 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		}
 	}
 
+    /// Counts a ball landing on a paddle: every running paddle-hit power-up spends its turn,
+    /// and the hit goes on the level's, the run's and the ball's tallies. False when this ball
+    /// has already landed this frame, which is the same landing reported twice.
+    ///
+    /// **The paddle's and the Mirror Paddle's** (James, round 362: "Paddle hit counter power ups
+    /// not lowering by 1 count when the ball hits the mirror paddle", and "mirror paddle should
+    /// act just like the main paddle"). Pulled out of `paddleHit` so the twin counts a landing
+    /// by the same rule rather than a copy of it - and shares the once-a-frame guard, so a ball
+    /// meeting both where they cross in the middle is one landing, not two.
+    @discardableResult
+    func countPaddleLanding(_ ball: SKSpriteNode) -> Bool {
+		if paddleLandingFrame[ObjectIdentifier(ball)] == frameNumber {
+			return false
+		}
+		paddleLandingFrame[ObjectIdentifier(ball)] = frameNumber
+		// **One landing, however many contacts the engine reports it as** (James, round 259:
+		// "each hit on a shaped paddle is taking off 2 segments from the power-up HUD icon").
+		//
+		// `paddleHit` has one call site and spends one turn, so two turns is two calls, and
+		// `didBegin` is reported per contacting *fixture* pair rather than per node. A dish or
+		// a wave traced from its picture is decomposed into several convex pieces - that is
+		// what `SKPhysicsBody(bodies:)` is for - so a ball landing where two of them meet
+		// begins contact with both, and the plain paddle, being one rounded rectangle, never
+		// did.
+		//
+		// Keyed per ball, because with Multi-Ball two balls genuinely can land in one frame
+		// and both should count. What cannot happen is the *same* ball landing twice in one
+		// frame: it has to leave the paddle and come back, and there is no time in a frame to
+		// do it. Guarding here rather than inside the spend, because everything below - the
+		// sound, the haptic, the bounce arithmetic - is equally about the landing and was
+		// equally being done twice.
+
+		endlessIISpendPaddleTurns()
+		// This contact is a turn for every running paddle power-up, whatever the paddle
+		// does with it below - a catch, a swallow or a bounce all count the same one
+		// A contact reported while the ball's centre is below the paddle's is not a landing.
+		// The paddle is taken out of a ball's way while it is underneath (see
+		// `refreshPaddleReachability`) and handed back the moment it is not, and a ball still
+		// overlapping the paddle when that happens is reported as a fresh hit - a bounce off
+		// nothing, in the empty space between the paddle and the field. One ball rarely
+		// lingers there; four do it constantly
+
+		paddleHitsPerLevel+=1
+		InGameRecents.shared.paddleHit()
+		// The level's count and the run's. The level one is zeroed at every level completion,
+		// for the two "in one level" achievements, so it cannot also answer the run summary
+
+        totalStatsArray[0].ballHits+=1
+		hitsOnThisBall += 1
+		resetBrickBounce(for: ball)
+		return true
+    }
+
     func paddleHit(_ subject: SKSpriteNode) {
 		let ball = subject
 		let isExtra = subject !== self.ball
@@ -5541,36 +5601,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			return
 		}
 
-		if paddleLandingFrame[ObjectIdentifier(ball)] == frameNumber {
-			return
-		}
-		paddleLandingFrame[ObjectIdentifier(ball)] = frameNumber
-		// **One landing, however many contacts the engine reports it as** (James, round 259:
-		// "each hit on a shaped paddle is taking off 2 segments from the power-up HUD icon").
-		//
-		// `paddleHit` has one call site and spends one turn, so two turns is two calls, and
-		// `didBegin` is reported per contacting *fixture* pair rather than per node. A dish or
-		// a wave traced from its picture is decomposed into several convex pieces - that is
-		// what `SKPhysicsBody(bodies:)` is for - so a ball landing where two of them meet
-		// begins contact with both, and the plain paddle, being one rounded rectangle, never
-		// did.
-		//
-		// Keyed per ball, because with Multi-Ball two balls genuinely can land in one frame
-		// and both should count. What cannot happen is the *same* ball landing twice in one
-		// frame: it has to leave the paddle and come back, and there is no time in a frame to
-		// do it. Guarding here rather than inside the spend, because everything below - the
-		// sound, the haptic, the bounce arithmetic - is equally about the landing and was
-		// equally being done twice.
-
-		endlessIISpendPaddleTurns()
-		// This contact is a turn for every running paddle power-up, whatever the paddle
-		// does with it below - a catch, a swallow or a bounce all count the same one
-		// A contact reported while the ball's centre is below the paddle's is not a landing.
-		// The paddle is taken out of a ball's way while it is underneath (see
-		// `refreshPaddleReachability`) and handed back the moment it is not, and a ball still
-		// overlapping the paddle when that happens is reported as a fresh hit - a bounce off
-		// nothing, in the empty space between the paddle and the field. One ball rarely
-		// lingers there; four do it constantly
+		guard countPaddleLanding(ball) else { return }
+		// One landing, counted once - see `countPaddleLanding`, which the Mirror Paddle asks too
 
         if hapticsSetting {
 			lightHaptic.impactOccurred()
@@ -5580,14 +5612,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			setBallStartingPositionY()
 		}
 
-		paddleHitsPerLevel+=1
-		InGameRecents.shared.paddleHit()
-		// The level's count and the run's. The level one is zeroed at every level completion,
-		// for the two "in one level" achievements, so it cannot also answer the run summary
-
-        totalStatsArray[0].ballHits+=1
-		hitsOnThisBall += 1
-		resetBrickBounce(for: ball)
 		let paddleWrapX = gameMode == .endlessII
 			? endlessIIPaddleXNearest(to: ball.position.x) : paddle.position.x
 		// The paddle copy this ball actually landed on: the paddle itself, or its
