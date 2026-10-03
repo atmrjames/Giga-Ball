@@ -1743,6 +1743,33 @@ final class PauseMenuButtonTests: XCTestCase {
         XCTAssertEqual(artwork(screen), ["ButtonRestart", "ButtonHome", "ButtonLeaderboard"])
     }
 
+    /// Every button does what its picture says, on every kind of screen (round 366). The two
+    /// were separate chains of conditions; now each is a function, and this holds one to the
+    /// other wherever the game can put the screen.
+    func testEveryButtonDoesWhatItsPictureSays() throws {
+        let meaning: [String: [PauseMenuViewController.ButtonAction]] = [
+            "ButtonInfo": [.information], "ButtonPlay": [.resume], "ButtonSettings": [.settings],
+            "ButtonRestart": [.restart], "ButtonHome": [.home],
+            "ButtonLeaderboard": [.dailyBoard, .modeBoard],
+            PauseMenuViewController.noButton: [.none],
+        ]
+        for sender in ["Pause", "GameOver", "Complete"] {
+            for endless in [false, true] {
+                for (daily, posted) in [(false, true), (true, true), (true, false)] {
+                    let screen = try XCTUnwrap(self.screen(sender: sender, endless: endless,
+                                                           daily: daily, posted: posted))
+                    for row in 0..<3 {
+                        let picture = screen.buttonArtwork(row: row)
+                        let action = screen.buttonAction(row: row)
+                        XCTAssertTrue(meaning[picture]?.contains(action) ?? false,
+                                      "\(sender), endless \(endless), daily \(daily), posted "
+                                      + "\(posted): row \(row) shows \(picture) and does \(action)")
+                    }
+                }
+            }
+        }
+    }
+
     func testPressingAButtonNeverRenamesIt() throws {
         for (sender, endless, daily, posted) in [("Pause", false, false, true),
                                                  ("GameOver", true, false, true),

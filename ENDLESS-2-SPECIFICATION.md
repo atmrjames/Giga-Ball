@@ -2959,6 +2959,23 @@ testers:
   falling power-up's position by `brickWidth`, so a bare `GameScene()` with a power-up on
   screen traps converting NaN to Int. A real scene is always laid out before play.
 
+**Round 367: the pause and ending buttons, and scans for copy-paste faults.**
+
+- **The three round buttons' action is decided beside their picture** (`buttonAction(row:)`,
+  next to `buttonArtwork(row:)`). They were two separate chains of conditions that every change
+  to an ending's buttons had to edit twice; `testEveryButtonDoesWhatItsPictureSays` holds the
+  picture to the action on every kind of screen - pause, game over and complete, endless or not,
+  daily posted, daily free and no daily. They agree today.
+- **Those buttons clicked only with haptics on.** `InterfaceSound.click()` sat inside the
+  haptic's `if`, so a player who had turned haptics off pressed them in silence while every other
+  button in the app clicked. It asks the UI Sound setting itself now.
+- **Two scans for the shape of the 2020 iCloud fault**, over the whole app: every block that
+  checks an achievement's flag writes that same achievement's flag, date and share (none
+  differed), and every award reports its own Game Center identifier (55 checked, none differed).
+- A ball held on the Mirror Paddle is not saved with a run, as a ball held on the safety bar
+  never was; a resume brings the primary ball back still, and the stopped-ball rescue in
+  `update` puts it on the paddle within fifty frames, which is the existing answer for both.
+
 **Round 366: two iCloud merge faults from 2020, found reading the lines coverage said were bare.**
 
 - **Bricks destroyed never synced to another device.** `updateFromiCloud` wrote the cloud's

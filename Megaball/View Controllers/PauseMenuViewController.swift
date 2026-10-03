@@ -1571,40 +1571,17 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
     }
 
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
-        if indexPath.row == 0 {
-            if sender == "Pause" {
-                openInformation()
-            } else if endlessGameOver {
-                goHomeFromGameOver()
-            } else if isDailyChallenge == false || dailyReplayIsOffered {
-                removeAnimate(nextAction: .restartGameNotificiation)
-            }
-            // A daily's game over has no restart - the slot is a null button there
-        }
-        if indexPath.row == 1 {
-            if self.sender == "Pause" {
-                removeAnimate(nextAction: .unpause)
-            } else if endlessGameOver {
-                removeAnimate(nextAction: .restartGameNotificiation)
-            } else {
-                goHomeFromGameOver()
-            }
-        }
-        // The two swap places when an endless run ends (play-test round 39): replay takes the
-        // big centre slot and home the small one on the left, because after an endless run the
-        // thing almost everybody wants next is another go. A classic game over keeps the old
-        // arrangement - there, home is the likelier answer, since the pack is finished with.
-        // Both the pictures above and the actions here ask `endlessGameOver`, so the button
-        // and what it does cannot end up disagreeing
-        if indexPath.row == 2 {
-            if self.sender == "Pause" {
-                hideAnimate()
-                moveToSettings()
-            } else if dailyGameOver {
-                openDailyLeaderboard()
-            } else if gameCentreIsOffered {
-                gameCentreTapped()
-            }
+        switch buttonAction(row: indexPath.row) {
+        case .information: openInformation()
+        case .resume: removeAnimate(nextAction: .unpause)
+        case .restart: removeAnimate(nextAction: .restartGameNotificiation)
+        case .home: goHomeFromGameOver()
+        case .settings:
+            hideAnimate()
+            moveToSettings()
+        case .dailyBoard: openDailyLeaderboard()
+        case .modeBoard: gameCentreTapped()
+        case .none: break
         }
         
         collectionView.deselectItem(at: indexPath, animated: true)
@@ -1622,8 +1599,12 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
         // An empty slot neither clicks nor changes - there is nothing there to press
         if hapticsSetting {
             interfaceHaptic.impactOccurred()
-            InterfaceSound.click()
         }
+        InterfaceSound.click()
+        // **The click is the UI Sound setting's, not the haptics'** (round 366). It sat inside
+        // the haptic's `if`, so a player with haptics off pressed these three buttons in
+        // silence while every other button in the app clicked; `InterfaceSound.click` asks the
+        // sound setting itself
         cell.setButton(artwork + "Highlighted")
     }
 
@@ -1665,6 +1646,37 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
 
     /// The blank disc an empty slot wears.
     static let noButton = "ButtonNull"
+
+    /// What each of the three round buttons does.
+    enum ButtonAction: Equatable {
+        case information, resume, restart, home, settings, dailyBoard, modeBoard, none
+    }
+
+    /// What a press of the button in `row` does - decided here, beside `buttonArtwork(row:)`,
+    /// rather than inside the tap handler (round 366).
+    ///
+    /// The picture and the action were two separate chains of conditions that had to be kept
+    /// in step by hand, and every round that changed one ending's buttons changed both: a daily
+    /// that offers a replay, an endless game over with Home on the left, a board that is only
+    /// there for a signed-in player. Named, the two can be held against each other for every
+    /// kind of screen (`PauseMenuButtonTests`), so a button that shows Restart and goes Home
+    /// fails a test rather than a play-test.
+    func buttonAction(row: Int) -> ButtonAction {
+        switch row {
+        case 0:
+            if sender == "Pause" { return .information }
+            if endlessGameOver { return .home }
+            if isDailyChallenge == false || dailyReplayIsOffered { return .restart }
+            return .none
+        case 1:
+            if sender == "Pause" { return .resume }
+            return endlessGameOver ? .restart : .home
+        default:
+            if sender == "Pause" { return .settings }
+            if dailyGameOver { return .dailyBoard }
+            return gameCentreIsOffered ? .modeBoard : .none
+        }
+    }
 
     func setBlur() {
         backgroundView.backgroundColor = #colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 0.33)
