@@ -117,6 +117,7 @@ class PreGame: GKState {
         scene.powerUpsCollectedPerPack = 0
         scene.powerUpsGeneratedPerPack = 0
         scene.levelTimerValue = 0
+        scene.thisLevelIsBanked = false
         scene.packTimerValue = 0
         // Reset trackers
     }

@@ -110,7 +110,8 @@ final class ResumeCardTests: XCTestCase {
         game.numberOfLives = 3
         XCTAssertEqual(ResumeCard.lines(for: game, fallbackMode: .classic).lives,
                        BallRackView.line(for: 3))
-        XCTAssertEqual(ResumeCard.lines(for: game, fallbackMode: .classic).lives, "3 balls left")
+        XCTAssertEqual(ResumeCard.lines(for: game, fallbackMode: .classic).lives, "3 spare balls",
+                       "James, round 363: 'say 3 spare balls'")
     }
 
     /// An endless run says nothing about its single life, the rule the pause screen follows.
@@ -122,7 +123,7 @@ final class ResumeCardTests: XCTestCase {
 
         game.numberOfLives = 2
         XCTAssertEqual(ResumeCard.lines(for: game, fallbackMode: .endlessII).lives,
-                       "2 balls left",
+                       "2 spare balls",
                        "and it is news when a twist has granted more")
     }
 

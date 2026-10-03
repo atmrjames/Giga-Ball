@@ -348,6 +348,12 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
                 self.levelScoreLabel.text = ""
                 self.speedBonusTitle.text = ""
                 self.speedBonusLabel.text = ""
+                self.livesLine?.isHidden = true
+                self.livesRack?.isHidden = true
+                // **The next level's intro says nothing about the rack** (James, round 363: "No
+                // need to show the number of balls left on the next level intro view when
+                // playing a pack"). The passed card is the same screen, and its numbers were
+                // being blanked here while the spare balls stayed behind on the intro
                 self.storyboardChoices.set(self.completeLabelConstraint, active: false)
                 self.storyboardChoices.set(self.packAndLevelConstriant, active: true)
                 NotificationCenter.default.post(name: .continueToNextLevel, object: nil)
@@ -428,7 +434,10 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
         host.addSubview(label)
         NSLayoutConstraint.activate([
             label.centerXAnchor.constraint(equalTo: tapLabel.centerXAnchor),
-            label.bottomAnchor.constraint(equalTo: tapLabel.topAnchor, constant: -10),
+            label.bottomAnchor.constraint(equalTo: tapLabel.topAnchor,
+                                          constant: -InbetweenViewController.sparesToTapGap),
+            // **Twenty, up from ten** (James, round 363: "Add a bigger gap between the number of
+            // balls left and tap to continue labels"): the two read as one sentence at ten
         ])
         livesLine = label
 
@@ -447,6 +456,9 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
     }
 
     private weak var livesRack: BallRackView?
+
+    /// The air between the spare-balls line and "Tap to continue".
+    static let sparesToTapGap: CGFloat = 20
 
     /// Fills the rack, at the size the game draws its own.
     private func refreshTheLivesRack() {
@@ -565,28 +577,71 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
     ///
     /// Our own constraints are held by the same view and name the same labels, so they are
     /// skipped by identity rather than by attribute.
-    private func retireTheStackedScoreTies(in host: UIView) {
+    @discardableResult
+    private func retireTheStackedScoreTies(in host: UIView) -> Bool {
+        var retired = false
         let left: [UILabel] = [levelScoreTitle, levelScoreLabel]
         let right: [UILabel] = [speedBonusTitle, speedBonusLabel]
+        let across: Set<NSLayoutConstraint.Attribute> = [.centerX, .leading, .trailing]
         for constraint in host.constraints where constraint.isActive
             && sideBySideScores7Placed.contains(where: { $0 === constraint }) == false {
-            guard let first = constraint.firstItem as? UILabel else { continue }
-            if left.contains(first),
-               constraint.firstAttribute == .centerX || constraint.firstAttribute == .leading {
-                constraint.isActive = false
+            let ends = [(constraint.firstItem as? UILabel, constraint.firstAttribute),
+                        (constraint.secondItem as? UILabel, constraint.secondAttribute)]
+            for (label, attribute) in ends {
+                guard let label, left.contains(label) || right.contains(label) else { continue }
+                if across.contains(attribute), constraint.isActive {
+                    constraint.isActive = false
+                    retired = true
+                }
             }
-            if right.contains(first),
-               constraint.firstAttribute == .centerX || constraint.firstAttribute == .leading
-                || constraint.firstAttribute == .trailing {
+            // **Either end, not only the first** (James, round 363: "Labels on in game views
+            // are moving between closing and reopening the app", with the PASSED card before and
+            // after - Level Score gone, Speed Bonus alone across the middle). This used to ask
+            // only `firstItem`, which is how the storyboard writes these ties the first time.
+            // The app switcher snapshots the app in landscape as it goes to the background, and
+            // the storyboard's vertical-size-class variants UIKit installs for that, and puts
+            // back after it, name the container first - `host.trailing = label.trailing + 10`.
+            // So they came back past the sweep, pinned the bonus to both edges and squeezed the
+            // score to nothing, and the trip back to portrait did not undo it. Read from both
+            // ends, every horizontal tie of these four labels the storyboard owns is retired
+            // whichever way round it is written. Ours are skipped above, by identity
+
+            let stacked = (constraint.firstItem === speedBonusTitle
+                           && constraint.firstAttribute == .top
+                           && constraint.secondItem === levelScoreLabel)
+                || (constraint.secondItem === speedBonusTitle
+                    && constraint.secondAttribute == .top
+                    && constraint.firstItem === levelScoreLabel)
+            if stacked, constraint.isActive {
                 constraint.isActive = false
+                retired = true
             }
-            if first === speedBonusTitle, constraint.firstAttribute == .top,
-               constraint.secondItem === levelScoreLabel {
-                constraint.isActive = false
-                // The link that put the bonus under the score. Everything below still hangs
-                // off the bonus's own label, which is now beside the score rather than under it
-            }
+            // The link that put the bonus under the score, either way round. Everything below
+            // still hangs off the bonus's own label, which is now beside the score rather than
+            // under it
         }
+        return retired
+    }
+
+    /// The sweep again at the end of the pass, and another pass if it found anything.
+    ///
+    /// **This is the half of round 363's fix that mattered.** UIKit puts the storyboard's
+    /// variants back *during* a layout pass, after `viewWillLayoutSubviews` has swept - so the
+    /// pass that brings the app back from the switcher ends with them in force, and nothing
+    /// asks for another. Measured in `testTheScoreAndBonusStaySideBySideAfterTheAppComesBack`:
+    /// broken after the round trip, right after one more pass. Asked again here, and a pass
+    /// requested only when something was actually retired, so a card that agrees with itself
+    /// does not lay itself out for ever.
+    ///
+    /// The card's other overrules (`storyboardChoices`) are asked again for the same reason: the
+    /// first version swept only the score ties and the scores came back twelve points high,
+    /// because the tie under PASSED had been put back in the same pass.
+    private func sweepTheScoreTiesAfterThePass() {
+        var changed = storyboardChoices.reassert()
+        if levelScoreBonus > 0, sideBySideScores, let host = levelScoreTitle.superview {
+            changed = retireTheStackedScoreTies(in: host) || changed
+        }
+        if changed { view.setNeedsLayout() }
     }
 
     /// The air between the level score and the speed bonus, which is the same on every device.
@@ -995,6 +1050,7 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
         // 162 points on one screen and 320 on the next, at two different sizes. They are the
         // same header, and a header is only the same if the box it is measured in is.
         sizeTheResultBandForTheScreen()
+        sweepTheScoreTiesAfterThePass()
         refreshTheLivesRack()
         moveTheTapLineDown()
         // Both measured from the screen's height, which `viewDidLoad` does not know: the view
@@ -1072,7 +1128,23 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
     /// Measured rather than multiplied out: `textRect` knows what this label's own font does
     /// with this label's own width, which a line count times a line height does not.
     private func giveTheTitleTheLinesItNeeds() {
-        if packNameLabel?.fitFixedHeightToItsText() == true { view.setNeedsLayout() }
+        if packNameLabel?.fitFixedHeightToItsText(evenOnOneLine: true) == true {
+            view.setNeedsLayout()
+        }
+        if levelNumberLabel?.fitFixedHeightToItsText(evenOnOneLine: true) == true {
+            view.setNeedsLayout()
+        }
+        if DailyChallengeSession.shared.active == nil,
+           levelNameLabel?.fitFixedHeightToItsText(evenOnOneLine: true) == true {
+            view.setNeedsLayout()
+        }
+        // **The level's lines hug their words too** (James, round 363: "on the level passed
+        // view, close up the gap between the pack name, level number and level name labels").
+        // "Level 5 of 10" sat in a 31-point box drawn for the bold 25-point type it wore before
+        // round 332 swapped the two lines' emphasis - 15-point type, centred in it, with eight
+        // points of nothing above and below. Measured to the text like the pack line, so the
+        // six points `inGameTitleLineGap` puts between them is the gap there is. Not a daily's
+        // twist list, which `giveTheTwistsTheRoomTheyNeed` measures
         // Shared with the pause and game-over screens since round 341, which had the same
         // two-line date in the same one-line box
     }

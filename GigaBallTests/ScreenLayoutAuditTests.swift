@@ -481,6 +481,40 @@ final class BetweenLevelsScoreBlockTests: XCTestCase {
                              "and the tap line is down where a play button would be")
     }
 
+    /// James, round 363: "On the level passed view, close up the gap between the pack name,
+    /// level number and level name labels." "Level 5 of 10" was 15-point type in a 31-point box.
+    func testTheTitleLinesHugTheirWords() throws {
+        let screen = try XCTUnwrap(self.screen(bonus: 300))
+        for label in [screen.packNameLabel!, screen.levelNumberLabel!, screen.levelNameLabel!] {
+            XCTAssertLessThanOrEqual(label.bounds.height, ceil(label.font.lineHeight) + 1,
+                                     "\(label.text ?? "") stands in a box taller than its line")
+        }
+        let pack = screen.packNameLabel.convert(screen.packNameLabel.bounds, to: screen.view)
+        let number = screen.levelNumberLabel.convert(screen.levelNumberLabel.bounds,
+                                                     to: screen.view)
+        XCTAssertEqual(number.minY - pack.maxY, UIViewController.inGameTitleLineGap, accuracy: 1,
+                       "the gap between the lines is the gap that was asked for, and no more")
+    }
+
+    /// "Add a bigger gap between the number of balls left and tap to continue labels."
+    func testTheSpareBallsLineStandsClearOfTheTapLine() throws {
+        let screen = try XCTUnwrap(self.screen(bonus: 300))
+        let spares = try XCTUnwrap(screen.tapLabel.superview?.subviews.compactMap { $0 as? UILabel }
+            .first { ($0.text ?? "").contains("spare") }, "the line says spare balls")
+        let line = spares.convert(spares.bounds, to: screen.view)
+        let tap = screen.tapLabel.convert(screen.tapLabel.bounds, to: screen.view)
+        XCTAssertEqual(tap.minY - line.maxY, InbetweenViewController.sparesToTapGap, accuracy: 1)
+        XCTAssertGreaterThanOrEqual(InbetweenViewController.sparesToTapGap, 20)
+    }
+
+    /// "It should be quick, the ball initially grows a bit bigger then shrinks down to nothing."
+    func testTheBallSwellsThenShrinksToNothingQuickly() {
+        let vanish = InbetweenLevels.ballVanish(from: 1)
+        XCTAssertLessThanOrEqual(vanish.duration, 0.3, "quick")
+        XCTAssertGreaterThan(InbetweenLevels.ballSwell, 1, "grows a bit first")
+        XCTAssertLessThan(InbetweenLevels.ballSwell, 1.5, "a bit")
+    }
+
     /// A level with no speed bonus keeps the stack: a lone column against an empty half reads
     /// worse than the arrangement it replaced.
     func testALevelWithNoBonusIsUnchanged() throws {
@@ -1525,10 +1559,17 @@ final class GameCentreLineOnEveryScreenTests: XCTestCase {
         ("smallest window", SceneDelegate.smallestWindow, false),
     ]
 
-    private func gameOver(size: CGSize, regular: Bool) -> PauseMenuViewController? {
-        DailyChallengeSession.shared.active = DailyChallenge(
+    private func gameOver(size: CGSize, regular: Bool,
+                          daily: Bool = true) -> PauseMenuViewController? {
+        DailyChallengeSession.shared.active = daily ? DailyChallenge(
             dateKey: DailyChallengeSession.shared.todayKey, mode: .classic,
-            classicLevel: 1, twists: [])
+            classicLevel: 1, twists: []) : nil
+        if daily == false {
+            InGameRecents.shared.runSummary = InGameRecents.RunSummary(
+                height: 0, durationSeconds: 300, paddleHits: 505, bricksDestroyed: 1282,
+                ballsLost: 6, powerUpsSeen: 143, powerUpsCollected: 75, score: 37_147,
+                levelsCleared: 9, isEndless: false, isMultiLevel: true, bestBallHits: 178)
+        }
         let board = UIStoryboard(name: "Main", bundle: Bundle(for: PauseMenuViewController.self))
         guard let screen = board.instantiateViewController(withIdentifier: "pauseMenuVC")
                 as? PauseMenuViewController else { return nil }
@@ -1573,6 +1614,31 @@ final class GameCentreLineOnEveryScreenTests: XCTestCase {
                 XCTAssertLessThanOrEqual(board.maxY, stats.minY + 0.5,
                                          "\(name): the board is below Statistics")
             }
+        }
+    }
+
+    /// James, round 363: "On the in game views, put the Game Center section above the
+    /// statistics section" - every ending now, a Classic pack with its statistics list as well
+    /// as the daily, at every size.
+    func testEveryEndingPutsTheBoardAboveTheStatistics() throws {
+        defer { InGameRecents.shared.runSummary = nil }
+        for (name, size, regular) in shapes {
+            let screen = try XCTUnwrap(gameOver(size: size, regular: regular, daily: false))
+            let root = screen.view!
+            func frame(_ view: UIView) -> CGRect { view.convert(view.bounds, to: root) }
+            XCTAssertFalse(screen.runStatsLabel.isHidden, "\(name): the list is showing")
+            let caption = frame(screen.leaderboardTitle)
+            let board = frame(screen.resultLabel)
+            let stats = frame(screen.moreStatsButton)
+            let list = frame(screen.runStatsLabel)
+            let buttons = frame(screen.buttonCollectionView)
+            XCTAssertGreaterThan(caption.height, 0, "\(name): the caption was squeezed away")
+            XCTAssertGreaterThanOrEqual(caption.minY, frame(screen.scoreLabel).maxY - 0.5,
+                                        "\(name)")
+            XCTAssertLessThanOrEqual(board.maxY, stats.minY + 0.5,
+                                     "\(name): Game Center is above Statistics")
+            XCTAssertLessThanOrEqual(list.maxY, buttons.minY + 0.5,
+                                     "\(name): and the list clears the buttons")
         }
     }
 

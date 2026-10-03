@@ -473,8 +473,12 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
             return
         }
         moreStatsButton.isHidden = false
-        gameCentreUnderTheStatsButton.isActive = true
+        gameCentreUnderTheStatsButton.isActive = false
         showActivePowerUps()
+        // **Statistics under Game Center on every ending** (James, round 363: "On the in game
+        // views, put the Game Center section above the statistics section") - the order the
+        // daily's ending has had since round 357, so the three ties that held the board line
+        // *under* the statistics are never on now. See `arrangeTheDailyEnding`
 
         guard isDailyChallenge == false else {
             runStatsLabel.isHidden = true
@@ -495,8 +499,8 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
         }
 
         runStatsLabel.isHidden = false
-        statsUnderTheResult.isActive = true
-        statsWellUnderTheResult.isActive = true
+        statsUnderTheResult.isActive = false
+        statsWellUnderTheResult.isActive = false
         let text = NSMutableAttributedString()
         var items: [(String, String, Int)] = [
             ("rectangle.fill", "Paddle hits", summary.paddleHits),
@@ -2215,11 +2219,17 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
     /// the foot of the screen with Statistics between it and the score it reports on.
     private func arrangeTheDailyEnding() {
         let daily = isDailyChallenge && sender != "Pause"
-        gameCentreAboveTheButtons.isActive = daily == false
-        gameCentreUnderTheLives.isActive = daily == false
-        gameCentreWellUnderTheLives.isActive = daily == false
-        if daily { gameCentreUnderTheStatsButton.isActive = false }
         let ending = sender != "Pause"
+        gameCentreAboveTheButtons.isActive = ending == false
+        gameCentreUnderTheLives.isActive = ending == false
+        gameCentreWellUnderTheLives.isActive = ending == false
+        if ending { gameCentreUnderTheStatsButton.isActive = false }
+        // **Every ending, not only the daily's, since round 363** (James: "On the in game
+        // views, put the Game Center section above the statistics section"). The board line
+        // hangs under the score block and Statistics under it, the order a daily's ending has
+        // had since round 357. Not under the lives line: that is hidden on every ending and
+        // parked just above the buttons, so a board hung from it lands at the foot of the
+        // screen. The pause screen keeps its own arrangement
         for label in [leaderboardTitle, resultLabel] {
             label.accessibilityTraits = ending ? [.staticText, .button] : .staticText
             label.accessibilityHint = daily ? "Opens the day's leaderboard"
@@ -2229,7 +2239,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
         // plain text, and the board behind it is one nobody using VoiceOver would find
         NSLayoutConstraint.deactivate(gameCentreUnderTheScore)
         gameCentreUnderTheScore = []
-        if daily {
+        if ending {
             let breakdown = showsDailyBreakdown && dailyTotalLabel.isHidden == false
             let comparison = (highscoreLabel.text ?? "").isEmpty == false
             let above: UIView = breakdown ? dailyTotalLabel
@@ -2244,17 +2254,17 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
                                                       constant: 2)]
             NSLayoutConstraint.activate(gameCentreUnderTheScore)
         }
-        statsUnderTheGameCentre.forEach { $0.isActive = daily }
-        let firm: UILayoutPriority = daily ? .required : .defaultHigh
+        statsUnderTheGameCentre.forEach { $0.isActive = ending }
+        let firm: UILayoutPriority = ending ? .required : .defaultHigh
         leaderboardTitle.setContentCompressionResistancePriority(firm, for: .vertical)
         moreStatsButton.setContentCompressionResistancePriority(firm, for: .vertical)
         signedOutLabel.setContentCompressionResistancePriority(
-            daily ? .defaultLow : .defaultHigh, for: .vertical)
+            ending ? .defaultLow : .defaultHigh, for: .vertical)
         // On a screen too short for all of it, the signed-out note gives way first - the
         // caption and the door to the statistics are the ones a player is looking for, and
         // the note is not there at all for a player who is signed in, which is the only player
         // with a board to show
-        statsStayOnTheScreen.isActive = daily
+        statsStayOnTheScreen.isActive = ending
     }
 
     func openDailyLeaderboard() {

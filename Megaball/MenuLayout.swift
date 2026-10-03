@@ -1166,8 +1166,12 @@ final class BallRackView: UIView {
     /// **James, round 339: "I noticed balls left and lives left on different screens - let's
     /// use balls instead of lives everywhere."** The game has never had lives in it. It has
     /// balls, and one of them is in play.
+    ///
+    /// **"Spare", since round 363** (James: "Instead of saying '3 balls left' say '3 spare
+    /// balls'"). The number is the rack - the balls waiting, not the one in play - and "left"
+    /// read as though it counted that one too.
     static func line(for balls: Int) -> String {
-        balls == 1 ? "1 ball left" : "\(balls) balls left"
+        balls == 1 ? "1 spare ball" : "\(balls) spare balls"
     }
 }
 
@@ -1228,8 +1232,9 @@ extension UILabel {
     /// - Returns: whether anything changed, so a caller that runs this from a layout pass can
     ///   ask for another one only when there is something for it to do.
     @discardableResult
-    func fitFixedHeightToItsText() -> Bool {
-        guard numberOfLines != 1, (text ?? "").isEmpty == false, bounds.width > 0 else {
+    func fitFixedHeightToItsText(evenOnOneLine: Bool = false) -> Bool {
+        guard numberOfLines != 1 || evenOnOneLine, (text ?? "").isEmpty == false,
+              bounds.width > 0 else {
             return false
         }
         let needed = ceil(textRect(forBounds: CGRect(x: 0, y: 0, width: bounds.width,

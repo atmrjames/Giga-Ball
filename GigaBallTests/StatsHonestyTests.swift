@@ -54,3 +54,35 @@ final class CollectionsHeldToReleasesTests: XCTestCase {
         XCTAssertEqual(rows.first { $0.label == "Power-up collection rate" }?.value, "100%")
     }
 }
+
+/// James, round 363, with a Challenge Pack's statistics: "Statistics at the end of a pack should
+/// be for the whole pack. The time is just for the last level." The same screenshot had the
+/// score 1,644 above the Complete card's, which was the last level counted twice.
+final class RunSummaryTotalsTests: XCTestCase {
+
+    private func classicRun() -> GameScene {
+        let scene = GameScene()
+        scene.packTimerValue = 160
+        scene.levelTimerValue = 15
+        scene.totalScore = 35_503
+        scene.levelScore = 1_644
+        return scene
+    }
+
+    /// Mid-level - a pause - the level being played is not banked yet, so it is added.
+    func testMidLevelTheRunIsThePackPlusTheLevel() {
+        let scene = classicRun()
+        XCTAssertEqual(scene.secondsThisRun, 175)
+        XCTAssertEqual(scene.scoreThisRun, 37_147)
+    }
+
+    /// At the pack's end the last level has been banked into both, and is not added again.
+    func testOnceBankedTheLevelIsNotCountedTwice() {
+        let scene = classicRun()
+        scene.packTimerValue += scene.levelTimerValue
+        scene.totalScore += scene.levelScore
+        scene.thisLevelIsBanked = true
+        XCTAssertEqual(scene.secondsThisRun, 175, "the whole pack, not 2:55 of one level")
+        XCTAssertEqual(scene.scoreThisRun, 37_147, "the Complete card's figure")
+    }
+}

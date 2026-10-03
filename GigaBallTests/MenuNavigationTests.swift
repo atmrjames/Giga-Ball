@@ -1869,6 +1869,14 @@ final class InGameScreensAfterTheAppSwitcherTests: XCTestCase {
         screen.traitOverrides.horizontalSizeClass = .compact
         screen.view.setNeedsLayout()
         screen.view.layoutIfNeeded()
+        for vertical in [UIUserInterfaceSizeClass.compact, .regular] {
+            screen.traitOverrides.verticalSizeClass = vertical
+            screen.view.setNeedsLayout()
+            screen.view.layoutIfNeeded()
+        }
+        // **And the landscape snapshot** (round 363): the switcher pictures the app in the
+        // other orientation too, and the storyboard's vertical-size-class variants are what
+        // pushed the between-levels card's scores out of place. Every test here takes it
     }
 
     private func top(of view: UIView, in screen: UIViewController) -> CGFloat {
@@ -1909,6 +1917,43 @@ final class InGameScreensAfterTheAppSwitcherTests: XCTestCase {
 
         XCTAssertEqual(top(of: complete, in: card), before.0, accuracy: 1)
         XCTAssertEqual(top(of: total, in: card), before.1, accuracy: 1)
+    }
+
+    /// James, round 363, with two screenshots of Barricade's PASSED card a moment apart: "Labels
+    /// on in game views are moving between closing and reopening the app". Before, Level Score
+    /// and Speed Bonus side by side; after, Level Score gone and Speed Bonus alone in the middle.
+    /// The round 346 test above has no speed bonus, so it never had the pair side by side.
+    func testTheScoreAndBonusStaySideBySideAfterTheAppComesBack() throws {
+        let board = UIStoryboard(name: "Main", bundle: Bundle(for: InbetweenViewController.self))
+        let card = try XCTUnwrap(board.instantiateViewController(withIdentifier: "inbetweenView")
+                                   as? InbetweenViewController)
+        card.packNumber = 12
+        card.levelNumber = LevelPackSetup().startLevelNumber[12] + 4
+        card.levelScore = 2_564
+        card.levelScoreBonus = 862
+        card.totalScore = 17_311
+        card.numberOfLevels = 10
+        card.livesRemaining = 6
+        show(card)
+        card.view.transform = .identity
+        card.view.alpha = 1
+        card.view.layoutIfNeeded()
+
+        func frames() -> [CGRect] {
+            [card.levelScoreTitle, card.levelScoreLabel, card.speedBonusTitle,
+             card.speedBonusLabel].map { $0.convert($0.bounds, to: card.view) }
+        }
+        let before = frames()
+        XCTAssertGreaterThan(before[0].width, 20, "Level Score is there to begin with")
+        XCTAssertLessThan(before[0].maxX, before[2].minX, "and beside the bonus")
+
+        visitTheAppSwitcher(card)
+        let after = frames()
+        for (was, now) in zip(before, after) {
+            XCTAssertEqual(now.minX, was.minX, accuracy: 1, "\(was) became \(now)")
+            XCTAssertEqual(now.minY, was.minY, accuracy: 1, "\(was) became \(now)")
+            XCTAssertEqual(now.width, was.width, accuracy: 1, "\(was) became \(now)")
+        }
     }
 
     /// The mechanism on its own: a choice UIKit undid is put back, and one it left alone is not

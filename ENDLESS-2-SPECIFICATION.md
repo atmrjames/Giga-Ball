@@ -2959,6 +2959,33 @@ testers:
   falling power-up's position by `brickWidth`, so a bare `GameScene()` with a power-up on
   screen traps converting NaN to Int. A real scene is always laid out before play.
 
+**Round 363: James's notes on the between-levels and ending screens.**
+
+- **The title lines hug their words** on the level-passed card and the intro: "Level 5 of 10"
+  was 15-point type in a 31-point box left from the bold 25 it wore before round 332 swapped
+  the emphasis, so the pack, number and name now stand `inGameTitleLineGap` apart and no more
+  (`fitFixedHeightToItsText(evenOnOneLine:)`).
+- **"3 spare balls"**, not "3 balls left", everywhere the rack is said (`BallRackView.line`),
+  20 points above "Tap to continue" (was 10), and **not on the next level's intro**: the
+  passed card blanks its numbers as it becomes the intro, and now its rack too.
+- **The ball's exit** at a level's last brick: a third bigger in 0.08s, eased out, then to
+  nothing in 0.17s (`InbetweenLevels.ballVanish`). It was half a second, the last of it a
+  fading speck.
+- **Labels that moved after a trip to the app switcher**: Level Score vanished and Speed Bonus
+  spread across the card. The switcher snapshots the app in landscape, and UIKit puts the
+  storyboard's vertical-size-class ties back *during* a layout pass, after
+  `viewWillLayoutSubviews` has swept them, and asks for no further pass. The card now sweeps
+  again at the end of the pass (and re-asserts its other overrules), asking for one more pass
+  only when it found something. The sweep also reads a tie from either end. The app-switcher
+  tests now take the landscape round trip as well.
+- **A pack's Statistics are the pack's.** The time read `levelTimerValue`, the last level
+  alone; `secondsThisRun` is the pack's clock plus an unbanked level. The score was
+  `totalScore + levelScore`, which counted the last level twice once it was banked between
+  levels (38,791 against the Complete card's 37,147); `scoreThisRun` asks the same flag,
+  `thisLevelIsBanked`.
+- **Game Center above Statistics on every ending**, the order the daily's has had since round
+  357: the board line hangs under the score block and Statistics under it.
+
 **Round 362: the Mirror Paddle is a paddle.**
 
 James: "mirror paddle should act just like the main paddle - collect power ups, have power ups

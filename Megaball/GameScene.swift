@@ -8284,6 +8284,34 @@ laserTimer?.invalidate()
 	/// the other is holding what it held.
 	var ballsLostThisRun: Int { deathsPerPack + deathsPerLevel }
 
+	/// How long this run has been played, whatever level it is on.
+	///
+	/// **James, round 363, with the Challenge Pack's statistics: "Statistics at the end of a
+	/// pack should be for the whole pack. The time is just for the last level."** It read
+	/// `levelTimerValue`, which starts again at every level. The pack's clock is
+	/// `packTimerValue`, which the finished level is folded into between levels - so, like the
+	/// balls lost above, the run is the pack's clock plus the level's, unless the level has
+	/// already been banked, which it has by the time a Complete or Game Over screen goes up.
+	var secondsThisRun: Int {
+		packTimerValue + (thisLevelIsBanked ? 0 : levelTimerValue)
+	}
+
+	/// The run's score, whatever level it is on: the total, plus the level being played if it
+	/// has not been banked into the total yet.
+	///
+	/// **The same screenshot's second fault**: the pack's Statistics said 38,791 against the
+	/// Complete card's 37,147. Between levels the finished level's score is added to
+	/// `totalScore` and `levelScore` keeps its value until the next level loads, so
+	/// `totalScore + levelScore` counted the last level twice on every Complete and Game Over.
+	var scoreThisRun: Int {
+		totalScore + (thisLevelIsBanked ? 0 : levelScore)
+	}
+
+	/// Whether the level just played is already counted in the run's totals - its time in
+	/// `packTimerValue`, its score in `totalScore`: true from the banking between levels until
+	/// the next level starts.
+	var thisLevelIsBanked = false
+
 	func showPauseMenu(sender: String) {
 
 		self.removeAction(forKey: "gameTimer")
@@ -8307,13 +8335,13 @@ laserTimer?.invalidate()
 
 		InGameRecents.shared.runSummary = InGameRecents.RunSummary(
 			height: endlessHeight,
-			durationSeconds: levelTimerValue,
+			durationSeconds: secondsThisRun,
 			paddleHits: InGameRecents.shared.paddleHitsThisRun,
 			bricksDestroyed: InGameRecents.shared.bricksDestroyedThisRun,
 			ballsLost: ballsLostThisRun,
 			powerUpsSeen: InGameRecents.shared.powerUpsSeen,
 			powerUpsCollected: InGameRecents.shared.powerUpsCollected,
-			score: totalScore + levelScore,
+			score: scoreThisRun,
 			levelsCleared: max(0, levelNumber - startLevelNumber),
 			isEndless: endlessMode,
 			isMultiLevel: endlessMode == false && numberOfLevels > 1,

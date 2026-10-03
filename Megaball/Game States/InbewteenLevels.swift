@@ -102,14 +102,34 @@ class InbetweenLevels: GKState {
     // which was deleted with the ad code — taking the non-ad branch with it, which
     // was the only branch that ran once ads were switched off.
     
+    /// The ball's exit as the level's last brick goes: a quick swell, then down to nothing.
+    ///
+    /// **James, round 363: "Improve the ball animation after the final brick of a level is
+    /// destroyed and the level ends. It should be quick, the ball initially grows a bit bigger
+    /// then shrinks down to nothing."** It grew by half again, shrank to a tenth, and then
+    /// faded out as a dot for a further fifth of a second - half a second in all, the last of
+    /// it a speck. Now a quarter of a second: a third bigger, eased out so it *pops*, then
+    /// eased in to nothing, which is where it is hidden.
+    ///
+    /// From the scale it has now rather than from one, because a ball under Expand or Shrink
+    /// Ball is drawn scaled, and a swell to an absolute size would shrink a big ball first.
+    static let ballSwell: CGFloat = 1.35
+    static let ballSwellDuration: TimeInterval = 0.08
+    static let ballShrinkDuration: TimeInterval = 0.17
+
+    static func ballVanish(from scale: CGFloat) -> SKAction {
+        let swell = SKAction.scale(to: scale*ballSwell, duration: ballSwellDuration)
+        swell.timingMode = .easeOut
+        let shrink = SKAction.scale(to: 0, duration: ballShrinkDuration)
+        shrink.timingMode = .easeIn
+        return .sequence([swell, shrink])
+    }
+
     func resetGameScene() {
         
-        let scaleUp = SKAction.scale(by: 1.5, duration: 0.1)
-        let scaleDown = SKAction.scale(to: 0.1, duration: 0.2)
         let scaleDownPaddle = SKAction.scaleX(to: 0.0, duration: 0.2)
-        let fadeOut = SKAction.fadeOut(withDuration: 0.2)
         let wait = SKAction.wait(forDuration: 0.1)
-        let ballSequence = SKAction.sequence([scaleUp, scaleDown, fadeOut])
+        let ballSequence = InbetweenLevels.ballVanish(from: scene.ball.xScale)
         let paddleSequence = SKAction.sequence([wait, scaleDownPaddle])
         let scaleReset = SKAction.scale(to: 1, duration: 0)
         let scaleResetPaddle = SKAction.scaleX(to: 1, duration: 0)
@@ -280,6 +300,9 @@ class InbetweenLevels: GKState {
         // Update level stats
         
         scene.packTimerValue = scene.packTimerValue + scene.levelTimerValue
+        scene.thisLevelIsBanked = true
+        // Banked: its time is in the pack's clock now and its score in the total (above), so
+        // the run's figures do not count it twice (`secondsThisRun`, `scoreThisRun`, round 363)
         if (scene.levelNumber == scene.endLevelNumber || scene.gameoverStatus) && scene.numberOfLevels != 1 && scene.endlessMode == false {
             if scene.totalScore > scene.totalStatsArray[0].packHighScores[scene.packNumber-2] {
                 scene.totalStatsArray[0].packHighScores[scene.packNumber-2] = scene.totalScore
