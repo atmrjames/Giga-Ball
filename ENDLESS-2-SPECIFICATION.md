@@ -2959,6 +2959,33 @@ testers:
   falling power-up's position by `brickWidth`, so a bare `GameScene()` with a power-up on
   screen traps converting NaN to Int. A real scene is always laid out before play.
 
+**Round 364: a release pass, and the tests turned on rounds 361 to 363.**
+
+- **A fresh install, walked on the simulator**: the Quick Start Guide's eight pages, the menu,
+  Settings (Paddle Speed x2.00, Daily Result Pop-Up on), pack select and a first Classic level.
+  Nothing in code to change. Three things in James's guide artwork: "ever-increasing
+  difficultly" on the Endless Mode page, "mischievious" on the Daily Challenge page, and
+  "September 2026" on the Version 1.3 page if it ships in October. The page's 37 power-ups and
+  19 brick modifiers were counted against the catalogues and are right.
+- **Serial Dodger was earned off the last level's drops** (`achievementsCheck`, since 2020). "Collect
+  no power-ups on a pack" asked whether the pack's last level had dropped five, beside the
+  pack's catches - so a pack that dropped twenty, none taken, earned nothing unless five fell on
+  its final level. It reads the pack's drops now, as Super Hero beside it always has. Found
+  writing `ClassicAchievementThresholdTests`, which pins every threshold in the function - the
+  riskiest in the app by CRAP, complexity 128 - at its line and just under it.
+- **Mutation testing** on the round 361 to 363 code. The daily's progress 4 of 4 after a test
+  for a day looked at but not played; the board's rows 7 of 8 (the survivor is a sort's tie);
+  `TotalStats`'s milestones and progress text 31 of 33 after tests that each endless milestone
+  reads the modes its words name, the best run is the highest and a share stops at whole (the
+  two survivors are equivalent: an array already long enough, a target that is never nought).
+  The Mirror Paddle's landing and catch went from 24 of 45 to 34 of 45 with six new tests: a held
+  ball is not bounced as well, Sticky catches in the band and Aimed Sticky anywhere, a held ball
+  is out of both paddles' collisions until it flies, the last Aimed catch still aims, a shaped
+  twin launches off its reflected face, and a landing on the Wrap-Around ghost is measured
+  against the ghost. The rest are guards against states the game never reaches and exact-edge
+  comparisons.
+- **Coverage 79.30%** (79.06% at round 360), 86 functions over a CRAP of 30 (88), 2,986 tests.
+
 **Round 363: James's notes on the between-levels and ending screens.**
 
 - **The title lines hug their words** on the level-passed card and the intro: "Level 5 of 10"

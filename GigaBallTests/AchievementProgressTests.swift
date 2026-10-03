@@ -99,6 +99,66 @@ final class AchievementProgressTests: XCTestCase {
         XCTAssertEqual(TotalStats.achievementProgressLabel(28), "Percentage complete")
     }
 
+    /// A day looked at but not played is no day met: Twist Completionist counts the twists on
+    /// days with an attempt (mutation testing, round 364 - `> 0` read as `>= 0` went unnoticed).
+    func testADayWithNoAttemptMeetsNoTwists() {
+        let key = (1...60).lazy.map { offset -> String in
+            var key = self.today
+            for _ in 0..<offset { key = DailyChallengeGenerator.previousKey(of: key)! }
+            return key
+        }.first { DailyChallengeGenerator.challenge(forKey: $0).twists.isEmpty == false }!
+        let looked = [DailyChallengeRecord(dateKey: key, posted: false, attemptCount: 0)]
+        XCTAssertEqual(DailyAchievements.twistsMet(in: looked), [])
+    }
+
+    /// Each endless milestone reads the history its words name: "in Endless Mode" counts a run
+    /// in either endless mode, as the award does; "in Endless Mayhem" counts Mayhem's alone.
+    /// Read off the achievement's own sentence, so the table and the page cannot disagree.
+    func testEachMilestoneReadsTheModesItsWordsName() {
+        let words = LevelPackSetup().achievementsPreEarnedDescriptionArray
+        for (index, milestone) in TotalStats.endlessMilestones {
+            let stats = TotalStats()
+            switch milestone.measure {
+            case .height: stats.endlessModeHeight = [milestone.target*2]
+            case .seconds: stats.endlessModeDurations = [milestone.target*2]
+            }
+            let mayhemOnly = words[index].contains("Endless Mayhem")
+            XCTAssertEqual(stats.endlessMilestoneBest(index) ?? 0 > 0, mayhemOnly == false,
+                           "\(index) \(words[index]): an original Endless run should "
+                           + (mayhemOnly ? "not count" : "count"))
+
+            let mayhem = TotalStats()
+            switch milestone.measure {
+            case .height: mayhem.endlessIIModeHeight = [milestone.target*2]
+            case .seconds: mayhem.endlessIIDurations = [milestone.target*2]
+            }
+            XCTAssertGreaterThan(mayhem.endlessMilestoneBest(index) ?? 0, 0,
+                                 "\(index): a Mayhem run counts for every endless milestone")
+        }
+    }
+
+    /// The best run is the highest, and a run past the mark is the whole of it and no more.
+    func testTheBestRunIsTheHighestAndTheShareStopsAtWhole() {
+        let stats = TotalStats()
+        stats.endlessModeHeight = [5, 40, 12]
+        XCTAssertEqual(stats.endlessMilestoneBest(1), 40)
+        XCTAssertEqual(stats.endlessMilestoneProgress(1) ?? 0, 0.4, accuracy: 0.0001)
+        stats.endlessModeHeight = [3_000]
+        XCTAssertEqual(stats.endlessMilestoneProgress(0), 1, "ten metres reached three hundred times")
+        stats.endlessModeDurations = [30, 50]
+        stats.endlessIIDurations = [20]
+        XCTAssertEqual(stats.endlessMilestoneBest(17), 50)
+    }
+
+    /// The power-up repair reads a pair of arrays that, from a newer build, need not be the same
+    /// length: a slot the older array has no partner for is left alone, never read past.
+    func testALongerCollectedArrayIsNotReadPastTheReleasedOne() {
+        let stats = TotalStats()
+        stats.powerupsCollected.append(4)
+        stats.holdCollectionsToReleases()
+        XCTAssertEqual(stats.powerupsCollected.last, 4)
+    }
+
     /// Every stored share is one the game can actually write somewhere: in range, and not an
     /// endless milestone or a daily count, which are worked out rather than stored.
     func testTheStoredSharesAreTheOnesNobodyWorksOut() {

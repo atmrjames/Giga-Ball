@@ -1797,6 +1797,10 @@ final class EndlessIIMirrorPaddleTests: XCTestCase {
         scene.frameNumber += 1
         scene.ball.position = CGPoint(x: mirror.position.x + x, y: mirror.position.y + 8)
         scene.ball.physicsBody?.velocity = CGVector(dx: 0, dy: -400)
+        scene.ballStateBeforeStep[ObjectIdentifier(scene.ball)] = BallState(
+            position: scene.ball.position, velocity: CGVector(dx: 0, dy: -400))
+        // The arrival as `update` samples it before the step - what the bounce reads, so a ball
+        // that is bounced as well as held would show it
         scene.endlessIIMirrorPaddleHit(scene.ball)
     }
 
@@ -1929,6 +1933,110 @@ final class EndlessIIMirrorPaddleTests: XCTestCase {
         XCTAssertTrue(scene.endlessIIAimHold, "aiming")
         XCTAssertTrue(scene.endlessIIAimTarget === scene.ball)
         XCTAssertFalse(scene.endlessIIAimedStickyOwedTurn, "the contact's snapshot is spent")
+    }
+
+    // Mutation testing, round 364: what the first tests of the twin's catch left unpinned.
+
+    /// A held ball stays held: the catch is the end of the contact, not the start of a bounce.
+    func testAHeldBallIsNotBouncedAsWell() {
+        let scene = mayhem()
+        scene.endlessIICollectMirrorPaddle()
+        guard let mirror = mirror(scene) else { return XCTFail("a mirror stands") }
+        scene.stickyPaddleCatches = 3
+        landOnTheMirror(scene, mirror: mirror, at: 10)
+        XCTAssertEqual(scene.ball.physicsBody?.velocity ?? CGVector(dx: 1, dy: 1), .zero)
+    }
+
+    /// Plain Sticky catches in the paddle's band; a ball landing on the very end bounces off it.
+    /// Aimed Sticky takes the whole top face, as it does on the paddle.
+    func testStickyCatchesInTheBandAndAimedStickyAnywhere() {
+        let scene = mayhem()
+        scene.endlessIICollectMirrorPaddle()
+        guard let first = mirror(scene) else { return XCTFail("a mirror stands") }
+        scene.stickyPaddleCatches = 3
+        landOnTheMirror(scene, mirror: first, at: first.size.width/2 - 2)
+        XCTAssertFalse(scene.endlessIIIsHeldOnMirror(scene.ball), "the end of the twin is no catch")
+        XCTAssertGreaterThan(scene.ball.physicsBody?.velocity.dy ?? 0, 0, "it bounced")
+
+        let aimed = mayhem()
+        aimed.endlessIICollectMirrorPaddle()
+        aimed.endlessIICollectAimedSticky()
+        guard let twin = mirror(aimed) else { return XCTFail("a mirror stands") }
+        landOnTheMirror(aimed, mirror: twin, at: twin.size.width/2 - 2)
+        XCTAssertTrue(aimed.endlessIIIsHeldOnMirror(aimed.ball), "aimed takes the whole face")
+    }
+
+    /// A held ball is out of both paddles' way, and back in it once launched.
+    func testAHeldBallStopsMeetingThePaddlesUntilItLeaves() throws {
+        let scene = mayhem()
+        scene.endlessIICollectMirrorPaddle()
+        guard let mirror = mirror(scene) else { return XCTFail("a mirror stands") }
+        scene.stickyPaddleCatches = 3
+        scene.ballSpeedLimit = 400
+        landOnTheMirror(scene, mirror: mirror, at: 10)
+        let body = try XCTUnwrap(scene.ball.physicsBody)
+        let both = CollisionTypes.paddleCategory.rawValue | CollisionTypes.mirrorPaddleCategory.rawValue
+        XCTAssertEqual(body.collisionBitMask & both, 0, "neither paddle shoves a waiting ball")
+        scene.endlessIILaunchHeldBall()
+        XCTAssertEqual(body.collisionBitMask & both, both, "and both meet it again once it flies")
+    }
+
+    /// The last Aimed Sticky catch still catches, and the aim it owes is held open.
+    func testTheLastAimedCatchOnTheTwinStillAims() {
+        let scene = mayhem()
+        scene.endlessIICollectMirrorPaddle()
+        scene.endlessIICollectAimedSticky()
+        guard let mirror = mirror(scene) else { return XCTFail("a mirror stands") }
+        while scene.endlessIIAimedStickyClock.remaining > 1 {
+            scene.endlessIIAimedStickyClock.spendTurn()
+        }
+        landOnTheMirror(scene, mirror: mirror, at: 0)
+        XCTAssertTrue(scene.endlessIIIsHeldOnMirror(scene.ball))
+        XCTAssertTrue(scene.endlessIIAimOwedHold, "the expired clock's last catch is still aimed")
+        XCTAssertTrue(scene.endlessIIAimTarget === scene.ball)
+    }
+
+    /// A shaped twin launches off its own face, which is the paddle's reflected: a wedge that
+    /// fires left from the paddle fires right from the twin.
+    func testAShapedTwinLaunchesOffItsReflectedFace() {
+        let scene = mayhem()
+        scene.paddleHeight = 12
+        scene.minAngleDeg = 15
+        scene.paddle.texture = scene.paddleTexture
+        scene.paddle.physicsBody = SKPhysicsBody(rectangleOf: scene.paddle.size)
+        scene.endlessIICollectMirrorPaddle()
+        scene.endlessIICollectPaddleSurface(.wedgeLeft)
+        scene.refreshEndlessIIPaddleShapeArt()
+        guard let mirror = mirror(scene) else { return XCTFail("a mirror stands") }
+        scene.ball.size = CGSize(width: 12, height: 12)
+        for offset: CGFloat in [-30, 0, 30] {
+            scene.ball.position = CGPoint(x: mirror.position.x + offset, y: mirror.position.y + 8)
+            scene.endlessIIMirrorHeldBalls = [ObjectIdentifier(scene.ball)]
+            guard let angle = scene.endlessIIMirrorShapedLaunchAngle(for: scene.ball) else {
+                return XCTFail("a shaped twin has a launch of its own")
+            }
+            XCTAssertLessThan(angle, Double.pi/2, "from \(offset): the reflection of a left wedge fires right")
+        }
+    }
+
+    /// Under Wrap-Around the twin's overhang comes back in at the far wall as a ghost (round
+    /// 339), and a ball meeting the ghost is measured against the ghost - not against the twin a
+    /// field's width away, which would read every ghost landing as the very end of the face.
+    func testALandingOnTheWrapGhostIsMeasuredAgainstTheGhost() {
+        let scene = mayhem()
+        scene.gameWidth = 400
+        scene.endlessIICollectMirrorPaddle()
+        guard let mirror = mirror(scene) else { return XCTFail("a mirror stands") }
+        mirror.position.x = 190
+        XCTAssertEqual(scene.endlessIIMirrorXNearest(to: -195, mirror: mirror), 190,
+                       "no Wrap-Around, no ghost")
+        scene.endlessIICollectWrapAround()
+        XCTAssertEqual(scene.endlessIIMirrorXNearest(to: -195, mirror: mirror), -210,
+                       "the ghost a field to the left, which the ball is beside")
+        XCTAssertEqual(scene.endlessIIMirrorXNearest(to: 150, mirror: mirror), 190,
+                       "and a ball over the twin itself is measured against the twin")
+        mirror.position.x = -190
+        XCTAssertEqual(scene.endlessIIMirrorXNearest(to: 195, mirror: mirror), 210)
     }
 
     /// Without Sticky running it bounces, as it always has.

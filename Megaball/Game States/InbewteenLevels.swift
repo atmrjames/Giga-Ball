@@ -699,7 +699,12 @@ class InbetweenLevels: GKState {
                     }
                 }
             }
-            if scene.powerUpsGeneratedPerLevel >= 5 && scene.powerUpsCollectedPerPack == 0 && scene.totalStatsArray[0].achievementsUnlockedArray[57] == false {
+            if scene.powerUpsGeneratedPerPack >= 5 && scene.powerUpsCollectedPerPack == 0 && scene.totalStatsArray[0].achievementsUnlockedArray[57] == false {
+            // **The pack's drops, not the last level's** (round 364). "Collect no power-ups on a
+            // pack" asked, from 2020, whether the *last level* had dropped five beside the whole
+            // pack's catches - so a pack that dropped twenty and had none taken earned nothing
+            // unless five of them fell on its final level. Found writing
+            // `ClassicAchievementThresholdTests`; Super Hero beside it always read the pack
                 scene.totalStatsArray[0].achievementsUnlockedArray[57] = true
                 scene.totalStatsArray[0].achievementDates[57] = Date()
                 let achievement = GKAchievement(identifier: "noPackPowerUps")
