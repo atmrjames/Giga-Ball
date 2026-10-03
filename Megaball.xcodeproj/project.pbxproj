@@ -416,6 +416,7 @@
 		1AF1700000000912 /* ResumeCardRenderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000911 /* ResumeCardRenderTests.swift */; };
 		1AF1700000000922 /* DailyAchievementsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000921 /* DailyAchievementsTests.swift */; };
 		1AF1700000000932 /* AchievementAwardTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000931 /* AchievementAwardTests.swift */; };
+		1AF1700000000A68 /* ItemDetailPageRowsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000A67 /* ItemDetailPageRowsTests.swift */; };
 		1AF1700000000A66 /* ClassicAchievementThresholdTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000A65 /* ClassicAchievementThresholdTests.swift */; };
 		1AF1700000000A64 /* StatsHonestyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000A63 /* StatsHonestyTests.swift */; };
 		1AF1700000000A62 /* AchievementProgressTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000A61 /* AchievementProgressTests.swift */; };
@@ -835,6 +836,7 @@
 		1AF1700000000911 /* ResumeCardRenderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResumeCardRenderTests.swift; sourceTree = "<group>"; };
 		1AF1700000000921 /* DailyAchievementsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyAchievementsTests.swift; sourceTree = "<group>"; };
 		1AF1700000000931 /* AchievementAwardTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AchievementAwardTests.swift; sourceTree = "<group>"; };
+		1AF1700000000A67 /* ItemDetailPageRowsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ItemDetailPageRowsTests.swift; sourceTree = "<group>"; };
 		1AF1700000000A65 /* ClassicAchievementThresholdTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ClassicAchievementThresholdTests.swift; sourceTree = "<group>"; };
 		1AF1700000000A63 /* StatsHonestyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatsHonestyTests.swift; sourceTree = "<group>"; };
 		1AF1700000000A61 /* AchievementProgressTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AchievementProgressTests.swift; sourceTree = "<group>"; };
@@ -903,6 +905,7 @@
 				1AF1700000000E01 /* MenuLayoutTests.swift */,
 				1AF1930000000A01 /* ScreenLayoutAuditTests.swift */,
 				1AF1700000000931 /* AchievementAwardTests.swift */,
+				1AF1700000000A67 /* ItemDetailPageRowsTests.swift */,
 				1AF1700000000A65 /* ClassicAchievementThresholdTests.swift */,
 				1AF1700000000A63 /* StatsHonestyTests.swift */,
 				1AF1700000000A61 /* AchievementProgressTests.swift */,
@@ -1779,6 +1782,7 @@
 				1AF1700000000E02 /* MenuLayoutTests.swift in Sources */,
 				1AF1930000000A02 /* ScreenLayoutAuditTests.swift in Sources */,
 				1AF1700000000932 /* AchievementAwardTests.swift in Sources */,
+				1AF1700000000A68 /* ItemDetailPageRowsTests.swift in Sources */,
 				1AF1700000000A66 /* ClassicAchievementThresholdTests.swift in Sources */,
 				1AF1700000000A64 /* StatsHonestyTests.swift in Sources */,
 				1AF1700000000A62 /* AchievementProgressTests.swift in Sources */,

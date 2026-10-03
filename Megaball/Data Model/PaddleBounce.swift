@@ -506,7 +506,7 @@ extension PaddleOutline {
     /// The body itself, or nil where the picture says nothing useful.
     static func body(for texture: SKTexture, size: CGSize) -> SKPhysicsBody? {
         guard size.width > 1, size.height > 1 else { return nil }
-        let key = Key(texture: ObjectIdentifier(texture),
+        let key = Key(texture: texture.cacheIdentity,
                       width: Int((size.width*10).rounded()),
                       height: Int((size.height*10).rounded()))
         if let kept = cache[key] { return kept.copy() as? SKPhysicsBody }
@@ -560,7 +560,7 @@ extension PaddleOutline {
     /// costs nothing extra, because it is read from the same measurement and cached beside it.
     static func profile(for texture: SKTexture, size: CGSize) -> [(x: CGFloat, top: CGFloat)]? {
         guard size.width > 1, size.height > 1 else { return nil }
-        let key = Key(texture: ObjectIdentifier(texture),
+        let key = Key(texture: texture.cacheIdentity,
                       width: Int((size.width*10).rounded()),
                       height: Int((size.height*10).rounded()))
         if let kept = profiles[key] { return kept }
@@ -669,7 +669,8 @@ extension PaddleOutline {
     }
 
     private struct Key: Hashable {
-        let texture: ObjectIdentifier
+        let texture: String
+        // The picture's name, not its address - see `SKTexture.cacheIdentity` (round 365)
         let width: Int
         let height: Int
     }

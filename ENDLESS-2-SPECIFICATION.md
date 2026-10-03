@@ -2959,6 +2959,38 @@ testers:
   falling power-up's position by `brickWidth`, so a bare `GameScene()` with a power-up on
   screen traps converting NaN to Int. A real scene is always laid out before play.
 
+**Round 365: tests for the code coverage found bare.**
+
+- **An item's own page** (`ItemDetailPageRowsTests`): a power-up's released, collected and rate
+  from the player's tallies, its duration and multiplier from the catalogue, "Found in" for
+  Mayhem's own, no rate for one never seen, and no empty row on any power-up's page (round
+  351's fault); an achievement's date, Incomplete for an all-or-nothing one, and the share for a
+  counted one under its own label. The page had been a quarter covered.
+- **What a finished endless run leaves behind** (`EndlessRunRecordTests`): the height, length and
+  date of an original Endless run and a Mayhem run, each in its own history, and the
+  total-height achievements of each mode counting only its own runs. `saveGameData`'s endless
+  half had never run under a test, and every endless figure the game shows comes from it. Also
+  the packs-completed counts, 1 to 1,000.
+- **The ball's angle limits** (`BallAngleLimitsTests`): a flat bounce lifted at least
+  `minAngleDeg` off the horizontal on its own side and heading its own way, a dead-flat one
+  leaving away from the brick in both directions, a near-upright ball tipped half the minimum
+  off the vertical on either half of the field, a dead-upright one leaning away from the brick,
+  an honest bounce untouched at its speed, the waiting ball and a high Gravity ball left alone,
+  and an extra ball corrected while the first waits. The escapes and snaps themselves had never
+  run under a test. Mutation 25 of 60 to 31 of 60 and then more; what survives is boundary
+  equalities with no observable effect and the deliberately alternating nudge for a flat bounce
+  off no brick.
+- **The outline caches were keyed on a texture's address** (`SKTexture.cacheIdentity`). Both the
+  traced-body cache and `PaddleOutline`'s were keyed on `ObjectIdentifier(texture)`, and a texture
+  made with `imageNamed:` is a new object each time - so a freed one's address could be handed to
+  a new texture of a different picture, which then got the old picture's outline. The full suite
+  saw it once: a Wedge Right launching at a Wedge Left's 105 degrees, straight after the Wedge
+  Left's test; in a run it would be a paddle changed to a new shape bouncing as the old one.
+  Keyed by the picture's name and the part of it cut, now; an unnamed (drawn) texture is keyed by
+  its object and kept alive so its address cannot be reused. `testATexturesCacheIdentityIsItsPicture`
+  fails against the old key every time; the alternating launch test catches it only when the
+  allocator happens to reuse an address.
+
 **Round 364: a release pass, and the tests turned on rounds 361 to 363.**
 
 - **A fresh install, walked on the simulator**: the Quick Start Guide's eight pages, the menu,

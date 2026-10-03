@@ -41,7 +41,7 @@ import SpriteKit
 enum TracedBodyCache {
 
     private struct Key: Hashable {
-        let texture: ObjectIdentifier
+        let texture: String
         let width: Int
         let height: Int
     }
@@ -59,7 +59,7 @@ enum TracedBodyCache {
     /// because `NSCopying` returns `Any`, and every call site already carries a rectangle
     /// fallback for the picture that will not trace.
     static func body(texture: SKTexture, size: CGSize) -> SKPhysicsBody? {
-        let key = Key(texture: ObjectIdentifier(texture),
+        let key = Key(texture: texture.cacheIdentity,
                       width: Int((size.width*10).rounded()),
                       height: Int((size.height*10).rounded()))
 
@@ -80,4 +80,43 @@ enum TracedBodyCache {
     static func empty() { cache.removeAll() }
 
     static var count: Int { cache.count }
+}
+
+extension SKTexture {
+
+    /// What a cache keyed on a picture is keyed on: the picture's own name.
+    ///
+    /// **Not its address** (round 365). Both outline caches - this one and `PaddleOutline`'s -
+    /// were keyed on `ObjectIdentifier(texture)`, which is the object's place in memory, and an
+    /// `SKTexture` made with `imageNamed:` is a new object every time one is asked for. Once the
+    /// old one was freed, a new texture could be handed the same address and with it the old
+    /// picture's cached outline. The full suite caught it one run in many: a Wedge Right paddle
+    /// launching at 105 degrees, which is exactly a Wedge Left's launch at that spot, because the
+    /// test before it had used a Wedge Left. In a run it is a paddle changed from one shape to
+    /// another bouncing as the shape it was.
+    ///
+    /// A named picture is keyed by its name, which two pictures cannot share. A texture made
+    /// from an image has no name; it is keyed by its address as before, and **kept alive** for
+    /// as long as the process runs, so no other object can ever be given that address. Those are
+    /// a few drawn-once pictures (`static let`s), so the list does not grow.
+    var cacheIdentity: String {
+        let described = description
+        if let start = described.firstIndex(of: "'"),
+           let end = described[described.index(after: start)...].firstIndex(of: "'") {
+            let name = String(described[described.index(after: start)..<end])
+            if name.isEmpty == false, name.hasPrefix("<") == false, name != "(null)",
+               name.uppercased() != "NULL" {
+            // An image's texture describes itself as `<data>`, which every one of them shares
+                let part = textureRect()
+                return "name:\(name) \(part.origin.x),\(part.origin.y),\(part.width),\(part.height)"
+            }
+            // With the part of the picture it covers: a texture cut from a larger one carries
+            // its parent's name, and two different cuts are two different outlines
+        }
+        let identity = ObjectIdentifier(self)
+        SKTexture.pinned[identity] = self
+        return "object:\(identity.hashValue)"
+    }
+
+    private static var pinned: [ObjectIdentifier: SKTexture] = [:]
 }

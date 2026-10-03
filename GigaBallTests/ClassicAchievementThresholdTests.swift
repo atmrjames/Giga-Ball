@@ -166,3 +166,80 @@ final class ClassicAchievementThresholdTests: XCTestCase {
         XCTAssertFalse(scene.totalStatsArray[0].achievementsUnlockedArray[40])
     }
 }
+
+extension ClassicAchievementThresholdTests {
+
+    func testPacksCompleted() {
+        // "Complete first pack" (any pack ending with a score), then 10, 100 and 1,000
+        XCTAssertTrue(earned(62) { self.packEnd($0); $0.totalStatsArray[0].packHighScores[0] = 4_000 })
+        for (index, target) in [(63, 10), (64, 100), (65, 1_000)] {
+            XCTAssertTrue(earned(index) { self.packEnd($0); $0.totalStatsArray[0].packsCompleted = target },
+                          "\(index)")
+            XCTAssertFalse(earned(index) { self.packEnd($0); $0.totalStatsArray[0].packsCompleted = target - 1 },
+                           "\(index)")
+        }
+    }
+}
+
+/// What a finished endless run leaves in the player's history (round 364).
+///
+/// `InbetweenLevels.saveGameData`'s endless half was never run under a test, and it is the line
+/// every endless figure the game shows comes from: the Hi-Score height, the statistics page's
+/// runs and averages, the best-so-far on the milestones, and the total-height achievements.
+final class EndlessRunRecordTests: XCTestCase {
+
+    private func runEnds(_ mode: GameMode, height: Int, seconds: Int = 60,
+                         before: (TotalStats) -> Void = { _ in }) -> TotalStats {
+        DailyChallengeSession.shared.active = nil
+        let scene = GameScene()
+        scene.gameMode = mode
+        scene.endlessMode = true
+        scene.totalStatsArray = [TotalStats()]
+        scene.packLevelHighScoresArray = Array(repeating: Array(repeating: 0, count: 10), count: 11)
+        // What a running game loads from the stats; the ending writes it back whatever the mode
+        before(scene.totalStatsArray[0])
+        scene.endlessHeight = height
+        scene.levelTimerValue = seconds
+        let state = InbetweenLevels(scene: scene)
+        state.saveGameData()
+        state.achievementsCheck()
+        return scene.totalStatsArray[0]
+    }
+
+    func testAnEndlessRunIsRecordedWithItsLength() {
+        let stats = runEnds(.endless, height: 312, seconds: 245)
+        XCTAssertEqual(stats.endlessModeHeight, [312])
+        XCTAssertEqual(stats.endlessModeDurations, [245])
+        XCTAssertEqual(stats.endlessModeHeightDate.count, 1)
+        XCTAssertEqual(stats.endlessIIHeights, [], "the original mode's run is not Mayhem's")
+    }
+
+    func testAMayhemRunIsRecordedApart() {
+        let stats = runEnds(.endlessII, height: 177, seconds: 120) {
+            $0.endlessIIModeHeight = [50]
+        }
+        XCTAssertEqual(stats.endlessIIHeights, [50, 177])
+        XCTAssertEqual(stats.endlessIIDurations, [120])
+        XCTAssertEqual(stats.endlessModeHeight, [], "and Mayhem's is not the original's")
+    }
+
+    func testEndlessTotalHeight() {
+        // "Reach 5,000m / 10,000m Total Height in Endless Mode", over every run
+        let five = runEnds(.endless, height: 1_000) { $0.endlessModeHeight = [4_000] }
+        XCTAssertTrue(five.achievementsUnlockedArray[4])
+        XCTAssertFalse(five.achievementsUnlockedArray[5])
+        XCTAssertEqual(five.achievementsPercentageCompleteArray[5], "50.0%")
+        let short = runEnds(.endless, height: 999) { $0.endlessModeHeight = [4_000] }
+        XCTAssertFalse(short.achievementsUnlockedArray[4])
+    }
+
+    func testMayhemTotalHeight() {
+        // Mayhem's own pair counts Mayhem's runs, not the original mode's
+        let mayhem = runEnds(.endlessII, height: 1_000) { $0.endlessIIModeHeight = [4_000] }
+        XCTAssertTrue(mayhem.achievementsUnlockedArray[70])
+        XCTAssertFalse(mayhem.achievementsUnlockedArray[71])
+        let original = runEnds(.endless, height: 1_000) { $0.endlessModeHeight = [4_000] }
+        XCTAssertFalse(original.achievementsUnlockedArray[70],
+                       "five thousand metres of the original mode is not Mayhem's")
+    }
+}

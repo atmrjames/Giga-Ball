@@ -1229,6 +1229,28 @@ final class ShapedPaddleLaunchTests: XCTestCase {
         }
     }
 
+    /// One shape after the other, again and again, each its own (round 365). The outline caches
+    /// were keyed on a texture's address, so a new texture given a freed one's address was
+    /// given its outline too - the full suite saw a Wedge Right fire at a Wedge Left's 105
+    /// degrees, one run in many, straight after the Wedge Left's own test.
+    func testAlternatingShapesEachLaunchAsThemselves() {
+        for round in 0..<12 {
+            XCTAssertGreaterThan(launched(on: .wedgeLeft, at: -35), 90, "round \(round): left")
+            XCTAssertLessThan(launched(on: .wedgeRight, at: -35), 90, "round \(round): right")
+        }
+    }
+
+    /// Two pictures never share an identity; one picture asked for twice always does.
+    func testATexturesCacheIdentityIsItsPicture() {
+        let left = SKTexture(imageNamed: "regularPaddleWedgeLeft")
+        let right = SKTexture(imageNamed: "regularPaddleWedgeRight")
+        XCTAssertNotEqual(left.cacheIdentity, right.cacheIdentity)
+        XCTAssertEqual(left.cacheIdentity, SKTexture(imageNamed: "regularPaddleWedgeLeft").cacheIdentity)
+        let drawn = SKTexture(image: UIImage(systemName: "circle")!)
+        let other = SKTexture(image: UIImage(systemName: "square")!)
+        XCTAssertNotEqual(drawn.cacheIdentity, other.cacheIdentity, "unnamed pictures by object")
+    }
+
     func testAWedgeRightAlwaysFiresRight() {
         for offset: CGFloat in [-35, -15, 0, 15, 35] {
             XCTAssertLessThan(launched(on: .wedgeRight, at: offset), 90, "from \(offset)")
@@ -1266,5 +1288,200 @@ final class ShapedPaddleLaunchTests: XCTestCase {
         scene.releaseBall()
         let v = scene.ball.physicsBody!.velocity
         XCTAssertEqual(atan2(Double(v.dy), Double(v.dx))*180/Double.pi, 50, accuracy: 0.01)
+    }
+}
+
+/// The angle rules every brick hit ends with (round 364), in all three modes.
+///
+/// `ballHorizontalControl` keeps a ball off the horizontal - "never so flat that it runs
+/// sideways across the field for seconds at a time" - and `ballVerticalControl` keeps it off the
+/// vertical, where it would rise and fall on one spot for ever. Coverage found the very lines that
+/// do it had never run under a test: the four escapes from the flat band and the eight snaps out
+/// of the upright one. Shared mechanics, and Classic and the original Endless have years of
+/// scores on them, so what they do is pinned as it stands.
+final class BallAngleLimitsTests: XCTestCase {
+
+    private let minimum = 15.0
+
+    private func playing() -> GameScene {
+        let scene = GameScene()
+        scene.gameMode = .classic
+        scene.ballIsOnPaddle = false
+        scene.gameState.enter(Playing.self)
+        scene.ballIsOnPaddle = false
+        scene.ballSpeedLimit = 600
+        scene.minAngleDeg = minimum
+        scene.brickWidth = 40
+        scene.addChild(scene.ball)
+        scene.ball.physicsBody = SKPhysicsBody(circleOfRadius: 5)
+        return scene
+    }
+
+    private var place = 0
+
+    /// Somewhere the loop-breaker has not seen, heading `degrees` at the run's speed.
+    private func aim(_ scene: GameScene, _ degrees: Double, x: CGFloat? = nil) {
+        place += 1
+        scene.frameNumber = place
+        scene.ball.position = CGPoint(x: x ?? CGFloat(place%9)*60 - 240, y: CGFloat(place)*41)
+        let radians = degrees*Double.pi/180
+        scene.ball.physicsBody!.velocity = CGVector(dx: cos(radians)*600, dy: sin(radians)*600)
+    }
+
+    private func heading(_ scene: GameScene) -> Double {
+        let v = scene.ball.physicsBody!.velocity
+        return atan2(Double(v.dy), Double(v.dx))*180/Double.pi
+    }
+
+    func testAFlatBounceIsLiftedOffTheHorizontalOnItsOwnSide() {
+        let scene = playing()
+        for (flat, quadrant) in [(5.0, 1.0), (-5.0, -1.0), (175.0, 1.0), (-175.0, -1.0)] {
+            aim(scene, flat)
+            scene.ballHorizontalControl(angleDegInput: flat, for: scene.ball)
+            let out = heading(scene)
+            XCTAssertGreaterThanOrEqual(abs(out), minimum - 0.01, "\(flat) left at \(out)")
+            XCTAssertLessThanOrEqual(abs(out), 180 - minimum + 0.01, "\(flat) left at \(out)")
+            XCTAssertEqual(out.sign == .minus ? -1 : 1, quadrant, "\(flat): up stays up")
+            XCTAssertEqual(cos(out*Double.pi/180) > 0, cos(flat*Double.pi/180) > 0,
+                           "\(flat): and it keeps going the way it was going")
+        }
+    }
+
+    /// Exactly horizontal off a brick, it leaves away from the brick.
+    func testADeadFlatBounceLeavesAwayFromTheBrick() {
+        let scene = playing()
+        let brick = SKSpriteNode(color: .red, size: CGSize(width: 40, height: 20))
+        scene.addChild(brick)
+        aim(scene, 0)
+        brick.position = CGPoint(x: scene.ball.position.x, y: scene.ball.position.y + 30)
+        scene.ballHorizontalControl(angleDegInput: 0, brickNode: brick, for: scene.ball)
+        XCTAssertLessThanOrEqual(heading(scene), -minimum + 0.01, "the brick is above, so down")
+
+        aim(scene, 0)
+        brick.position = CGPoint(x: scene.ball.position.x, y: scene.ball.position.y - 30)
+        scene.ballHorizontalControl(angleDegInput: 0, brickNode: brick, for: scene.ball)
+        XCTAssertGreaterThanOrEqual(heading(scene), minimum - 0.01, "the brick is below, so up")
+    }
+
+    /// Dead flat the other way, off a brick, it leaves away from the brick too.
+    func testADeadFlatBounceLeftwardsLeavesAwayFromTheBrick() {
+        let scene = playing()
+        let brick = SKSpriteNode(color: .red, size: CGSize(width: 40, height: 20))
+        scene.addChild(brick)
+        aim(scene, 180)
+        brick.position = CGPoint(x: scene.ball.position.x, y: scene.ball.position.y + 30)
+        scene.ballHorizontalControl(angleDegInput: 180, brickNode: brick, for: scene.ball)
+        XCTAssertLessThan(heading(scene), 0, "the brick is above, so down")
+        XCTAssertLessThanOrEqual(heading(scene), -minimum + 0.01)
+
+        aim(scene, 180)
+        brick.position = CGPoint(x: scene.ball.position.x, y: scene.ball.position.y - 30)
+        scene.ballHorizontalControl(angleDegInput: 180, brickNode: brick, for: scene.ball)
+        XCTAssertGreaterThan(heading(scene), 0, "the brick is below, so up")
+        XCTAssertLessThanOrEqual(heading(scene), 180 - minimum + 0.01)
+    }
+
+    /// The ball waiting on the paddle is nobody's to turn, and nor is a ball Gravity is
+    /// carrying high above it - both functions leave them exactly as they are.
+    func testAWaitingBallAndAGravityBallAreLeftAlone() {
+        let scene = playing()
+        aim(scene, 5)
+        scene.ballIsOnPaddle = true
+        scene.ballHorizontalControl(angleDegInput: 5, for: scene.ball)
+        XCTAssertEqual(heading(scene), 5, accuracy: 0.01, "on the paddle")
+        aim(scene, 89)
+        scene.ballVerticalControl(for: scene.ball)
+        XCTAssertEqual(heading(scene), 89, accuracy: 0.01, "on the paddle")
+
+        scene.ballIsOnPaddle = false
+        scene.gravityActivated = true
+        scene.ballSize = 12
+        scene.paddle.position = CGPoint(x: 0, y: -400)
+        aim(scene, 5)
+        scene.ballHorizontalControl(angleDegInput: 5, for: scene.ball)
+        XCTAssertEqual(heading(scene), 5, accuracy: 0.01, "high under Gravity")
+        aim(scene, 89)
+        scene.ballVerticalControl(for: scene.ball)
+        XCTAssertEqual(heading(scene), 89, accuracy: 0.01, "high under Gravity")
+
+        scene.ball.position = CGPoint(x: 0, y: -380)
+        scene.ball.physicsBody!.velocity = CGVector(dx: 600*cos(5*Double.pi/180),
+                                                    dy: 600*sin(5*Double.pi/180))
+        scene.ballHorizontalControl(angleDegInput: 5, for: scene.ball)
+        XCTAssertGreaterThanOrEqual(heading(scene), minimum - 0.01,
+                                    "but near the paddle Gravity's ball is corrected like any")
+        scene.ball.physicsBody!.velocity = CGVector(dx: 600*cos(89*Double.pi/180),
+                                                    dy: 600*sin(89*Double.pi/180))
+        scene.ballVerticalControl(for: scene.ball)
+        XCTAssertEqual(heading(scene), 90 - minimum/2, accuracy: 0.01, "upright too")
+    }
+
+    /// Multi-Ball: the first ball waiting on the paddle is no reason to leave another ball
+    /// flying flat - each is asked about itself.
+    func testAnExtraBallIsCorrectedWhileTheFirstWaits() {
+        let scene = playing()
+        scene.ballIsOnPaddle = true
+        let extra = SKSpriteNode(color: .white, size: CGSize(width: 10, height: 10))
+        extra.physicsBody = SKPhysicsBody(circleOfRadius: 5)
+        extra.position = CGPoint(x: 90, y: 200)
+        scene.addChild(extra)
+        extra.physicsBody!.velocity = CGVector(dx: 600*cos(5*Double.pi/180),
+                                               dy: 600*sin(5*Double.pi/180))
+        scene.ballHorizontalControl(angleDegInput: 5, for: extra)
+        var v = extra.physicsBody!.velocity
+        XCTAssertGreaterThanOrEqual(atan2(Double(v.dy), Double(v.dx))*180/Double.pi, minimum - 0.01)
+        extra.physicsBody!.velocity = CGVector(dx: 600*cos(89*Double.pi/180),
+                                               dy: 600*sin(89*Double.pi/180))
+        scene.ballVerticalControl(for: extra)
+        v = extra.physicsBody!.velocity
+        XCTAssertEqual(atan2(Double(v.dy), Double(v.dx))*180/Double.pi, 90 - minimum/2,
+                       accuracy: 0.01)
+    }
+
+    /// A steady bounce is left alone, and the speed is the speed it had.
+    func testAnHonestBounceIsUntouched() {
+        let scene = playing()
+        aim(scene, 60)
+        scene.ballHorizontalControl(angleDegInput: 60, for: scene.ball)
+        XCTAssertEqual(heading(scene), 60, accuracy: 0.01)
+        let v = scene.ball.physicsBody!.velocity
+        XCTAssertEqual(hypot(v.dx, v.dy), 600, accuracy: 1)
+    }
+
+    /// Near-upright is pushed half the minimum off the vertical, on the side it leans - on
+    /// either half of the field, which the function treats separately at the edge of the lean.
+    func testANearlyUprightBallIsTippedOffTheVertical() {
+        let scene = playing()
+        let half = minimum/2
+        for x: CGFloat in [120, -120] {
+            for (upright, expected) in [(88.0, 90 - half), (92.0, 90 + half),
+                                        (-88.0, -90 + half), (-92.0, -90 - half)] {
+                aim(scene, upright, x: x)
+                scene.ballVerticalControl(for: scene.ball)
+                XCTAssertEqual(heading(scene), expected, accuracy: 0.01, "\(upright) at x \(x)")
+            }
+        }
+    }
+
+    /// Dead upright off a brick leans away from it.
+    func testADeadUprightBounceLeansAwayFromTheBrick() {
+        let scene = playing()
+        let brick = SKSpriteNode(color: .red, size: CGSize(width: 40, height: 20))
+        scene.addChild(brick)
+        aim(scene, 90, x: 100)
+        scene.ball.physicsBody!.velocity = CGVector(dx: 0, dy: 600)
+        // Exactly upright: cos and sin of a right angle leave a speck of dx, which is a lean
+        // already, and the brick's branch only answers a ball with none
+        brick.position = CGPoint(x: 70, y: scene.ball.position.y)
+        scene.ballVerticalControl(brickNode: brick, for: scene.ball)
+        XCTAssertLessThan(heading(scene), 90, "the brick is to the left, so it leans right")
+        XCTAssertLessThanOrEqual(heading(scene), 90 - minimum/2 + 0.01)
+
+        aim(scene, 90, x: 100)
+        scene.ball.physicsBody!.velocity = CGVector(dx: 0, dy: 600)
+        brick.position = CGPoint(x: 130, y: scene.ball.position.y)
+        scene.ballVerticalControl(brickNode: brick, for: scene.ball)
+        XCTAssertGreaterThanOrEqual(heading(scene), 90 + minimum/2 - 0.01,
+                                    "and to the right, so it leans left")
     }
 }
