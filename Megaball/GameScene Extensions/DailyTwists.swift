@@ -1003,6 +1003,15 @@ extension GameScene {
                             || brick.texture == brickMultiHit2Texture
                             || brick.texture == brickMultiHit3Texture:
                 brick.texture = brickNormalTexture
+                if brick.color.cgColor.alpha < 0.01 { brick.color = .white }
+                // **A colour, or it is drawn as nothing** (James, round 361, on Bridge: "some
+                // bricks turned to invisible bricks, but were destroyed on the first hit not
+                // shown"). A level paints its ordinary bricks and never its multi-hits, whose art
+                // carries its own colour - so a multi-hit's `color` is the sprite's default,
+                // white with no alpha. `brickCreation` turns the blend on for every ordinary
+                // brick, and an ordinary brick blended fully into a clear colour is invisible.
+                // It broke in one hit because it *was* ordinary, as Softened says; it just could
+                // not be seen. White is the plain ordinary brick, as Hardened's multi-hit is
             case .veiled where brick.texture == brickNormalTexture:
                 brick.texture = brickInvisibleTexture
                 // `brickCreation`'s own invisible check runs after this pass and hides it,

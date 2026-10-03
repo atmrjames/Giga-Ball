@@ -145,6 +145,19 @@ enum AchievementCatalogue {
         "minimumBallSpeed",                   // 97 Pokey
     ]
 
+    /// The achievements whose progress is a share the game writes as it goes - totals of height,
+    /// levels, packs, points and power-ups - and that the achievements pages print.
+    ///
+    /// **Listed, so that nothing else is** (round 361). The stored strings start at "0.0%" for
+    /// every achievement from 66 on, the all-or-nothing ones as well, and James found Paddle
+    /// Guru and Top Of The Charts reading "Percentage complete 0.0%" for an achievement that has
+    /// no percentage. Each entry here is one somebody writes: `awardProgress` (70, 71, 83), the
+    /// power-up tallies (27 to 31) and the between-levels totals. The endless milestones and the
+    /// daily's counts are worked out from history instead and are not here.
+    static let storedShare: Set<Int> = [
+        4, 5, 27, 28, 29, 30, 31, 46, 47, 48, 49, 51, 52, 53, 63, 64, 65, 70, 71, 83,
+    ]
+
     /// The modes an achievement can be earned in.
     ///
     /// A set rather than a single mode, because most of them are honestly more than one:

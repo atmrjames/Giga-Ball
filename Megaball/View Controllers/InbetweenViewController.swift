@@ -662,9 +662,12 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
 
             let paragraph = NSMutableParagraphStyle()
             paragraph.alignment = .center
-            paragraph.paragraphSpacing = 2
+            paragraph.paragraphSpacing = DailyTwist.twistLineGap
             lines.addAttribute(.paragraphStyle, value: paragraph,
                                range: NSRange(location: 0, length: lines.length))
+            // The game over's gap, from the one constant both use (James, round 361: "Make the
+            // gap between the twists on the level intro screen slightly larger. Use the same gap
+            // from the game over screen"). It was 2 here and 4 there
             levelNameLabel.numberOfLines = 0
             levelNameLabel.adjustsFontSizeToFitWidth = true
             levelNameLabel.attributedText = lines
@@ -676,8 +679,8 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
             let lineCount = max(challenge.twists.count, 1)
             for constraint in levelNameLabel.constraints
             where constraint.firstAttribute == .height {
-                constraint.constant = ceil(font.lineHeight)*CGFloat(lineCount)
-                    + 2*CGFloat(lineCount - 1)
+                constraint.constant = DailyTwist.twistLineHeight(for: font)*CGFloat(lineCount)
+                    + DailyTwist.twistLineGap*CGFloat(lineCount - 1)
             }
             // The box grows a line per twist (James, round 177, with a screenshot: "on a day
             // where there's more than one twist, only one twist shows up there"). The
@@ -686,7 +689,8 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
             // the same fixed-height trap that swallowed the run-kind line twice (rounds 14
             // and 15, `showRunKind` below). Resized rather than removed, because the PASSED
             // banner hangs off this label's bottom edge and still needs an edge to hang off.
-            // The 2s are the paragraph spacing set just above
+            // Each line is a badge high rather than a line of text, since the badge is the
+            // taller (round 361), and the gaps are the paragraph spacing set just above
         }
     }
 
@@ -1150,7 +1154,7 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
         let full = NSRange(location: 0, length: text.length)
         let paragraph = NSMutableParagraphStyle()
         paragraph.alignment = .center
-        paragraph.paragraphSpacing = 2
+        paragraph.paragraphSpacing = DailyTwist.twistLineGap
         paragraph.lineBreakMode = .byWordWrapping
         // Word wrapping rather than the label's default truncation, so a long twist name on a
         // narrow screen takes a second line instead of losing its tail to an ellipsis

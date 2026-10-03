@@ -43,9 +43,13 @@ enum PaddleSpeed {
     // a thumb can actually land on, and every one of the five old settings is still exactly
     // reachable - x1.25 and x1.50 were two of them
 
-    /// What the five old steps meant, in order. Index 2 was the default, hence 1.5 below.
+    /// What the five old steps meant, in order. Index 2 was the phone's default and 3 the
+    /// iPad's.
     static let legacyFactors: [CGFloat] = [1.00, 1.25, 1.50, 2.00, 3.00]
-    static let fallback: CGFloat = 1.50
+    static let fallback: CGFloat = 2.00
+    // **x2.00 everywhere since round 361** (James: "Let's set the default paddle speed to x2.00
+    // on all devices"); it was x1.50, with the iPad's x2.00 registered by the menu. One of the
+    // old five steps, so the legacy key can still hold it exactly
 
     static let key = "paddleSpeedFactor"
     static let legacyKey = "paddleSensitivitySetting"

@@ -1494,6 +1494,20 @@ extension DailyTwist {
     /// change together or the set stops looking like a set.
     static let twistBadgeHeight: CGFloat = 1.9
 
+    /// The space between one twist's line and the next, wherever the day's twists are listed.
+    ///
+    /// **One gap for every screen** (James, round 361: "Make the gap between the twists on the
+    /// level intro screen slightly larger. Use the same gap from the game over screen"). The
+    /// badge is taller than the text beside it, so a line is exactly a badge high and the gap
+    /// between two badges is exactly this - measured with TextKit, 4 on the game over and 2 on
+    /// the intro, which drew its badges nearly touching.
+    static let twistLineGap: CGFloat = 4
+
+    /// How tall one twist's line is at a font: the badge, or the text where that is taller.
+    static func twistLineHeight(for font: UIFont) -> CGFloat {
+        max(ceil(font.lineHeight), ceil(font.capHeight*twistBadgeHeight))
+    }
+
     static func badgedLine(icon: UIImage, name: String, font: UIFont,
                            colour: UIColor) -> NSAttributedString {
         let attachment = NSTextAttachment()

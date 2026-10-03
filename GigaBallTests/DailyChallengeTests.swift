@@ -1631,6 +1631,36 @@ final class DailyLayoutTwistTests: XCTestCase {
                        "veiled: ordinary bricks hide until struck")
     }
 
+    /// James, round 361, on Bridge (City Pack level 39) with Softened drawn: "some bricks
+    /// turned to invisible bricks, but were destroyed on the first hit not shown". The level
+    /// colours its ordinary bricks and not its multi-hits, so a softened multi-hit was an
+    /// ordinary brick blended into a clear colour - there, and drawn as nothing.
+    func testASoftenedBridgeCanBeSeen() {
+        XCTAssertEqual(DailyTwist.DailyBrickSwap.drawn(forKey: "2026-10-03"), .softened,
+                       "the day James played, and the remap it drew")
+        let scene = swappedScene(dateKey: "2026-10-03")
+        defer { DailyChallengeSession.shared.active = nil }
+        scene.totalStatsArray = [TotalStats()]
+        scene.brickWidth = 40
+        scene.brickHeight = 20
+        scene.gameWidth = 440
+        scene.numberOfBrickColumns = 11
+        scene.numberOfBrickRows = 22
+        scene.yBrickOffset = 400
+        scene.levelNumber = 39
+        scene.loadLevel39()
+
+        var ordinary: [SKSpriteNode] = []
+        scene.enumerateChildNodes(withName: BrickCategoryName) { node, _ in
+            if let brick = node as? SKSpriteNode, brick.texture == scene.brickNormalTexture {
+                ordinary.append(brick)
+            }
+        }
+        XCTAssertEqual(ordinary.count, 66, "the level's 28 ordinary bricks and its 38 multi-hits")
+        let unseen = ordinary.filter { $0.colorBlendFactor > 0 && $0.color.cgColor.alpha < 0.01 }
+        XCTAssertEqual(unseen.count, 0, "ordinary bricks blended into a clear colour are invisible")
+    }
+
     /// A Softened day on a level with no multi-hit bricks would be a twist that visibly does
     /// nothing, and "does nothing" reads as broken - so the field hardens instead. Still
     /// deterministic: the fallback depends only on the day and the level.
@@ -3761,6 +3791,24 @@ final class DailyBoardRowTests: XCTestCase {
         XCTAssertEqual(rows.filter(\.isLocalPlayer).count, 1)
     }
 
+    /// James, round 361: "my player name showed up on the leaderboard with a score of 0 before
+    /// I'd played the level - only show the current player on the leaderboard if they've posted
+    /// a score, otherwise show the current leaderboard".
+    func testAPlayerWhoHasNotPostedIsNotOnTheBoard() {
+        let zero = DailyBoardRow(rank: 4, name: "Me", score: 0, isLocalPlayer: true)
+        let rows = DailyBoardRow.shown(leaders: leaders(3) + [zero], local: zero, limit: 5,
+                                       localHasPosted: false)
+        XCTAssertEqual(rows.map(\.rank), [1, 2, 3], "the board as it stands, without them")
+    }
+
+    /// "If there are no posted scores yet, hide the leaderboard container" - an empty list is
+    /// what hides it.
+    func testABoardWithOnlyAnUnpostedPlayerIsEmpty() {
+        let zero = DailyBoardRow(rank: 1, name: "Me", score: 0, isLocalPlayer: true)
+        XCTAssertEqual(DailyBoardRow.shown(leaders: [zero], local: zero, limit: 3,
+                                           localHasPosted: false), [])
+    }
+
     func testTheLimitIsTheLeadersShownAndTheOrderIsTheBoards() {
         let rows = DailyBoardRow.shown(leaders: leaders(8).reversed(), local: nil, limit: 3)
         XCTAssertEqual(rows.map(\.rank), [1, 2, 3])
@@ -4130,5 +4178,26 @@ final class DailyBoardPlayersTests: XCTestCase {
     func testTheMenuCardsHeadingCarriesIt() {
         XCTAssertTrue(DailyCardView.boardHeading(players: 240).hasPrefix("LEADERBOARD · 240"))
         XCTAssertTrue(DailyCardView.boardHeading(players: 240).hasSuffix("PLAYERS"))
+    }
+}
+
+/// James, round 361: "Make the gap between the twists on the level intro screen slightly larger.
+/// Use the same gap from the game over screen."
+final class TwistLineGapTests: XCTestCase {
+
+    /// The game over's gap, which the intro now shares.
+    func testTheGapIsTheGameOversFour() {
+        XCTAssertEqual(DailyTwist.twistLineGap, 4)
+    }
+
+    /// A twist's line is as tall as its badge, which is taller than the text - so the gap between
+    /// two badges is the spacing alone, and the intro's label is sized for badges.
+    func testALineIsABadgeHigh() {
+        for font in [UIFont.boldSystemFont(ofSize: 14),
+                     UIFont.systemFont(ofSize: 17, weight: .semibold)] {
+            let badge = font.capHeight*DailyTwist.twistBadgeHeight
+            XCTAssertGreaterThan(badge, font.lineHeight, "\(font.pointSize)")
+            XCTAssertEqual(DailyTwist.twistLineHeight(for: font), ceil(badge))
+        }
     }
 }

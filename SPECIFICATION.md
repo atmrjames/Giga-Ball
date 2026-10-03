@@ -396,10 +396,21 @@ score that gains and loses a separator as it crosses a thousand is movement wher
 is already watching, and the HUD draws its digits on a fixed pitch for exactly that reason. What
 each section holds is decided by where the game writes the number, not by hand — see
 `StatsPage`, which turns a `TotalStats` into rows away from the screen that draws them.
+No power-up is caught more often than it fell: each load holds every power-up's collections to
+its releases (`holdCollectionsToReleases`, round 361), which takes back what the pre-341 Always
+On twist wrote. Two totals pass their partners honestly and are left so: bricks hit (an
+Indestructible is hit for ever and never destroyed, a Multi-Hit takes four) and lasers hit,
+which counts bricks struck, so a Giga-Ball laser through a column counts each one.
 
 **Reference pages.** Power-Ups, Bricks and Achievements share one detail screen
 (`ItemsStatsViewController`): icon, name, description, then a table of facts. A power-up
 that only exists in Endless Mayhem is marked in the list and says so on its own page.
+An unearned achievement shows progress only where there is some to show
+(`TotalStats.achievementProgressText`, round 361): a stored share for the totals in
+`AchievementCatalogue.storedShare`, the best run for an endless milestone, and days posted, best
+streak or twists met for the daily's counts, worked out from its records. An all-or-nothing
+achievement, or one not begun, says Incomplete. The picture is 100 points and may shrink to two
+thirds in a short window; it never grows.
 
 **Pack Select** is a grid of square cells, three across, under the mode's name and logo —
 the same treatment the two endless menus wear, so the three mode menus read as a set.
@@ -490,7 +501,7 @@ Game Center can be disabled in settings.
 | UI Sound | on / off: the button click, separately from the game (round 341) |
 | Haptics | on / off; hidden on devices with no haptic engine, such as iPads |
 | Perspective Zoom | on / off: the tilt-based motion on menu backgrounds (was "Parallax"), and off whenever the system's Reduce Motion is on |
-| Paddle Speed | a slider from 1.0 to 5.0 in quarter steps, with a practice field (5.0 from round 346) |
+| Paddle Speed | a slider from 1.0 to 5.0 in quarter steps, with a practice field (5.0 from round 346); x2.00 by default on every device (round 361; it was x1.50 on a phone) |
 | Swipe Up To Pause | on / off |
 | Daily Result Pop-Up | on / off, on by default: the main menu's Settings only. Whether the first launch after a posted daily closes says how it went (round 360, daily spec §11.6) |
 | Reset Ball | the pause menu's settings only: puts a stuck ball back on the paddle |

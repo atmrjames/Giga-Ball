@@ -858,6 +858,37 @@ extension TotalStats {
         // the start - which is what a fresh TotalStats already says. Padding from one rather
         // than from a literal is the whole trick: the defaults are declared once, where the
         // property is
+
+        holdCollectionsToReleases()
+    }
+
+    /// Takes back collections that were never made, so no power-up is caught more often than it
+    /// fell.
+    ///
+    /// **James, round 361: "power-ups collected is higher than the power ups released... How is
+    /// that possible?"** His page said 12,012 released, 40,953 collected, 341%. The Always On
+    /// twist counted itself as caught: it puts the day's power-up back the moment it stops,
+    /// through the same switch a catch goes through, and every arm of that switch adds one to
+    /// its own tally. Until round 341 nothing took it back - and for a while the tick could not
+    /// see the power-up running and put it back every frame, sixty collections a second, all of
+    /// them on one slot that was released once. That is fixed where it happened; this repairs
+    /// what it left in the file.
+    ///
+    /// Per power-up rather than in total, because each slot is released and caught on its own:
+    /// a drop is counted released as it appears and caught as it lands, a power-up brick counts
+    /// both as it breaks, and the standing power-up counts neither. So no slot can honestly hold
+    /// more catches than drops, and the iCloud merge keeps that true - it takes the larger of
+    /// each pair, and the larger catch count is never above the larger drop count. What is lost
+    /// is the overcount and nothing else, and it is taken on every load, so a cloud copy still
+    /// holding the old numbers is corrected again each time it comes back.
+    ///
+    /// Lasers hit is left alone on purpose: it counts bricks struck, so a Giga-Ball laser through
+    /// a column honestly passes the shots fired (James, round 361: "It's ok if lasers hit >
+    /// lasers fired, I understand the reason").
+    func holdCollectionsToReleases() {
+        for index in powerupsCollected.indices where index < powerupsGenerated.count {
+            powerupsCollected[index] = min(powerupsCollected[index], powerupsGenerated[index])
+        }
     }
 
     /// Only ever lengthens. A file with more entries than this build knows about was written
@@ -943,7 +974,17 @@ extension TotalStats {
     /// height. Maybe it can show a percentage as well as the number"): "312m · 31%", "4m 12s ·
     /// 84%". The number is the thing a player remembers doing; the share is how far there is
     /// to go.
-    func achievementProgressText(_ index: Int) -> String {
+    ///
+    /// **Nothing at all for an achievement that is had or not, or not begun** (James, round 361:
+    /// "Some of mine show 0% complete when they shouldn't have that as an option as they are
+    /// either complete or not, some of them show 0% when there should be a best so far").
+    /// Every achievement from 66 on was given "0.0%" as its starting string in round 309, the
+    /// all-or-nothing ones too, so Paddle Guru read "Percentage complete 0.0%" for ever. Only
+    /// the ones that have a share to show are asked for one now - `storedShare`, the endless
+    /// milestones and the daily's history - and a share of nothing is not shown either: the
+    /// page says Incomplete.
+    func achievementProgressText(_ index: Int,
+                                 today: String = DailyChallengeSession.shared.todayKey) -> String {
         if let milestone = TotalStats.endlessMilestones[index],
            let best = endlessMilestoneBest(index),
            let fraction = endlessMilestoneProgress(index) {
@@ -953,9 +994,40 @@ extension TotalStats {
             case .height: figure = "\(best)m"
             case .seconds: figure = best >= 60 ? "\(best/60)m \(best%60)s" : "\(best)s"
             }
-            return figure + " · " + String(format: "%.0f", (fraction*100).rounded(.down)) + "%"
+            return figure + " · " + TotalStats.share(fraction)
         }
-        guard achievementsPercentageCompleteArray.indices.contains(index) else { return "" }
-        return achievementsPercentageCompleteArray[index]
+        if let daily = DailyAchievements.progress(for: index, records: dailyRecords, on: today) {
+            guard daily.done > 0, daily.of > 0 else { return "" }
+            let fraction = min(1, Double(daily.done)/Double(daily.of))
+            let figure = DailyAchievements.streaks.contains { $0.index == index }
+                ? (daily.done == 1 ? "1 day" : "\(daily.done) days")
+                : "\(daily.done) of \(daily.of)"
+            return figure + " · " + TotalStats.share(fraction)
+            // The figure first, as the milestones do: "5 days · 16%" towards a month,
+            // "14 of 100 · 14%" towards Experienced Daily Challenger
+        }
+        guard AchievementCatalogue.storedShare.contains(index),
+              achievementsPercentageCompleteArray.indices.contains(index) else { return "" }
+        let stored = achievementsPercentageCompleteArray[index]
+        return ["0.0%", "0%"].contains(stored) ? "" : stored
+    }
+
+    /// What the progress is called on an achievement's own page: the best run or streak so far,
+    /// a count of days or twists, or the share every other one has always shown.
+    static func achievementProgressLabel(_ index: Int) -> String {
+        if endlessMilestones[index] != nil
+            || DailyAchievements.streaks.contains(where: { $0.index == index }) {
+            return "Best so far"
+        }
+        if DailyAchievements.counts.contains(where: { $0.index == index })
+            || index == DailyAchievements.everyTwist {
+            return "Progress"
+        }
+        return "Percentage complete"
+    }
+
+    /// A share as the pages print it: whole percent, rounded down so 99.6% is not "100%".
+    static func share(_ fraction: Double) -> String {
+        String(format: "%.0f", (fraction*100).rounded(.down)) + "%"
     }
 }

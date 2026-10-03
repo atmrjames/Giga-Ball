@@ -4503,7 +4503,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 					}
 					// A Cluster ball wears the laser's category - so every brick already
 					// tests contact with it - but it is not a laser, and the lasers-fired
-					// statistic must not count it
+					// statistic must not count it.
+					//
+					// **A brick struck, not a laser that struck** - so a Giga-Ball laser through
+					// a column counts every brick, and "lasers hit" can pass "lasers fired".
+					// Round 361 made it one per laser and James had it put back the same day:
+					// "It's ok if lasers hit > lasers fired, I understand the reason"
 					hitBrick(node: brickNode, sprite: brickSprite, laserNode: laserSprite, laserSprite: laserSprite, hitFrom: .bottom)
 					// Lasers only ever arrive from underneath - and a cluster ball almost
 					// always does: it is released climbing, so `.bottom` is the honest face

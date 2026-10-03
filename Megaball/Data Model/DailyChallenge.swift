@@ -751,11 +751,7 @@ enum DailyAchievements {
         // spell its own date back, which is the guard against a corrupted record joining a run
         // it has nothing to do with
 
-        let played = records.filter { $0.attemptCount > 0 }.map(\.dateKey)
-        var met: Set<DailyTwist> = []
-        for day in played {
-            met.formUnion(DailyChallengeGenerator.challenge(forKey: day).twists)
-        }
+        let met = twistsMet(in: records)
         // Played rather than posted: the sheet says "play a Daily Challenge with each twist at
         // least once", and a day whose attempt was spent without finishing was still met.
         // Derived rather than recorded, because the generator is pure - a day's twists can
@@ -764,6 +760,37 @@ enum DailyAchievements {
 
         if liveTwists(on: key).subtracting(met).isEmpty { earned.insert(everyTwist) }
         return earned
+    }
+
+    /// How far a player is towards one of the counted daily achievements: the days posted, the
+    /// longest streak, or the live twists met - against what the achievement wants. Nil for
+    /// the rest, which are a place on a board and are had or not.
+    ///
+    /// **James, round 361**: Experienced Daily Challenger read "0.0%" beside a Serial Daily
+    /// Challenger already earned, and Month Long Streak "0.0%" beside a Week Long Streak. Those
+    /// were round 310's placeholder strings, never written to, because the history is read
+    /// here and nowhere stored a share of it. Asked of the same records `earned` reads, so the
+    /// page and the award cannot disagree about where a player is.
+    static func progress(for index: Int, records: [DailyChallengeRecord],
+                         on key: String) -> (done: Int, of: Int)? {
+        if let count = counts.first(where: { $0.index == index }) {
+            return (records.filter(\.posted).count, count.days)
+        }
+        if let streak = streaks.first(where: { $0.index == index }) {
+            return (DailyStreak.longest(records: records), streak.days)
+        }
+        guard index == everyTwist else { return nil }
+        let live = liveTwists(on: key)
+        return (live.intersection(twistsMet(in: records)).count, live.count)
+    }
+
+    /// Every twist on a day the player has played, whether or not it posted.
+    static func twistsMet(in records: [DailyChallengeRecord]) -> Set<DailyTwist> {
+        var met: Set<DailyTwist> = []
+        for day in records where day.attemptCount > 0 {
+            met.formUnion(DailyChallengeGenerator.challenge(forKey: day.dateKey).twists)
+        }
+        return met
     }
 
     /// What a finishing position on the day's board earns.
@@ -1755,9 +1782,19 @@ struct DailyBoardRow: Equatable {
 
     /// The rows to show: the leaders, and the player's own place under them when it is not
     /// already one of them - so a player can always find themselves, however far down.
+    ///
+    /// - Parameter localHasPosted: whether the player has a score on this day's board by their
+    ///   own record. **When they have not, they are not on it** (James, round 361: "my player
+    ///   name showed up on the leaderboard with a score of 0 before I'd played the level - only
+    ///   show the current player on the leaderboard if they've posted a score"). Game Center
+    ///   can hand back an entry for the local player on a board they have never posted to, and
+    ///   a zero under their name read as a result. With them taken out an unplayed day shows
+    ///   the board as it stands, and a board nobody has posted to is empty, which hides it.
     static func shown(leaders: [DailyBoardRow], local: DailyBoardRow?,
-                      limit: Int) -> [DailyBoardRow] {
-        var rows = Array(leaders.sorted { $0.rank < $1.rank }.prefix(limit))
+                      limit: Int, localHasPosted: Bool = true) -> [DailyBoardRow] {
+        let others = localHasPosted ? leaders : leaders.filter { $0.isLocalPlayer == false }
+        var rows = Array(others.sorted { $0.rank < $1.rank }.prefix(limit))
+        guard localHasPosted else { return rows }
         if let local, rows.contains(where: { $0.rank == local.rank && $0.isLocalPlayer }) == false {
             rows.removeAll { $0.isLocalPlayer }
             rows.append(local)

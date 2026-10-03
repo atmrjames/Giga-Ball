@@ -223,8 +223,8 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
 
         askingForTheDailyReport = true
         let unit = DailyChallengeGenerator.challenge(forKey: key).mode == .classic ? "" : "m"
-        GameCenterHandler().loadDailyBoardReport(forKey: key,
-                                                 count: DailyResultReport.leadersShown) {
+        GameCenterHandler().loadDailyBoardTop(forKey: key,
+                                              count: DailyResultReport.leadersShown) {
             [weak self] answer in
             guard let self else { return }
             self.askingForTheDailyReport = false
@@ -240,7 +240,7 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
             GigaBallAlert.show(on: self, title: report.title, attributed: report.body(),
                                symbol: report.symbol, celebrating: report.won,
                                dismissTitle: "Close", confirmTitle: "Leaderboard",
-                               confirm: { [weak self] in self?.openClosedDailyBoard(answer.board) })
+                               confirm: { [weak self] in self?.openDailyBoard() })
         }
     }
 
@@ -255,10 +255,11 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
             || children.contains { $0.viewIfLoaded?.superview != nil }
     }
 
-    /// Game Center on a closed day's board - the occurrence itself, because opening the board
-    /// by its identifier shows today's.
-    private func openClosedDailyBoard(_ board: GKLeaderboard) {
-        let boards = GKGameCenterViewController(leaderboard: board, playerScope: .global)
+    /// Game Center on the daily board. Today's day rather than the one reported: Game Center
+    /// cannot show a closed day (round 361, `GameCenterHandler.dailyBoardScreen()`), and the
+    /// pop-up has just shown its top places.
+    private func openDailyBoard() {
+        let boards = GameCenterHandler.dailyBoardScreen()
         boards.gameCenterDelegate = self
         present(boards, animated: true)
     }
@@ -752,12 +753,12 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         defaults.register(defaults: ["musicSetting": true])
         defaults.register(defaults: ["hapticsSetting": true])
         defaults.register(defaults: ["parallaxSetting": true])
-        if view.frame.size.width > 450 {
-        // iPad
-            defaults.register(defaults: ["paddleSensitivitySetting": 3])
-        } else {
-            defaults.register(defaults: ["paddleSensitivitySetting": 2])
-        }
+        defaults.register(defaults: [PaddleSpeed.legacyKey:
+                                        PaddleSpeed.legacyIndex(for: PaddleSpeed.fallback)])
+        // **x2.00 on every device** (James, round 361: "Let's set the default paddle speed to
+        // x2.00 on all devices"). It was x1.50 on a phone and x2.00 on an iPad, chosen by the
+        // menu's width. Registered rather than written, so it is only ever a default: a player
+        // who has picked a speed keeps it, and one who never has gets x2.00 from now on
         defaults.register(defaults: ["gameCenterSetting": false])
         defaults.register(defaults: ["ballSetting": 0])
         defaults.register(defaults: ["paddleSetting": 0])

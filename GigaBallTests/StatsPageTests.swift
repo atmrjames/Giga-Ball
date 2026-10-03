@@ -421,8 +421,19 @@ final class PaddleSpeedTests: XCTestCase {
     func testAFreshInstallGetsTheShippedDefaultRatherThanTheSlowestPaddle() {
         // `integer(forKey:)` answers 0 for a key that was never written, and 0 was a real
         // index meaning x1.00 - so reading it that way would hand every new player the
-        // slowest paddle while the code claimed the default was x1.50
+        // slowest paddle while the code claimed the default was x1.50 (x2.00 since round 361)
         XCTAssertEqual(PaddleSpeed.stored(emptyDefaults()), PaddleSpeed.fallback)
+    }
+
+    /// James, round 361: "Let's set the default paddle speed to x2.00 on all devices." The menu
+    /// registers the old key's index for it, so both readings must land on x2.00.
+    func testTheDefaultIsTwoOnEveryDevice() {
+        XCTAssertEqual(PaddleSpeed.fallback, 2.00)
+        let defaults = emptyDefaults()
+        defaults.register(defaults: [PaddleSpeed.legacyKey:
+                                        PaddleSpeed.legacyIndex(for: PaddleSpeed.fallback)])
+        XCTAssertEqual(PaddleSpeed.stored(defaults), 2.00)
+        XCTAssertEqual(PaddleSpeed.label(PaddleSpeed.stored(defaults)), "x2.00")
     }
 
     func testAnOldIndexIsReadAsTheSpeedItAlwaysMeant() {

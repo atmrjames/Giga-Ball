@@ -232,7 +232,7 @@ and its hooks into the scene. The launch pool, from the brief plus fills:
 | **Always On** | One power-up permanently active | All | Drawn from a curated subset (§4.1) |
 | **Upside Down** | The level's brick layout is mirrored vertically | Classic | **Built, round 187.** Bricks build "the wrong way around" — layout-only; gravity and paddle unchanged. Reflected about the middle of the rows the level *occupies*, not the whole grid: a level that only fills the top third would otherwise be dropped into the player's lap, which is a different game rather than the same one seen upside down |
 | **Mirrored** | The level's layout is mirrored horizontally | Classic | **Built, round 187.** The "wrong way around" for muscle memory. A negation of x, because the columns are laid out symmetrically about the field's centre line |
-| **Brick Swap** | The level's brick types are remapped for the day (e.g. all normals become multi-hit) | Classic | **Built, round 196.** Three remaps: **Hardened** (normals take three hits - the example above), **Softened** (multi-hits become ordinary, the generous draw) and **Veiled** (normals hide until struck; unlike Fog of War the multi-hits and indestructibles stay standing as landmarks). Drawn deterministically from the day key **on its own seeded stream, never a roll in `rawChallenge`** - the challenge stream's layout is what keeps every played day stable, so a twist's private details come from a separate stream keyed off the same date. Applied at `brickCreation` beside the layout flip, through the scene's texture properties so the Retro theme survives it, and standing down on a resume. Two rules carry tests: **nothing may become indestructible and indestructibles stay** (a Classic level must remain completable - a level that cannot be finished is a much worse day than a hard one), and **a remap that finds nothing to change hardens instead** (a Softened day on a level with no multi-hits would visibly do nothing, and "does nothing" reads as broken). In the `layout` category, at most one of the three per day |
+| **Brick Swap** | The level's brick types are remapped for the day (e.g. all normals become multi-hit) | Classic | **Built, round 196.** Three remaps: **Hardened** (normals take three hits - the example above), **Softened** (multi-hits become ordinary, the generous draw) and **Veiled** (normals hide until struck; unlike Fog of War the multi-hits and indestructibles stay standing as landmarks). Drawn deterministically from the day key **on its own seeded stream, never a roll in `rawChallenge`** - the challenge stream's layout is what keeps every played day stable, so a twist's private details come from a separate stream keyed off the same date. Applied at `brickCreation` beside the layout flip, through the scene's texture properties so the Retro theme survives it, and standing down on a resume. Two rules carry tests: **nothing may become indestructible and indestructibles stay** (a Classic level must remain completable - a level that cannot be finished is a much worse day than a hard one), and **a remap that finds nothing to change hardens instead** (a Softened day on a level with no multi-hits would visibly do nothing, and "does nothing" reads as broken). **A softened brick is painted white** (round 361): levels colour their ordinary bricks and never their multi-hits, so a multi-hit turned ordinary was blended into the sprite's default clear colour and drawn as nothing - James met it on Bridge on 3 October as "invisible bricks destroyed on the first hit". In the `layout` category, at most one of the three per day |
 | **Mayhem Bricks** | Endless daily uses Mayhem's style pool at elevated rates | Endless Mayhem only — see note | **Built, round 198, narrower than the table asked.** The variety dial turned up: a brick's chance of taking a style is tripled for the day, capped at the 85 a motif phase uses - the loudest the field ever legitimately gets, matched and never exceeded. The stacking roll is deliberately untouched: more bricks doing *something* is the twist; more bricks doing two things at once is a nastier day nobody asked for. **The original Endless is excluded on purpose**: it has no style machinery at all - its rows come from height-band tables - so "Mayhem's style pool" there is not a rate change but a port of the whole style system into a mode that never had it, and that is a decision for James (§13), not something to smuggle in under a twist |
 | **Foggy** (was Fog of War; renamed by James, round 347) | All bricks are invisible until first struck | All | Reuses the invisible machinery |
 | **Time Trial** | 90 seconds on the clock; the score at the whistle is the score | All | **Built, round 197.** The quickest daily there is, and the one that fits the concept best. **The clock starts when the first ball is served and then always runs** - Playing, not paused, not over (round 346, James: "the time trial count down stops when the ball is caught by a sticky paddle. It should always count down unless the game is paused"). Before that it ran only while the ball was off the paddle, so every sticky catch and every re-serve after a lost ball stopped it. The wait before the first serve is still free, so a player can read the field before the clock starts. **No rack of balls in the game** on a Time Trial day, since the balls are unlimited (round 346). **A lost ball always comes back** (round 350): the return asked whether lives were left, and an Endless daily's rack is empty, so losing a ball ended the run (`ballComesBack(livesLeft:onTimeTrial:)`). The pause screen and the resume card show the time left where the balls line would be, and a resumed run's clock shows its saved time from the first frame rather than 90 until play starts. **In Endless the clock sits on the height's row**, to its left with at least half a digit's clearance however tall the height grows, in the lime of the wordmark (round 350). The countdown sits centred just below the power-up tray - **not** centre-top where the mode icon used to sit, because the reason that spot is empty is that the Dynamic Island covers it (round 199; the icon's own removal comment says "directly under the notch", and the first screenshot of a Time Trial run had a clock that was there and invisible) - says whole seconds rounded up, and turns red for the last ten. The whistle ends the run the way running out of lives does - same flag, same state - so the daily result, the game-over screen and posting all treat it as a run that finished rather than a special case. **The clock rides in the save**: without that, a pause and resume handed back a fresh ninety seconds, the one thing this twist cannot give away. In a `tempo` category of its own, so a foggy Time Trial or a one-life Time Trial can land |
@@ -530,7 +530,10 @@ briefing screen (§6).
   The game-over and complete screens list the same rows under the score, above Statistics, and
   open the day's board when tapped. Today and yesterday only: Game Center keeps the open
   occurrence and the one that closed last (`DailyChallengeSession.boardOccurrence`). James saw it
-  working with real entries on 1 October. Average, percentile and a refresh timer are still the
+  working with real entries on 1 October. **The menu's card leaves the player out until they
+  have posted** (round 361: "my player name showed up on the leaderboard with a score of 0 before
+  I'd played the level"), going by the day's record (`DailyBoardRow.shown`'s `localHasPosted`);
+  a board left with nobody on it is hidden, and the posted-score card stands in its place. Average, percentile and a refresh timer are still the
   open half of the item below.
 - **Live board stats** — *backlogged by James (round 14): build it once the Game Center
   leaderboards are set up in App Store Connect, since none of it can be seen working
@@ -624,8 +627,8 @@ the pop up should show that, be more bold and colourful."
   told, so the next launch the same day tries again.
 - **What:** the top three, the player's own place after a gap when it is further down, and
   "You finished 17th of 240". Scores are ungrouped, as every score is. Leaderboard opens Game
-  Center on the closed day's occurrence (`GKGameCenterViewController(leaderboard:)` - the
-  identifier would open today's). A winner's card is lime with a crown.
+  Center on the daily board (`GameCenterHandler.dailyBoardScreen()`), which shows today's day:
+  see the round 361 note below. A winner's card is lime with a crown.
 - **Opening the app two or more days later shows nothing** (James asked, round 360). Game
   Center keeps one closed occurrence of a recurring board - the one that ended last - so the
   day before yesterday has no board left to read a place from, and a pop-up with no place in it
@@ -643,9 +646,17 @@ the pop up should show that, be more bold and colourful."
   ending's rows, and "You finished 17th of 240" in the pop-up. A count, so grouped ("1,240").
 - **Yesterday's card opens yesterday's board, round 360** ("Is it possible when clicking on the
   leaderboard of yesterday's daily challenge that it opens up the Game Center leaderboard for
-  yesterday's challenge rather than today's by default?"). Yes for yesterday, through the same
-  occurrence the pop-up opens (`GameCenterHandler.loadDailyBoardOccurrence`); an older day has
-  none left and opens today's, as every day did before.
+  yesterday's challenge rather than today's by default?"). Built for yesterday by handing Game
+  Center the closed occurrence, which GameKit's header says a recurring board may be opened on.
+- **Withdrawn in round 361: Game Center cannot show a closed day.** James: "Yesterday's card,
+  posted score and leaderboard button opened Game Center, but not on yesterday's daily challenge
+  leaderboard, just on the main giga-ball game center page." Given a previous occurrence,
+  `GKGameCenterViewController(leaderboard:playerScope:)` falls back to the game's front page,
+  and no other GameKit call names an occurrence (`GKAccessPoint`'s triggers take an identifier).
+  So every daily button opens the daily board by identifier, today's day, through one function,
+  `GameCenterHandler.dailyBoardScreen()`. A closed day's *entries* can still be read, which is
+  how the menu card and the pop-up show yesterday's places; showing more of yesterday than the
+  top three would have to be the app's own list.
 
 ## 12. Build phases
 

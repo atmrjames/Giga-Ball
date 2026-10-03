@@ -109,8 +109,17 @@ class ItemsStatsViewController: UIViewController, UITableViewDelegate, UITableVi
                 wanted,
                 powerUpImage.heightAnchor.constraint(
                     greaterThanOrEqualToConstant: pictureHeight.constant*2/3),
+                powerUpImage.heightAnchor.constraint(
+                    lessThanOrEqualToConstant: pictureHeight.constant),
             ])
         }
+        // **And never more than it wanted** (James, round 361: "The achievements detail screen,
+        // the graphic is way too big"). The column is pinned top and bottom, so on a tall
+        // screen there is room left over, and something has to take it. Once the picture's
+        // height was only *wanted*, it was the softest thing in the column - softer than the
+        // rows, which a table does not hug - so an achievement, with one row under it, grew its
+        // badge to the width of the phone. The ceiling hands the room back to the table, which
+        // is the part meant to give and take
     }
 
     override func viewDidLayoutSubviews() {
@@ -302,8 +311,7 @@ class ItemsStatsViewController: UIViewController, UITableViewDelegate, UITableVi
             cell.statValue.text = ""
             let progress = totalStatsArray[0].achievementProgressText(passedIndex!)
             if progress != "" {
-                cell.statDescription.text = TotalStats.endlessMilestones[passedIndex!] == nil
-                    ? "Percentage complete" : "Best so far"
+                cell.statDescription.text = TotalStats.achievementProgressLabel(passedIndex!)
                 cell.statValue.text = progress
             }
             // An endless milestone's figure is the best run so far against it (round 344),

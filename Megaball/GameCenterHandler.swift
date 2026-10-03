@@ -213,28 +213,13 @@ final class GameCenterHandler: NSObject {
     /// One request answers both halves: `loadEntries(for: .global ...)` hands back the local
     /// player's entry beside the range asked for, which is the call `loadRank` already relies
     /// on.
+    ///
+    /// It is also everything the daily result pop-up needs about a closed day (round 358b), so
+    /// that asks here too. The entries of a closed day can be read; the day itself cannot be
+    /// *shown* in Game Center, which is `dailyBoardScreen()`'s story.
     func loadDailyBoardTop(forKey key: String, count: Int,
                            completion: @escaping ((leaders: [DailyBoardRow],
                                                    local: DailyBoardRow?, players: Int)?) -> Void) {
-        loadDailyBoardReport(forKey: key, count: count) { report in
-            completion(report.map { (leaders: $0.leaders, local: $0.local, players: $0.players) })
-        }
-        // The report's first two answers - one request either way, and one copy of how a day's
-        // occurrence is found (round 358b)
-    }
-
-    /// Everything the daily result pop-up needs about a closed day (round 358b): the leading
-    /// places, the player's own, how many played, and the board itself, so the pop-up's
-    /// button can open Game Center on *that* day rather than on today's.
-    ///
-    /// The same reach as `loadDailyBoardTop` - today's board and yesterday's - and nil for the
-    /// same reasons. `GKGameCenterViewController(leaderboardID:)` can only open the current
-    /// occurrence, which is why the board object is handed back: a closed day is opened with
-    /// `GKGameCenterViewController(leaderboard:playerScope:)`, which takes the occurrence.
-    func loadDailyBoardReport(forKey key: String, count: Int,
-                              completion: @escaping ((leaders: [DailyBoardRow],
-                                                      local: DailyBoardRow?, players: Int,
-                                                      board: GKLeaderboard)?) -> Void) {
         let me = GKLocalPlayer.local.gamePlayerID
         func row(_ entry: GKLeaderboard.Entry) -> DailyBoardRow {
             DailyBoardRow(rank: entry.rank, name: entry.player.displayName, score: entry.score,
@@ -247,21 +232,34 @@ final class GameCenterHandler: NSObject {
                 localEntry, entries, players, error in
                 let answer = error == nil || entries != nil
                     ? (leaders: (entries ?? []).map(row), local: localEntry.map(row),
-                       players: players, board: board)
+                       players: players)
                     : nil
                 DispatchQueue.main.async { completion(answer) }
             }
         }
     }
 
+    /// Game Center on the daily board, **always by its identifier**, which shows today's day.
+    ///
+    /// Round 360 opened yesterday's closed day instead, by handing
+    /// `GKGameCenterViewController(leaderboard:playerScope:)` the previous occurrence, which
+    /// GameKit's header says recurring boards may do. On James's phone it does not (round 361:
+    /// "Yesterday's card, posted score and leaderboard button opened Game Center, but not on
+    /// yesterday's daily challenge leaderboard, just on the main giga-ball game center page").
+    /// Given a closed occurrence, Game Center falls back to the game's front page, which is
+    /// further from the day than the daily board is. There is no other call that names an
+    /// occurrence - `GKAccessPoint`'s triggers take an identifier too - so every daily button
+    /// opens the board, and what a closed day held is shown in the app, where its entries can
+    /// still be read.
+    static func dailyBoardScreen() -> GKGameCenterViewController {
+        GKGameCenterViewController(leaderboardID: DailyChallengeBoards.daily,
+                                   playerScope: .global, timeScope: .allTime)
+    }
+
     /// A day's own occurrence of the recurring daily board - today's, or yesterday's closed
     /// one - answered on the main queue, or nil where Game Center cannot say: an older day, a
-    /// signed-out player, no network.
-    ///
-    /// Its own call since round 360, so a button can open the day it is showing (James: "Is it
-    /// possible when clicking on the leaderboard of yesterday's daily challenge that it opens
-    /// up the Game Center leaderboard for yesterday's challenge rather than today's by
-    /// default?"). The board's identifier alone always opens the current occurrence.
+    /// signed-out player, no network. Read for its entries; see `dailyBoardScreen()` for why it
+    /// is never shown.
     func loadDailyBoardOccurrence(forKey key: String,
                                   completion: @escaping (GKLeaderboard?) -> Void) {
         let session = DailyChallengeSession.shared

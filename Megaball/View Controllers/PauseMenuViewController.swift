@@ -1437,7 +1437,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
 
         let paragraph = NSMutableParagraphStyle()
         paragraph.alignment = .center
-        paragraph.lineSpacing = 4
+        paragraph.lineSpacing = DailyTwist.twistLineGap
         summary.addAttribute(.paragraphStyle, value: paragraph,
                              range: NSRange(location: 0, length: summary.length))
         let runKind = NSMutableParagraphStyle()
@@ -2263,8 +2263,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
             interfaceHaptic.impactOccurred()
         }
         InterfaceSound.click()
-        let boards = GKGameCenterViewController(leaderboardID: DailyChallengeBoards.daily,
-                                                playerScope: .global, timeScope: .allTime)
+        let boards = GameCenterHandler.dailyBoardScreen()
         boards.gameCenterDelegate = self
         view.window?.rootViewController?.present(boards, animated: true)
     }

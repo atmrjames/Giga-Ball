@@ -651,7 +651,8 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
             guard let self, let answer else { return }
             self.boardTops[key] = DailyBoardRow.shown(
                 leaders: answer.leaders, local: answer.local,
-                limit: DailyChallengeViewController.boardRowsShown)
+                limit: DailyChallengeViewController.boardRowsShown,
+                localHasPosted: self.totalStatsArray[0].dailyRecord(forKey: key)?.posted == true)
             self.boardPlayers[key] = answer.players
             if let best = answer.leaders.first?.score {
                 self.boardBests[key] = best
@@ -811,20 +812,12 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
         guard GKLocalPlayer.local.isAuthenticated else { return }
         if hapticsSetting { interfaceHaptic.impactOccurred() }
         InterfaceSound.click()
-        GameCenterHandler().loadDailyBoardOccurrence(forKey: viewedKey) { [weak self] day in
-            guard let self else { return }
-            let boards = day.map { GKGameCenterViewController(leaderboard: $0, playerScope: .global) }
-                ?? GKGameCenterViewController(leaderboardID: DailyChallengeBoards.daily,
-                                              playerScope: .global, timeScope: .allTime)
-            boards.gameCenterDelegate = self
-            self.view.window?.rootViewController?.present(boards, animated: true)
-        }
-        // **The day on screen, not today** (James, round 360: "Is it possible when clicking on
-        // the leaderboard of yesterday's daily challenge that it opens up the Game Center
-        // leaderboard for yesterday's challenge rather than today's by default?"). It is, for
-        // yesterday: Game Center keeps the occurrence that closed last, and the board opened
-        // by its occurrence rather than its identifier shows that day. A day older than that
-        // has no occurrence left to open, and gets today's, which is what it always got
+        let boards = GameCenterHandler.dailyBoardScreen()
+        boards.gameCenterDelegate = self
+        view.window?.rootViewController?.present(boards, animated: true)
+        // **Today's board whichever day is on screen.** Round 360 opened the day being viewed,
+        // and Game Center answered a closed day with its front page instead (James, round 361)
+        // - see `dailyBoardScreen()`. Yesterday's top places are on the card already
     }
 
     // The test rig's four handlers - RESET ATTEMPTS, and the day stepper's back, forward and

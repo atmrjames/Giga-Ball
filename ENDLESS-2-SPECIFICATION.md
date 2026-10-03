@@ -2959,6 +2959,41 @@ testers:
   falling power-up's position by `brickWidth`, so a bare `GameScene()` with a power-up on
   screen traps converting NaN to Int. A real scene is always laid out before play.
 
+**Round 361: James's notes on round 360 - the daily board's link, the statistics, the achievement pages, and a second list the same day.**
+
+- **Game Center cannot show a closed day.** Round 360 opened yesterday's occurrence, and on
+  James's phone it opened Game Center's front page instead. Every daily button opens the daily
+  board by identifier now (`GameCenterHandler.dailyBoardScreen()`); DAILY §11.6 has the detail.
+- **"Power-ups collected is higher than the power ups released, lasers hit is higher than lasers
+  fired."** The power-ups were the Always On twist, which before round 341 was counted as caught
+  every time it put the day's power-up back, for a while sixty times a second; each load now
+  holds every power-up's catches to its releases (`holdCollectionsToReleases`). Lasers hit counts
+  bricks struck, so a Giga-Ball laser through a column passes the shots fired. It was made one
+  per laser and put back the same day ("It's ok if lasers hit > lasers fired, I understand the
+  reason"). Bricks hit over destroyed is honest and unchanged.
+- **Achievement pages:** the badge had grown to 512 points on a tall phone, because round 351
+  made its height only wanted and the page's spare room went to it; it is capped at its 100
+  again. Achievements from 66 on had "0.0%" as a starting string, the all-or-nothing ones too;
+  only `AchievementCatalogue.storedShare`, the endless milestones and the daily's counts show
+  progress now ("14 of 100 · 14%", "Best so far 7 days · 23%"), and nothing at all is shown for
+  a share of nothing.
+- **Paddle speed's default is x2.00 on every device** ("Let's set the default paddle speed to
+  x2.00 on all devices"). It was x1.50 on a phone and x2.00 on an iPad. `PaddleSpeed.fallback`
+  is the one number, and the menu registers its legacy index from it, so a player who has
+  chosen a speed keeps it and one who never has moves to x2.00.
+- **The daily menu's board leaves out a player who has not posted** ("my player name showed up
+  on the leaderboard with a score of 0 before I'd played the level"). `DailyBoardRow.shown`'s
+  `localHasPosted`, from the day's record; an unplayed day shows the board as it stands, and an
+  empty one hides, as an empty board always has.
+- **Brick Swap's Softened drew its bricks as nothing** (Bridge, 3 October: "some bricks turned
+  to invisible bricks, but were destroyed on the first hit not shown"). They were ordinary, as
+  Softened says, and so broke in one hit; a level never colours its multi-hits, so the brick was
+  blended into the sprite's default clear colour. Painted white now, as Hardened's are.
+- **The intro's twists have the game over's gap** (`DailyTwist.twistLineGap`, 4). A twist's
+  line is exactly a badge high, so the gap between badges is the spacing alone: 4 on the game
+  over, 2 on the intro, measured with TextKit. The intro's label is now sized for badge-high
+  lines (`twistLineHeight`), not text-high ones.
+
 **Round 360: James's overnight list - thirteen play-test notes and a setting.**
 
 - **A shaped paddle launches along its face** (`PaddleOutline.launchAngle`, asked first by
