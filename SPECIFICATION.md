@@ -435,6 +435,13 @@ key-value store. `CloudKitHandler` reads `ubiquityIdentityToken` first and treat
 token as "iCloud unavailable", because touching `CKContainer` without the entitlement
 raises an uncatchable exception.
 
+**How two devices' figures merge.** Every count, score and tally takes the larger of the two,
+slot by slot; an achievement earned on either is earned on both; endless runs are united by
+run. **Pack best times take the faster** of two real times, a nought being no time at all
+(`CloudKitHandler.faster`, round 366 - they had taken the larger since 2020, so a faster time
+was overwritten by a slower one). `ICloudMergeRuleTests` holds each field to its rule in both
+directions.
+
 **The saved-game format is the fragile part, and it is guarded now.** It was a set of
 parallel arrays read with a force-cast at launch, where any corruption was a crash loop.
 `SavedGame` is a versioned `Codable` value that checks its own arrays agree

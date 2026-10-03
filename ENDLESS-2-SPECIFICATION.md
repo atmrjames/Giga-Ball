@@ -2959,6 +2959,20 @@ testers:
   falling power-up's position by `brickWidth`, so a bare `GameScene()` with a power-up on
   screen traps converting NaN to Int. A real scene is always laid out before play.
 
+**Round 366: two iCloud merge faults from 2020, found reading the lines coverage said were bare.**
+
+- **Bricks destroyed never synced to another device.** `updateFromiCloud` wrote the cloud's
+  figure into `powerupsCollected`, a local copy already handed back, so the other device's bricks
+  destroyed were dropped; bricks hit beside it synced, which widened the gap James asked about in
+  round 361.
+- **Pack best times merged by the larger.** A time is the one figure where smaller is better:
+  a device that finished a pack in 9:40 synced with one that took 14:05 and both kept 14:05.
+  `CloudKitHandler.faster` keeps the shorter of two real times, both ways.
+- `ICloudMergeRuleTests` drives every merged field both ways by its rule - the sixteen per-slot
+  arrays, the ten totals, the best times and the achievements - from one table, so a field added
+  later is one line. A scan of every merge loop for one that compares one field and writes
+  another finds the bricks-destroyed line in the old file and nothing in the new.
+
 **Round 365: tests for the code coverage found bare.**
 
 - **An item's own page** (`ItemDetailPageRowsTests`): a power-up's released, collected and rate

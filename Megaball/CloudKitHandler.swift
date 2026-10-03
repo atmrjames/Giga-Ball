@@ -31,6 +31,19 @@ final class CloudKitHandler: NSObject {
         return cloud + local[cloud.count...]
     }
 
+    /// The better of two best times for a pack: the shorter, where nought means "never
+    /// finished" rather than "finished instantly".
+    ///
+    /// **Every other figure merges by the larger, and a time is the one that must not** (round
+    /// 366). Pack best times did, from 2020: a device that had finished a pack in 9:40 synced
+    /// with one that had taken 14:05, and both kept 14:05. A best time is the smaller of the two
+    /// real ones, and a nought on one side is the other side's time, not a better one.
+    static func faster(_ one: Int, _ other: Int) -> Int {
+        if one == 0 { return other }
+        if other == 0 { return one }
+        return min(one, other)
+    }
+
     /// One endless run, as the three parallel arrays hold it.
     struct Run: Hashable {
         let height: Int
@@ -802,9 +815,8 @@ final class CloudKitHandler: NSObject {
             var packBestTimesCloud = packBestTimesCloudCheck
             packBestTimesCloud = CloudKitHandler.padded(packBestTimesCloud, toMatch: packBestTimes!)
             for i in 0..<min(packBestTimes!.count, packBestTimesCloud.count) {
-                if packBestTimes![i] > packBestTimesCloud[i] {
-                    packBestTimesCloud[i] = packBestTimes![i]
-                }
+                packBestTimesCloud[i] = CloudKitHandler.faster(packBestTimes![i],
+                                                               packBestTimesCloud[i])
             }
             iCloudStore.set(packBestTimesCloud, forKey: "packBestTimes")
         } else {
@@ -1082,8 +1094,12 @@ final class CloudKitHandler: NSObject {
         if let bricksDestroyedCloud = iCloudStore.array(forKey: "bricksDestroyed") as? [Int] {
             for i in 0..<min(bricksDestroyedCloud.count, bricksDestroyed!.count) {
                 if bricksDestroyedCloud[i] > bricksDestroyed![i] {
-                    powerupsCollected![i] = bricksDestroyedCloud[i]
+                    bricksDestroyed![i] = bricksDestroyedCloud[i]
                 }
+                // **Into bricks destroyed** (round 366). From August 2020 this line wrote the
+                // cloud's figure into `powerupsCollected` - a local copy already handed back
+                // above - so another device's bricks destroyed never reached this one. Bricks hit
+                // beside it synced, which is one more reason the two totals drifted apart
             }
         }
         totalStatsArray[0].bricksDestroyed = bricksDestroyed!
@@ -1236,9 +1252,7 @@ final class CloudKitHandler: NSObject {
         packBestTimes = totalStatsArray[0].packBestTimes
         if let packBestTimesCloud = iCloudStore.array(forKey: "packBestTimes") as? [Int] {
             for i in 0..<min(packBestTimesCloud.count, packBestTimes!.count) {
-                if packBestTimesCloud[i] > packBestTimes![i] {
-                    packBestTimes![i] = packBestTimesCloud[i]
-                }
+                packBestTimes![i] = CloudKitHandler.faster(packBestTimes![i], packBestTimesCloud[i])
             }
         }
         totalStatsArray[0].packBestTimes = packBestTimes!

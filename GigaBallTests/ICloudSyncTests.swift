@@ -369,3 +369,132 @@ final class ICloudResetAdoptionTests: XCTestCase {
                        "and it records the reset it has caught up with, or it adopts it again")
     }
 }
+
+/// Every figure the sync merges, both ways, by the rule it should merge by (round 366).
+///
+/// Coverage found most of `updateFromiCloud` and `updateToiCloud`'s merge lines had never run, and
+/// reading them found two faults from 2020: bricks destroyed pulled from the cloud into
+/// `powerupsCollected`, so another device's never arrived, and pack best times merged by the
+/// *larger*, so a faster time on one device was replaced by a slower one from the other. Each
+/// figure here is a player's progress on two devices, and the merge is the only thing standing
+/// between them and losing some of it.
+final class ICloudMergeRuleTests: XCTestCase {
+
+    private func handler(store: InMemoryCloudStore, stats: TotalStats) -> CloudKitHandler {
+        let handler = CloudKitHandler()
+        handler.iCloudStore = store
+        handler.totalStatsArray = [stats]
+        store.contents[StatsSync.generationKey] =
+            UserDefaults.standard.integer(forKey: StatsSync.generationKey)
+        return handler
+    }
+
+    /// The per-slot counts and scores, by the cloud's key. Larger is better for each.
+    private let larger: [(String, WritableKeyPath<TotalStats, [Int]>)] = [
+        ("powerupsCollected", \.powerupsCollected), ("powerupsGenerated", \.powerupsGenerated),
+        ("bricksHit", \.bricksHit), ("bricksDestroyed", \.bricksDestroyed),
+        ("packHighScores", \.packHighScores),
+        ("pack1LevelHighScores", \.pack1LevelHighScores), ("pack2LevelHighScores", \.pack2LevelHighScores),
+        ("pack3LevelHighScores", \.pack3LevelHighScores), ("pack4LevelHighScores", \.pack4LevelHighScores),
+        ("pack5LevelHighScores", \.pack5LevelHighScores), ("pack6LevelHighScores", \.pack6LevelHighScores),
+        ("pack7LevelHighScores", \.pack7LevelHighScores), ("pack8LevelHighScores", \.pack8LevelHighScores),
+        ("pack9LevelHighScores", \.pack9LevelHighScores), ("pack10LevelHighScores", \.pack10LevelHighScores),
+        ("pack11LevelHighScores", \.pack11LevelHighScores),
+    ]
+
+    private let largerTotals: [(String, WritableKeyPath<TotalStats, Int>)] = [
+        ("cumulativeScore", \.cumulativeScore), ("levelsPlayed", \.levelsPlayed),
+        ("levelsCompleted", \.levelsCompleted), ("ballHits", \.ballHits), ("ballsLost", \.ballsLost),
+        ("lasersFired", \.lasersFired), ("lasersHit", \.lasersHit), ("playTimeSecs", \.playTimeSecs),
+        ("packsPlayed", \.packsPlayed), ("packsCompleted", \.packsCompleted),
+    ]
+
+    /// This device has slot 0 ahead, the cloud slot 1: after a pull each slot is the larger.
+    func testEachCountIsTheLargerOfTheTwoAfterAPull() {
+        for (key, path) in larger {
+            let store = InMemoryCloudStore()
+            var stats = TotalStats()
+            var mine = stats[keyPath: path]
+            mine[0] = 50; mine[1] = 5
+            stats[keyPath: path] = mine
+            var cloud = Array(repeating: 0, count: mine.count)
+            cloud[0] = 20; cloud[1] = 40
+            store.contents[key] = cloud
+            let handler = self.handler(store: store, stats: stats)
+            handler.updateFromiCloud()
+            let merged = handler.totalStatsArray[0][keyPath: path]
+            XCTAssertEqual(Array(merged.prefix(2)), [50, 40], key)
+        }
+        for (key, path) in largerTotals {
+            let store = InMemoryCloudStore()
+            var stats = TotalStats()
+            stats[keyPath: path] = 5
+            store.contents[key] = 40
+            let handler = self.handler(store: store, stats: stats)
+            handler.updateFromiCloud()
+            XCTAssertEqual(handler.totalStatsArray[0][keyPath: path], 40, key)
+        }
+    }
+
+    /// And the push: the cloud ends holding the larger of each.
+    func testEachCountIsTheLargerOfTheTwoAfterAPush() {
+        for (key, path) in larger {
+            let store = InMemoryCloudStore()
+            var stats = TotalStats()
+            var mine = stats[keyPath: path]
+            mine[0] = 50; mine[1] = 5
+            stats[keyPath: path] = mine
+            var cloud = Array(repeating: 0, count: mine.count)
+            cloud[0] = 20; cloud[1] = 40
+            store.contents[key] = cloud
+            let handler = self.handler(store: store, stats: stats)
+            handler.updateToiCloud()
+            XCTAssertEqual(Array((store.contents[key] as? [Int] ?? []).prefix(2)), [50, 40], key)
+        }
+    }
+
+    /// A pack's best time is the faster of two, and a nought is no time at all.
+    func testABestTimeIsTheFasterOfTheTwo() {
+        let store = InMemoryCloudStore()
+        let stats = TotalStats()
+        stats.packBestTimes[0] = 580       // this device: 9:40
+        stats.packBestTimes[1] = 0         // never finished here
+        stats.packBestTimes[2] = 900
+        var cloud = Array(repeating: 0, count: stats.packBestTimes.count)
+        cloud[0] = 845                     // the other: 14:05
+        cloud[1] = 700
+        cloud[2] = 0
+        store.contents["packBestTimes"] = cloud
+        let handler = self.handler(store: store, stats: stats)
+        handler.updateFromiCloud()
+        XCTAssertEqual(Array(handler.totalStatsArray[0].packBestTimes.prefix(3)), [580, 700, 900])
+
+        handler.updateToiCloud()
+        XCTAssertEqual(Array((store.contents["packBestTimes"] as? [Int] ?? []).prefix(3)),
+                       [580, 700, 900], "and the cloud keeps the faster too")
+    }
+
+    func testTheFasterRule() {
+        XCTAssertEqual(CloudKitHandler.faster(580, 845), 580)
+        XCTAssertEqual(CloudKitHandler.faster(0, 700), 700)
+        XCTAssertEqual(CloudKitHandler.faster(900, 0), 900)
+        XCTAssertEqual(CloudKitHandler.faster(0, 0), 0)
+    }
+
+    /// An achievement earned on either device is earned on both.
+    func testAnAchievementEarnedAnywhereIsEarnedEverywhere() {
+        let store = InMemoryCloudStore()
+        let stats = TotalStats()
+        stats.achievementsUnlockedArray[3] = true
+        var cloud = Array(repeating: false, count: stats.achievementsUnlockedArray.count)
+        cloud[7] = true
+        store.contents["achievementsUnlockedArray"] = cloud
+        let handler = self.handler(store: store, stats: stats)
+        handler.updateFromiCloud()
+        XCTAssertTrue(handler.totalStatsArray[0].achievementsUnlockedArray[3])
+        XCTAssertTrue(handler.totalStatsArray[0].achievementsUnlockedArray[7])
+        handler.updateToiCloud()
+        let pushed = store.contents["achievementsUnlockedArray"] as? [Bool] ?? []
+        XCTAssertTrue(pushed[3] && pushed[7])
+    }
+}
