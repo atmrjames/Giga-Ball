@@ -679,6 +679,74 @@ final class MainMenuAtEveryWidthTests: XCTestCase {
     }
 }
 
+/// **The Daily Challenge's badge gives its room to the card** (James, round 371: "The Daily
+/// Challenge menu view should be vertically scrollable if the device is too small to show all
+/// the info. The icon and header should remain fixed at the top (the icon can get smaller on
+/// scroll like the other game modes) and the date picker section along with the UI buttons at
+/// the bottom should remain fixed too").
+///
+/// On a 320 by 568 phone the header took 253 points and left the day's page 145, and the card
+/// was cut off at the date row with nothing to say it went on.
+final class DailyChallengeHeaderCollapseTests: XCTestCase {
+
+    private func laidOut(_ size: CGSize) throws -> (DailyChallengeViewController, DailyCardCell) {
+        let windowScene = try XCTUnwrap(UIApplication.shared.connectedScenes.first as? UIWindowScene)
+        let window = UIWindow(windowScene: windowScene)
+        window.frame = CGRect(origin: .zero, size: size)
+        let screen = DailyChallengeViewController()
+        window.rootViewController = screen
+        window.makeKeyAndVisible()
+        for _ in 0..<5 {
+            screen.view.setNeedsLayout()
+            screen.view.layoutIfNeeded()
+        }
+        func walk(_ view: UIView) -> [UIView] { [view] + view.subviews.flatMap(walk) }
+        let cell = try XCTUnwrap(walk(screen.view).compactMap { $0 as? DailyCardCell }
+            .first { cell in
+                let frame = cell.convert(cell.bounds, to: screen.view)
+                return frame.minX > -1 && frame.maxX < size.width + 1
+            }, "no day on screen")
+        return (screen, cell)
+    }
+
+    func testTheFirstDragShrinksTheBadgeAndLeavesTheCardWhereItIs() throws {
+        let (screen, cell) = try laidOut(CGSize(width: 320, height: 568))
+        let rest = try XCTUnwrap(screen.modeLogoSize.first).constant
+        XCTAssertGreaterThan(rest, DailyChallengeViewController.logoScrolledSize,
+                             "a badge with nowhere to shrink to proves nothing")
+
+        let half = ((rest - DailyChallengeViewController.logoScrolledSize)/2).rounded()
+        cell.scroll.contentOffset.y = half
+        screen.takeCardScroll(cell.scroll)
+        XCTAssertEqual(cell.scroll.contentOffset.y, 0, accuracy: 0.5,
+                       "the card moved before the badge had finished giving its room")
+        XCTAssertEqual(screen.modeLogoSize.first?.constant ?? 0, rest - half, accuracy: 0.5)
+
+        cell.scroll.contentOffset.y = 500
+        screen.takeCardScroll(cell.scroll)
+        XCTAssertEqual(screen.modeLogoSize.first?.constant ?? 0,
+                       DailyChallengeViewController.logoScrolledSize, accuracy: 0.5,
+                       "and it stops at the scrolled size, like the other mode menus' badges")
+
+        cell.scroll.contentOffset.y = -1_000
+        screen.takeCardScroll(cell.scroll)
+        XCTAssertEqual(screen.modeLogoSize.first?.constant ?? 0, rest, accuracy: 0.5,
+                       "pulling back down gives it back")
+        screen.view.window?.isHidden = true
+    }
+
+    /// The date row and the buttons stay where they are: only the badge and the card move.
+    func testTheDateRowAndButtonsDoNotMoveWhenTheBadgeShrinks() throws {
+        let (screen, cell) = try laidOut(CGSize(width: 320, height: 568))
+        let before = screen.dateBlockGuide.layoutFrame
+        cell.scroll.contentOffset.y = 500
+        screen.takeCardScroll(cell.scroll)
+        screen.view.layoutIfNeeded()
+        XCTAssertEqual(screen.dateBlockGuide.layoutFrame.minY, before.minY, accuracy: 0.5)
+        screen.view.window?.isHidden = true
+    }
+}
+
 /// James, round 351, from an iPad window: "main menu cells not centred between bottom icons and
 /// giga-ball logo". The gaps either side of the rows are equal now, and they give way together
 /// in a window too short for them.

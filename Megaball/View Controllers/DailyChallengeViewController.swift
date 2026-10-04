@@ -113,7 +113,7 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
     }
 
     /// The badge's two size constraints, and the height they were last measured against.
-    private var modeLogoSize: [NSLayoutConstraint] = []
+    private(set) var modeLogoSize: [NSLayoutConstraint] = []
     private var modeLogoHeightSeen: CGFloat = 0
 
     /// Shrinks the mode's badge on a screen too short to wear it at full size.
@@ -133,9 +133,58 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
         modeLogoHeightSeen = height
         let side = (UIViewController.menuModeLogoSize(forHeight: height)
                     * DailyChallengeViewController.logoShare).rounded()
+        header = MenuHeaderCollapse(restSize: side,
+                                    scrolledSize: min(side, DailyChallengeViewController.logoScrolledSize))
+        applyHeaderCollapse()
+        // A new window height is a new resting size, and the collapse starts again from it
+    }
+
+    /// The badge's size once the card has been scrolled: the other mode menus' scrolled size, at
+    /// this screen's two thirds of theirs.
+    static let logoScrolledSize = (UIViewController.menuModeLogoScrolledSize*logoShare).rounded()
+
+    /// The badge giving its room to the card (James, round 371: "The Daily Challenge menu view
+    /// should be vertically scrollable if the device is too small to show all the info. The
+    /// icon and header should remain fixed at the top (the icon can get smaller on scroll like
+    /// the other game modes) and the date picker section along with the UI buttons at the bottom
+    /// should remain fixed too, with the daily challenge details container and leaderboard
+    /// scrolling in the remaining view").
+    ///
+    /// The card has scrolled since round 351, inside its own page, and on a 320 by 568 phone the
+    /// header above it took 253 points and left the page 145 - most of a day under the fold, and
+    /// nothing to say there was more. The same collapse the pack grid and the level lists use:
+    /// the first drags shrink the badge, and the card moves once it is at its smallest.
+    private(set) var header = MenuHeaderCollapse(restSize: 0, scrolledSize: 0)
+
+    private func applyHeaderCollapse() {
+        let side = header.size
         for constraint in modeLogoSize where abs(constraint.constant - side) > 0.5 {
             constraint.constant = side
         }
+        days?.visibleCells.compactMap { $0 as? DailyCardCell }.forEach {
+            $0.scroll.alwaysBounceVertical = header.isCollapsing
+        }
+        // While the badge is down a day's card keeps taking drags even if it now fits - the room
+        // that made it fit is the badge's, and pulling down has to be able to give it back
+    }
+
+    func scrollViewDidScroll(_ scrollView: UIScrollView) {
+        guard scrollView !== days, scrollView.isTracking || scrollView.isDecelerating else {
+            return
+        }
+        // A day's card, moved by a finger. Not the pager, and not a card being put back to its
+        // top as it is reused
+        takeCardScroll(scrollView)
+    }
+
+    /// A day's card has moved: the badge takes the movement first, then the card has it.
+    func takeCardScroll(_ scrollView: UIScrollView) {
+        let top = -scrollView.adjustedContentInset.top
+        if header.absorb(tried: scrollView.contentOffset.y - top) {
+            scrollView.contentOffset.y = top
+            // Held at its top while the badge is still taking the drag
+        }
+        applyHeaderCollapse()
     }
 
     override func viewWillLayoutSubviews() {
@@ -836,10 +885,11 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
     func showAnimate() {
         view.transform = CGAffineTransform(scaleX: 1.15, y: 1.15)
         view.alpha = 0
-        UIView.animate(withDuration: 0.25) {
+        UIView.animate(withDuration: 0.25, animations: {
             self.view.alpha = 1
             self.view.transform = .identity
-        }
+        }, completion: { _ in self.flashTheCardIfItScrolls() })
+        // Once it has arrived, so the flash is seen rather than spent during the fade
     }
 
     func removeAnimate() {
@@ -890,6 +940,9 @@ extension DailyChallengeViewController: UICollectionViewDataSource,
         // answers a tap with the same pop-up the pause menu shows
         cell.card.postedScoreTapped = { [weak self] in self?.leaderboardTapped() }
         // The posted score is the board's own figure, so the row showing it opens the board
+        cell.scroll.delegate = self
+        cell.scroll.alwaysBounceVertical = header.isCollapsing
+        // Its vertical scroll reports here, so the badge can collapse ahead of it (round 371)
         return cell
     }
 
@@ -899,13 +952,18 @@ extension DailyChallengeViewController: UICollectionViewDataSource,
         // A page is the whole viewport, which is what makes paging land on whole days
     }
 
-    func scrollViewDidEndDecelerating(_ scrollView: UIScrollView) { dayDidLand() }
+    func scrollViewDidEndDecelerating(_ scrollView: UIScrollView) {
+        if scrollView === days { dayDidLand() }
+    }
 
-    func scrollViewDidEndScrollingAnimation(_ scrollView: UIScrollView) { dayDidLand() }
+    func scrollViewDidEndScrollingAnimation(_ scrollView: UIScrollView) {
+        if scrollView === days { dayDidLand() }
+    }
 
     func scrollViewDidEndDragging(_ scrollView: UIScrollView, willDecelerate decelerate: Bool) {
-        if decelerate == false { dayDidLand() }
+        if scrollView === days, decelerate == false { dayDidLand() }
     }
+    // The pager's alone: each day's card reports its own vertical scroll here too (round 371)
 
     /// The pager has settled on a day: that day becomes the viewed one, and everything
     /// outside the cards catches up.
@@ -921,6 +979,14 @@ extension DailyChallengeViewController: UICollectionViewDataSource,
         if hapticsSetting { interfaceHaptic.impactOccurred() }
         InterfaceSound.click()
         showChallenge()
+        flashTheCardIfItScrolls()
+    }
+
+    /// Shows the scroll indicator for a moment on a day whose card runs past its page, so a card
+    /// cut off at the date row reads as one that goes on rather than one that ends (round 371).
+    func flashTheCardIfItScrolls() {
+        days?.visibleCells.compactMap { $0 as? DailyCardCell }
+            .filter(\.overflows).forEach { $0.scroll.flashScrollIndicators() }
     }
 
     /// What a twist does, when its name is tapped (play-test round 15). The same words the

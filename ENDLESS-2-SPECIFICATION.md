@@ -2959,6 +2959,51 @@ testers:
   falling power-up's position by `brickWidth`, so a bare `GameScene()` with a power-up on
   screen traps converting NaN to Int. A real scene is always laid out before play.
 
+**Round 371: the frame rate, measured in a running game.**
+
+James: "At the start of the game the first brick hit, first falling power-up, first power-up
+collected can make the frame rate drop" and "When there are many bricks on screen and there is
+lot's going on with different power-ups applied, it seems the game can get bogged down ... It can
+then recover once it gets to a calmer section." Measured rather than guessed, with a harness that
+runs a real `GameScene` from its file in the simulator, keeps the ball alive by moving the paddle
+under it, applies every Mayhem power-up in turn, records each frame's length, and is sampled
+with `sample` while it runs. (Kept out of the commit, like the render tests; rebuilding it is
+`GameScene(fileNamed:)` presented in an `SKView` in the app's window scene, with
+`totalStatsArray = [TotalStats()]` set first, because a test scene has no stats file.)
+
+- **The busy-field slowdown was two costs that grew with the field.** `update` was 41% of the
+  main thread in a sampled opening ten seconds and is 18% now.
+  - `refreshEndlessIIShapedFaces` asked the catalogue `UIImage(named:)` for every shaped brick's
+    pictures every frame, three or four names a brick, and made a new `SKTexture(imageNamed:)`
+    for each answer - which, compared by identity, never matched what the face wore, so every
+    face had its picture put back on every frame too. `GameScene.catalogueTexture` remembers
+    each name once (including the ones that are not there) and hands back the same texture;
+    the shaped, Square, Big, Directional and Portal lookups and the paddle art go through it.
+  - `endlessIIWanderLimits` measured every brick's rectangle for every Moving brick every frame,
+    two child-node searches a rectangle. The tick now measures the field once a frame and keeps
+    each mover's rectangle current as it moves, so the next mover sees where it went, exactly
+    as before. Mutating that update away makes `testMoversSharingAFrameNeverOverlap` fail.
+- **First times.** The Paddle Halo's first catch cost 96ms (its two pictures are drawn in code,
+  on first use, at full resolution), the Trajectory line 33, a shaped paddle 39, the opening rows
+  40-odd. `warmEndlessIIArt` builds the drawn pictures on a background queue at the start of a
+  Mayhem run and preloads every shaped-brick, Portal and shaped-paddle picture the theme can ask
+  for. Halo, Trajectory and Landing Marker no longer show. And `lightHaptic`, fired by every
+  brick and paddle hit, had never been prepared - the first brick hit woke the haptic engine in
+  its frame - so both the hit and catch generators are prepared at every launch.
+- **What the simulator cannot see** - sound and haptics have first times of their own, and it has
+  neither - is left to a debug-only `hitchWatch`: a frame over two sixtieths during play logs
+  `HITCH 48ms after: brick hit, row built`, from notes left by brick hits, drops, catches and
+  row builds. The next device log names whatever is left.
+- **The Daily Challenge's badge collapses as a day's card scrolls** (James: "The Daily Challenge
+  menu view should be vertically scrollable if the device is too small to show all the info.
+  The icon and header should remain fixed at the top (the icon can get smaller on scroll like
+  the other game modes) and the date picker section along with the UI buttons at the bottom
+  should remain fixed too"). The card had scrolled inside its page since round 351; on a 320 by
+  568 phone the header left it 145 points with nothing to say there was more. `MenuHeaderCollapse`
+  now takes a card's first drags, as on the pack grid, and the card shows the menus' white
+  indicator when it overflows, flashed as the screen arrives and as each day lands.
+  `DailyChallengeHeaderCollapseTests`.
+
 **Round 370: the main menu at every width, and a theme never alone.**
 
 - **The main menu at Mac widths.** James, with four screenshots: "At some window widths, the

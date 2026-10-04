@@ -1546,6 +1546,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var endlessIIMagnetFieldStrength: CGFloat = 0
 	var endlessIIMagnetFieldPhase: CGFloat = 0
 
+	/// What the game did in the last quarter of a second, for `hitchWatch` (debug builds).
+	var hitchNotes: [(what: String, at: TimeInterval)] = []
+
 	/// A sound that may not have been made yet.
 	///
 	/// **Fifteen Endless Mayhem events fire haptics and no sound** (§8.5, and the list James
@@ -1899,6 +1902,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 						  + GameScene.endlessIIOverlaidStyles.map {
 							  SKTexture(imageNamed: GameScene.endlessIIStyleOverlayArtName($0)) }) { }
 		PowerUpIcon.warmRingTextures(extra: GameScene.endlessIIPaddleShapeRingArt)
+		if gameMode == .endlessII { warmEndlessIIArt() }
+		// The rest of what a Mayhem run shows for the first time (round 371) - see
+		// `warmEndlessIIArt`. After the theme's brick textures are chosen, above, because the
+		// pictures it readies are the ones this theme will ask for
 		// **The same hitch, one step later: the catch rather than the drop** (James, round 321:
 		// "the game is still stuttering/dropping frames when the first power up of a game is
 		// generated/collected"). Round 84 preloaded what *falls*, and nothing preloaded what a
@@ -3249,6 +3256,18 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		ballLostBool = false
         // Resets ball on paddle status
 
+		if hapticsSetting {
+			lightHaptic.prepare()
+			rigidHaptic.prepare()
+		}
+		// **The first brick hit was starting the haptic engine** (James, round 371: "the first
+		// brick hit, first falling power-up, first power-up collected can make the frame rate
+		// drop"). Every brick and paddle hit fires `lightHaptic` and nothing had ever prepared
+		// it, so the engine woke on the first one, in that frame. A generator stays prepared
+		// for a few seconds, and the ball meets something within a few seconds of leaving the
+		// paddle; the catch's generator is readied with it, for the power-up that falls early.
+		// Every launch, because every launch can follow a pause long enough to let it cool
+
 		setEndlessIIHeldBallRestsOnPaddle(false, for: ball)
 		// And the paddle goes back into its collisions. `holdTheWaitingBallStill` takes it out
 		// while the ball is waiting - so that the engine cannot shove a resting ball along a
@@ -3642,6 +3661,35 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         hiddenBricksIconBar.isHidden == false
     }
 
+    /// Says so in the log when a frame runs long, and what the game had just done (debug only).
+    ///
+    /// **James, round 371: "At the start of the game the first brick hit, first falling
+    /// power-up, first power-up collected can make the frame rate drop."** The simulator could
+    /// find most of those and not all: it plays no sound and has no haptic engine, and both
+    /// have a first time of their own. A frame twice a sixtieth long - two frames missed - is
+    /// logged with the notes `noteForHitchWatch` left in the quarter-second before it, so a
+    /// play-test log on a real device names whatever is left: `HITCH 48ms after: brick hit,
+    /// power-up dropped`. The delta is this frame's, and it measures the one before, which is
+    /// where the work was done; a quarter of a second of notes covers it.
+    func hitchWatch() {
+        #if DEBUG
+        defer { hitchNotes.removeAll { lastFrameTime - $0.at > 0.25 } }
+        guard frameDelta > 1.0/30, gameState.currentState is Playing, isPaused == false
+        else { return }
+        let notes = hitchNotes.map(\.what)
+        Log.play.error("HITCH \(Int(self.frameDelta*1000), privacy: .public)ms after: \(notes.isEmpty ? "nothing noted" : notes.joined(separator: ", "), privacy: .public)")
+        hitchNotes.removeAll()
+        #endif
+    }
+
+    /// Leaves a note for `hitchWatch`. Nothing at all in a release build.
+    func noteForHitchWatch(_ what: @autoclosure () -> String) {
+        #if DEBUG
+        guard hitchNotes.count < 12 else { return }
+        hitchNotes.append((what(), lastFrameTime))
+        #endif
+    }
+
     func phantomBrickWatch() {
         #if DEBUG
         guard gameState.currentState is Playing, isPaused == false else { return }
@@ -3836,6 +3884,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 
 		frameDelta = lastFrameTime == 0 ? 0 : max(0, currentTime - lastFrameTime)
 		lastFrameTime = currentTime
+		hitchWatch()
 		frameNumber &+= 1
 		// Counted so a landing can be told from a second report of the same landing - see
 		// `paddleHit`. Wrapping addition, because the number's only use is comparing this
@@ -4763,6 +4812,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	}
 	
     func hitBrick(node: SKNode, sprite: SKSpriteNode, laserNode: SKNode? = nil, laserSprite: SKSpriteNode? = nil, hitFrom: EndlessIISide? = nil, touching: Set<EndlessIISide> = [], struckBy: SKSpriteNode? = nil) {
+        noteForHitchWatch("brick hit")
 
 		let gigaLaser = laserNode != nil && laserSprite?.texture == laserGigaTexture
 		// A Giga-Ball laser passes through whatever it meets and carries on. Every `return`
@@ -6104,6 +6154,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		let move = SKAction.moveBy(x: 0, y: -frame.height, duration: 5)
 		powerUp.run(move, withKey: "PowerUpDrop")
 		powerUpsOnScreen+=1
+		noteForHitchWatch("power-up dropped \(powerUpSelection)")
 		totalStatsArray[0].powerupsGenerated[powerUpSelection]+=1
         powerUpsGeneratedPerLevel+=1
     }
@@ -6122,6 +6173,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	func applyPowerUp (node: SKNode, silently: Bool = false, standing: Bool = false) {
 
 		let sprite = node as! SKSpriteNode
+		noteForHitchWatch("power-up caught")
 
 		if ballLostBool && (standing == false || ballIsOnPaddle == false) {
 			return

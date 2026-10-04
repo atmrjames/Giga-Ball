@@ -2368,3 +2368,69 @@ final class EndlessIIFrameCostTests: XCTestCase {
     }
 
 }
+
+/// **The busy-field slowdown** (James, round 371: "When there are many bricks on screen and there
+/// is lot's going on with different power-ups applied, it seems the game can get bogged down
+/// with the frame rate sufferring during these periods. It can then recover once it gets to a
+/// calmer section").
+///
+/// A real Mayhem scene, run for real and sampled, spent four tenths of the main thread in
+/// `update`, and two things that grew with the field were most of it: every shaped brick asking
+/// the asset catalogue for its pictures by name on every frame, with a brand-new texture for
+/// each answer, and every Moving brick measuring every other brick on every frame. Both are
+/// answered once now. After both, the same opening ten seconds spent under a fifth there.
+final class BusyFieldFrameCostTests: XCTestCase {
+
+    /// The same picture is the same texture, every time it is asked for.
+    ///
+    /// That is the half of the cache that matters most and is easiest to lose: textures compare
+    /// by identity, so a new object for the same picture looks like a change, and every face
+    /// was having its picture put back on every frame.
+    func testAPictureIsLookedUpOnceAndHandedBackTheSame() throws {
+        let scene = GameScene()
+        let first = try XCTUnwrap(scene.endlessIIShapedArt(for: scene.brickNormalTexture, .rounded))
+        let again = try XCTUnwrap(scene.endlessIIShapedArt(for: scene.brickNormalTexture, .rounded))
+        XCTAssertTrue(first === again, "a fresh texture for the same picture, every frame")
+        XCTAssertTrue(GameScene.catalogueTexture("BrickPortal") === GameScene.catalogueTexture("BrickPortal"))
+        XCTAssertNil(GameScene.catalogueTexture("NoSuchPictureAnywhere"),
+                     "and a name that is not there is nil, never SpriteKit's placeholder")
+        XCTAssertFalse(GameScene.catalogueHas("NoSuchPictureAnywhere"))
+    }
+
+    /// Movers measured against one picture of the field still never run into one another.
+    ///
+    /// The field is measured once a frame now, and kept current as each mover moves - a mover
+    /// measured against where its neighbour *was* at the start of the frame could step into
+    /// where it has just gone. Three in a row heading for each other, for ten seconds.
+    func testMoversSharingAFrameNeverOverlap() {
+        let scene = GameScene()
+        scene.gameMode = .endlessII
+        scene.totalStatsArray = [TotalStats()]
+        scene.brickWidth = 40
+        scene.brickHeight = 20
+        scene.gameWidth = 440
+        scene.numberOfBrickColumns = 11
+        scene.endlessHeight = 2_000
+        // Deep, so the motion rate is at full speed and a stale neighbour would show
+
+        var movers: [SKSpriteNode] = []
+        for (x, heading) in [(CGFloat(-120), CGFloat(1)), (0, -1), (60, -1)] {
+            let brick = SKSpriteNode(texture: scene.brickNormalTexture,
+                                     size: CGSize(width: 40, height: 20))
+            brick.position = CGPoint(x: x, y: 100)
+            brick.name = BrickCategoryName
+            scene.addChild(brick)
+            scene.makeMoving(brick)
+            scene.endlessIIWanderers[scene.endlessIIWanderers.count - 1].direction = heading
+            movers.append(brick)
+        }
+
+        for frame in 0..<600 {
+            scene.tickEndlessIIRoles(1.0/60)
+            for (a, b) in [(0, 1), (1, 2), (0, 2)] {
+                let gap = abs(movers[a].position.x - movers[b].position.x)
+                XCTAssertGreaterThanOrEqual(gap, 40 - 0.5, "frame \(frame): \(a) and \(b) overlap")
+            }
+        }
+    }
+}

@@ -257,7 +257,7 @@ extension GameScene {
         let theme = prefixes.indices.contains(paddleSetting) ? prefixes[paddleSetting]
                                                              : prefixes[0]
         let themed = "\(theme)\(kind)\(shape)"
-        return UIImage(named: themed) != nil ? themed : "regular\(kind)\(shape)"
+        return GameScene.catalogueHas(themed) ? themed : "regular\(kind)\(shape)"
     }
 
     /// The ring's picture for the shape that is running.
@@ -430,8 +430,9 @@ extension GameScene {
     /// what makes the day those two arrive a no-code day.
     func endlessIIRetroArt(_ stem: String, _ suffix: String?) -> SKTexture {
         let base = stem + (suffix ?? "")
-        if endlessIIPortalPaddleClock.isRunning, UIImage(named: base + "Portal") != nil {
-            return SKTexture(imageNamed: base + "Portal")
+        if endlessIIPortalPaddleClock.isRunning,
+           let portal = GameScene.catalogueTexture(base + "Portal") {
+            return portal
         }
         return SKTexture(imageNamed: base)
     }

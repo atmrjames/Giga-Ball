@@ -170,6 +170,7 @@ extension GameScene {
     }
 
     func buildNewEndlessRow() {
+        noteForHitchWatch("row built")
         
         var brickArray: [SKNode] = []
         // Array to store all bricks

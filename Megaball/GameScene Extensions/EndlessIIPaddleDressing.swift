@@ -101,7 +101,7 @@ extension GameScene {
             ?? [("regularPaddle", "regularPaddleGlow"), ("squarePaddle", "squarePaddleGlow")]
 
         for (paddle, glow) in pairs
-        where UIImage(named: paddle) != nil && UIImage(named: glow) != nil {
+        where GameScene.catalogueHas(paddle) && GameScene.catalogueHas(glow) {
             return (paddle, glow)
         }
         return nil

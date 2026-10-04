@@ -113,7 +113,7 @@ extension GameScene {
 
         if suffix.isEmpty == false {
             let sized = name + shape.rawValue + suffix
-            if UIImage(named: sized) != nil { return SKTexture(imageNamed: sized) }
+            if let art = GameScene.catalogueTexture(sized) { return art }
         }
         // **The size comes after the shape**, which is how James delivered them:
         // `BrickNormalRoundedSquare`. A Square brick is one cell wide and two tall, so the
@@ -122,11 +122,9 @@ extension GameScene {
 
         let oriented = name + shape.rawValue
             + GameScene.orientationSuffix(shape, mirrored: mirrored, flipped: flipped)
-        if UIImage(named: oriented) != nil { return SKTexture(imageNamed: oriented) }
+        if let art = GameScene.catalogueTexture(oriented) { return art }
 
-        let plain = name + shape.rawValue
-        guard UIImage(named: plain) != nil else { return nil }
-        return SKTexture(imageNamed: plain)
+        return GameScene.catalogueTexture(name + shape.rawValue)
         // **Asked of the catalogue, not of SpriteKit.** `SKTexture(imageNamed:)` does not
         // return nil for a name that is not there - it hands back a placeholder - so the
         // old code was safe only because it was asked about Rounded and Wedge, which every
@@ -148,14 +146,14 @@ extension GameScene {
                                 mirrored: Bool, flipped: Bool, suffix: String = "",
                                 named: String? = nil) -> Bool {
         guard let name = named ?? endlessIIBrickTextureName(texture) else { return false }
-        if suffix.isEmpty == false, UIImage(named: name + shape.rawValue + suffix) != nil {
+        if suffix.isEmpty == false, GameScene.catalogueHas(name + shape.rawValue + suffix) {
             return false
         }
         // A square picture is drawn one way up and there is only one of it, so it is not the
         // four-way art this question is about - answering yes would un-turn a sprite that was
         // never turned
-        return UIImage(named: name + shape.rawValue
-                       + GameScene.orientationSuffix(shape, mirrored: mirrored, flipped: flipped)) != nil
+        return GameScene.catalogueHas(name + shape.rawValue
+                       + GameScene.orientationSuffix(shape, mirrored: mirrored, flipped: flipped))
     }
 
     /// The asset name of a brick type's plain texture.
@@ -702,6 +700,115 @@ extension GameScene {
 
     static let brickArtName = "endlessIIBrickArt"
 
+    /// One picture out of the asset catalogue, looked up once and the same texture ever after.
+    ///
+    /// **The frame cost James felt on a busy field** (round 371: "When there are many bricks on
+    /// screen and there is lot's going on ... the game can get bogged down ... It can then
+    /// recover once it gets to a calmer section"). Measured rather than guessed: in a sampled
+    /// run, `refreshEndlessIIShapedFaces` was six tenths of every `update`, and most of that was
+    /// this question asked the slow way - `UIImage(named:)` for each shaped brick on every
+    /// frame, three or four names a brick, and a brand-new `SKTexture(imageNamed:)` for the
+    /// answer. The new object never equalled the one the face already wore, because textures
+    /// compare by identity, so every face had its picture put back on every frame as well. The
+    /// cost grew with the field, which is why a crowded stretch dragged and a thin one did not.
+    ///
+    /// Remembered by name, including the names that are not there - most of the questions are
+    /// "is there a four-way picture of this", and the answer is usually no.
+    static func catalogueTexture(_ name: String) -> SKTexture? {
+        if let known = catalogueTextures[name] { return known }
+        let texture = UIImage(named: name) != nil ? SKTexture(imageNamed: name) : nil
+        catalogueTextures[name] = texture
+        return texture
+    }
+
+    /// Whether the catalogue has a picture by this name - the same remembered answer.
+    static func catalogueHas(_ name: String) -> Bool { catalogueTexture(name) != nil }
+
+    private static var catalogueTextures: [String: SKTexture?] = [:]
+
+    /// Readies, before the run needs them, the pictures a Mayhem run shows for the first time.
+    ///
+    /// **James, round 371: "At the start of the game the first brick hit, first falling
+    /// power-up, first power-up collected can make the frame rate drop."** Measured in a running
+    /// scene, each first appearance cost its frame and more: the Paddle Halo 96 milliseconds,
+    /// the Trajectory line 33, a shaped paddle 39, and the opening rows of shaped bricks 40-odd
+    /// each. Two kinds of first time, and this answers both.
+    ///
+    /// - **Pictures drawn in code**, which are `static let`s built the first time anything asks:
+    ///   the Halo and the strip that fades out under it are a full-size redraw of James's
+    ///   picture, made in the frame the Halo was caught. Asked for here on a background queue,
+    ///   where building them costs nobody a frame; Swift builds a static once, whichever thread
+    ///   asks, so the game finds them made.
+    /// - **Pictures from the catalogue**, which `SKTexture(imageNamed:)` names and only decodes
+    ///   the first time it is drawn. The shaped bricks a row can bring, in every orientation and
+    ///   size, and the shaped paddles in the theme being played, are found here (on this thread,
+    ///   because the cache they are kept in is this thread's) and handed to `preload`, which
+    ///   decodes them away from the frame.
+    ///
+    /// The same answer round 84 gave the falling power-ups and round 321 gave the tray icons and
+    /// the ring, carried to the things those rounds did not reach.
+    func warmEndlessIIArt() {
+        DispatchQueue.global(qos: .utility).async {
+            let drawn: [SKTexture?] = [
+                GameScene.endlessIIHaloTexture, GameScene.endlessIIHaloSkirtTexture,
+                GameScene.endlessIIEdgeGlowTexture, GameScene.endlessIILandingMarkerTexture,
+                GameScene.endlessIILaserBeamTexture, GameScene.endlessIILaserAfterGlowTexture,
+                GameScene.endlessIIAuraTexture, GameScene.endlessIIPaddleShadowTexture,
+                FadingLine.texture, FadingLine.softTexture,
+            ]
+            SKTexture.preload(drawn.compactMap { $0 }) { }
+        }
+
+        var named: [SKTexture] = []
+        let types = [brickNormalTexture, brickMultiHit1Texture, brickMultiHit2Texture,
+                     brickMultiHit3Texture, brickMultiHit4Texture,
+                     brickIndestructible1Texture, brickIndestructible2Texture]
+        let suffixes = ["", GameScene.squareArtSuffix, GameScene.bigArtSuffix]
+        for shape in ShapedBrickArt.allCases {
+            for mirrored in [false, true] {
+                for flipped in [false, true] {
+                    for suffix in suffixes {
+                        for texture in types {
+                            named += [endlessIIShapedArt(for: texture, shape, mirrored: mirrored,
+                                                         flipped: flipped, suffix: suffix)]
+                                .compactMap { $0 }
+                        }
+                        named += [endlessIIShapedArt(for: nil, shape, mirrored: mirrored,
+                                                     flipped: flipped, suffix: suffix,
+                                                     named: GameScene.portalBrickArtName)]
+                            .compactMap { $0 }
+                    }
+                }
+            }
+        }
+        for texture in types {
+            guard let name = endlessIIBrickTextureName(texture) else { continue }
+            for suffix in suffixes.dropFirst() {
+                named += [GameScene.catalogueTexture(name + suffix)].compactMap { $0 }
+            }
+        }
+        for suffix in suffixes {
+            named += [GameScene.catalogueTexture(GameScene.portalBrickArtName + suffix),
+                      GameScene.catalogueTexture(GameScene.portalBrickArtName + suffix + "Glow")]
+                .compactMap { $0 }
+        }
+        // Every brick a row can bring, in each picture it could wear: the shaped faces in each
+        // orientation and size, the Square and Big pictures, and the Portal's own
+
+        for surface in PaddleBounce.Surface.allCases {
+            guard let shape = endlessIIPaddleShapeSuffix(surface) else { continue }
+            for kind in ["Paddle", "Lasers", "Sticky"] {
+                named += [GameScene.catalogueTexture(endlessIIThemedShapeArt(kind, shape))]
+                    .compactMap { $0 }
+            }
+            named += [GameScene.catalogueTexture("regularPaddle\(shape)Glow")].compactMap { $0 }
+        }
+        // And the shaped paddles in the theme being played, with their glows
+
+        var seen = Set<ObjectIdentifier>()
+        SKTexture.preload(named.filter { seen.insert(ObjectIdentifier($0)).inserted }) { }
+    }
+
     /// The portal brick's own picture. James, round 271: "Portal bricks - these come in just
     /// the square size and a single theme", and round 273: "Portal is just 1 colour now. Both
     /// bricks will just be one colour."
@@ -759,9 +866,7 @@ extension GameScene {
                 || name != endlessIIBrickTextureName(brick.texture) else { return nil }
         // Nothing to put on an ordinary brick that is already wearing its own picture
 
-        let wanted = name + suffix
-        guard UIImage(named: wanted) != nil else { return nil }
-        return SKTexture(imageNamed: wanted)
+        return GameScene.catalogueTexture(name + suffix)
         // Asked of the catalogue for the same reason the shaped lookup is: a missing name gets
         // a placeholder back from SpriteKit, not nil
     }

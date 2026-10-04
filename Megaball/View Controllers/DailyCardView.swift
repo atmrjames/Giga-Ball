@@ -739,6 +739,17 @@ final class DailyCardCell: UICollectionViewCell {
         // card inside it keeps the margins the screen has always had
     }
 
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        scroll.showsVerticalScrollIndicator = overflows
+        scroll.indicatorStyle = .white
+        // The menus' own affordance (`applyScrollAffordance`): an indicator, white on the dark
+        // background, only when there is more of the day than the page shows (round 371)
+    }
+
+    /// Whether more of the card is below the page than fits on it.
+    var overflows: Bool { scroll.contentSize.height > scroll.bounds.height + 0.5 }
+
     override func prepareForReuse() {
         super.prepareForReuse()
         scroll.contentOffset = .zero

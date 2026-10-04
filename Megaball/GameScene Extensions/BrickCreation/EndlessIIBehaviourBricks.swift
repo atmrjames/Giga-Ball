@@ -398,7 +398,9 @@ extension GameScene {
     /// Measured from what is actually beside it, so it re-reads the field rather than
     /// trusting limits worked out when the brick was made - the field it sits in changes
     /// constantly underneath it.
-    func endlessIIWanderLimits(for brick: SKSpriteNode) -> (left: CGFloat, right: CGFloat) {
+    func endlessIIWanderLimits(for brick: SKSpriteNode,
+                               among field: [(brick: SKSpriteNode, rect: CGRect)]? = nil)
+        -> (left: CGFloat, right: CGFloat) {
         let halfWidth = endlessIIFieldSize(of: brick).width/2
         let offset = endlessIIBrickCentre(of: brick).x
         // **How far the drawing is from the node**, which is half a cell for a Big brick: its
@@ -426,14 +428,19 @@ extension GameScene {
         // Bricks in the same horizontal band. A Tiny brick on the bottom of a cell is stopped
         // by the one beside it, not by the one above it
 
-        for other in endlessIIBricks() where other !== brick {
+        let neighbours = field ?? endlessIIBricks().map { (brick: $0, rect: endlessIIFieldRect(of: $0)) }
+        // **Handed in by the tick, worked out here otherwise** (round 371). Every Moving brick
+        // asked for every brick's rectangle every frame, and a rectangle is two child-node
+        // searches - six movers in a full field was several hundred a frame, and the sampled
+        // run put this at a fifth of the whole update. The tick now measures the field once a
+        // frame and keeps it current as each mover moves, so the answer is the same one
+        for (other, theirs) in neighbours where other !== brick {
             guard other.endlessIIIsAnchored == false else { continue }
             // **An anchor is not a wall, it is a hazard** (the 2026 brick workbook: a Fixed
             // brick destroys what runs into it). Left in this list it would have turned the
             // wanderer round a hair's breadth short, which is the opposite of running into
             // something. Ignored here, the brick walks in and `endlessIIResolveAnchorOverlaps`
             // destroys it on the frame it arrives
-            let theirs = endlessIIFieldRect(of: other)
             guard theirs.maxY - mine.minY > overlap, mine.maxY - theirs.minY > overlap else {
                 continue
             }
@@ -575,8 +582,7 @@ extension GameScene {
     func endlessIIDirectionalArt(_ side: EndlessIISide, size: BrickSize) -> SKTexture? {
         let name = "BrickDirectional" + side.artName + "Open"
             + GameScene.artSuffix(for: size)
-        guard UIImage(named: name) != nil else { return nil }
-        return SKTexture(imageNamed: name)
+        return GameScene.catalogueTexture(name)
         // Asked of the catalogue, not of SpriteKit, for the reason `endlessIIShapedArt` gives:
         // a name that is not there comes back as a placeholder rather than as nil
     }
@@ -1508,10 +1514,8 @@ extension GameScene {
         // down has always had to ask both questions for the same reason.
         let stem = GameScene.portalBrickArtName + (shape?.rawValue ?? "")
 
-        for name in [stem + suffix + "Glow", stem + "Glow"] where UIImage(named: name) != nil {
-            return SKTexture(imageNamed: name)
-        }
-        return nil
+        return GameScene.catalogueTexture(stem + suffix + "Glow")
+            ?? GameScene.catalogueTexture(stem + "Glow")
         // The sized picture first and the plain one after, the way every other lookup here
         // works: `BrickPortalRoundedSquareGlow` exists and `BrickPortalRoundedBigGlow` does
         // not, so a Big Rounded Portal wears the ordinary Rounded glow rather than none
@@ -1586,11 +1590,10 @@ extension GameScene {
     /// showing rather than a halo of some invented size.
     static func portalGlowScale(for size: BrickSize) -> CGSize {
         let base = portalBrickArtName + artSuffix(for: size)
-        guard UIImage(named: base) != nil, UIImage(named: base + "Glow") != nil else {
-            return CGSize(width: 1, height: 1)
-        }
-        let brick = SKTexture(imageNamed: base).size()
-        let glow = SKTexture(imageNamed: base + "Glow").size()
+        guard let brickArt = catalogueTexture(base), let glowArt = catalogueTexture(base + "Glow")
+        else { return CGSize(width: 1, height: 1) }
+        let brick = brickArt.size()
+        let glow = glowArt.size()
         guard brick.width > 0, brick.height > 0 else { return CGSize(width: 1, height: 1) }
         return CGSize(width: glow.width/brick.width, height: glow.height/brick.height)
     }
@@ -1844,9 +1847,16 @@ extension GameScene {
         // the first ten metres is noise; the same brick at 40% is something to read
 
         endlessIIWanderers.removeAll { $0.brick.parent == nil }
+        var field = endlessIIWanderers.isEmpty ? []
+            : endlessIIBricks().map { (brick: $0, rect: endlessIIFieldRect(of: $0)) }
+        var place: [ObjectIdentifier: Int] = [:]
+        for (at, entry) in field.enumerated() { place[ObjectIdentifier(entry.brick)] = at }
+        // The field measured once a frame rather than once a mover (round 371) - and kept
+        // current below as each one moves, because the next mover's limits are measured
+        // against where this one has just gone, exactly as they were when each asked afresh
         for index in endlessIIWanderers.indices {
             var wanderer = endlessIIWanderers[index]
-            let limits = endlessIIWanderLimits(for: wanderer.brick)
+            let limits = endlessIIWanderLimits(for: wanderer.brick, among: field)
             guard limits.right - limits.left > 0.5 else { continue }
             // Penned in on both sides. It waits, and sets off again the moment one goes
 
@@ -1865,6 +1875,9 @@ extension GameScene {
             } else if x <= limits.left {
                 x = limits.left
                 wanderer.direction = 1
+            }
+            if let at = place[ObjectIdentifier(wanderer.brick)] {
+                field[at].rect.origin.x += x - wanderer.brick.position.x
             }
             wanderer.brick.position.x = x
             endlessIIWanderers[index] = wanderer
