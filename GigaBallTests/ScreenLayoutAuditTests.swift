@@ -1268,6 +1268,32 @@ final class MenuGalleryTests: XCTestCase {
         built.append(("music", MusicViewController()))
         built.append(("paddle-speed", PaddleSpeedViewController()))
         built.append(("daily-challenge", DailyChallengeViewController()))
+        built.append(("run-stats", RunStatsViewController()))
+        // **The four this list did not have** (round 370). Run Statistics ran its panel the width
+        // of James's Mac window in round 369 and nothing here could have said so, because it was
+        // never built here. The detail pages are the same kind of screen and were missing too
+        if let page = board.instantiateViewController(withIdentifier: "itemsStatsView")
+            as? ItemsStatsViewController {
+            page.totalStatsArray = [TotalStats()]
+            page.sender = "Achievements"
+            page.passedIndex = 82
+            built.append(("achievement-page", page))
+        }
+        if let page = board.instantiateViewController(withIdentifier: "itemsDetailView")
+            as? ItemsDetailViewController {
+            page.senderID = 2
+            page.navigatedFrom = "Items"
+            built.append(("power-up-list", page))
+        }
+        if let page = board.instantiateViewController(withIdentifier: "levelStatsView")
+            as? LevelStatsViewController {
+            page.totalStatsArray = [TotalStats()]
+            page.startLevel = 0
+            page.levelNumber = 0
+            page.packNumber = 1
+            built.append(("level-stats", page))
+        }
+        // Each needs what its opener would hand it, or `viewDidLoad` unwraps nothing
         return built
     }
 
@@ -1375,7 +1401,7 @@ final class MenuGalleryAuditTests: XCTestCase {
         for subview in view.subviews {
             guard subview.isHidden == false, subview.alpha > 0.05 else { continue }
             let interesting = subview is UILabel || subview is UIButton || subview is UISlider
-                || subview is UITableView || subview is UICollectionView
+                || subview is UITableView || subview is UICollectionView || subview is UIImageView
             if interesting, subview.bounds.width > 1, subview.bounds.height > 1 {
                 found.append((subview, subview.convert(subview.bounds, to: root)))
             }
@@ -1409,6 +1435,44 @@ final class MenuGalleryAuditTests: XCTestCase {
                 XCTAssertLessThan(frame.maxX, size.width - leastMargin,
                     "\(name): a \(type(of: view)) ends \(Int(size.width - frame.maxX))pt from "
                     + "the right of the window")
+            }
+        }
+    }
+
+    /// **Nothing moves when the width class changes** (James, round 370, dragging a Mac window:
+    /// "the Giga-Ball logo and bottom buttons pop out further at a certain width").
+    ///
+    /// The test below asks the column's width either side of the change, and the main menu
+    /// passed it while its logo dropped 80 points and its buttons stepped in: the column was
+    /// fine and the storyboard's regular-width constraints moved everything inside it. This
+    /// lays out one window twice, once in each class, and asks where every label, button,
+    /// picture and list actually is. Part-point sizes, because a Mac draws an iPad app at 77%.
+    func testNothingMovesWhenTheSameWindowChangesWidthClass() {
+        let size = CGSize(width: 684.3, height: 1005.2)
+        for (name, _) in MenuGalleryTests.everyScreen() {
+            var laidOut: [[(UIView, CGRect)]] = []
+            for regular in [false, true] {
+                guard let screen = MenuGalleryTests.everyScreen()
+                    .first(where: { $0.0 == name })?.1 else { continue }
+                let root = host(screen, size: size, regular: regular)
+                for child in screen.children where child is SplashViewController {
+                    child.willMove(toParent: nil)
+                    child.view.removeFromSuperview()
+                    child.removeFromParent()
+                    root.setNeedsLayout()
+                    root.layoutIfNeeded()
+                }
+                // The main menu's launch animation is in front of it on a first launch
+                laidOut.append(furniture(in: root, to: root))
+            }
+            guard laidOut.count == 2 else { continue }
+            XCTAssertEqual(laidOut[0].count, laidOut[1].count,
+                           "\(name): a different set of things on screen in each class")
+            for ((view, compact), (_, regular)) in zip(laidOut[0], laidOut[1]) {
+                let what = "\(name): a \(type(of: view))"
+                XCTAssertEqual(compact.minX, regular.minX, accuracy: 2, "\(what) moves sideways")
+                XCTAssertEqual(compact.minY, regular.minY, accuracy: 2, "\(what) moves up or down")
+                XCTAssertEqual(compact.width, regular.width, accuracy: 2, "\(what) changes width")
             }
         }
     }

@@ -1271,6 +1271,40 @@ final class EndlessIISquareBrickArtTests: XCTestCase {
                              "and over the picture it dissolves into, not under it")
     }
 
+    /// **And every other brick that wears a picture over its texture** (round 370, the sweep
+    /// round 369's Portal asked for). A Square or Big brick wears the picture drawn for its
+    /// proportions over a stretched ordinary texture, and a Portal of either size wears its
+    /// own over the Indestructible one. Whatever the brick is, the half-turned partner is the
+    /// picture the player is looking at, the same size and in the same place.
+    func testEverySpinningBrickTurnsOverIntoItsOwnPicture() throws {
+        for portal in [false, true] {
+            for size in ["square", "big"] {
+                let scene = scene()
+                let brick = size == "square" ? scene.endlessIIMakeSquare(column: 0, rowY: 0)
+                                             : scene.endlessIIMakeBig(leftColumn: 0, rowY: 0)
+                brick.isHidden = false
+                if portal {
+                    brick.texture = scene.brickIndestructible2Texture
+                    scene.makePortal(brick)
+                } else {
+                    brick.texture = scene.brickNormalTexture
+                    scene.refreshEndlessIIBrickArt(brick)
+                }
+                let name = "\(portal ? "portal" : "plain") \(size)"
+                let worn = try XCTUnwrap(brick.childNode(withName: GameScene.brickArtName)
+                                         as? SKSpriteNode, "\(name) wears no picture")
+                brick.zRotation = .pi/2
+                scene.refreshEndlessIIPlainSpinnerLight(brick)
+
+                let partner = try XCTUnwrap(brick.childNode(withName:
+                    GameScene.plainSpinPartnerName) as? SKSpriteNode, name)
+                XCTAssertTrue(partner.texture === worn.texture, "\(name): the wrong picture")
+                XCTAssertEqual(partner.size, worn.size, name)
+                XCTAssertEqual(partner.position, worn.position, name)
+            }
+        }
+    }
+
     /// A Rounded Portal's face is a Portal's, not an Indestructible's.
     ///
     /// The trap this closes: a Portal is *built on* `brickIndestructible2Texture`, so a face

@@ -2959,6 +2959,43 @@ testers:
   falling power-up's position by `brickWidth`, so a bare `GameScene()` with a power-up on
   screen traps converting NaN to Int. A real scene is always laid out before play.
 
+**Round 370: the main menu at every width, and a theme never alone.**
+
+- **The main menu at Mac widths.** James, with four screenshots: "At some window widths, the
+  main menu view struggles - the Giga-Ball logo and bottom buttons pop out further at a certain
+  width, the right side bottom button becomes uncentered at a certain width it can also
+  disappear". Four causes, all invisible on a phone. (A Mac draws an iPad app at 77%, so his
+  windows were 650 to 700 points wide, and the width class turns regular at about 680 there.)
+  - The button row's left edge was pinned to the *window* at compact width, its right edge to
+    the column, and a second left pin to the container disagreed with the first - the
+    `H:|-(55)-[UICollectionView]` conflicts in round 369's log. The window pin and its compact
+    partner are gone; the row is the container less 55 a side at every width class.
+  - At regular width the storyboard swapped in the iPad's layout: a 414-point container, a
+    304-point button row, and the logo 78 points lower. The 414 is gone, so the container is
+    always the column; and the gaps are chosen by height (`menuGaps(height:)`) rather than by
+    class - a phone's up to the tallest phone's room of 860, the iPad's from 960, blended
+    between. iPad 13-inch is unchanged except for rows 46 points wider, the same as a large
+    phone's; an 11-inch iPad in landscape, 834 tall, now has the phone's spacing.
+  - `capMenuContentSize` applied its height and shape caps at regular width only, so a window
+    over 1000 points tall lost its height cap on narrowing into compact. Every cap now applies
+    at every class; neither can touch a phone, which is portrait only.
+  - The settings button's disappearance: the three cells and their gaps added up to the row's
+    width exactly, and a row a part-point narrower put the last cell on a line of its own. The
+    row is laid out a point short of its width now.
+  - And a **layout loop** found on the way: in a 699 by 1005 window `capMenuContentSize` wanted
+    2.5 points top and bottom, the safe area rounded it to the pixel, and the exact comparison
+    re-assigned it on every pass for ever. Within half a point now.
+  `MainMenuAtEveryWidthTests` sweeps part-point widths in both classes; `MainMenuGapTests` asks
+  that the gaps change smoothly with height; `MenuGalleryAuditTests` lays every menu screen out
+  in the same window in each class and asks that nothing moves - the main menu was the only one
+  that did - and its screen list gained Run Statistics, the achievement page, the power-up list
+  and level stats.
+- **A spinning brick sweep**, after round 369's Portal: Square and Big bricks, plain and
+  Portal, all turn over into the picture they wear. Power-up bricks never take a style.
+- **A theme is never the whole of a day** - DAILY-CHALLENGE-SPECIFICATION.md §3, round 370.
+- **James's corrected Quick Start pages**: Endless Mode and Daily Challenge, which closes the
+  two typos round 368 listed.
+
 **Round 369: a Mac play-test - the stats panel, the spinning Portal, and the staged row.**
 
 - **Run Statistics keeps to the column.** James, on the Mac: "Statistics table on the end of

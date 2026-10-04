@@ -418,10 +418,15 @@ final class DailyChallengeTests: XCTestCase {
         // nothing before and draws the day's theme now, which is the new mix doing exactly
         // what it was built to do. The three pins above not moving is the evidence that the
         // change was dated correctly.
+        //
+        // **And again in round 370, also meant to.** It was a theme and nothing else - exactly
+        // the day James asked never to see again ("it should have a minimum of one other twist
+        // if there is a theme twist") - and from `themeNeverAloneKey` a lone theme draws a
+        // partner. The August pins above still not moving is, again, the evidence.
         let newYear = DailyChallengeGenerator.challenge(forKey: "2027-01-01")
         XCTAssertEqual(newYear.mode, .endlessII)
         XCTAssertNil(newYear.classicLevel)
-        XCTAssertEqual(newYear.twists, [.dailyTheme])
+        XCTAssertEqual(newYear.twists, [.dailyTheme, .noPausing])
     }
 
     /// And the seed itself, which is the other half of the contract: the same date has to
@@ -3396,6 +3401,17 @@ final class DailyTwistMixTests: XCTestCase {
             days.append(DailyChallengeGenerator.challenge(forKey: formatter.string(from: date)))
         }
         return days
+    }
+
+    /// **A theme is never the whole of a day** (James, round 370: "The daily challenge twists
+    /// shouldn't just be a theme, it should have a minimum of one other twist if there is a
+    /// theme twist"). A year from the day the rule begins.
+    func testAThemeAlwaysHasAnotherTwistBesideIt() {
+        let days = year(from: DailyChallengeGenerator.themeNeverAloneKey)
+        let themed = days.filter { $0.twists.contains(.dailyTheme) }
+        XCTAssertGreaterThan(themed.count, 100, "themes are still most of the calendar")
+        let alone = themed.filter { $0.twists.count < 2 }.map(\.dateKey)
+        XCTAssertEqual(alone, [], "a theme is how the game looks, not something to play")
     }
 
     /// **A plain day is rare.** "Vanilla should be quite rare, like once every 2 weeks."

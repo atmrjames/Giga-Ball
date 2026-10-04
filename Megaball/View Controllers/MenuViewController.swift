@@ -305,10 +305,9 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
     /// constraints on every trait change (see `StoryboardConstraintChoices`), and a constant
     /// set on those same constraints survives that where a replacement would not.
     func fitTheMenuToTheWindow() {
-        let regular = traitCollection.horizontalSizeClass == .regular
-        let base = MenuViewController.menuGaps(regular: regular)
         let height = view.bounds.height - view.safeAreaInsets.top - view.safeAreaInsets.bottom
-        let scale = MenuViewController.gapScale(height: height, regular: regular)
+        let base = MenuViewController.menuGaps(height: height)
+        let scale = MenuViewController.gapScale(height: height)
         let gaps = menuGaps
         for (constraints, wanted) in [(gaps.overLogo, base.overLogo),
                                       (gaps.underLogo, base.aroundRows),
@@ -323,17 +322,38 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
     }
 
     /// The gaps at full size: the storyboard's, with the two either side of the rows evened out.
-    static func menuGaps(regular: Bool) -> (overLogo: CGFloat, aroundRows: CGFloat,
-                                            underButtons: CGFloat) {
-        regular ? (140, 70, 85) : (62, 57.5, 85)
+    ///
+    /// **Chosen by the room, not the size class** (James, round 370, dragging a Mac window
+    /// wider: "the Giga-Ball logo and bottom buttons pop out further at a certain width"). The
+    /// phone's gaps and the iPad's were picked by the width class, so a window crossing the
+    /// width where it turns regular - about 680 points on his Mac - dropped the logo 80 points
+    /// in one step with nothing about its height having changed. The iPad's gaps are for a
+    /// tall screen, so the height decides: a phone's up to the tallest phone, the iPad's from a
+    /// little above it, and a blend between, so no drag of any edge makes a step.
+    static func menuGaps(height: CGFloat) -> (overLogo: CGFloat, aroundRows: CGFloat,
+                                              underButtons: CGFloat) {
+        let phone: (CGFloat, CGFloat, CGFloat) = (62, 57.5, 85)
+        let tall: (CGFloat, CGFloat, CGFloat) = (140, 70, 85)
+        let along = min(1, max(0, (height - tallestPhoneRoom)/(tallRoom - tallestPhoneRoom)))
+        return (phone.0 + (tall.0 - phone.0)*along,
+                phone.1 + (tall.1 - phone.1)*along,
+                phone.2 + (tall.2 - phone.2)*along)
     }
+
+    /// The menu's room on the tallest phone: an iPhone Pro Max is 956 points, less its 62 and 34
+    /// of safe area. Every phone is at or under it, so every phone keeps the gaps it always had.
+    static let tallestPhoneRoom: CGFloat = 860
+
+    /// Where the iPad's gaps are reached in full - a 13-inch iPad's room once the menu's height
+    /// cap has had its say, and a little under it so landscape gets them too.
+    static let tallRoom: CGFloat = 960
 
     /// How much of their full size the gaps keep in a window this tall.
     ///
     /// Full size while the four rows still get a full card each; below that the gaps give up
     /// what the rows need, and never go under a quarter. A phone keeps its gaps.
-    static func gapScale(height: CGFloat, regular: Bool) -> CGFloat {
-        let gaps = menuGaps(regular: regular)
+    static func gapScale(height: CGFloat) -> CGFloat {
+        let gaps = menuGaps(height: height)
         let full = gaps.overLogo + gaps.aroundRows*2 + gaps.underButtons
         let fixed: CGFloat = 45 + 50
         // The logo and the button row, which do not shrink
@@ -626,12 +646,21 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
 
         let measured = iconCollectionView.bounds.width > 0 ? iconCollectionView.bounds.width
                                                            : rowWidth
-        let spacing = max(0, ((measured - 50*3)/2).rounded(.down))
+        let slack: CGFloat = 1
+        let spacing = max(0, ((measured - slack - 50*3)/2).rounded(.down))
         layout.itemSize = CGSize(width: 50, height: 50)
         layout.minimumInteritemSpacing = spacing
         layout.minimumLineSpacing = spacing
-        let spare = max(0, measured - 50*3 - spacing*2)
+        let spare = max(0, measured - slack - 50*3 - spacing*2)
         layout.sectionInset = UIEdgeInsets(top: 0, left: spare/2, bottom: 0, right: spare/2)
+        // **A point short of the row, on purpose** (James, round 370, from a Mac window: the
+        // settings button "can also disappear"). The three cells and their gaps used to add up
+        // to the row's width exactly, and a flow layout puts a cell that does not fit on a line
+        // of its own - below this one-line row, where nobody sees it. A row a part-point
+        // narrower than the one this was worked out for, which is what a Mac's 77% scale makes
+        // of most window sizes and what the half-point re-layout threshold below lets stand,
+        // was enough to push the settings button off. A point to spare is centred like the
+        // rest of the spare, so nothing moves that anyone could see
         // **Centred, to the point** (James, round 351: "info and settings buttons not always
         // centred horizontally on screen"). The spacing is rounded down so the three always fit
         // one line, and whatever the rounding leaves is shared either side rather than left

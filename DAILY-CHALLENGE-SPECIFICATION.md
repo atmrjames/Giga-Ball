@@ -202,6 +202,16 @@ Drawn in this order, each from the day's PRNG stream:
    §3's promise exactly: every day up to and including the one being played is untouched, and
    the golden list in `DailyChallengeTests` ends there rather than pinning days nobody has seen.
 
+   - **A theme never stands alone** (round 370, from **2026-10-05**). James: "The daily
+     challenge twists shouldn't just be a theme, it should have a minimum of one other twist if
+     there is a theme twist." A day could end up a theme and nothing else the same way the
+     zero-guard's days ended up plain: the count roll asked for one twist beside the look, and
+     the category it drew refused everything. A theme-only day now draws a partner across
+     every category still open; if nothing at all will stand beside it the theme goes and the
+     zero-guard has its turn. Theme only: Monochromatic takes the green and red away from the
+     power-ups, which is difficulty in costume rather than costume alone. Dated tomorrow, so
+     every day already played replays as it did. `testAThemeAlwaysHasAnotherTwistBesideIt`.
+
    `DailyTwistMixTests` generates a year and measures, so the numbers above are assertions
    rather than intentions. **It measures `challenge(forKey:)` and not `rawChallenge(forKey:)`**,
    which is the difference between the draw and the day: the no-repeats rule sits between them

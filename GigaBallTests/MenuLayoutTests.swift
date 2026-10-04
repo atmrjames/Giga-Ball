@@ -598,32 +598,132 @@ final class PaddleSpeedFieldOnAnIPadTests: XCTestCase {
     }
 }
 
+/// **The main menu at every width a Mac window can be dragged to** (James, round 370, with four
+/// screenshots: "At some window widths, the main menu view struggles - the Giga-Ball logo and
+/// bottom buttons pop out further at a certain width, the right side bottom button becomes
+/// uncentered at a certain width it can also disappear").
+///
+/// Three faults, all at widths no phone reaches. The button row's left edge was pinned to the
+/// window at compact width and its right edge to the column, so once the column stepped in the
+/// information button stayed by the window's edge. At regular width the storyboard swapped in
+/// the iPad's layout - a 414-point container, a 304-point button row, the logo 78 points lower -
+/// so crossing the width class moved everything at once. And the row's three cells added up to
+/// its width exactly, so a part-point less put the settings button on a line of its own.
+///
+/// Widths in part-points on purpose: an iPad app on a Mac is drawn at 77%, so his windows are.
+final class MainMenuAtEveryWidthTests: XCTestCase {
+
+    private func laidOut(_ size: CGSize, regular: Bool) -> MenuViewController {
+        let window = UIWindow(frame: CGRect(origin: .zero, size: size))
+        window.traitOverrides.horizontalSizeClass = regular ? .regular : .compact
+        let board = UIStoryboard(name: "Main", bundle: Bundle(for: MenuViewController.self))
+        let menu = board.instantiateViewController(withIdentifier: "menuView")
+            as! MenuViewController
+        window.rootViewController = menu
+        window.isHidden = false
+        for _ in 0..<5 {
+            menu.view.setNeedsLayout()
+            menu.view.layoutIfNeeded()
+        }
+        return menu
+    }
+
+    private func rect(_ view: UIView, in menu: MenuViewController) -> CGRect {
+        view.convert(view.bounds, to: menu.view)
+    }
+
+    func testTheButtonsStayUnderTheRowsOnOneLine() {
+        for regular in [false, true] {
+            for width in stride(from: CGFloat(330.3), through: 760, by: 23.7) {
+                let size = CGSize(width: width, height: 1005.2)
+                let menu = laidOut(size, regular: regular)
+                let name = "\(regular ? "regular" : "compact") \(Int(width))"
+                let rows = rect(menu.modeSelectTableView, in: menu)
+                let icons = rect(menu.iconCollectionView, in: menu)
+                XCTAssertEqual(icons.midX, rows.midX, accuracy: 1,
+                               "\(name): the buttons are centred under the rows")
+
+                let cells = menu.iconCollectionView.visibleCells.map { rect($0, in: menu) }
+                XCTAssertEqual(cells.count, 3, "\(name): a button is missing")
+                for cell in cells {
+                    XCTAssertEqual(cell.minY, icons.minY, accuracy: 0.5,
+                                   "\(name): a button has wrapped below the row")
+                    XCTAssertGreaterThanOrEqual(cell.minX, icons.minX - 0.5, name)
+                    XCTAssertLessThanOrEqual(cell.maxX, icons.maxX + 0.5, name)
+                }
+                menu.view.window?.isHidden = true
+            }
+        }
+    }
+
+    /// Crossing the width class changes nothing: the same window, either side of it, is the
+    /// same menu.
+    func testTheWidthClassDoesNotMoveAnything() {
+        for size in [CGSize(width: 680.5, height: 1005.2), CGSize(width: 680.5, height: 1300),
+                     CGSize(width: 1032, height: 1376), CGSize(width: 1210, height: 834)] {
+            let compact = laidOut(size, regular: false)
+            let regular = laidOut(size, regular: true)
+            for (part, a, b) in [("logo", compact.logoImage!, regular.logoImage!),
+                                 ("rows", compact.modeSelectTableView!,
+                                  regular.modeSelectTableView!),
+                                 ("buttons", compact.iconCollectionView!,
+                                  regular.iconCollectionView!)] {
+                let one = rect(a, in: compact), other = rect(b, in: regular)
+                XCTAssertEqual(one.minX, other.minX, accuracy: 0.5, "\(part) at \(size)")
+                XCTAssertEqual(one.minY, other.minY, accuracy: 0.5, "\(part) at \(size)")
+                XCTAssertEqual(one.width, other.width, accuracy: 0.5, "\(part) at \(size)")
+            }
+            compact.view.window?.isHidden = true
+            regular.view.window?.isHidden = true
+        }
+    }
+}
+
 /// James, round 351, from an iPad window: "main menu cells not centred between bottom icons and
 /// giga-ball logo". The gaps either side of the rows are equal now, and they give way together
 /// in a window too short for them.
 final class MainMenuGapTests: XCTestCase {
 
     func testTheRowsHaveTheSameRoomAboveAndBelow() {
-        for regular in [false, true] {
-            let gaps = MenuViewController.menuGaps(regular: regular)
+        for height: CGFloat in [600, 860, 910, 1000] {
+            let gaps = MenuViewController.menuGaps(height: height)
             XCTAssertGreaterThan(gaps.aroundRows, 0)
         }
     }
 
     func testAPhoneKeepsItsGaps() {
-        XCTAssertEqual(MenuViewController.gapScale(height: 874 - 62 - 34, regular: false), 1,
+        XCTAssertEqual(MenuViewController.gapScale(height: 874 - 62 - 34), 1,
                        "an iPhone 17 Pro has room for every gap and four full cards")
+        for height: CGFloat in [874 - 62 - 34, MenuViewController.tallestPhoneRoom] {
+            let gaps = MenuViewController.menuGaps(height: height)
+            XCTAssertEqual(gaps.overLogo, 62, "a phone's logo sits where it always has")
+            XCTAssertEqual(gaps.aroundRows, 57.5)
+        }
+    }
+
+    /// **No step anywhere** (James, round 370: "the Giga-Ball logo and bottom buttons pop out
+    /// further at a certain width"). The gaps follow the height alone, and change smoothly with
+    /// it, so dragging a window's edge never moves the logo in one jump.
+    func testTheGapsChangeSmoothlyWithHeight() {
+        var last = MenuViewController.menuGaps(height: 500).overLogo
+        for height in stride(from: CGFloat(501), through: 1200, by: 1) {
+            let now = MenuViewController.menuGaps(height: height).overLogo
+            XCTAssertLessThan(abs(now - last), 1.5, "a jump at \(height)")
+            last = now
+        }
+        XCTAssertEqual(MenuViewController.menuGaps(height: 1000).overLogo, 140,
+                       "a 13-inch iPad keeps the gaps it was given")
     }
 
     func testAShortWindowGivesItsGapsToTheRows() {
-        let scale = MenuViewController.gapScale(height: 560, regular: true)
+        let scale = MenuViewController.gapScale(height: 560)
         XCTAssertLessThan(scale, 1)
-        let gaps = MenuViewController.menuGaps(regular: true)
+        let gaps = MenuViewController.menuGaps(height: 560)
         let air = (gaps.overLogo + gaps.aroundRows*2 + gaps.underButtons)*scale
         XCTAssertGreaterThanOrEqual(560 - 95 - air,
                                     ModeSelectTableViewCell.fullCard*4 - 0.5,
                                     "the rows get four full cards' room")
-        XCTAssertEqual(MenuViewController.gapScale(height: 200, regular: true), 0.25,
+        XCTAssertEqual(MenuViewController.gapScale(height: 200), 0.25,
                        "and the gaps never vanish")
     }
 }

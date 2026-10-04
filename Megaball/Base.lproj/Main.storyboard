@@ -512,20 +512,9 @@
                                 <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                 <constraints>
                                     <constraint firstItem="qju-sB-SUV" firstAttribute="centerX" secondItem="goG-Uk-8FU" secondAttribute="centerX" id="A0k-r0-5TI"/>
-                                    <constraint firstAttribute="width" constant="414" id="HAL-1R-0K1"/>
                                     <constraint firstItem="qju-sB-SUV" firstAttribute="centerY" secondItem="goG-Uk-8FU" secondAttribute="centerY" id="Mkq-sX-cCh"/>
                                     <constraint firstItem="qju-sB-SUV" firstAttribute="leading" secondItem="goG-Uk-8FU" secondAttribute="leading" constant="25" id="kaI-pP-Mhy"/>
                                 </constraints>
-                                <variation key="default">
-                                    <mask key="constraints">
-                                        <exclude reference="HAL-1R-0K1"/>
-                                    </mask>
-                                </variation>
-                                <variation key="widthClass=regular">
-                                    <mask key="constraints">
-                                        <include reference="HAL-1R-0K1"/>
-                                    </mask>
-                                </variation>
                             </view>
                             <collectionView delaysContentTouches="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleAspectFit" scrollEnabled="NO" showsHorizontalScrollIndicator="NO" showsVerticalScrollIndicator="NO" dataMode="prototypes" translatesAutoresizingMaskIntoConstraints="NO" id="hXg-9M-a0w">
                                 <rect key="frame" x="50" y="693" width="314" height="50"/>
@@ -560,11 +549,9 @@
                             <constraint firstItem="8rf-lI-dpI" firstAttribute="leading" secondItem="qoM-35-LIT" secondAttribute="leading" id="OXZ-px-gKj"/>
                             <constraint firstItem="5c2-Kw-73A" firstAttribute="leading" secondItem="3NZ-mn-eyJ" secondAttribute="leading" constant="20" id="PFX-ny-wwv"/>
                             <constraint firstItem="hXg-9M-a0w" firstAttribute="top" secondItem="goG-Uk-8FU" secondAttribute="bottom" constant="50" id="QZt-j2-TMB"/>
-                            <constraint firstItem="hXg-9M-a0w" firstAttribute="leading" secondItem="qoM-35-LIT" secondAttribute="leading" constant="55" id="Uik-ic-RHH"/>
                             <constraint firstItem="5c2-Kw-73A" firstAttribute="centerX" secondItem="qoM-35-LIT" secondAttribute="centerX" id="aSI-x5-fYq"/>
                             <constraint firstItem="goG-Uk-8FU" firstAttribute="leading" secondItem="3NZ-mn-eyJ" secondAttribute="leading" id="dDq-zu-uWs"/>
                             <constraint firstItem="5c2-Kw-73A" firstAttribute="top" secondItem="3NZ-mn-eyJ" secondAttribute="top" constant="62" id="dad-9Z-I0q"/>
-                            <constraint firstItem="3NZ-mn-eyJ" firstAttribute="trailing" secondItem="hXg-9M-a0w" secondAttribute="trailing" constant="55" id="hF7-NA-QSf"/>
                             <constraint firstItem="goG-Uk-8FU" firstAttribute="top" secondItem="5c2-Kw-73A" secondAttribute="bottom" constant="90" id="hpD-t3-UP3"/>
                             <constraint firstItem="8rf-lI-dpI" firstAttribute="top" secondItem="qoM-35-LIT" secondAttribute="top" id="mMO-ks-NBZ"/>
                             <constraint firstItem="GLJ-e4-6Ry" firstAttribute="leading" secondItem="qoM-35-LIT" secondAttribute="leading" id="pIS-Hu-Tg6"/>
@@ -576,21 +563,15 @@
                         </constraints>
                         <variation key="default">
                             <mask key="constraints">
-                                <exclude reference="hF7-NA-QSf"/>
                                 <exclude reference="InD-59-hRA"/>
                                 <exclude reference="dad-9Z-I0q"/>
-                                <exclude reference="dDq-zu-uWs"/>
-                                <exclude reference="Uik-ic-RHH"/>
                                 <exclude reference="5sr-7u-Wz4"/>
                                 <exclude reference="QZt-j2-TMB"/>
                             </mask>
                         </variation>
                         <variation key="widthClass=compact">
                             <mask key="constraints">
-                                <include reference="hF7-NA-QSf"/>
                                 <include reference="dad-9Z-I0q"/>
-                                <include reference="dDq-zu-uWs"/>
-                                <include reference="Uik-ic-RHH"/>
                                 <include reference="5sr-7u-Wz4"/>
                             </mask>
                         </variation>

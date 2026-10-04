@@ -1020,6 +1020,35 @@ enum DailyChallengeGenerator {
             if let twist = DailyChallengeGenerator.draw(from: pool, &stream) { twists.append(twist) }
         }
 
+        if key >= DailyChallengeGenerator.themeNeverAloneKey, twists == [.dailyTheme] {
+            // **A theme is never the whole of a day** (James, round 370: "The daily challenge
+            // twists shouldn't just be a theme, it should have a minimum of one other twist if
+            // there is a theme twist"). A theme changes how the game looks and nothing about
+            // how it plays, so a day that is only a theme is a plain day in costume.
+            //
+            // It happened the same way the plain days in the guard below did: the look was
+            // drawn, the count roll asked for one twist beside it, and the category the loop
+            // picked refused everything - so the theme stood alone. The answer is the same as
+            // that guard's: ask across every category still open at once. And if nothing at
+            // all will stand beside it, the theme goes rather than the rule, and the guard
+            // below gets its turn at the day.
+            //
+            // Theme only, not Monochromatic. Draining the colour takes away the green and red
+            // that say which power-ups to catch, which is difficulty wearing a costume (§4,
+            // Blackout) rather than a costume alone.
+            let partners = DailyTwist.allCases.filter { candidate in
+                categories.contains(candidate.category)
+                    && candidate.inPool(on: key, for: mode)
+                    && DailyTwist.dailyTheme.pairsWith(candidate)
+                    && candidate.changesSomething(onClassicLevel: classicLevel, on: key)
+            }
+            if let partner = DailyChallengeGenerator.draw(from: partners, &stream) {
+                twists.append(partner)
+            } else {
+                twists.removeAll()
+            }
+        }
+
         if newMix, twists.isEmpty, plainDay == false {
             // **A day the rolls said was not plain must not end up plain.** Measured over a
             // year, the seven-in-a-hundred roll was producing eleven: the category the loop
@@ -1084,6 +1113,11 @@ enum DailyChallengeGenerator {
     // **Tomorrow rather than today**, which is the whole of what keeps the header's promise:
     // every day up to and including the one being played right now draws exactly as it did,
     // and testers who have already played a day see that day unchanged for ever.
+
+    /// The first day a theme may not stand alone (round 370). Tomorrow, in the daily's UTC
+    /// calendar, when it was written - every day up to and including the one being played
+    /// draws exactly as it did, which is the promise at the top of this file.
+    static let themeNeverAloneKey = "2026-10-05"
 
     /// How often a day has no twists at all, in a hundred.
     ///

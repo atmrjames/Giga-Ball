@@ -834,8 +834,6 @@ extension UIViewController {
         // place that runs on every layout of every screen - so it carries the return-to-game
         // button's re-fronting too. See keepReturnToGameButtonFrontmost for why it needs one
 
-        let regular = traitCollection.horizontalSizeClass == .regular
-
         let inherited = UIEdgeInsets(
             top: view.safeAreaInsets.top - additionalSafeAreaInsets.top,
             left: view.safeAreaInsets.left - additionalSafeAreaInsets.left,
@@ -843,9 +841,15 @@ extension UIViewController {
             right: view.safeAreaInsets.right - additionalSafeAreaInsets.right)
         let wanted = UIViewController.menuContentInsets(available: menuAvailableSize,
                                                         inherited: inherited,
-                                                        widthOnly: regular == false)
-        // **The width cap applies at any width class; the height and shape caps only on an
-        // iPad** (James, round 339: "the cell views expand with the window until a point, then
+                                                        widthOnly: false)
+        // **Every cap applies at every width class** (round 370). Round 339 took the step out
+        // of the width and left the height and shape caps to regular width alone, and James
+        // found the rest of the step on his Mac - "the Giga-Ball logo and bottom buttons pop
+        // out further at a certain width": a window over 1000 points tall lost its height cap
+        // the moment it narrowed into compact. Neither cap can touch a phone, which is portrait
+        // only: none is taller than 1000 points, and none is wider than 0.62 of its height.
+        //
+        // Round 339 (James: "the cell views expand with the window until a point, then
         // snap back to a set width once the window is wide enough. Can we just make this set
         // width the maximum width of the cell views so there's no need for them to snap
         // back?").
@@ -857,9 +861,20 @@ extension UIViewController {
         // that nobody was capping it. The width cap costs a phone nothing, because no phone is
         // wider than 460 points, and it takes the step out.
 
-        guard additionalSafeAreaInsets != wanted else { return }
+        let current = additionalSafeAreaInsets
+        guard abs(current.top - wanted.top) > 0.5 || abs(current.bottom - wanted.bottom) > 0.5
+                || abs(current.left - wanted.left) > 0.5 || abs(current.right - wanted.right) > 0.5
+        else { return }
         // Setting this triggers another layout pass, so assigning unconditionally would
-        // loop for as long as the screen is on
+        // loop for as long as the screen is on.
+        //
+        // **Within half a point, not exactly** (round 370). A window 1005 points tall wants 2.5
+        // points over and under the capped height, the safe area it produces is rounded to the
+        // pixel, and `inherited` reads that rounding back as a part-point the parent supplied -
+        // so the next pass wanted a fraction less, the one after a fraction more, and an exact
+        // comparison never settled. The main menu laid itself out for ever in a 699 by 1005
+        // window, which is one of the sizes James's Mac hands out: an iPad app there is drawn
+        // at 77%, so whole-pixel windows are part-point sizes as a matter of course
         additionalSafeAreaInsets = wanted
     }
 }
