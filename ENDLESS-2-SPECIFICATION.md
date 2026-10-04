@@ -2959,6 +2959,32 @@ testers:
   falling power-up's position by `brickWidth`, so a bare `GameScene()` with a power-up on
   screen traps converting NaN to Int. A real scene is always laid out before play.
 
+**Round 369: a Mac play-test - the stats panel, the spinning Portal, and the staged row.**
+
+- **Run Statistics keeps to the column.** James, on the Mac: "Statistics table on the end of
+  game view is going to full width when the window is wide - limit its width". The screen is
+  built in code, never called `capMenuContentSize`, and pinned to the view's edges rather than
+  the safe area, so the cell held its rows to a phone's width while the panel behind them ran
+  the width of the window. Round 339's Music fix, applied here. `CodeBuiltScreenColumnTests`
+  lays it out on a 1210-point window and fails on the old layout (a 1206-wide table).
+- **A spinning Portal turns over into a Portal.** James: "Spinning portal brick changes to
+  indestructible brick when rotating. It should change to an upside down portal brick instead".
+  Round 332's half-turn partner copied `brick.texture`, and a Portal is built on the
+  Indestructible texture with its own picture worn over it as `brickArtName` - so the partner
+  faded an Indestructible in over it. The partner now takes the worn picture where there is one
+  (a Square brick's too, and a cooling Portal's grey). `testASpinningPortalTurnsOverIntoAPortal`.
+- **The phantom watch excuses the staged row on the Mac too.** The log carried `PHANTOM BRICKS:
+  11 solid but unseeable - 11x alpha 0.00 plain row -1`. A row -1 brick's lower edge lies
+  exactly on the field's upper one, and round 313's `minY < top` let it through whenever the
+  row height rounded it a hair under - which the Mac's window does and the phone did not.
+  `isStagedAboveTheField` allows a quarter row. Its test needed a pair of numbers that trip in
+  SpriteKit's single precision; the first pair tripped only on paper.
+- **Also in that log, and not changed**: 49 Auto Layout conflicts, which UIKit resolves itself
+  by breaking a constraint - storyboard screens built at 414 by 736 meeting a 1210 window, the
+  ball rack's height pinned to nought while its stack wants 13.2 more, and label pairs whose
+  fixed heights cannot both hold. None showed as a fault on screen; worth a sweep before 1.4,
+  not before 1.3. One `CROOKED BALL, unexplained` speed wobble, a single sighting.
+
 **Round 368: James's artwork, and Magnetism drawn as a field.**
 
 - **Artwork in**: `iconLeaderboardPopupOn` and `...Off` for the Daily Result Pop-Up setting

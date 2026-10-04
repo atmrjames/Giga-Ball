@@ -173,22 +173,34 @@ class RunStatsViewController: UIViewController, UITableViewDataSource, UITableVi
         NSLayoutConstraint.activate([
             title.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor,
                                        constant: 34),
-            title.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 34),
-            title.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -34),
+            title.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor,
+                                           constant: 34),
+            title.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor,
+                                            constant: -34),
 
             facts.topAnchor.constraint(equalTo: title.bottomAnchor, constant: 24),
-            facts.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 2),
-            facts.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -2),
+            facts.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor,
+                                           constant: 2),
+            facts.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor,
+                                            constant: -2),
+            // **Pinned to the safe area, not the view** (James, round 369, from the Mac: "the
+            // statistics table ... is going to full width when the window is wide"). The
+            // column every menu keeps to arrives as `additionalSafeAreaInsets` from
+            // `capMenuContentSize`, so edges pinned to the view never see it - the rows stayed
+            // a phone's width, because the cell holds them there, while the panel behind them
+            // ran the width of the window. Round 339 found the same on the Music screen
 
             header.topAnchor.constraint(equalTo: facts.bottomAnchor, constant: 28),
             header.centerXAnchor.constraint(equalTo: view.centerXAnchor),
 
             table.topAnchor.constraint(equalTo: header.bottomAnchor, constant: 8),
             table.bottomAnchor.constraint(equalTo: close.topAnchor, constant: -20),
-            table.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 22),
-            table.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -22),
+            table.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor,
+                                           constant: 22),
+            table.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor,
+                                            constant: -22),
 
-            close.leadingAnchor.constraint(equalTo: view.leadingAnchor,
+            close.leadingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.leadingAnchor,
                                           constant: UIViewController.menuButtonWideInset),
             close.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor,
                                           constant: -20),
@@ -199,6 +211,9 @@ class RunStatsViewController: UIViewController, UITableViewDataSource, UITableVi
 
     override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
+        capMenuContentSize()
+        // The size cap alone, not `limitMenuContentSize`: that also pads lists without a
+        // panel, and the highlights list under the panel is meant to sit where it is
         view.applyMenuParallaxToContent()
         let wanted = facts.contentSize.height
         if let factsHeight {

@@ -322,28 +322,42 @@ extension GameScene {
     func refreshEndlessIIPlainSpinnerLight(_ brick: SKSpriteNode) {
         let existing = brick.childNode(withName: GameScene.plainSpinPartnerName) as? SKSpriteNode
 
+        let worn = brick.childNode(withName: GameScene.brickArtName) as? SKSpriteNode
         guard brick.childNode(withName: GameScene.brickFaceName) == nil,
-              let texture = brick.texture, brick.zRotation != 0 else {
+              let texture = worn?.texture ?? brick.texture, brick.zRotation != 0 else {
             existing?.removeFromParent()
             return
             // A shaped brick has its own cross-fade on its face, and a brick standing square
             // has nothing to correct
         }
+        // **The picture the brick is showing, not the texture it wears** (James, round 369:
+        // "Spinning portal brick changes to indestructible brick when rotating. It should change
+        // to an upside down portal brick instead to make the lighting look right"). A Portal
+        // is built on the Indestructible artwork and shows its own picture over it as
+        // `brickArtName` (round 271), so the partner copied the texture underneath and faded an
+        // Indestructible brick in over the Portal every half turn. Where a brick wears its own
+        // art, the partner is that art turned over - which also covers a Square brick, and a
+        // Portal greyed out while its cooldown runs
 
+        let size = worn?.size ?? brick.size
         let partner = existing ?? {
-            let node = SKSpriteNode(texture: texture, size: brick.size)
+            let node = SKSpriteNode(texture: texture, size: size)
             node.name = GameScene.plainSpinPartnerName
             node.zPosition = 0.02
             brick.addChild(node)
             return node
         }()
+        // Above the worn picture's 0.01, so what dissolves in is stated rather than left to
+        // sibling order
 
         if partner.texture !== texture { partner.texture = texture }
-        if partner.size != brick.size { partner.size = brick.size }
-        partner.position = CGPoint(x: (0.5 - brick.anchorPoint.x)*brick.size.width,
-                                   y: (0.5 - brick.anchorPoint.y)*brick.size.height)
+        if partner.size != size { partner.size = size }
+        partner.position = worn?.position
+            ?? CGPoint(x: (0.5 - brick.anchorPoint.x)*brick.size.width,
+                       y: (0.5 - brick.anchorPoint.y)*brick.size.height)
         // Where the sprite is actually drawn, which is the node's own point only for a brick
-        // anchored in the middle - a Square brick hangs a cell below its node (§8.6)
+        // anchored in the middle - a Square brick hangs a cell below its node (§8.6). A worn
+        // picture has already been put there, so it is asked rather than worked out again
         partner.zRotation = .pi
         partner.color = brick.color
         partner.colorBlendFactor = brick.colorBlendFactor

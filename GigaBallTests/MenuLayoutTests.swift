@@ -516,6 +516,50 @@ final class CodeBuiltScreenParallaxTests: XCTestCase {
     }
 }
 
+/// **The code-built screens keep to the column on a wide window** (James, round 369, playing
+/// on the Mac: "Statistics table on the end of game view is going to full width when the
+/// window is wide - limit its width").
+///
+/// The column arrives as `additionalSafeAreaInsets`, so a screen built in code has to both ask
+/// for it and pin to the safe area. Run Statistics did neither: its rows stayed a phone's width
+/// because the cell holds them there, and the panel behind them ran the width of the window.
+/// Everything on these screens but the backdrop should sit inside the 460-point column.
+final class CodeBuiltScreenColumnTests: XCTestCase {
+
+    override func tearDown() {
+        InGameRecents.shared.runSummary = nil
+        super.tearDown()
+    }
+
+    func testNothingButTheBackdropRunsPastTheColumn() {
+        InGameRecents.shared.runSummary = InGameRecents.RunSummary(
+            height: 12, durationSeconds: 38, paddleHits: 11, bricksDestroyed: 17,
+            ballsLost: 1, powerUpsSeen: 3, powerUpsCollected: 2)
+        // James's own run from the screenshot, so the facts table has rows and a panel
+
+        for (name, screen) in [("Run Statistics", RunStatsViewController() as UIViewController),
+                               ("Music", MusicViewController())] {
+            let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 1210, height: 1030))
+            window.traitOverrides.horizontalSizeClass = .regular
+            window.rootViewController = screen
+            window.isHidden = false
+            for _ in 0..<4 {
+                screen.view.setNeedsLayout()
+                screen.view.layoutIfNeeded()
+            }
+
+            let backdrop = screen.view.subviews.first
+            for subview in screen.view.subviews where subview !== backdrop
+                && subview.isHidden == false {
+                XCTAssertLessThanOrEqual(subview.frame.width,
+                                         UIViewController.menuMaximumWidth + 1,
+                                         "\(name): \(type(of: subview)) is "
+                                         + "\(Int(subview.frame.width)) wide on a 1210 window")
+            }
+        }
+    }
+}
+
 /// The paddle-speed field on an iPad (round 344).
 ///
 /// James, round 339: "the slider and close button go all the way to the screen edges" and "the

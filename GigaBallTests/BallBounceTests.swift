@@ -753,6 +753,33 @@ final class PhantomBrickWatchTests: XCTestCase {
                        "Hide Bricks does not fade bricks, so a faded one is not it")
     }
 
+    /// **The staged row is excused at any row height** (round 369, James's Mac log: `PHANTOM
+    /// BRICKS: 11 solid but unseeable - 11x alpha 0.00 plain row -1`). A row -1 brick's lower
+    /// edge lies exactly on the field's upper one, and at a row height that is not a round
+    /// number "exactly" came out a hair below it. These two are a pair the arithmetic trips on,
+    /// found for SpriteKit's arithmetic rather than Swift's: a node keeps its position and size
+    /// in single precision, so the pair has to trip after both are rounded to a Float - the
+    /// first pair tried tripped on paper and passed in the scene.
+    func testTheStagedRowIsExcusedWhateverTheRowHeight() {
+        let scene = self.scene()
+        scene.brickHeight = 33.955756157170434
+        scene.yBrickOffsetEndless = 831.9896246381859
+        for column in 0..<11 {
+            let waiting = SKSpriteNode(color: .red,
+                                       size: CGSize(width: 40, height: scene.brickHeight))
+            waiting.name = BrickCategoryName
+            waiting.position = CGPoint(x: CGFloat(column)*40 - 200,
+                                       y: scene.yBrickOffsetEndless + scene.brickHeight)
+            waiting.physicsBody = SKPhysicsBody(rectangleOf: waiting.size)
+            waiting.physicsBody?.categoryBitMask = CollisionTypes.brickCategory.rawValue
+            waiting.alpha = 0
+            scene.addChild(waiting)
+        }
+        XCTAssertEqual(scene.phantomBrickPositions(), [],
+                       "a row waiting above the field is not eleven phantoms")
+        XCTAssertEqual(scene.phantomBrickReasons(), "")
+    }
+
     /// And the row that *has* arrived is still watched.
     func testTheTopRowOfTheFieldIsStillWatched() {
         let scene = self.scene()

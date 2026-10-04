@@ -1244,6 +1244,33 @@ final class EndlessIISquareBrickArtTests: XCTestCase {
         }
     }
 
+    /// **A spinning Portal turns over into a Portal** (James, round 369: "Spinning portal brick
+    /// changes to indestructible brick when rotating. It should change to an upside down portal
+    /// brick instead to make the lighting look right"). A Portal is built on the Indestructible
+    /// texture and shows its own picture over it, and the partner was copying the texture.
+    func testASpinningPortalTurnsOverIntoAPortal() throws {
+        let scene = scene()
+        let subject = SKSpriteNode(texture: scene.brickIndestructible2Texture,
+                                   size: CGSize(width: scene.brickWidth, height: scene.brickHeight))
+        scene.addChild(subject)
+        scene.makePortal(subject)
+        let worn = try XCTUnwrap(subject.childNode(withName: GameScene.brickArtName)
+                                 as? SKSpriteNode, "no portal picture")
+        subject.zRotation = .pi/2
+
+        scene.refreshEndlessIIPlainSpinnerLight(subject)
+
+        let partner = try XCTUnwrap(subject.childNode(withName: GameScene.plainSpinPartnerName)
+                                    as? SKSpriteNode, "nothing is cross-fading")
+        XCTAssertTrue(partner.texture === worn.texture,
+                      "the Portal's own picture, not the Indestructible one it is built on")
+        XCTAssertFalse(partner.texture === scene.brickIndestructible2Texture)
+        XCTAssertEqual(partner.size, worn.size)
+        XCTAssertEqual(partner.position, worn.position)
+        XCTAssertGreaterThan(partner.zPosition, worn.zPosition,
+                             "and over the picture it dissolves into, not under it")
+    }
+
     /// A Rounded Portal's face is a Portal's, not an Indestructible's.
     ///
     /// The trap this closes: a Portal is *built on* `brickIndestructible2Texture`, so a face

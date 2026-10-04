@@ -3677,8 +3677,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
                   body.categoryBitMask == CollisionTypes.brickCategory.rawValue,
                   sprite.texture !== self.brickInvisibleTexture,
                   sprite.hasActions() == false,
-                  self.endlessIIFieldRect(of: sprite).minY
-                    < self.yBrickOffsetEndless + self.brickHeight/2
+                  self.isStagedAboveTheField(sprite) == false
             else { return }
             // The same exclusions as `phantomBrickPositions`, or the count and the reasons
             // beside it are answers to two different questions
@@ -3730,8 +3729,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             // correct behaviour is one whose next real finding gets skipped over, which matters
             // more now that these logs are being read.
 
-            guard self.endlessIIFieldRect(of: sprite).minY
-                    < self.yBrickOffsetEndless + self.brickHeight/2 else { return }
+            guard self.isStagedAboveTheField(sprite) == false else { return }
             // **A brick that has not arrived yet is not a phantom** (round 313, the second
             // pass). The enriched report answered it in one line: `16x alpha 0.00 plain
             // row -1`. Row minus one is *above* the top row - the next row, staged over the
@@ -3768,6 +3766,21 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             // it from becoming a ten-second hole in the watch
         }
         return found
+    }
+
+    /// Whether a brick's whole cell is above the top row - the next row, staged and waiting.
+    ///
+    /// **With a quarter of a row to spare** (round 369, from James's Mac log: `PHANTOM BRICKS:
+    /// 11 solid but unseeable - 11x alpha 0.00 plain row -1`, twice). Round 313 excused row -1
+    /// with `minY < top`, and a row -1 brick's bottom edge is not near that line, it is *on* it:
+    /// its centre is a row above the top row's, so its lower edge is exactly the top row's
+    /// upper one. Whether "exactly" came out a hair under depended on the window's size - the
+    /// Mac's row height is not a round number - so on the phone the staged row was excused and
+    /// on the Mac it was reported every second. A Square brick hanging its lower half into the
+    /// field is still caught, because that half is a whole row below the line.
+    func isStagedAboveTheField(_ sprite: SKSpriteNode) -> Bool {
+        endlessIIFieldRect(of: sprite).minY
+            >= yBrickOffsetEndless + brickHeight/2 - brickHeight/4
     }
 
     func crookedBallWatch() {
