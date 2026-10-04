@@ -638,8 +638,8 @@ the pop up should show that, be more bold and colourful."
   that allows the user to turn on or off the daily challenge pop-up - it should be on by
   default"). Daily Result Pop-Up, last on the main menu's Settings and absent from the pause
   menu's, stored as `dailyResultPopUpSetting` and read as on when it has never been written.
-  Its icon is a placeholder trophy until James's `iconDailyResult` and `iconDailyResultOff` are
-  in the asset catalogue, when they take over with no code to change.
+  Its icon is James's `iconLeaderboardPopupOn` and `iconLeaderboardPopupOff` since round 368;
+  the placeholder trophy round 360 drew remains only as a fallback for a missing picture.
 - **How many played, round 360** ("Show total players who have completed the daily challenge on
   the leaderboard views - daily challenge menu view, end of game view, yesterday results pop
   up"): LEADERBOARD · 240 PLAYERS over the menu card's rows, "240 players" small under the

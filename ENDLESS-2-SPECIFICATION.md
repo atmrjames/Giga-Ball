@@ -2959,6 +2959,28 @@ testers:
   falling power-up's position by `brickWidth`, so a bare `GameScene()` with a power-up on
   screen traps converting NaN to Int. A real scene is always laid out before play.
 
+**Round 368: James's artwork, and Magnetism drawn as a field.**
+
+- **Artwork in**: `iconLeaderboardPopupOn` and `...Off` for the Daily Result Pop-Up setting
+  (the placeholder trophy is now only a fallback, and `testTheDailyResultRowWearsJamesIcons`
+  says it is never used); the twelve ball and paddle theme icons; and three Quick Start pages -
+  Endless Mayhem, Daily Challenge, and the Version 1.3 page (delivered as "IntroView6 Copy",
+  stored as `IntroView8`), which no longer carries a month. Still in the artwork for James:
+  "mischievious" on the Daily Challenge page, and "difficultly" on the Endless Mode page
+  (IntroView3, not in this delivery).
+- **Magnetism is a field, not a tether** (`drawEndlessIIMagnetField`). James: "have some
+  vertical dotted lines from the paddle where the magnetic effect is active ... coloured
+  giga-ball yellow/green. The dots on the line should move towards the paddle ... The lines
+  should move horizontally with respect to the paddle. The lines should be drawn below the
+  bricks, ball and power-ups. The lines should appear when the ball is in the magnetic region of
+  the paddle, and increase in opacity the closer the ball gets." Five lime dotted lines across
+  the paddle, as tall as the region the pull acts in (its reach, or up to the field's bottom
+  rows where the pull stops), dots running down at 140 points a second, at z 0.5 between the
+  backdrop and the bricks, placed at the paddle's x every frame and on the Mirror Paddle too.
+  Opacity follows the nearest falling ball's closeness by the pull's own falloff, eased so a
+  bounce fades the field rather than switching it off. The tether, its dashed path and the
+  magnet red are gone; Ball Steering keeps its solid line. `EndlessIIMagnetFieldTests`.
+
 **Round 367: the pause and ending buttons, and scans for copy-paste faults.**
 
 - **The three round buttons' action is decided beside their picture** (`buttonAction(row:)`,

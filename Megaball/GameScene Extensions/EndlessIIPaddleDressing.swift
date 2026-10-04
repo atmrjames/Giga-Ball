@@ -28,6 +28,7 @@ extension GameScene {
         refreshEndlessIIRetroPortalArt()
         showEndlessIITopExitStrip()
         drawEndlessIIPullLines()
+        drawEndlessIIMagnetField()
 
         let stickyUnderInert = stickyPaddleCatches != 0
             && endlessIIInertPaddleClock.isRunning
@@ -250,9 +251,6 @@ extension GameScene {
         }
     }
 
-    /// The classic magnet red.
-    static let endlessIIMagnetColour = UIColor(red: 0.95, green: 0.35, blue: 0.3, alpha: 1)
-
     // MARK: - The exit at the top
 
     /// The yellow strip along the top of the play area, shown while the top is somewhere a
@@ -288,26 +286,15 @@ extension GameScene {
     /// the paddle" - and it fades in as the pull gets stronger, so the strength near the
     /// paddle can be *seen* rising.
     private func drawEndlessIIPullLines() {
-        var wanted: [(ball: SKSpriteNode, colour: UIColor, strength: CGFloat, flowing: Bool)] = []
-
-        if endlessIIMagnetismClock.isRunning {
-            for subject in endlessIIBallsInPlay where subject.parent != nil {
-                guard subject.physicsBody?.velocity.dy ?? 0 < 0 else { continue }
-                let gap = subject.position.y - paddle.position.y
-                guard gap > 0 else { continue }
-                let proximity = max(0, 1 - gap/EndlessIIPaddleEffects.magnetismReach)
-                guard proximity > 0.05 else { continue }
-                wanted.append((subject, GameScene.endlessIIMagnetColour, proximity, true))
-            }
-        }
+        var wanted: [SKSpriteNode] = []
+        // Magnetism is no longer a line to the ball (round 368) - see `drawEndlessIIMagnetField`
 
         if endlessIIBallSteeringClock.isRunning {
             for subject in endlessIIBallsInPlay where subject.parent != nil {
                 guard subject !== ball || ballIsOnPaddle == false else { continue }
                 guard endlessIIHeldBalls.contains(where: { $0 === subject }) == false else { continue }
-                wanted.append((subject, GameScene.endlessIIHaloColour, 0.5, false))
-                // Ball Steering keeps its solid line: the player is aiming that one, and a line
-                // that flows toward the paddle would say the paddle is doing the work
+                wanted.append(subject)
+                // Ball Steering keeps its solid line: the player is aiming that one
             }
         }
 
@@ -322,66 +309,156 @@ extension GameScene {
             endlessIIPullLines.removeLast().removeFromParent()
         }
 
-        endlessIIMagnetFlowPhase += CGFloat(frameDelta)*GameScene.endlessIIMagnetFlowSpeed
-        let span = GameScene.endlessIIMagnetDash + GameScene.endlessIIMagnetGap
-        if endlessIIMagnetFlowPhase > span { endlessIIMagnetFlowPhase -= span }
-        // Wrapped rather than left to grow: the dashes repeat every `span` points, so the phase
-        // only ever has to say where inside one repeat they are
-
-        for (index, entry) in wanted.enumerated() {
-            let line = endlessIIPullLines[index]
-            let target = CGPoint(x: paddle.position.x, y: paddleTopY)
-            line.path = entry.flowing
-                ? endlessIIFlowingPath(from: entry.ball.position, to: target,
-                                       phase: endlessIIMagnetFlowPhase)
-                : {
-                    let path = CGMutablePath()
-                    path.move(to: entry.ball.position)
-                    path.addLine(to: target)
-                    return path
-                }()
-            line.strokeColor = entry.colour.withAlphaComponent(0.15 + entry.strength*0.45)
+        for (index, subject) in wanted.enumerated() {
+            let path = CGMutablePath()
+            path.move(to: subject.position)
+            path.addLine(to: CGPoint(x: paddle.position.x, y: paddleTopY))
+            endlessIIPullLines[index].path = path
+            endlessIIPullLines[index].strokeColor = GameScene.endlessIIHaloColour.withAlphaComponent(0.375)
         }
     }
 
-    /// The ball-to-paddle line as dashes that have travelled `phase` points toward the paddle.
-    ///
-    /// **Drawn from the ball's end** (James, round 327b: "show magnetism lines flowing towards
-    /// the paddle from the ball, like it is being attracted to the paddle"). A solid line says
-    /// the two are joined; dashes moving one way say which of them is pulling, and that is the
-    /// whole of what a magnet has to communicate.
-    ///
-    /// The first dash starts one full span behind the ball so it arrives rather than appearing:
-    /// clipped to the segment, what the player sees is a dash growing out of the ball, running
-    /// down the line and disappearing into the paddle.
-    func endlessIIFlowingPath(from start: CGPoint, to end: CGPoint, phase: CGFloat) -> CGPath {
-        let path = CGMutablePath()
-        let dx = end.x - start.x, dy = end.y - start.y
-        let length = hypot(dx, dy)
-        guard length > 1 else { return path }
-        let unit = CGPoint(x: dx/length, y: dy/length)
-        let span = GameScene.endlessIIMagnetDash + GameScene.endlessIIMagnetGap
+    // MARK: - The magnetic field
 
-        var travelled = phase.truncatingRemainder(dividingBy: span) - span
-        while travelled < length {
-            let from = max(0, travelled)
-            let to = min(length, travelled + GameScene.endlessIIMagnetDash)
-            if to > from {
-                path.move(to: CGPoint(x: start.x + unit.x*from, y: start.y + unit.y*from))
-                path.addLine(to: CGPoint(x: start.x + unit.x*to, y: start.y + unit.y*to))
+    /// Magnetism's field: vertical dotted lines rising from the paddle, their dots running down
+    /// into it.
+    ///
+    /// **James, round 368:** "Rather than a line tethered between the ball and the paddle, have
+    /// some vertical dotted lines from the paddle where the magnetic effect is active. They
+    /// should be dotted line, similar to the existing tethered line, but coloured giga-ball
+    /// yellow/green. The dots on the line should move towards the paddle to show the magnetic
+    /// field attracting the ball to the paddle. The lines should move horizontally with respect
+    /// to the paddle. The lines should be drawn below the bricks, ball and power-ups. The lines
+    /// should appear when the ball is in the magnetic region of the paddle, and increase in
+    /// opacity the closer the ball gets to the paddle."
+    ///
+    /// - **Where the effect is active** is the region `applyEndlessIIMagnetism` pulls in: up to
+    ///   `magnetismReach` above the paddle, and no higher than the field's bottom rows, where
+    ///   the pull stops. The lines are that tall, so they show the region rather than a guess.
+    /// - **Opacity** is the nearest falling ball's closeness, the same falloff the pull itself
+    ///   uses - so the lines strengthen exactly as the magnet does. A ball rising away is not
+    ///   pulled and does not count. The drawn opacity eases towards that figure rather than
+    ///   jumping, so a bounce off the paddle fades the field out instead of switching it off.
+    /// - **Below the bricks, balls and power-ups**: `magnetFieldZ`, between the backdrop and
+    ///   the bricks.
+    /// - **With the paddle**: one node per paddle, placed at its x every frame, its lines
+    ///   spread across the paddle's drawn width; the Mirror Paddle has its own, because the
+    ///   magnet pulls towards whichever of the two a ball is falling to.
+    func drawEndlessIIMagnetField() {
+        let running = gameMode == .endlessII && endlessIIMagnetismClock.isRunning
+        let ceiling = finalBrickRowHeight + brickHeight*2
+        let height = GameScene.magnetFieldHeight(paddleTopY: paddleTopY, ceiling: ceiling)
+        let target = running
+            ? GameScene.magnetFieldStrength(
+                balls: endlessIIBallsInPlay.filter { $0.parent != nil }.map {
+                    (position: $0.position, falling: ($0.physicsBody?.velocity.dy ?? 0) < 0) },
+                paddleTopY: paddleTopY, ceiling: ceiling)
+            : 0
+        let step = CGFloat(frameDelta)*GameScene.magnetFieldFade
+        endlessIIMagnetFieldStrength += max(-step, min(step, target - endlessIIMagnetFieldStrength))
+
+        var surfaces: [SKNode] = running || endlessIIMagnetFieldStrength > 0 ? [paddle] : []
+        if let mirror = childNode(withName: GameScene.endlessIIMirrorPaddleName), surfaces.isEmpty == false {
+            surfaces.append(mirror)
+        }
+        while endlessIIMagnetField.count < surfaces.count {
+            let field = SKShapeNode()
+            field.lineWidth = 3
+            field.lineCap = .round
+            field.zPosition = GameScene.magnetFieldZ
+            field.strokeColor = GameScene.endlessIIHaloColour
+            addChild(field)
+            endlessIIMagnetField.append(field)
+        }
+        while endlessIIMagnetField.count > surfaces.count {
+            endlessIIMagnetField.removeLast().removeFromParent()
+        }
+        guard surfaces.isEmpty == false, endlessIIMagnetFieldStrength > 0.01, height > 1 else {
+            endlessIIMagnetField.forEach { $0.alpha = 0 }
+            return
+        }
+
+        let span = GameScene.magnetFieldDot + GameScene.magnetFieldGap
+        endlessIIMagnetFieldPhase = (endlessIIMagnetFieldPhase
+            + CGFloat(frameDelta)*GameScene.magnetFieldFlowSpeed).truncatingRemainder(dividingBy: span)
+        // Its own phase, wrapped at its own spacing: the tether's wrapped at eighteen points,
+        // and a field read off it would jump a dot's width once every cycle
+        let halfWidth = abs(paddle.size.width)/2
+        let path = GameScene.magnetFieldPath(halfWidth: halfWidth, height: height,
+                                             phase: endlessIIMagnetFieldPhase)
+        for (field, surface) in zip(endlessIIMagnetField, surfaces) {
+            field.path = path
+            field.position = CGPoint(x: surface.position.x, y: paddleTopY)
+            field.alpha = GameScene.magnetFieldAlpha(strength: endlessIIMagnetFieldStrength)
+        }
+    }
+
+    /// Between the backdrop (0) and the bricks (1), so the field is behind everything it acts on.
+    static let magnetFieldZ: CGFloat = 0.5
+
+    /// How fast the drawn strength follows the real one, per second: about a fifth of a second
+    /// from nothing to full, which reads as the field answering the ball rather than lagging it.
+    static let magnetFieldFade: CGFloat = 5
+
+    /// How fast the dots run down into the paddle, in points a second.
+    static let magnetFieldFlowSpeed: CGFloat = 140
+
+    /// How many lines stand across the paddle.
+    static let magnetFieldLines = 5
+
+    /// A dot's length and the gap after it, in points. Short with round caps is a dot.
+    static let magnetFieldDot: CGFloat = 1
+    static let magnetFieldGap: CGFloat = 11
+
+    /// How tall the field stands: the magnet's reach, or up to the field's bottom rows where
+    /// the pull stops, whichever is lower. Never below nothing.
+    static func magnetFieldHeight(paddleTopY: CGFloat, ceiling: CGFloat) -> CGFloat {
+        max(0, min(EndlessIIPaddleEffects.magnetismReach, ceiling - paddleTopY))
+    }
+
+    /// How strongly the field is drawn, 0 to 1: the nearest falling ball inside the region,
+    /// by the pull's own falloff. Nought with no ball in it.
+    static func magnetFieldStrength(balls: [(position: CGPoint, falling: Bool)],
+                                    paddleTopY: CGFloat, ceiling: CGFloat) -> CGFloat {
+        balls.filter { $0.falling && $0.position.y < ceiling }
+            .map { ball -> CGFloat in
+                let gap = ball.position.y - paddleTopY
+                guard gap > 0 else { return 0 }
+                return max(0, 1 - gap/EndlessIIPaddleEffects.magnetismReach)
             }
-            travelled += span
+            .max() ?? 0
+    }
+
+    /// The lines' opacity for a strength: faint at the edge of the region, strong at the paddle.
+    static func magnetFieldAlpha(strength: CGFloat) -> CGFloat {
+        let clamped = min(max(strength, 0), 1)
+        return clamped == 0 ? 0 : 0.12 + clamped*0.68
+    }
+
+    /// The field's lines, in the paddle's own frame: `magnetFieldLines` verticals evenly across
+    /// the paddle, from its top to `height` above it, as dots that have run `phase` points
+    /// down towards it.
+    static func magnetFieldPath(halfWidth: CGFloat, height: CGFloat, phase: CGFloat) -> CGPath {
+        let path = CGMutablePath()
+        guard height > 1, halfWidth > 0 else { return path }
+        let lines = magnetFieldLines
+        let span = magnetFieldDot + magnetFieldGap
+        let offset = phase.truncatingRemainder(dividingBy: span)
+        for line in 0..<lines {
+            let share = lines == 1 ? 0 : CGFloat(line)/CGFloat(lines - 1)*2 - 1
+            let x = share*halfWidth*0.8
+            // Inside the ends, where the paddle's rounded caps would leave a line standing on
+            // nothing
+            var y = height - offset
+            while y > 0 {
+                path.move(to: CGPoint(x: x, y: y))
+                path.addLine(to: CGPoint(x: x, y: max(0, y - magnetFieldDot)))
+                y -= span
+            }
         }
         return path
+        // Measured from the top down, so a larger phase puts every dot lower: the dots run
+        // down the lines into the paddle as `endlessIIMagnetFlowPhase` grows
     }
 
-    /// How long each dash is, how far apart they sit, and how fast they run, in points.
-    ///
-    /// Short dashes with a gap of their own size read as movement at a glance; a longer dash
-    /// reads as a dashed line that happens to be shifting. The speed is a little quicker than a
-    /// falling ball, so the pull looks like it is drawing the ball in rather than keeping up
-    /// with it.
-    static let endlessIIMagnetDash: CGFloat = 9
-    static let endlessIIMagnetGap: CGFloat = 9
-    static let endlessIIMagnetFlowSpeed: CGFloat = 220
 }

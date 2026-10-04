@@ -1809,6 +1809,9 @@ extension GameScene {
         // glow found by name is a glow nothing has to hold a reference to
         endlessIIPullLines.forEach { $0.removeFromParent() }
         endlessIIPullLines.removeAll()
+        endlessIIMagnetField.forEach { $0.removeFromParent() }
+        endlessIIMagnetField.removeAll()
+        endlessIIMagnetFieldStrength = 0
         if paddle.colorBlendFactor != 0 { paddle.colorBlendFactor = 0 }
         endlessIIAimHold = false
         endlessIIEndAim()

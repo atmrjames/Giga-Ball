@@ -6430,14 +6430,15 @@ final class PaddleGlowMarginTests: XCTestCase {
     }
 }
 
-/// **Magnetism draws the pull instead of painting the paddle** (James, round 327c: "there's no
-/// need to colour the paddle - show magnetism lines flowing towards the paddle from the ball,
-/// like it is being attracted to the paddle").
-///
-/// A solid line says the two are joined; dashes travelling one way say which of them is pulling.
-final class EndlessIIMagnetFlowTests: XCTestCase {
+/// Magnetism's field (round 368). James: "Rather than a line tethered between the ball and the
+/// paddle, have some vertical dotted lines from the paddle where the magnetic effect is active
+/// ... coloured giga-ball yellow/green. The dots on the line should move towards the paddle ...
+/// The lines should move horizontally with respect to the paddle. The lines should be drawn
+/// below the bricks, ball and power-ups. The lines should appear when the ball is in the
+/// magnetic region of the paddle, and increase in opacity the closer the ball gets."
+final class EndlessIIMagnetFieldTests: XCTestCase {
 
-    private func dashes(_ path: CGPath) -> [(from: CGPoint, to: CGPoint)] {
+    private func segments(_ path: CGPath) -> [(from: CGPoint, to: CGPoint)] {
         var found: [(CGPoint, CGPoint)] = []
         var pen = CGPoint.zero
         path.applyWithBlock { element in
@@ -6452,62 +6453,104 @@ final class EndlessIIMagnetFlowTests: XCTestCase {
         return found.map { (from: $0.0, to: $0.1) }
     }
 
-    private func scene() -> GameScene {
+    /// Vertical dotted lines, across the paddle, from its top up the height of the region.
+    func testTheFieldIsVerticalDotsAcrossThePaddle() {
+        let dots = segments(GameScene.magnetFieldPath(halfWidth: 60, height: 300, phase: 0))
+        let columns = Set(dots.map { Int($0.from.x.rounded()) })
+        XCTAssertEqual(columns.count, GameScene.magnetFieldLines, "this many lines")
+        XCTAssertTrue(columns.allSatisfy { abs($0) <= 60 }, "inside the paddle's width")
+        for dot in dots {
+            XCTAssertEqual(dot.from.x, dot.to.x, "vertical")
+            XCTAssertLessThanOrEqual(abs(dot.from.y - dot.to.y), GameScene.magnetFieldDot + 0.01,
+                                     "a dot, not a dash")
+            XCTAssertGreaterThanOrEqual(min(dot.from.y, dot.to.y), -0.01, "nothing below the paddle")
+            XCTAssertLessThanOrEqual(max(dot.from.y, dot.to.y), 300.01, "nothing above the region")
+        }
+        XCTAssertGreaterThan(dots.count, GameScene.magnetFieldLines*10, "a dotted line, not a few")
+    }
+
+    /// "The dots on the line should move towards the paddle."
+    func testTheDotsRunDownIntoThePaddle() throws {
+        let first = segments(GameScene.magnetFieldPath(halfWidth: 60, height: 300, phase: 0))
+        let later = segments(GameScene.magnetFieldPath(halfWidth: 60, height: 300, phase: 3))
+        let top = try XCTUnwrap(first.map(\.from.y).max())
+        let laterTop = try XCTUnwrap(later.map(\.from.y).max())
+        XCTAssertEqual(laterTop, top - 3, accuracy: 0.01, "three points on, three points lower")
+    }
+
+    /// The field is the region the pull acts in: the magnet's reach, or less where the field's
+    /// bottom rows come lower.
+    func testTheFieldStandsAsTallAsTheRegion() {
+        XCTAssertEqual(GameScene.magnetFieldHeight(paddleTopY: -300, ceiling: 400),
+                       EndlessIIPaddleEffects.magnetismReach)
+        XCTAssertEqual(GameScene.magnetFieldHeight(paddleTopY: -300, ceiling: -100), 200)
+        XCTAssertEqual(GameScene.magnetFieldHeight(paddleTopY: -300, ceiling: -400), 0)
+    }
+
+    /// "Appear when the ball is in the magnetic region ... increase in opacity the closer the
+    /// ball gets to the paddle."
+    func testTheFieldStrengthensAsAFallingBallComesIn() {
+        let reach = EndlessIIPaddleEffects.magnetismReach
+        func strength(_ y: CGFloat, falling: Bool = true) -> CGFloat {
+            GameScene.magnetFieldStrength(balls: [(CGPoint(x: 0, y: y), falling)],
+                                          paddleTopY: 0, ceiling: 1_000)
+        }
+        XCTAssertEqual(strength(reach + 50), 0, "outside the region, no field")
+        XCTAssertGreaterThan(strength(reach*0.25), strength(reach*0.75), "closer is stronger")
+        XCTAssertEqual(strength(reach*0.5, falling: false), 0, "a ball rising away is not pulled")
+        XCTAssertEqual(GameScene.magnetFieldStrength(balls: [(CGPoint(x: 0, y: 100), true)],
+                                                     paddleTopY: 0, ceiling: 50), 0,
+                       "above the field's bottom rows the magnet does not act")
+        XCTAssertEqual(GameScene.magnetFieldStrength(
+            balls: [(CGPoint(x: 0, y: reach*0.8), true), (CGPoint(x: 0, y: reach*0.2), true)],
+            paddleTopY: 0, ceiling: 1_000), strength(reach*0.2), accuracy: 0.0001,
+                       "the nearest ball decides")
+        XCTAssertEqual(GameScene.magnetFieldAlpha(strength: 0), 0)
+        XCTAssertGreaterThan(GameScene.magnetFieldAlpha(strength: 1),
+                             GameScene.magnetFieldAlpha(strength: 0.2))
+    }
+
+    private func mayhem() -> GameScene {
         let scene = GameScene()
         scene.gameMode = .endlessII
         scene.totalStatsArray = [TotalStats()]
+        scene.paddle.size = CGSize(width: 120, height: 12)
+        scene.paddle.position = CGPoint(x: 60, y: -300)
+        scene.addChild(scene.paddle)
+        scene.addChild(scene.ball)
+        scene.ball.physicsBody = SKPhysicsBody(circleOfRadius: 6)
+        scene.ballIsOnPaddle = false
+        scene.finalBrickRowHeight = 200
+        scene.brickHeight = 20
         return scene
     }
 
-    func testTheLineIsDrawnAsDashesRatherThanOnePiece() {
-        let scene = self.scene()
-        let path = scene.endlessIIFlowingPath(from: CGPoint(x: 0, y: 200),
-                                              to: CGPoint(x: 0, y: 0), phase: 0)
-        let drawn = dashes(path)
-        XCTAssertGreaterThan(drawn.count, 3, "200 points of pull is several dashes, not a line")
-        for dash in drawn {
-            let length = hypot(dash.to.x - dash.from.x, dash.to.y - dash.from.y)
-            XCTAssertLessThanOrEqual(length, GameScene.endlessIIMagnetDash + 0.01,
-                                     "no dash is longer than the dash length")
-        }
+    /// Drawn with the paddle, in the Giga-Ball lime, behind the bricks, ball and power-ups.
+    func testTheFieldRidesThePaddleBehindEverything() throws {
+        let scene = mayhem()
+        scene.endlessIICollectMagnetism()
+        scene.ball.position = CGPoint(x: 60, y: -200)
+        scene.ball.physicsBody?.velocity = CGVector(dx: 0, dy: -400)
+        for _ in 0..<30 { scene.frameDelta = 1.0/60; scene.drawEndlessIIMagnetField() }
+        let field = try XCTUnwrap(scene.endlessIIMagnetField.first)
+        XCTAssertEqual(field.position.x, scene.paddle.position.x)
+        XCTAssertGreaterThan(field.alpha, 0, "the ball is in the region, so the field shows")
+        XCTAssertLessThan(field.zPosition, 1, "behind the bricks (1)")
+        XCTAssertLessThan(field.zPosition, 2, "and the power-ups (2); the ball is drawn at 3")
+        XCTAssertEqual(field.strokeColor, GameScene.endlessIIHaloColour)
+
+        scene.paddle.position.x = -40
+        scene.drawEndlessIIMagnetField()
+        XCTAssertEqual(field.position.x, -40, "and moves with the paddle")
     }
 
-    /// Every dash lies on the segment: nothing is drawn beyond the ball or past the paddle.
-    func testNothingIsDrawnOutsideTheBallAndThePaddle() {
-        let scene = self.scene()
-        let span = GameScene.endlessIIMagnetDash + GameScene.endlessIIMagnetGap
-        for step in 0..<8 {
-            let path = scene.endlessIIFlowingPath(from: CGPoint(x: 0, y: 120),
-                                                  to: CGPoint(x: 0, y: 0),
-                                                  phase: span*CGFloat(step)/8)
-            for dash in dashes(path) {
-                for point in [dash.from, dash.to] {
-                    XCTAssertGreaterThanOrEqual(point.y, -0.01, "past the paddle")
-                    XCTAssertLessThanOrEqual(point.y, 120.01, "behind the ball")
-                }
-            }
-        }
-    }
-
-    /// And the dashes travel toward the paddle as the phase advances, which is the whole point.
-    func testTheDashesTravelTowardsThePaddle() throws {
-        let scene = self.scene()
-        let ball = CGPoint(x: 0, y: 200)
-        let paddle = CGPoint(x: 0, y: 0)
-
-        let first = try XCTUnwrap(dashes(scene.endlessIIFlowingPath(from: ball, to: paddle,
-                                                                    phase: 0)).first)
-        let later = try XCTUnwrap(dashes(scene.endlessIIFlowingPath(from: ball, to: paddle,
-                                                                    phase: 4)).first)
-        XCTAssertLessThan(later.from.y, first.from.y,
-                          "four points on, the leading dash is four points nearer the paddle")
-    }
-
-    /// A ball sitting on the paddle has no line at all rather than a dot.
-    func testNoLineWhenThereIsNoDistance() {
-        let scene = self.scene()
-        let path = scene.endlessIIFlowingPath(from: .zero, to: CGPoint(x: 0, y: 0.5), phase: 0)
-        XCTAssertTrue(dashes(path).isEmpty)
+    /// No field without the power-up, however close the ball.
+    func testNoFieldWithoutMagnetism() {
+        let scene = mayhem()
+        scene.ball.position = CGPoint(x: 60, y: -250)
+        scene.ball.physicsBody?.velocity = CGVector(dx: 0, dy: -400)
+        for _ in 0..<30 { scene.frameDelta = 1.0/60; scene.drawEndlessIIMagnetField() }
+        XCTAssertTrue(scene.endlessIIMagnetField.allSatisfy { $0.alpha == 0 })
     }
 }
 

@@ -205,12 +205,16 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
 
 
 
-    /// The daily result row's icon: James's own once it exists, a placeholder until then
-    /// (round 360: "create a placeholder icon for this setting for now, I will create a custom
-    /// one later"). Asked for by name first, so his artwork takes over the day it is added to
-    /// the asset catalogue as `iconDailyResult` and `iconDailyResultOff`, with no code to change.
+    /// The daily result row's icon: James's `iconLeaderboardPopupOn` and `...Off` (round 368),
+    /// which replaced the placeholder trophy round 360 drew ("create a placeholder icon for this
+    /// setting for now, I will create a custom one later"). The trophy stays below as the
+    /// fallback for a picture that cannot be found, which `DailyResultIconTests` says never
+    /// happens.
+    static let dailyResultIconNames = (on: "iconLeaderboardPopupOn", off: "iconLeaderboardPopupOff")
+
     static func dailyResultIcon(on: Bool) -> UIImage {
-        if let drawn = UIImage(named: on ? "iconDailyResult" : "iconDailyResultOff") { return drawn }
+        let name = on ? dailyResultIconNames.on : dailyResultIconNames.off
+        if let drawn = UIImage(named: name) { return drawn }
         let symbol = on ? "trophy.fill" : "trophy"
         guard let glyph = UIImage(systemName: symbol, withConfiguration:
                                     UIImage.SymbolConfiguration(pointSize: 40, weight: .bold))

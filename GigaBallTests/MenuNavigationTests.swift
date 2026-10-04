@@ -1810,6 +1810,14 @@ final class SettingsRowTapTests: XCTestCase {
         XCTAssertGreaterThan(SettingsViewController.dailyResultIcon(on: false).size.width, 0)
     }
 
+    /// James's own pictures are in the catalogue (round 368), so the placeholder trophy is
+    /// never what a player sees.
+    func testTheDailyResultRowWearsJamesIcons() {
+        let names = SettingsViewController.dailyResultIconNames
+        XCTAssertNotNil(UIImage(named: names.on))
+        XCTAssertNotNil(UIImage(named: names.off))
+    }
+
     func testTheSoundRowsReadMusicThenInGameSoundThenUISound() throws {
         let (screen, _) = try settings()
         let rows = screen.settingRows

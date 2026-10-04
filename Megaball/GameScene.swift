@@ -1540,12 +1540,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	let powerUpSound = SKAction.playSoundFileNamed("powerUpSound.mp3", waitForCompletion: true)
 	let stickyPaddleHitSound = SKAction.playSoundFileNamed("stickyPaddleHit.mp3", waitForCompletion: true)
 
-	/// How far along the ball-to-paddle line Magnetism's dashes have travelled.
-	///
-	/// Advanced by `drawEndlessIIPullLines` every frame it draws, so the dashes move toward the
-	/// paddle rather than sitting still - which is the difference between a line joining two
-	/// things and a pull acting on one of them (James, round 327b).
-	var endlessIIMagnetFlowPhase: CGFloat = 0
+	/// Magnetism's field lines, one node per paddle (round 368), and how strongly they are drawn
+	/// now - eased towards the nearest falling ball's closeness. See `drawEndlessIIMagnetField`.
+	var endlessIIMagnetField: [SKShapeNode] = []
+	var endlessIIMagnetFieldStrength: CGFloat = 0
+	var endlessIIMagnetFieldPhase: CGFloat = 0
 
 	/// A sound that may not have been made yet.
 	///
