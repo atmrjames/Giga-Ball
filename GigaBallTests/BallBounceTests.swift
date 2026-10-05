@@ -780,6 +780,25 @@ final class PhantomBrickWatchTests: XCTestCase {
         XCTAssertEqual(scene.phantomBrickReasons(), "")
     }
 
+    /// **A level waiting for its build-in is not a field of phantoms** (round 372: `PHANTOM
+    /// BRICKS: 168 solid but unseeable` from a Classic daily, the whole level held at nothing
+    /// behind the level intro with no action on it yet).
+    func testALevelWaitingToBuildInIsNotReported() {
+        let scene = self.scene()
+        var waiting: [SKSpriteNode] = []
+        for column in 0..<10 {
+            let brick = brick(in: scene, at: CGFloat(column)*40 - 180)
+            scene.prepareClassicBuildIn(brick)
+            waiting.append(brick)
+        }
+        XCTAssertEqual(scene.phantomBrickPositions(), [], "the build-in has not started yet")
+        XCTAssertEqual(scene.phantomBrickReasons(), "")
+
+        scene.endlessIIBuildInBricks.removeAll()
+        XCTAssertEqual(scene.phantomBrickPositions().count, 10,
+                       "and the same bricks left at nothing once nothing is coming for them are")
+    }
+
     /// And the row that *has* arrived is still watched.
     func testTheTopRowOfTheFieldIsStillWatched() {
         let scene = self.scene()

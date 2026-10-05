@@ -1305,6 +1305,27 @@ final class EndlessIISquareBrickArtTests: XCTestCase {
         }
     }
 
+    /// The partner keeps up with the brick: a resized brick resizes it, and on a brick with no
+    /// picture of its own it sits where the sprite is drawn, which is off the node for an
+    /// off-centre anchor (mutation testing, round 372).
+    func testThePlainPartnerFollowsTheBricksSizeAndAnchor() throws {
+        let scene = scene()
+        let brick = SKSpriteNode(texture: scene.brickNormalTexture,
+                                 size: CGSize(width: 40, height: 20))
+        brick.anchorPoint = CGPoint(x: 0.5, y: 0.75)
+        scene.addChild(brick)
+        brick.zRotation = .pi/2
+        scene.refreshEndlessIIPlainSpinnerLight(brick)
+        let partner = try XCTUnwrap(brick.childNode(withName: GameScene.plainSpinPartnerName)
+                                    as? SKSpriteNode)
+        XCTAssertEqual(partner.position.y, (0.5 - 0.75)*20, accuracy: 0.01,
+                       "where the sprite is drawn, not the node's own point")
+
+        brick.size = CGSize(width: 40, height: 40)
+        scene.refreshEndlessIIPlainSpinnerLight(brick)
+        XCTAssertEqual(partner.size, brick.size, "a brick that changes size takes its partner with it")
+    }
+
     /// A Rounded Portal's face is a Portal's, not an Indestructible's.
     ///
     /// The trap this closes: a Portal is *built on* `brickIndestructible2Texture`, so a face

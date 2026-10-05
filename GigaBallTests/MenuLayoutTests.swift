@@ -783,6 +783,17 @@ final class MainMenuGapTests: XCTestCase {
                        "a 13-inch iPad keeps the gaps it was given")
     }
 
+    /// Every gap blends, not only the one over the logo: the room either side of the rows is the
+    /// phone's on a phone, the iPad's on an iPad, and in between half way between (mutation
+    /// testing, round 372 - the rows' gap could have gone the wrong way unnoticed).
+    func testTheRowsGapBlendsWithTheLogosGap() {
+        XCTAssertEqual(MenuViewController.menuGaps(height: 860).aroundRows, 57.5, accuracy: 0.01)
+        XCTAssertEqual(MenuViewController.menuGaps(height: 960).aroundRows, 70, accuracy: 0.01)
+        XCTAssertEqual(MenuViewController.menuGaps(height: 910).aroundRows, (57.5 + 70)/2,
+                       accuracy: 0.01)
+        XCTAssertEqual(MenuViewController.menuGaps(height: 910).underButtons, 85, accuracy: 0.01)
+    }
+
     func testAShortWindowGivesItsGapsToTheRows() {
         let scale = MenuViewController.gapScale(height: 560)
         XCTAssertLessThan(scale, 1)

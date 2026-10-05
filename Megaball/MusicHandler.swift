@@ -29,6 +29,7 @@ final class MusicHandler: NSObject, AVAudioPlayerDelegate {
     // done on the main thread. They are serialised here instead, off the main thread.
 
     private func configureSession(_ category: AVAudioSession.Category, activate: Bool, then work: (() -> Void)? = nil) {
+        GameScene.noteForHitchWatch("audio session \(category.rawValue.split(separator: ".").last ?? "")")
         sessionQueue.async {
             do {
                 try AVAudioSession.sharedInstance().setCategory(category, mode: .default)
@@ -157,8 +158,11 @@ final class MusicHandler: NSObject, AVAudioPlayerDelegate {
     
     func pauseMusic() {
         userSettings()
-        player?.pause()
+        let playing = player
+        sessionQueue.async { playing?.pause() }
         configureSession(.ambient, activate: false)
+        // Paused on the audio queue, ahead of the session change queued behind it - see
+        // `setVolume` for why nothing here talks to a player from the main thread
         // Drop back to ambient while paused so other apps' audio is not held silent
     }
 
@@ -171,15 +175,31 @@ final class MusicHandler: NSObject, AVAudioPlayerDelegate {
     func menuVolume() {
         userSettings()
         if musicSetting {
-            player?.volume = menuVolumeSet
+            setVolume(menuVolumeSet)
         }
     }
 
     func gameVolume() {
         userSettings()
         if musicSetting {
-            player?.volume = gameVolumeSet
+            setVolume(gameVolumeSet)
         }
+    }
+
+    /// Changes the volume on the audio queue rather than on the main thread.
+    ///
+    /// **The first launch of a run was waiting on the music** (round 372, from James's "At the
+    /// start of the game the first brick hit ... can make the frame rate drop"). The ball's first
+    /// launch turns the music up to the game's volume, and the player it turns up is the one the
+    /// crossfade started a moment earlier on `sessionQueue` - still starting, or still ramping its
+    /// fade. Setting `volume` on it from the main thread made the main thread ask the audio queue
+    /// where it was and wait for the answer: 130 milliseconds in the simulator's log, a call to
+    /// `GetCurrentQueueTime` on the main thread with the queue's start resolving just after it,
+    /// in the frame the ball left the paddle. Everything else that touches a player already runs
+    /// on this queue, for the same reason (`configureSession`); these were the two left over.
+    private func setVolume(_ volume: Float) {
+        guard let playing = player else { return }
+        sessionQueue.async { playing.volume = volume }
     }
     
     func userSettings() {

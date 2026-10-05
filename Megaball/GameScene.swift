@@ -3256,6 +3256,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		ballLostBool = false
         // Resets ball on paddle status
 
+		noteForHitchWatch("launch")
 		if hapticsSetting {
 			lightHaptic.prepare()
 			rigidHaptic.prepare()
@@ -3676,9 +3677,32 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         defer { hitchNotes.removeAll { lastFrameTime - $0.at > 0.25 } }
         guard frameDelta > 1.0/30, gameState.currentState is Playing, isPaused == false
         else { return }
+        let recent = CACurrentMediaTime() - 0.5
         let notes = hitchNotes.map(\.what)
+            + GameScene.sharedHitchNotes.filter { $0.at > recent }.map(\.what)
         Log.play.error("HITCH \(Int(self.frameDelta*1000), privacy: .public)ms after: \(notes.isEmpty ? "nothing noted" : notes.joined(separator: ", "), privacy: .public)")
         hitchNotes.removeAll()
+        GameScene.sharedHitchNotes.removeAll()
+        #endif
+    }
+
+    /// Notes left by things outside the scene - the music, the audio session - for the next
+    /// `hitchWatch` (debug only; main thread only). Round 372: the simulator put two run-start
+    /// frames of 36 and 96 milliseconds on the moment the game music crossfades in, and only a
+    /// device can say whether that is the game or the simulator's audio server.
+    static var sharedHitchNotes: [(what: String, at: CFTimeInterval)] = []
+
+    static func noteForHitchWatch(_ what: String) {
+        #if DEBUG
+        if Thread.isMainThread {
+            let now = CACurrentMediaTime()
+            sharedHitchNotes.removeAll { now - $0.at > 0.5 }
+            if sharedHitchNotes.count < 6 { sharedHitchNotes.append((what, now)) }
+            // Half a second, timed by the clock rather than the frame: these arrive from a
+            // queue, and a note older than that is about some other moment
+        } else {
+            DispatchQueue.main.async { noteForHitchWatch(what) }
+        }
         #endif
     }
 
@@ -3719,10 +3743,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     /// the part that identifies it - eleven is a row, one is a straggler.
     func phantomBrickReasons() -> String {
         var tally: [String: Int] = [:]
+        let waiting = Set(endlessIIBuildInBricks.map(ObjectIdentifier.init))
         enumerateChildNodes(withName: BrickCategoryName) { [weak self] node, _ in
             guard let self, let sprite = node as? SKSpriteNode,
                   let body = sprite.physicsBody,
                   body.categoryBitMask == CollisionTypes.brickCategory.rawValue,
+                  waiting.contains(ObjectIdentifier(sprite)) == false,
                   sprite.texture !== self.brickInvisibleTexture,
                   sprite.hasActions() == false,
                   self.isStagedAboveTheField(sprite) == false
@@ -3754,11 +3780,19 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     /// from the watch, so it can be asked without a running game.
     func phantomBrickPositions() -> [CGPoint] {
         var found: [CGPoint] = []
+        let waiting = Set(endlessIIBuildInBricks.map(ObjectIdentifier.init))
+        // **A brick waiting for its build-in is not a phantom** (round 372). The simulator's log
+        // of a Classic daily carried `PHANTOM BRICKS: 168 solid but unseeable - 10x alpha 0.00
+        // plain row 10; ...`: the whole level, laid out at nothing and held there until the
+        // level intro clears, with no action on it yet because the build-in has not started.
+        // Round 313's "a brick mid-animation is not a phantom" covers the same bricks a moment
+        // later; this is the moment before
         enumerateChildNodes(withName: BrickCategoryName) { [weak self] node, _ in
             guard let self,
                   let sprite = node as? SKSpriteNode,
                   let body = sprite.physicsBody,
-                  body.categoryBitMask == CollisionTypes.brickCategory.rawValue
+                  body.categoryBitMask == CollisionTypes.brickCategory.rawValue,
+                  waiting.contains(ObjectIdentifier(sprite)) == false
             else { return }
             guard sprite.texture !== self.brickInvisibleTexture else { return }
             // **A brick that is meant to be unseeable is not a phantom** (round 312). Mayhem's

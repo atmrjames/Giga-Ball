@@ -58,13 +58,27 @@ enum InterfaceSound {
 
     /// Plays it, if the player has interface sound on.
     static func click(in defaults: UserDefaults = .standard) {
-        guard GameCenterHandler.isRunningTests == false,
-              isOn(in: defaults), let player else { return }
-        player.currentTime = 0
-        player.play()
+        guard GameCenterHandler.isRunningTests == false, isOn(in: defaults) else { return }
+        InterfaceSound.queue.async {
+            guard let player else { return }
+            player.currentTime = 0
+            player.play()
+        }
         // Restarted rather than overlapped: two taps a frame apart are one press as far as a
         // player is concerned, and two copies of one short recording comb filter (round 334)
     }
+
+    /// Where the interface's players are rewound and started - never the main thread.
+    ///
+    /// **Round 372, chasing James's "At the start of the game the first brick hit ... can make
+    /// the frame rate drop".** The simulator's log put a 128-millisecond frame at the start of a
+    /// run directly behind a main-thread `GetCurrentQueueTime` on this player's audio queue:
+    /// rewinding a player whose queue is still settling - the press that started the run had
+    /// started it two seconds earlier, and the game music's session change was landing at the
+    /// same moment - makes the caller wait for the queue. `MusicHandler` learned this for the
+    /// music and moved its players to a queue of their own; the click and the tally never had.
+    /// The first press also builds the player here rather than in the frame that pressed.
+    static let queue = DispatchQueue(label: "com.atmrjames.Megaball.interfaceSound")
 }
 
 /// The beeps a result screen makes while its numbers count up.
@@ -103,10 +117,15 @@ enum TallySound {
     /// not a button, so it answers to In-Game Sound rather than to UI Sound.
     static func beep(tick: Int, of ticks: Int, in defaults: UserDefaults = .standard) {
         guard GameCenterHandler.isRunningTests == false,
-              defaults.bool(forKey: "soundsSetting"), let player else { return }
-        player.rate = rate(forTick: tick, of: ticks)
-        player.currentTime = 0
-        player.play()
+              defaults.bool(forKey: "soundsSetting") else { return }
+        let pitch = rate(forTick: tick, of: ticks)
+        InterfaceSound.queue.async {
+            guard let player else { return }
+            player.rate = pitch
+            player.currentTime = 0
+            player.play()
+        }
+        // On the interface's own audio queue, for the click's reason
         // Restarted rather than overlapped, as the click is: the beeps are seventy
         // milliseconds apart and each is fifty long, so they never needed to overlap
     }

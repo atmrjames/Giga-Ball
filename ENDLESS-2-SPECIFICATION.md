@@ -2959,6 +2959,41 @@ testers:
   falling power-up's position by `brickWidth`, so a bare `GameScene()` with a power-up on
   screen traps converting NaN to Int. A real scene is always laid out before play.
 
+**Round 372: a release pass, the run's opening frames, and mutation testing.**
+
+- **Pre-submission checks.** Info.plist, entitlements and the privacy manifest agree with what
+  the app does (encryption exempt, all four iPad orientations, the UserDefaults reason
+  declared); the About screen's storyboard "1.2 (3)" is replaced at runtime, as round 319d made
+  it; no placeholder text reaches a player. A clean install on the iOS 26.5 simulator, signed out
+  of Game Center and iCloud, launched to the menu, opened the Daily Challenge (its "not signed in"
+  line showing and its board button hidden) and started a run.
+- **The run's opening frames, from that install's own log.** Two frames of 38 and 103-131ms as a
+  run began, each with nothing noted, sat on the main thread asking an audio queue for its time
+  (`GetCurrentQueueTime`) while that queue was still starting. Two of the app's own main-thread
+  audio calls could do that: `MusicHandler.gameVolume`/`menuVolume` set a player's volume, and
+  the ball's first launch calls `gameVolume` on the player the crossfade had just started on its
+  queue; and `InterfaceSound`/`TallySound` rewound and started their players on the main thread.
+  Volume and pause now go to `MusicHandler`'s session queue and the click and tally to a queue of
+  their own, and the main-thread queue query is gone from the log. **A 36/96ms pair remains** at
+  the moment the game music crossfades in, with the audio session change; the simulator plays
+  through the Mac's audio server, which this project has learned not to trust (CLAUDE.md), so it
+  is left to the device: the hitch log now notes `audio session soloAmbient` and launches.
+- **And a third false alarm from the phantom watch**: `PHANTOM BRICKS: 168` from a Classic daily
+  - the whole level laid out at nothing behind the level intro, its build-in not started, so no
+  action on it yet. Bricks queued for a build-in are excused. `testALevelWaitingToBuildInIsNotReported`.
+- **Mutation testing** on the week's logic, five files. Survivors that were holes now have tests:
+  the theme partner's three filters (`testAThemesPartnerIsAlwaysALegalTwist`), the rows' gap
+  blending (`testTheRowsGapBlendsWithTheLogosGap`), the whole vertical half of
+  `menuContentInsets` (`testATallWindowIsCappedAndAnInheritedInsetCountsTowardsIt`), and the spin
+  partner following a resize and an off-centre anchor. Left as equivalent: the button row's
+  re-layout threshold (a mutant only re-lays out more often), `>=` against `>` at a float
+  boundary, and the underButtons blend (both ends are 85).
+- **Queued for 1.4, not 1.3: the Auto Layout warnings in James's Mac log** (round 369). None show
+  in a phone-sized run; they are storyboard scenes designed at 414 by 736 meeting a larger
+  window, the ball rack's zero-height rule, pairs of fixed-height labels, and the mode row's name
+  against its play button at some widths. UIKit resolves every one, nothing on screen is wrong,
+  and the fixes touch shared storyboard layout that can only be checked in a resizable window.
+
 **Round 371: the frame rate, measured in a running game.**
 
 James: "At the start of the game the first brick hit, first falling power-up, first power-up

@@ -1577,6 +1577,36 @@ final class MenuContentWidthTests: XCTestCase {
         }
     }
 
+    /// **The height cap, and what a parent already gave** (mutation testing, round 372: the
+    /// vertical half of `menuContentInsets` had no test at all, so a cap applied the wrong way
+    /// round or an inherited inset added rather than taken off went unnoticed).
+    func testATallWindowIsCappedAndAnInheritedInsetCountsTowardsIt() {
+        let tall = UIViewController.menuContentInsets(
+            available: CGSize(width: 1032, height: 1376))
+        XCTAssertEqual(tall.top, (1376 - UIViewController.menuMaximumHeight)/2, accuracy: 0.01,
+                       "the default is the full set of caps")
+        XCTAssertEqual(tall.bottom, tall.top, accuracy: 0.01)
+        XCTAssertEqual(tall.left, (1032 - UIViewController.menuMaximumWidth)/2, accuracy: 0.01)
+
+        let child = UIViewController.menuContentInsets(
+            available: CGSize(width: 1032, height: 1376),
+            inherited: UIEdgeInsets(top: 24, left: 50, bottom: 20, right: 60))
+        XCTAssertEqual(child.top, tall.top - 24, accuracy: 0.01,
+                       "a child screen only makes up the difference")
+        XCTAssertEqual(child.bottom, tall.bottom - 20, accuracy: 0.01)
+        XCTAssertEqual(child.left, tall.left - 50, accuracy: 0.01)
+        XCTAssertEqual(child.right, tall.right - 60, accuracy: 0.01)
+
+        let overgiven = UIViewController.menuContentInsets(
+            available: CGSize(width: 1032, height: 1376),
+            inherited: UIEdgeInsets(top: 999, left: 999, bottom: 999, right: 999))
+        XCTAssertEqual(overgiven, .zero, "never a negative inset, which would hang it off-screen")
+
+        let compact = UIViewController.menuContentInsets(
+            available: CGSize(width: 400, height: 1376), widthOnly: true)
+        XCTAssertEqual(compact.top, 0, accuracy: 0.01, "width only means width only")
+    }
+
     /// A phone is untouched: none of them is as wide as the cap.
     func testAPhoneIsNotInsetAtAll() {
         for width in [320.0, 375.0, 390.0, 402.0, 430.0, 440.0] {

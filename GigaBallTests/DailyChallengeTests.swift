@@ -3414,6 +3414,23 @@ final class DailyTwistMixTests: XCTestCase {
         XCTAssertEqual(alone, [], "a theme is how the game looks, not something to play")
     }
 
+    /// And the twist found to stand beside a theme is one the day could have drawn anyway: in
+    /// its pool for the mode, allowed beside a theme, and doing something on that level
+    /// (mutation testing, round 372 - all three tests in the partner's filter went unnoticed).
+    func testAThemesPartnerIsAlwaysALegalTwist() {
+        for day in year(from: DailyChallengeGenerator.themeNeverAloneKey)
+        where day.twists.contains(.dailyTheme) {
+            for twist in day.twists where twist != .dailyTheme {
+                XCTAssertTrue(twist.inPool(on: day.dateKey, for: day.mode),
+                              "\(day.dateKey): \(twist) is not in a \(day.mode) day's pool")
+                XCTAssertTrue(DailyTwist.dailyTheme.pairsWith(twist), "\(day.dateKey): \(twist)")
+                XCTAssertTrue(twist.changesSomething(onClassicLevel: day.classicLevel,
+                                                     on: day.dateKey),
+                              "\(day.dateKey): \(twist) changes nothing on this level")
+            }
+        }
+    }
+
     /// **A plain day is rare.** "Vanilla should be quite rare, like once every 2 weeks."
     func testAPlainDayIsAboutOneInFourteen() {
         let days = year()
