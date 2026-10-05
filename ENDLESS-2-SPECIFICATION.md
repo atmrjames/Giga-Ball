@@ -2959,6 +2959,34 @@ testers:
   falling power-up's position by `brickWidth`, so a bare `GameScene()` with a power-up on
   screen traps converting NaN to Int. A real scene is always laid out before play.
 
+**Round 373: the device's hitch log, read.**
+
+James's phone (iPhone19,7, iOS 27.0.1), two Mayhem runs with round 371's `hitchWatch`: every
+hitch 33-58ms, nearly all of them `row built` - `HITCH 58ms after: row built, row built, row
+built, row built` - and none naming the audio session, so round 372's simulator-only suspicion of
+the music crossfade does not hold on a device.
+
+- **A Mayhem row was eleven milliseconds of arithmetic.** Timed in a presented scene at 150 and
+  400 metres: 10.7 and 10.9ms a row, and sampled, nineteen twentieths of it in
+  `EndlessIIProgression.densityStepHeights` - asked once a brick through `density(at:)`, and
+  quadratic each time: every element of the release queue searched for itself and walked the
+  quickening from the first step to its own. `releaseArrivals` does it in one walk and one
+  remembered position per element; rows now cost about 2ms, so four together fit in a frame.
+  `DensityStepArrivalTests` holds the new numbers to `arrivalHeight(of:)` across forty drawn
+  runs, a repeated element and an everything-at-once day.
+- **The main menu's four constraint conflicts on every launch** - the nib's `H:[UILabel]-(10)-|`
+  against the play button's 16, 44 and 4 (round 351). The old edge was taken away *after* the
+  button's constraints went on, and a cell in a live table checks each constraint as it is added,
+  so for that moment both were asked for and UIKit broke the button's width. Removed first now.
+  `MainMenuRowPlayButtonTests` guards the finished geometry; it passes either way, because the
+  break was momentary - the log line was the only symptom.
+- **Four achievements Game Center does not know**: `mayhemFiveHundred`, `mayhemOneK`,
+  `mayhemThirtyMinutes` and `mayhemOneHour` ("No AchievementDescription could be found"). The IDs
+  are spelled in `AchievementCatalogue.identifiers`; they need creating, or checking, in App Store
+  Connect.
+- Still in the log and still queued for 1.4: the in-game screens' label pairs (centre ±17, heights
+  22 and 36) and the ball rack's zero height - UIKit resolves both, on a phone as well as the Mac.
+
 **Round 372: a release pass, the run's opening frames, and mutation testing.**
 
 - **Pre-submission checks.** Info.plist, entitlements and the privacy manifest agree with what

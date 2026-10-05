@@ -122,6 +122,17 @@ class ModeSelectTableViewCell: UITableViewCell {
         // In the card rather than `contentView`, so a press that scales the card scales the
         // button with it (James, round 348: "when I press the cell, it and its content
         // animate, but the play button remains static")
+        for constraint in cellView1.constraints
+        where constraint.secondItem === modeTextLabel && constraint.secondAttribute == .trailing {
+            constraint.isActive = false
+        }
+        // **Before the button's constraints go on, not after** (round 373, from James's phone
+        // log: four `Unable to simultaneously satisfy constraints` on every launch, one per main
+        // menu row - the nib's `H:[UILabel]-(10)-|` against the button's 16, 44 and 4). A cell
+        // in a live table has a layout engine that checks each constraint as it is added, so
+        // adding the button's while the nib's old edge was still there was a conflict on the
+        // spot, and UIKit settled it by breaking the button's 44-point width. Taking the old
+        // edge away first means there is never a moment when both are asked for
         NSLayoutConstraint.activate([
             play.trailingAnchor.constraint(equalTo: cellView1.trailingAnchor, constant: -16),
             play.centerYAnchor.constraint(equalTo: cellView1.centerYAnchor),
@@ -130,10 +141,6 @@ class ModeSelectTableViewCell: UITableViewCell {
             modeTextLabel.trailingAnchor.constraint(lessThanOrEqualTo: play.leadingAnchor,
                                                     constant: -4),
         ])
-        for constraint in cellView1.constraints
-        where constraint.secondItem === modeTextLabel && constraint.secondAttribute == .trailing {
-            constraint.isActive = false
-        }
         modeTextLabel.numberOfLines = 1
         modeTextLabel.adjustsFontSizeToFitWidth = true
         modeTextLabel.minimumScaleFactor = 0.6

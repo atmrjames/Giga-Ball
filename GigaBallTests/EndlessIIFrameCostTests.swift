@@ -2434,3 +2434,45 @@ final class BusyFieldFrameCostTests: XCTestCase {
         }
     }
 }
+
+
+/// **A Mayhem row was eleven milliseconds of arithmetic** (round 373, James's phone: `HITCH 58ms
+/// after: row built, row built, row built, row built`). The density table is built in one pass
+/// now; this holds it to the arithmetic it replaced, element by element, across many runs.
+final class DensityStepArrivalTests: XCTestCase {
+
+    func testOnePassGivesEveryElementTheArrivalItAlwaysHad() {
+        for _ in 0..<40 {
+            let progression = EndlessIIProgression.make()
+            guard let queue = progression.releaseOrder else { continue }
+            XCTAssertEqual(progression.releaseArrivals(queue),
+                           queue.map { progression.arrivalHeight(of: $0) })
+        }
+    }
+
+    func testARepeatedElementArrivesWhereItFirstDoes() throws {
+        var progression = EndlessIIProgression.make()
+        let queue = try XCTUnwrap(progression.releaseOrder)
+        let twice = Array(queue.prefix(5)) + [queue[1]] + Array(queue.dropFirst(5))
+        progression.releaseOrder = twice
+        XCTAssertEqual(progression.releaseArrivals(twice), twice.map { progression.arrivalHeight(of: $0) })
+    }
+
+    func testEverythingAtOnceArrivesAtTheStart() throws {
+        var progression = EndlessIIProgression.make()
+        progression.everythingAtOnce = true
+        let queue = try XCTUnwrap(progression.releaseOrder)
+        XCTAssertEqual(Set(progression.releaseArrivals(queue)), [0])
+    }
+
+    /// And a row's worth of density questions is cheap: eleven bricks' worth, well inside a
+    /// millisecond, where it was about ten.
+    func testARowsDensityQuestionsAreCheap() {
+        let progression = EndlessIIProgression.make()
+        _ = progression.density(at: 300)
+        let started = Date.timeIntervalSinceReferenceDate
+        for _ in 0..<11 { _ = progression.density(at: 300) }
+        let spent = Date.timeIntervalSinceReferenceDate - started
+        XCTAssertLessThan(spent, 0.002, "eleven density questions took \(Int(spent*1000))ms")
+    }
+}

@@ -878,12 +878,49 @@ extension EndlessIIProgression {
     /// Following the queue is also the more faithful reading of the rule. A power-up or a
     /// designed row is a new thing too, and the density has no reason to notice only the
     /// styles.
+    /// `arrivalHeight(of:)` for every element of the queue, in one pass.
+    ///
+    /// **The row-building hitch on James's phone** (round 373: `HITCH 58ms after: row built, row
+    /// built, row built, row built`). A Mayhem row asked `density(at:)` once for every brick,
+    /// and the density rebuilt this table each time by asking each element where it arrives -
+    /// which searched the queue for it and then walked the quickening from the first step to
+    /// its own. Quadratic, eleven times a row, and the same answer every time: a sampled run
+    /// put nineteen twentieths of a row's 11 milliseconds here, and four rows can arrive
+    /// together. One walk of the quickening and one remembered position per element gives the
+    /// same numbers; `DensityStepArrivalTests` holds them to the old arithmetic.
+    func releaseArrivals(_ queue: [EndlessIIElement]) -> [Int] {
+        guard everythingAtOnce == false else { return queue.map { _ in 0 } }
+        let spacing = elementSpacing
+        guard spacing > 0 else { return queue.map { _ in 0 } }
+
+        let smallest = Double(spacing)*EndlessIIProgression.shortestGapShare
+        var total = 0.0
+        var gap = Double(spacing)
+        var distances: [Int] = []
+        distances.reserveCapacity(queue.count)
+        for _ in queue {
+            total += gap
+            gap = max(smallest, gap*EndlessIIProgression.introductionQuickening)
+            distances.append(max(1, Int(total.rounded())))
+        }
+        // `introductionDistance(steps:)` for steps 1, 2, 3 ... in a single walk - the same
+        // sum in the same order, so the same rounding
+
+        var firstPlace: [EndlessIIElement: Int] = [:]
+        return queue.enumerated().map { place, element in
+            let first = firstPlace[element] ?? place
+            if firstPlace[element] == nil { firstPlace[element] = place }
+            return distances[first]
+            // `firstIndex(of:)`'s answer: an element that appears twice arrives where it first does
+        }
+    }
+
     func densityStepHeights() -> [Int] {
         let cap = EndlessIIProgression.densityCapMetres
 
         let arrivals: [Int]
         if let releaseOrder {
-            arrivals = releaseOrder.map { arrivalHeight(of: $0) }
+            arrivals = releaseArrivals(releaseOrder)
         } else {
             arrivals = introductionOrder.map { introductionHeight(of: $0) }
         }

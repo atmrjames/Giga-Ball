@@ -679,6 +679,37 @@ final class MainMenuAtEveryWidthTests: XCTestCase {
     }
 }
 
+/// **The main menu's play buttons keep their size** (round 373, from James's phone log: four
+/// `Unable to simultaneously satisfy constraints` on every launch, one per mode row, and UIKit's
+/// way out of each was to break the play button's 44-point width).
+final class MainMenuRowPlayButtonTests: XCTestCase {
+
+    func testEveryRowsPlayButtonIsFullSizeAndClearOfTheName() throws {
+        let windowScene = try XCTUnwrap(UIApplication.shared.connectedScenes.first as? UIWindowScene)
+        let window = UIWindow(windowScene: windowScene)
+        window.frame = CGRect(x: 0, y: 0, width: 440, height: 956)
+        let board = UIStoryboard(name: "Main", bundle: Bundle(for: MenuViewController.self))
+        let menu = board.instantiateViewController(withIdentifier: "menuView") as! MenuViewController
+        window.rootViewController = menu
+        window.makeKeyAndVisible()
+        for _ in 0..<5 {
+            menu.view.setNeedsLayout()
+            menu.view.layoutIfNeeded()
+        }
+        let rows = menu.modeSelectTableView.visibleCells.compactMap { $0 as? ModeSelectTableViewCell }
+        XCTAssertEqual(rows.count, GameMode.allCases.count)
+        for row in rows {
+            XCTAssertEqual(row.playButton.bounds.width, 44, accuracy: 0.5,
+                           "\(row.modeTextLabel.text ?? ""): the button was squeezed")
+            let name = row.modeTextLabel.convert(row.modeTextLabel.bounds, to: row)
+            let play = row.playButton.convert(row.playButton.bounds, to: row)
+            XCTAssertLessThanOrEqual(name.maxX, play.minX - 3.5,
+                                     "\(row.modeTextLabel.text ?? ""): the name runs under the button")
+        }
+        window.isHidden = true
+    }
+}
+
 /// **The Daily Challenge's badge gives its room to the card** (James, round 371: "The Daily
 /// Challenge menu view should be vertically scrollable if the device is too small to show all
 /// the info. The icon and header should remain fixed at the top (the icon can get smaller on
