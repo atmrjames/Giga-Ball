@@ -639,7 +639,7 @@ final class PaddleSpeedScene: SKScene, SKPhysicsContactDelegate {
     private func build() {
         guard built == false, size.width > 0 else { return }
         built = true
-        let setup = LevelPackSetup()
+        let setup = LevelPackSetup.shared
 
         if let backdrop {
             let picture = SKSpriteNode(texture: SKTexture(image: backdrop))

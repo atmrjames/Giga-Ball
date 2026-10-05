@@ -139,7 +139,7 @@ enum StatsPage {
             rows.append(Row(label: "Lasers hit", value: grouped(stats.lasersHit), icon: "scope"))
         }
 
-        let retired = LevelPackSetup().retiredPowerUpIndices
+        let retired = LevelPackSetup.shared.retiredPowerUpIndices
         let powerUpSlots = stats.powerUpUnlockedArray.indices
             .filter { retired.contains($0) == false }
         // **A retired power-up is not an item to unlock** (round 217). Its slot stays in the
@@ -249,7 +249,7 @@ enum StatsPage {
     /// renamed once is renamed everywhere.
     private static func mostEffectiveRows(_ metres: [Int]?) -> [Row] {
         guard let best = mostEffective(metres) else { return [] }
-        let names = LevelPackSetup().powerUpNameArray
+        let names = LevelPackSetup.shared.powerUpNameArray
         guard names.indices.contains(best.index) else { return [] }
         return [Row(label: "Most effective power-up", value: names[best.index],
                     icon: "sparkles")]

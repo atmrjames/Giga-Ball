@@ -591,7 +591,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	
 	var powerUpProbFactor: Int = 0
 	var powerUpProbArray: [Int] = Array(repeating: 0,
-	                                    count: LevelPackSetup().powerUpNameArray.count)
+	                                    count: LevelPackSetup.shared.powerUpNameArray.count)
 	// Sized from the list that names them rather than counted by hand: a table one short is a
 	// power-up that can never be drawn, which from the outside looks exactly like one that is
 	// simply very rare (§8.6). Round 214 added two and this was the array that noticed
@@ -921,7 +921,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 
 	/// The six, by power-up index, read off the names rather than typed.
 	static let endlessIICollectionSounds: [Int: String] = {
-		let names = LevelPackSetup().powerUpNameArray
+		let names = LevelPackSetup.shared.powerUpNameArray
 		let byName: [String: String] = [
 			"Multi-Ball": "multiBall",
 			"Brick Cull": "cull",
@@ -944,11 +944,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	}()
 
 	/// Wipe's place in every power-up array, read off the names rather than typed (round 327).
-	static let wipePowerUpIndex: Int = LevelPackSetup().powerUpNameArray.firstIndex(of: "Wipe") ?? 50
+	static let wipePowerUpIndex: Int = LevelPackSetup.shared.powerUpNameArray.firstIndex(of: "Wipe") ?? 50
 
 	/// The Lock's and the Key's, the same way (round 332).
-	static let lockPowerUpIndex: Int = LevelPackSetup().powerUpNameArray.firstIndex(of: "Lock") ?? 48
-	static let keyPowerUpIndex: Int = LevelPackSetup().powerUpNameArray.firstIndex(of: "Key") ?? 49
+	static let lockPowerUpIndex: Int = LevelPackSetup.shared.powerUpNameArray.firstIndex(of: "Lock") ?? 48
+	static let keyPowerUpIndex: Int = LevelPackSetup.shared.powerUpNameArray.firstIndex(of: "Key") ?? 49
 
 	/// The three power-ups whose worth depends on what the run is doing right now.
 	///
@@ -9198,8 +9198,8 @@ laserTimer?.invalidate()
 	@objc func restartGameNotificiationKeyReceived() {
 				
 		if numberOfLevels > 1 {
-			startLevelNumber = LevelPackSetup().startLevelNumber[packNumber]
-			numberOfLevels = LevelPackSetup().numberOfLevels[packNumber]
+			startLevelNumber = LevelPackSetup.shared.startLevelNumber[packNumber]
+			numberOfLevels = LevelPackSetup.shared.numberOfLevels[packNumber]
 
 			gameViewControllerDelegate?.selectedLevel = startLevelNumber
 			gameViewControllerDelegate?.numberOfLevels = numberOfLevels
@@ -10041,7 +10041,7 @@ laserTimer?.invalidate()
 	/// achievement unearnable by anyone who arrived after it went.
 	func checkPowerUpCompletionist() {
 		let collected = totalStatsArray[0].powerupsCollected
-		let setup = LevelPackSetup()
+		let setup = LevelPackSetup.shared
 		let wanted = (0..<collected.count).filter {
 			setup.retiredPowerUpIndices.contains($0) == false
 		}

@@ -200,7 +200,7 @@ final class GameSceneMockView: UIView {
     }
 
     private func drawPaddleAndBall(_ layout: GameSceneLayout) {
-        let setup = LevelPackSetup()
+        let setup = LevelPackSetup.shared
         let theme = min(max(themeIndex, 0), setup.paddleImageArray.count - 1)
 
         let paddle = CGRect(x: (screen.width - layout.paddleWidth)/2,

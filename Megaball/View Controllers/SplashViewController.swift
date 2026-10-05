@@ -103,7 +103,7 @@ enum ResumeCard {
     ///   what the last player was doing.
     static func lines(for game: SavedGame, fallbackMode: GameMode) -> Lines {
         var lines = Lines()
-        let packs = LevelPackSetup()
+        let packs = LevelPackSetup.shared
 
         if let key = game.dailyDateKey {
             let session = DailyChallengeSession.shared

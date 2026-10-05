@@ -46,9 +46,9 @@ extension GameScene {
     /// same fact rather than repeating it. Anything the column has nothing to say about
     /// takes the beneficial colour, which is what the icons do.
     static func powerUpGlowColour(forIndex index: Int) -> UIColor {
-        let multipliers = LevelPackSetup().powerUpMultiplierArray
+        let multipliers = LevelPackSetup.shared.powerUpMultiplierArray
         guard multipliers.indices.contains(index) else { return PowerUpIcon.beneficial }
-        let names = LevelPackSetup().powerUpNameArray
+        let names = LevelPackSetup.shared.powerUpNameArray
         if names.indices.contains(index), GameScene.neutralPowerUpNames.contains(names[index]) {
             return PowerUpIcon.neutral
         }

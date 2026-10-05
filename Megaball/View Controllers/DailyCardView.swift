@@ -232,7 +232,7 @@ final class DailyCardView: UIView {
         if let level = challenge.classicLevel {
             let number = DailyChallengeGenerator.levelNumber(forClassicLevel: level)
             let pack = DailyChallengeGenerator.pack(forClassicLevel: level)
-            let setup = LevelPackSetup()
+            let setup = LevelPackSetup.shared
             let retroDay = DailyTwist.forcedTheme(for: challenge) == LevelPackSetup.retroThemeIndex
             let picture = retroDay
                 ? DailyRetroLevelPreview.image(forLevel: number) ?? setup.levelImageArray[number]

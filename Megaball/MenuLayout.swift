@@ -1171,7 +1171,7 @@ final class BallRackView: UIView {
     static func chosenBall(in defaults: UserDefaults,
                            daily: DailyChallenge? = DailyChallengeSession.shared.active)
         -> UIImage? {
-        let setup = LevelPackSetup()
+        let setup = LevelPackSetup.shared
         let wanted = DailyTwist.forcedTheme(for: daily) ?? defaults.integer(forKey: "ballSetting")
         let index = min(max(wanted, 0), setup.ballImageArray.count - 1)
         let ball = setup.ballImageArray[index]

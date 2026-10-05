@@ -1748,7 +1748,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
             packNameLabel.text = ""
             levelNumberLabel.text = mode.isEndless
                 ? mode.name
-                : String(LevelPackSetup().levelNameArray[levelNumber])
+                : String(LevelPackSetup.shared.levelNameArray[levelNumber])
             levelNameLabel.text = ""
             
             scoreLabelTitle.text = "Height"
@@ -1811,17 +1811,17 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
                 levelNameLabel.text = ""
             } else {
                 if numberOfLevels > 1 {
-                    packNameLabel.text = "\(LevelPackSetup().levelPackNameArray[packNumber])"
-                    levelNumberLabel.text = "Level \(levelNumber-LevelPackSetup().startLevelNumber[packNumber]+1) of \(LevelPackSetup().numberOfLevels[packNumber])"
+                    packNameLabel.text = "\(LevelPackSetup.shared.levelPackNameArray[packNumber])"
+                    levelNumberLabel.text = "Level \(levelNumber-LevelPackSetup.shared.startLevelNumber[packNumber]+1) of \(LevelPackSetup.shared.numberOfLevels[packNumber])"
                     swapTheLevelEmphasis()
-                    levelNameLabel.text = "\(LevelPackSetup().levelNameArray[levelNumber])"
+                    levelNameLabel.text = "\(LevelPackSetup.shared.levelNameArray[levelNumber])"
                 } else {
                     levelNameLabelNormalConstraint.isActive = false
                     levelTitleLowerConstraint.isActive = true
 
                     packNameLabel.text = isDailyChallenge ? "Daily Challenge"
                                                           : "Single Level Mode"
-                    levelNumberLabel.text = "\(LevelPackSetup().levelNameArray[levelNumber])"
+                    levelNumberLabel.text = "\(LevelPackSetup.shared.levelNameArray[levelNumber])"
                     levelNameLabel.text = ""
                 }
             }
@@ -1915,7 +1915,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
             levelTitleLowerConstraint.isActive = true
             
             packNameLabel.text = ""
-            levelNumberLabel.text = "\(LevelPackSetup().levelPackNameArray[packNumber])"
+            levelNumberLabel.text = "\(LevelPackSetup.shared.levelPackNameArray[packNumber])"
             levelNameLabel.text = ""
         }
 
@@ -2311,7 +2311,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
             activePowerUpHUD = hud
         }
 
-        let setup = LevelPackSetup()
+        let setup = LevelPackSetup.shared
         let items: [PausedPowerUpHUD.Item] = rings.compactMap { ring in
             guard setup.powerUpImageArray.indices.contains(ring.index) else { return nil }
             return PausedPowerUpHUD.Item(powerUpIndex: ring.index,
@@ -2327,7 +2327,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
     private func explainPowerUp(_ index: Int) {
         if hapticsSetting { interfaceHaptic.impactOccurred() }
         InterfaceSound.click()
-        let setup = LevelPackSetup()
+        let setup = LevelPackSetup.shared
         guard setup.powerUpNameArray.indices.contains(index) else { return }
 
         GigaBallAlert.show(on: self,

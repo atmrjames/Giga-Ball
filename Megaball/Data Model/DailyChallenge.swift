@@ -234,7 +234,7 @@ enum DailyTwist: String, CaseIterable, Codable {
     /// Asked of the same draw and the same list the scene uses, so the briefing cannot name one
     /// theme and the run play another.
     static func themeName(forKey key: String) -> String {
-        let names = LevelPackSetup().themeNameArray
+        let names = LevelPackSetup.shared.themeNameArray
         let index = dailyThemeIndex(forKey: key, themeCount: names.count)
         return names.indices.contains(index) ? names[index] : ""
     }
@@ -595,7 +595,7 @@ enum DailyTwist: String, CaseIterable, Codable {
     /// Mayhem. Returns nil if that leaves nothing, which is the honest answer for a mode with
     /// no lasting power-ups rather than a crash or an arbitrary pick.
     static func alwaysOnPowerUp(forKey key: String, mode: GameMode) -> Int? {
-        let setup = LevelPackSetup()
+        let setup = LevelPackSetup.shared
         let lasting = setup.powerUpTimerArray.indices.filter { index in
             let timer = setup.powerUpTimerArray[index]
             guard timer == "10s" || timer == "5 paddle hits" else { return false }
@@ -652,7 +652,7 @@ enum DailyTwist: String, CaseIterable, Codable {
         if challenge.twists.contains(.monochromatic) { return 0 }
         if challenge.twists.contains(.dailyTheme) {
             return dailyThemeIndex(forKey: challenge.dateKey,
-                                   themeCount: LevelPackSetup().themeNameArray.count)
+                                   themeCount: LevelPackSetup.shared.themeNameArray.count)
         }
         return nil
     }
@@ -826,7 +826,7 @@ enum DailyChallengeGenerator {
     /// packs, and their levels are numbered from 1. The daily ignores pack unlocks (§3) -
     /// it is a tasting menu.
     static var classicLevelCount: Int {
-        let setup = LevelPackSetup()
+        let setup = LevelPackSetup.shared
         return (2..<setup.numberOfLevels.count).reduce(0) { $0 + setup.numberOfLevels[$1] }
     }
 
@@ -1173,7 +1173,7 @@ enum DailyChallengeGenerator {
 
     /// Which pack a catalogue level number lives in, for launching it.
     static func pack(forClassicLevel level: Int) -> Int {
-        let setup = LevelPackSetup()
+        let setup = LevelPackSetup.shared
         var remaining = level
         for pack in 2..<setup.numberOfLevels.count {
             if remaining <= setup.numberOfLevels[pack] { return pack }
@@ -1184,7 +1184,7 @@ enum DailyChallengeGenerator {
 
     /// The level's number as the game knows it, from the catalogue number.
     static func levelNumber(forClassicLevel level: Int) -> Int {
-        let setup = LevelPackSetup()
+        let setup = LevelPackSetup.shared
         let pack = pack(forClassicLevel: level)
         let before = (2..<pack).reduce(0) { $0 + setup.numberOfLevels[$1] }
         return setup.startLevelNumber[pack] + (level - before - 1)

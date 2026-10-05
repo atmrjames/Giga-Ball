@@ -119,7 +119,7 @@ class ModeSelectViewController: UIViewController, UICollectionViewDelegate, UICo
             cell.setIcon(UIImage(named:"iconPlayLevel"), recolour: true)
             cell.settingDescription.text = "Play single level only"
         } else {
-            cell.setIcon(LevelPackSetup().packIcon(levelPack!), recolour: true)
+            cell.setIcon(LevelPackSetup.shared.packIcon(levelPack!), recolour: true)
             // Recoloured after all (round 66). Round 64 called this pack art and left it
             // alone, which was right about pack *thumbnails* and wrong about these: the pack
             // icons are flat single-colour glyphs like the interface ones, so Space Pack's
@@ -129,7 +129,7 @@ class ModeSelectViewController: UIViewController, UICollectionViewDelegate, UICo
             // The list of pack icons lives with the pack names in LevelPackSetup - it used to
             // be written out here as well, and in the pack screen, which is two more places to
             // miss when a pack's art is redrawn
-            cell.settingDescription.text = "Play \(LevelPackSetup().levelPackNameArray[levelPack!]) from start"
+            cell.settingDescription.text = "Play \(LevelPackSetup.shared.levelPackNameArray[levelPack!]) from start"
         }
                 
         cell.setPressed(false, colour: #colorLiteral(red: 0.8705882353, green: 0.8705882353, blue: 0.8705882353, alpha: 1), duration: 0.2)
@@ -145,7 +145,7 @@ class ModeSelectViewController: UIViewController, UICollectionViewDelegate, UICo
             moveToGame(selectedLevel: selectedLevel!, numberOfLevels: 1, sender: levelSender!, levelPack: levelPack!)
             removeAnimate()
         } else {
-            moveToGame(selectedLevel: LevelPackSetup().startLevelNumber[levelPack!], numberOfLevels: LevelPackSetup().numberOfLevels[levelPack!], sender: levelSender!, levelPack: levelPack!)
+            moveToGame(selectedLevel: LevelPackSetup.shared.startLevelNumber[levelPack!], numberOfLevels: LevelPackSetup.shared.numberOfLevels[levelPack!], sender: levelSender!, levelPack: levelPack!)
             removeAnimate()
         }
 

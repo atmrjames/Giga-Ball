@@ -586,8 +586,8 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         case .classic:
             moveToPackSelector()
         case .endless, .endlessII:
-            moveToLevelStats(startLevel: LevelPackSetup().startLevelNumber[1],
-                             levelNumber: LevelPackSetup().startLevelNumber[1],
+            moveToLevelStats(startLevel: LevelPackSetup.shared.startLevelNumber[1],
+                             levelNumber: LevelPackSetup.shared.startLevelNumber[1],
                              packNumber: 1)
             // Endless 2.0 plays the endless field for now, and differs only in what it
             // records and where it posts. The new bricks and power-ups come in later
@@ -831,7 +831,7 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         InterfaceSound.click()
         loadData()
         guard totalStatsArray.isEmpty == false else { return }
-        let setup = LevelPackSetup()
+        let setup = LevelPackSetup.shared
 
         switch mode {
         case .classic:
@@ -1116,7 +1116,7 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         case .classic:
             moveToPackSelector()
             arriveWithoutAnimating(children.last)
-            let setup = LevelPackSetup()
+            let setup = LevelPackSetup.shared
             if packNumber >= 2, packNumber < setup.numberOfLevels.count,
                let packScreen = children.last as? PackSelectViewController {
                 packScreen.hideAnimate()
@@ -1130,8 +1130,8 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
             // way navigating there stacks it - so back goes pack list, then main menu.
             // A run without a classic pack (the tutorial) stops at the pack list
         case .endless, .endlessII:
-            moveToLevelStats(startLevel: LevelPackSetup().startLevelNumber[1],
-                             levelNumber: LevelPackSetup().startLevelNumber[1],
+            moveToLevelStats(startLevel: LevelPackSetup.shared.startLevelNumber[1],
+                             levelNumber: LevelPackSetup.shared.startLevelNumber[1],
                              packNumber: 1)
             arriveWithoutAnimating(children.last)
         case .daily:

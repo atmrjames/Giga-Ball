@@ -139,9 +139,9 @@ enum GameMode: Int, CaseIterable {
         switch self {
         case .classic:
             guard let id = LevelPackSetup.packScoreLeaderboard(forPack: packNumber),
-                  LevelPackSetup().levelPackNameArray.indices.contains(packNumber)
+                  LevelPackSetup.shared.levelPackNameArray.indices.contains(packNumber)
             else { return nil }
-            return (id, LevelPackSetup().levelPackNameArray[packNumber])
+            return (id, LevelPackSetup.shared.levelPackNameArray[packNumber])
             // The pack's own name, not the mode's: "3rd of 400 on the Classic Pack board"
             // says which board, where "on the Classic Mode board" names one that is not there
         case .endless:

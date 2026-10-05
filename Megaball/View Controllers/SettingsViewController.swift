@@ -270,7 +270,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
 //                } else {
                     cell.settingDescription.text = "App Icon"
                     cell.centreLabel.text = ""
-                    let icons = LevelPackSetup().appIconImageArray
+                    let icons = LevelPackSetup.shared.appIconImageArray
                     cell.setIcon(icons.indices.contains(appIconSetting)
                         ? icons[appIconSetting]
                         : UIImage(named: "iconAppIcon.png")!, recolour: false)
@@ -291,7 +291,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
 //                } else {
                     cell.settingDescription.text = "Ball & Paddle Theme"
                     cell.centreLabel.text = ""
-                    let themes = LevelPackSetup().themeIconArray
+                    let themes = LevelPackSetup.shared.themeIconArray
                     let hasArtwork = themes.indices.contains(ballSetting)
                     cell.setIcon(hasArtwork ? themes[ballSetting]
                                             : UIImage(named: "iconTheme.png")!,
@@ -1187,7 +1187,7 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         if appIconSetting != 0 {
             appIconSetting = 0
             defaults.set(appIconSetting, forKey: "appIconSetting")
-            changeIcon(to: LevelPackSetup().appIconNameArray[0])
+            changeIcon(to: LevelPackSetup.shared.appIconNameArray[0])
         }
         statsCollapseSetting = true
         defaults.set(statsCollapseSetting, forKey: "statsCollapseSetting")

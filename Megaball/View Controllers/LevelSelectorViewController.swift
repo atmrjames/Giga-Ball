@@ -166,12 +166,12 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
         } else {
             let cell = tableView.dequeueReusableCell(withIdentifier: "levelSelectorCell", for: indexPath) as! LevelSelectorTableViewCell
             cell.levelLabel.text = "Level "+String(indexPath.row+1)
-            cell.levelNameLabel.text = LevelPackSetup().levelNameArray[startLevel!+indexPath.row]
+            cell.levelNameLabel.text = LevelPackSetup.shared.levelNameArray[startLevel!+indexPath.row]
             cell.highScoreTitleLabel.text = "Level Hi-Score"
             cell.blurView.isHidden = true
             cell.lockedImageView.isHidden = true
             cell.cellView3.tag = indexPath.row+1
-            cell.levelImage.image = LevelPackSetup().levelImageArray[startLevel!+indexPath.row]
+            cell.levelImage.image = LevelPackSetup.shared.levelImageArray[startLevel!+indexPath.row]
             cell.setNameColour(#colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 1))
             // Setup cell buttons
 
@@ -200,7 +200,7 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
                 cell.levelNameLabel.text = LevelSelectorViewController.unlockHint(
                     row: indexPath.row,
                     previousLevelOpen: levelIsOpen(startLevel!+indexPath.row-1),
-                    previousLevelName: LevelPackSetup().levelNameArray[startLevel!+indexPath.row-1])
+                    previousLevelName: LevelPackSetup.shared.levelNameArray[startLevel!+indexPath.row-1])
                 cell.highScoreTitleLabel.text = ""
                 cell.highScoreLabel.text = ""
                 cell.blurView.isHidden = false
@@ -622,9 +622,9 @@ class LevelSelectorViewController: UIViewController, UITableViewDelegate, UITabl
     }
 
     func updateLabels() {
-        titleLabel.text = LevelPackSetup().levelPackNameArray[packNumber!].uppercased()
+        titleLabel.text = LevelPackSetup.shared.levelPackNameArray[packNumber!].uppercased()
         var numberOfUnlockedLevels = 0
-        let packFirstLevel = LevelPackSetup().startLevelNumber[packNumber!]
+        let packFirstLevel = LevelPackSetup.shared.startLevelNumber[packNumber!]
         var levelIndex = packFirstLevel
         while levelIndex-packFirstLevel <= numberOfLevels!-1 {
             if levelIsOpen(levelIndex) {

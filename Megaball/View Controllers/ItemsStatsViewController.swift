@@ -210,7 +210,7 @@ class ItemsStatsViewController: UIViewController, UITableViewDelegate, UITableVi
     /// and on the window's size.
     private var powerUpRows: [Int] {
         guard let index = passedIndex, totalStatsArray.isEmpty == false else { return [] }
-        let setup = LevelPackSetup()
+        let setup = LevelPackSetup.shared
         var rows: [Int] = []
         if setup.powerUpMultiplierArray[index].isEmpty == false { rows.append(0) }
         if setup.powerUpTimerArray[index].isEmpty == false { rows.append(1) }
@@ -227,7 +227,7 @@ class ItemsStatsViewController: UIViewController, UITableViewDelegate, UITableVi
     /// sentence on the page you open.
     private var mayhemOnlyPowerUp: Bool {
         guard sender == "Power-Ups", let index = passedIndex else { return false }
-        return LevelPackSetup().isEndlessIIPowerUp(index)
+        return LevelPackSetup.shared.isEndlessIIPowerUp(index)
     }
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
@@ -248,12 +248,12 @@ class ItemsStatsViewController: UIViewController, UITableViewDelegate, UITableVi
             guard rows.indices.contains(indexPath.row) else { return cell }
             switch rows[indexPath.row] {
             case 0:
-                if LevelPackSetup().powerUpMultiplierArray[passedIndex!] == "" {
+                if LevelPackSetup.shared.powerUpMultiplierArray[passedIndex!] == "" {
                     hideCell(cell: cell)
                     return cell
                 } else {
-                    cell.statValue.text = LevelPackSetup().powerUpMultiplierArray[passedIndex!]
-                    if LevelPackSetup().powerUpMultiplierArray[passedIndex!].hasPrefix("+") {
+                    cell.statValue.text = LevelPackSetup.shared.powerUpMultiplierArray[passedIndex!]
+                    if LevelPackSetup.shared.powerUpMultiplierArray[passedIndex!].hasPrefix("+") {
                         cell.statDescription.text = "Multiplier bonus"
                     } else {
                         cell.statDescription.text = "Multiplier penalty"
@@ -266,11 +266,11 @@ class ItemsStatsViewController: UIViewController, UITableViewDelegate, UITableVi
                 return cell
             case 1:
                 cell.statDescription.text = "Duration"
-                if LevelPackSetup().powerUpTimerArray[passedIndex!] == "" {
+                if LevelPackSetup.shared.powerUpTimerArray[passedIndex!] == "" {
                     hideCell(cell: cell)
                     return cell
                 }
-                cell.statValue.text = LevelPackSetup().powerUpTimerArray[passedIndex!]
+                cell.statValue.text = LevelPackSetup.shared.powerUpTimerArray[passedIndex!]
                 // The array carries its own units now - seconds, catches or paddle hits -
                 // so this page stops guessing the unit from the number
                 return cell
@@ -479,19 +479,19 @@ class ItemsStatsViewController: UIViewController, UITableViewDelegate, UITableVi
         }
 
         if sender == "Power-Ups" {
-            titleLabel.text = LevelPackSetup().powerUpNameArray[passedIndex!].uppercased()
-            powerUpImage.image = LevelPackSetup().powerUpImageArray[passedIndex!]
-            descriptionLabel.text = LevelPackSetup().powerUpDescriptionArray[passedIndex!]
+            titleLabel.text = LevelPackSetup.shared.powerUpNameArray[passedIndex!].uppercased()
+            powerUpImage.image = LevelPackSetup.shared.powerUpImageArray[passedIndex!]
+            descriptionLabel.text = LevelPackSetup.shared.powerUpDescriptionArray[passedIndex!]
         } else {
-            titleLabel.text = LevelPackSetup().achievementsNameArray[passedIndex!].uppercased()
+            titleLabel.text = LevelPackSetup.shared.achievementsNameArray[passedIndex!].uppercased()
             if totalStatsArray[0].achievementsUnlockedArray[passedIndex!] {
-                powerUpImage.image = UIImage(named: LevelPackSetup().achievementsImageArray[passedIndex!])!
+                powerUpImage.image = UIImage(named: LevelPackSetup.shared.achievementsImageArray[passedIndex!])!
             } else {
                 powerUpImage.image = UIImage(named:"AchivementBadgeIncomplete.png")!
             }
-            descriptionLabel.text = LevelPackSetup().achievementsPreEarnedDescriptionArray[passedIndex!]
+            descriptionLabel.text = LevelPackSetup.shared.achievementsPreEarnedDescriptionArray[passedIndex!]
             if totalStatsArray[0].achievementsUnlockedArray[passedIndex!] {
-                descriptionLabel.text = LevelPackSetup().achievementsEarnedDescriptionArray[passedIndex!]
+                descriptionLabel.text = LevelPackSetup.shared.achievementsEarnedDescriptionArray[passedIndex!]
             }
         }
         

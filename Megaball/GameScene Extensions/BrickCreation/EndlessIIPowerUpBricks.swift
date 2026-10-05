@@ -271,7 +271,7 @@ extension GameScene {
     func endlessIIPowerUpTexture(_ index: Int) -> SKTexture {
         powerUpTextureArray.indices.contains(index)
             ? powerUpTextureArray[index]
-            : SKTexture(image: LevelPackSetup().powerUpImageArray[index])
+            : SKTexture(image: LevelPackSetup.shared.powerUpImageArray[index])
     }
 
     private func endlessIIShowPowerUpBrickBurst(at point: CGPoint, index: Int) {

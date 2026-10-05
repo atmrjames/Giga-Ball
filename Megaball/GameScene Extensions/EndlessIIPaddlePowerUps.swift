@@ -670,7 +670,7 @@ extension GameScene {
     /// judgement the reference page prints. Derived from the multiplier column rather than
     /// listed, so a new bad power-up is excluded the day it exists.
     static let endlessIIHarmfulPowerUps: Set<Int> = {
-        var harmful = Set(LevelPackSetup().powerUpMultiplierArray.enumerated()
+        var harmful = Set(LevelPackSetup.shared.powerUpMultiplierArray.enumerated()
             .filter { $0.element == "-0.1" }
             .map { $0.offset })
         harmful.insert(1)
@@ -681,7 +681,7 @@ extension GameScene {
 
     /// The power-ups that are good for the player, by the same reading.
     static let endlessIIBeneficialPowerUps: Set<Int> = {
-        Set(LevelPackSetup().powerUpMultiplierArray.enumerated()
+        Set(LevelPackSetup.shared.powerUpMultiplierArray.enumerated()
             .filter { $0.element == "+0.1" }
             .map { $0.offset })
             .subtracting(GameScene.endlessIINeutralPowerUps)
@@ -700,8 +700,8 @@ extension GameScene {
     /// Mystery arrives here on its own, through the blank chip it has always had: a power-up
     /// that is "good or bad, we shall see" cannot be banned by a rule about which it is.
     static let endlessIINeutralPowerUps: Set<Int> = {
-        let names = LevelPackSetup().powerUpNameArray
-        var neutral = Set(LevelPackSetup().powerUpMultiplierArray.enumerated()
+        let names = LevelPackSetup.shared.powerUpNameArray
+        var neutral = Set(LevelPackSetup.shared.powerUpMultiplierArray.enumerated()
             .filter { $0.element.isEmpty }
             .map { $0.offset })
         neutral.remove(1)

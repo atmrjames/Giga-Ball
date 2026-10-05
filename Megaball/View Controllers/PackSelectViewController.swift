@@ -206,7 +206,7 @@ class PackSelectViewController: UIViewController, UICollectionViewDelegate, UICo
     /// The eleven packs. The two entries before them in `levelPackNameArray` are the tutorial
     /// and Endless Mode, which is where the +2 in every index below comes from - it is the
     /// oldest arithmetic on this screen and it is not an off-by-one.
-    private var packCount: Int { LevelPackSetup().levelPackNameArray.count - 2 }
+    private var packCount: Int { LevelPackSetup.shared.levelPackNameArray.count - 2 }
 
     func collectionView(_ collectionView: UICollectionView,
                         numberOfItemsInSection section: Int) -> Int {
@@ -222,7 +222,7 @@ class PackSelectViewController: UIViewController, UICollectionViewDelegate, UICo
         let cell = collectionView.dequeueReusableCell(
             withReuseIdentifier: PackGridCell.reuseIdentifier, for: indexPath) as! PackGridCell
         let pack = indexPath.item + 2
-        let setup = LevelPackSetup()
+        let setup = LevelPackSetup.shared
         let unlocked = totalStatsArray[0].levelPackUnlockedArray[pack]
 
         cell.show(name: unlocked ? setup.levelPackNameArray[pack] : unlockHint(for: pack),
@@ -243,7 +243,7 @@ class PackSelectViewController: UIViewController, UICollectionViewDelegate, UICo
         if pack == 5 { return "Complete first 3 packs to unlock" }
         // Pack 5 is the one that needs three rather than the one before it
         if totalStatsArray[0].levelPackUnlockedArray[pack-1] {
-            return "Complete \(LevelPackSetup().levelPackNameArray[pack-1]) to unlock"
+            return "Complete \(LevelPackSetup.shared.levelPackNameArray[pack-1]) to unlock"
         }
         return "Complete Pack \(pack-2) to unlock"
     }
@@ -271,8 +271,8 @@ class PackSelectViewController: UIViewController, UICollectionViewDelegate, UICo
         InterfaceSound.click()
         hideAnimate()
         moveToLevelSelector(packNumber: pack,
-                            numberOfLevels: LevelPackSetup().numberOfLevels[pack],
-                            startLevel: LevelPackSetup().startLevelNumber[pack])
+                            numberOfLevels: LevelPackSetup.shared.numberOfLevels[pack],
+                            startLevel: LevelPackSetup.shared.startLevelNumber[pack])
     }
 
     /// Starts a pack without going through its level list - the straight-in button the rows
@@ -281,8 +281,8 @@ class PackSelectViewController: UIViewController, UICollectionViewDelegate, UICo
         if hapticsSetting { interfaceHaptic.impactOccurred() }
         InterfaceSound.click()
         MenuViewController().clearSavedGame()
-        moveToGame(selectedLevel: LevelPackSetup().startLevelNumber[pack],
-                   numberOfLevels: LevelPackSetup().numberOfLevels[pack],
+        moveToGame(selectedLevel: LevelPackSetup.shared.startLevelNumber[pack],
+                   numberOfLevels: LevelPackSetup.shared.numberOfLevels[pack],
                    sender: "MainMenu", levelPack: pack)
     }
 

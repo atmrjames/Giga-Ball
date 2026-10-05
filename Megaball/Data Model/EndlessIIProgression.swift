@@ -374,7 +374,7 @@ struct EndlessIIProgression: Codable, Equatable {
     static let rampEasing = 0.4
 
     static func make(shuffling styles: [EndlessIIStyle] = EndlessIIStyle.allCases,
-                     powerUps: Int = LevelPackSetup().powerUpNameArray.count,
+                     powerUps: Int = LevelPackSetup.shared.powerUpNameArray.count,
                      using generator: inout some RandomNumberGenerator) -> EndlessIIProgression {
         // Every power-up in the table, including Endless 2.0's own, derived from the array
         // that names them rather than counted by hand - the hand-count came up short the
@@ -439,7 +439,7 @@ struct EndlessIIProgression: Codable, Equatable {
 
     /// The ordinary run's version: the system's own randomness.
     static func make(shuffling styles: [EndlessIIStyle] = EndlessIIStyle.allCases,
-                     powerUps: Int = LevelPackSetup().powerUpNameArray.count) -> EndlessIIProgression {
+                     powerUps: Int = LevelPackSetup.shared.powerUpNameArray.count) -> EndlessIIProgression {
         var generator = SystemRandomNumberGenerator()
         return make(shuffling: styles, powerUps: powerUps, using: &generator)
     }

@@ -293,8 +293,8 @@ class InbetweenLevels: GKState {
         
         if scene.endlessMode == false && scene.isDailyChallenge == false {
             
-            if (scene.levelScore + scene.levelTimerBonus) > scene.packLevelHighScoresArray![scene.packNumber-2][scene.levelNumber-LevelPackSetup().startLevelNumber[scene.packNumber]] {
-                scene.packLevelHighScoresArray![scene.packNumber-2][scene.levelNumber-LevelPackSetup().startLevelNumber[scene.packNumber]] = (scene.levelScore + scene.levelTimerBonus)
+            if (scene.levelScore + scene.levelTimerBonus) > scene.packLevelHighScoresArray![scene.packNumber-2][scene.levelNumber-LevelPackSetup.shared.startLevelNumber[scene.packNumber]] {
+                scene.packLevelHighScoresArray![scene.packNumber-2][scene.levelNumber-LevelPackSetup.shared.startLevelNumber[scene.packNumber]] = (scene.levelScore + scene.levelTimerBonus)
             }
         }
         // Update level stats

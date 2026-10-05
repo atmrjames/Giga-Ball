@@ -147,7 +147,7 @@ class PreGame: GKState {
             detail = " \(challenge.dateKey) \(challenge.mode.name)"
                 + (twists.isEmpty ? " no twists" : " twists: \(twists)")
         } else if scene.startLevelNumber > 0 {
-            let packs = LevelPackSetup()
+            let packs = LevelPackSetup.shared
             detail = " \(packs.levelPackNameArray[scene.packNumber])"
                 + " / \(packs.levelNameArray[scene.levelNumber])"
         }

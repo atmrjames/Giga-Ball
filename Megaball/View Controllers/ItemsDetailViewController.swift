@@ -95,7 +95,7 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
     /// a power-up moved, and from the outside "missing from the reference" looks exactly
     /// like "does not exist".
     var powerUpIndicesByMode: (everyMode: [Int], mayhem: [Int]) {
-        let setup = LevelPackSetup()
+        let setup = LevelPackSetup.shared
         let indices = standardPowerUpRows.map { LevelPackSetup.referenceOrder[$0] }
         return (indices.filter { setup.isEndlessIIPowerUp($0) == false },
                 indices.filter { setup.isEndlessIIPowerUp($0) })
@@ -312,7 +312,7 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
     }
 
     private func gridItem(at indexPath: IndexPath) -> (name: String, icon: UIImage?, unlocked: Bool, chosen: Bool) {
-        let setup = LevelPackSetup()
+        let setup = LevelPackSetup.shared
         if senderID == 2 {
             let item = powerUpIndex(at: indexPath)
             let unlocked = totalStatsArray[0].powerUpUnlockedArray[item]
@@ -353,7 +353,7 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
     private func appIconUnlockHint(_ index: Int) -> String {
         totalStatsArray[0].levelPackUnlockedArray.indices.contains(index+1)
             && totalStatsArray[0].levelPackUnlockedArray[index+1]
-            ? LevelPackSetup().unlockedDescriptionArray[index]
+            ? LevelPackSetup.shared.unlockedDescriptionArray[index]
             : "Complete Pack \(index) to unlock"
     }
 
@@ -362,7 +362,7 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
     /// The two sentences the rows used: the one naming the pack, and the one that does not,
     /// chosen the same way - a pack the player cannot reach yet is not named at them.
     private func powerUpUnlockHint(_ item: Int) -> String {
-        let setup = LevelPackSetup()
+        let setup = LevelPackSetup.shared
         let pack = setup.powerUpPackOrderArray[item] + 1
         return totalStatsArray[0].levelPackUnlockedArray.indices.contains(pack)
             && totalStatsArray[0].levelPackUnlockedArray[pack]
@@ -373,7 +373,7 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
     private func themeUnlockHint(_ index: Int) -> String {
         totalStatsArray[0].levelPackUnlockedArray.indices.contains(index+1)
             && totalStatsArray[0].levelPackUnlockedArray[index+1]
-            ? LevelPackSetup().unlockedDescriptionArray[index]
+            ? LevelPackSetup.shared.unlockedDescriptionArray[index]
             : "Complete Pack \(index) to unlock"
     }
 
@@ -463,7 +463,7 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
     var shownAchievements: [Int] {
         AchievementCatalogue.indices(
             for: AchievementCatalogue.tabs[achievementTab].mode,
-            count: LevelPackSetup().achievementsNameArray.count)
+            count: LevelPackSetup.shared.achievementsNameArray.count)
     }
 
     /// Puts the mode picker between the title and the grid, in the statistics page's dress.
@@ -601,7 +601,7 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
             return standardPowerUpRows.count
         } else if senderID == 3 {
         // Achievements
-            return LevelPackSetup().achievementsNameArray.count
+            return LevelPackSetup.shared.achievementsNameArray.count
         } else {
         // default
             return 1
@@ -627,11 +627,11 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
             cell.decriptionFullWidthConstraint.isActive = false
             cell.descriptionTickWidthConstraint.isActive = true
             
-            cell.setIcon(LevelPackSetup().appIconImageArray[indexPath.row], recolour: false)
+            cell.setIcon(LevelPackSetup.shared.appIconImageArray[indexPath.row], recolour: false)
             cell.iconImage.backgroundColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 0)
             cell.iconImage.layer.cornerRadius = 10
             cell.settingDescription.text =
-                LevelPackSetup().appIconDisplayNameArray[indexPath.row]
+                LevelPackSetup.shared.appIconDisplayNameArray[indexPath.row]
             cell.centreLabel.text = ""
             cell.settingState.text = ""
             cell.tickImage.isHidden = true
@@ -653,7 +653,7 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
                 cell.settingDescription.font = cell.settingDescription.font.withSize(16)
                 
                 if totalStatsArray[0].levelPackUnlockedArray[indexPath.row+1] {
-                    cell.settingDescription.text = LevelPackSetup().unlockedDescriptionArray[indexPath.row]
+                    cell.settingDescription.text = LevelPackSetup.shared.unlockedDescriptionArray[indexPath.row]
                 } else {
                     cell.settingDescription.text = "Complete Pack \(indexPath.row) to unlock"
                 }
@@ -676,10 +676,10 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
             cell.decriptionFullWidthConstraint.isActive = false
             cell.descriptionTickWidthConstraint.isActive = true
             
-            cell.setIcon(LevelPackSetup().themeIconArray[indexPath.row], recolour: false)
+            cell.setIcon(LevelPackSetup.shared.themeIconArray[indexPath.row], recolour: false)
             cell.iconImage.backgroundColor = #colorLiteral(red: 0, green: 0, blue: 0, alpha: 0.15)
             cell.iconImage.layer.cornerRadius = cell.iconImage.frame.size.height/2
-            cell.settingDescription.text = LevelPackSetup().themeNameArray[indexPath.row]
+            cell.settingDescription.text = LevelPackSetup.shared.themeNameArray[indexPath.row]
             cell.centreLabel.text = ""
             cell.settingState.text = ""
             cell.tickImage.isHidden = true
@@ -701,7 +701,7 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
                 cell.settingDescription.font = cell.settingDescription.font.withSize(16)
                 
                 if totalStatsArray[0].levelPackUnlockedArray[indexPath.row+1] {
-                    cell.settingDescription.text = LevelPackSetup().unlockedDescriptionArray[indexPath.row]
+                    cell.settingDescription.text = LevelPackSetup.shared.unlockedDescriptionArray[indexPath.row]
                 } else {
                     cell.settingDescription.text = "Complete Pack \(indexPath.row) to unlock"
                 }
@@ -722,13 +722,13 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
         // Power-ups
             let powerUpIndexCorrection = powerUpIndex(at: indexPath)
 
-            cell.setIcon(LevelPackSetup().powerUpImageArray[powerUpIndexCorrection], recolour: false)
+            cell.setIcon(LevelPackSetup.shared.powerUpImageArray[powerUpIndexCorrection], recolour: false)
             cell.iconImage.backgroundColor = #colorLiteral(red: 1, green: 1, blue: 1, alpha: 0)
-            cell.settingDescription.text = LevelPackSetup().powerUpNameArray[powerUpIndexCorrection]
+            cell.settingDescription.text = LevelPackSetup.shared.powerUpNameArray[powerUpIndexCorrection]
             cell.centreLabel.text = ""
             cell.settingState.text = ""
 
-            if LevelPackSetup().isEndlessIIPowerUp(powerUpIndexCorrection) {
+            if LevelPackSetup.shared.isEndlessIIPowerUp(powerUpIndexCorrection) {
                 cell.settingState.attributedText = ItemsDetailViewController.mayhemBadge
                 cell.settingState.textColor = #colorLiteral(red: 0.6000000238, green: 0.6000000238, blue: 0.6000000238, alpha: 1)
             }
@@ -763,10 +763,10 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
                 cell.setLabelColour(#colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 0.25))
                 cell.settingDescription.font = cell.settingDescription.font.withSize(16)
                 
-                if totalStatsArray[0].levelPackUnlockedArray[LevelPackSetup().powerUpPackOrderArray[powerUpIndexCorrection]+1] {
-                    cell.settingDescription.text = "\(LevelPackSetup().powerUpUnlockedDescriptionArray[powerUpIndexCorrection])"
+                if totalStatsArray[0].levelPackUnlockedArray[LevelPackSetup.shared.powerUpPackOrderArray[powerUpIndexCorrection]+1] {
+                    cell.settingDescription.text = "\(LevelPackSetup.shared.powerUpUnlockedDescriptionArray[powerUpIndexCorrection])"
                 } else {
-                    cell.settingDescription.text = "\(LevelPackSetup().powerUpHiddenUnlockedDescriptionArray[powerUpIndexCorrection])"
+                    cell.settingDescription.text = "\(LevelPackSetup.shared.powerUpHiddenUnlockedDescriptionArray[powerUpIndexCorrection])"
                 }
                 // Only show pack name in unlock description if that pack is available to play
 
@@ -789,7 +789,7 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
             
             cell.iconImage.backgroundColor = #colorLiteral(red: 0, green: 0, blue: 0, alpha: 0.1483144264)
             cell.iconImage.layer.cornerRadius = cell.iconImage.frame.size.height/2
-            cell.settingDescription.text = LevelPackSetup().achievementsNameArray[indexPath.row]
+            cell.settingDescription.text = LevelPackSetup.shared.achievementsNameArray[indexPath.row]
             cell.settingDescription.font = cell.settingDescription.font.withSize(15)
             cell.centreLabel.text = ""
             cell.settingState.text = ""
@@ -798,7 +798,7 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
                 cell.decriptionFullWidthConstraint.isActive = false
                 cell.descriptionTickWidthConstraint.isActive = true
                 cell.tickImage.isHidden = false
-                cell.setIcon(UIImage(named: LevelPackSetup().achievementsImageArray[indexPath.row])!, recolour: false)
+                cell.setIcon(UIImage(named: LevelPackSetup.shared.achievementsImageArray[indexPath.row])!, recolour: false)
             } else {
                 cell.setLabelColour(#colorLiteral(red: 0.1607843137, green: 0, blue: 0.2352941176, alpha: 0.25))
                 cell.settingDescription.font = cell.settingDescription.font.withSize(16)
@@ -830,7 +830,7 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
             if totalStatsArray[0].appIconUnlockedArray[indexPath.row] {
                 appIconSetting = indexPath.row
                 defaults.set(appIconSetting, forKey: "appIconSetting")
-                changeIcon(to: LevelPackSetup().appIconNameArray[indexPath.row])
+                changeIcon(to: LevelPackSetup.shared.appIconNameArray[indexPath.row])
             }
             // Don't allow selection if app icon is locked
         }
@@ -987,7 +987,7 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
             guard totalStatsArray[0].appIconUnlockedArray[index] else { return }
             appIconSetting = index
             defaults.set(appIconSetting, forKey: "appIconSetting")
-            changeIcon(to: LevelPackSetup().appIconNameArray[index])
+            changeIcon(to: LevelPackSetup.shared.appIconNameArray[index])
             return
         }
         guard totalStatsArray[0].themeUnlockedArray[index] else { return }

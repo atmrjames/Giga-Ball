@@ -43,7 +43,7 @@ class Playing: GKState {
             scene.newItemsBool = false
             if scene.packNumber > 1 {
                 if scene.numberOfLevels == 1  {
-                    scene.previousHighscore = scene.packLevelHighScoresArray![scene.packNumber-2][scene.levelNumber-LevelPackSetup().startLevelNumber[scene.packNumber]]
+                    scene.previousHighscore = scene.packLevelHighScoresArray![scene.packNumber-2][scene.levelNumber-LevelPackSetup.shared.startLevelNumber[scene.packNumber]]
                 } else {
                     scene.previousHighscore = scene.totalStatsArray[0].packHighScores[scene.packNumber-2]
                 }
@@ -275,7 +275,7 @@ class Playing: GKState {
             
             var waitDuration = 0.0
             
-            if scene.levelNumber == LevelPackSetup().startLevelNumber[scene.packNumber] || scene.levelNumber == 0 || scene.numberOfLevels == 1 {
+            if scene.levelNumber == LevelPackSetup.shared.startLevelNumber[scene.packNumber] || scene.levelNumber == 0 || scene.numberOfLevels == 1 {
                 scene.firstLevel = true
                 scene.showInbetweenView()
                 scene.firstLevel = false

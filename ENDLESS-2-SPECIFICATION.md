@@ -2959,6 +2959,17 @@ testers:
   falling power-up's position by `brickWidth`, so a bare `GameScene()` with a power-up on
   screen traps converting NaN to Int. A real scene is always laid out before play.
 
+**Round 375: one copy of the game's tables.**
+
+The device log's other hitch, `HITCH 41ms after: brick hit, power-up dropped`, measured: a
+`LevelPackSetup` costs 4.4ms to build - its image arrays are a `UIImage(named:)` per theme, ball,
+paddle, level and power-up - and every one of its properties is a `let`, so every instance is the
+same table. The game built a fresh one in more than a hundred places, some mid-play: a falling
+power-up's halo built two to choose its colour. `LevelPackSetup.shared` is built once and every
+call in the app asks it; tests still build their own where they like, which is the same table.
+`SharedTablesTests`. The halo itself (an `SKShapeNode` with `glowWidth`) costs 1.5-3ms to add
+and one long frame the first time a drop glows; left as it is for now.
+
 **Round 374: first hits, and every layout conflict in the logs.**
 
 - **The first hit of a Spawner, Exploding or Portal brick cost 7 to 13ms** - measured by hitting

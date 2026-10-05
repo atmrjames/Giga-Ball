@@ -199,7 +199,7 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
         
         showAnimate()
         
-        if (levelNumber == LevelPackSetup().startLevelNumber[packNumber] && firstLevel) || (levelNumber == 0 && firstLevel) || firstLevel {
+        if (levelNumber == LevelPackSetup.shared.startLevelNumber[packNumber] && firstLevel) || (levelNumber == 0 && firstLevel) || firstLevel {
             showAnimateDuration = 0
             levelNumber = levelNumber-1
             levelNumberCorrected = levelNumberCorrected-1
@@ -661,8 +661,8 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
 
     func updateLabels() {
         totalScoreLabel.text = String(totalScore)
-        levelNumberCorrected = levelNumber-LevelPackSetup().startLevelNumber[packNumber]+1
-        numberOfPackLevels = LevelPackSetup().numberOfLevels[packNumber]
+        levelNumberCorrected = levelNumber-LevelPackSetup.shared.startLevelNumber[packNumber]+1
+        numberOfPackLevels = LevelPackSetup.shared.numberOfLevels[packNumber]
         speedBonusLabel.text = String(levelScoreBonus)
         levelScoreLabel.text = String(levelScore)
         if levelNumber == 0 {
@@ -676,14 +676,14 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
         showModeIcon()
         if numberOfLevels == 1 && levelNumber > 0 {
             packNameLabel.text = "Single Level Mode"
-            levelNumberLabel.text = LevelPackSetup().levelNameArray[self.levelNumber]
+            levelNumberLabel.text = LevelPackSetup.shared.levelNameArray[self.levelNumber]
             levelNameLabel.text = ""
         }
         if numberOfLevels > 1 {
-            packNameLabel.text = "\(LevelPackSetup().levelPackNameArray[packNumber])"
+            packNameLabel.text = "\(LevelPackSetup.shared.levelPackNameArray[packNumber])"
             levelNumberLabel.text = "Level \(self.levelNumberCorrected) of \(self.numberOfPackLevels)"
             swapTheLevelEmphasis()
-            levelNameLabel.text = LevelPackSetup().levelNameArray[self.levelNumber]
+            levelNameLabel.text = LevelPackSetup.shared.levelNameArray[self.levelNumber]
         }
 
         if let challenge = DailyChallengeSession.shared.active {
@@ -695,7 +695,7 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
             // Yesterday" is a long line for a label sized for "Classic Pack", and an iPhone SE
             // has fifty points less to put it in
             levelNumberLabel.text = challenge.mode == .classic
-                ? LevelPackSetup().levelNameArray[levelNumber]
+                ? LevelPackSetup.shared.levelNameArray[levelNumber]
                 : challenge.mode.name
             // Play-test request: the splash into the game says Daily Challenge, the
             // date, the mode, and the twists with their icons - the last look at the

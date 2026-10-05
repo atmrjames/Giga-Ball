@@ -397,7 +397,7 @@ class LevelStatsViewController: UIViewController, UICollectionViewDelegate, UICo
 
     func updateLabels() {
         swapHeaderIfNeeded()
-        levelNameLabel.text = LevelPackSetup().levelNameArray[levelNumber!].uppercased()
+        levelNameLabel.text = LevelPackSetup.shared.levelNameArray[levelNumber!].uppercased()
         levelNameLabel.applyGigaBallGlow(radius: GigaBallGlow.headingRadius)
         // The mode's title glows like the wordmark does (play-test round 14)
         if levelNumber == 0 {
@@ -406,7 +406,7 @@ class LevelStatsViewController: UIViewController, UICollectionViewDelegate, UICo
             packNameAndLevelNumberLabel.text = ""
             // No sub-heading in endless mode
         } else {
-            packNameAndLevelNumberLabel.text = LevelPackSetup().levelPackNameArray[packNumber!]+" - Level "+String(levelNumber!-startLevel!+1)
+            packNameAndLevelNumberLabel.text = LevelPackSetup.shared.levelPackNameArray[packNumber!]+" - Level "+String(levelNumber!-startLevel!+1)
         }
         if levelNumber == 0, let icon = GameMode.menuIcon(for: GameMode.current(in: defaults)) {
             levelImageView.image = icon
@@ -419,7 +419,7 @@ class LevelStatsViewController: UIViewController, UICollectionViewDelegate, UICo
             // asks `GameMode.menuIcon`. This asks it too, which is the point: one decision
             // about what a mode looks like, in one place
         } else {
-            levelImageView.image = LevelPackSetup().levelImageArray[levelNumber!]
+            levelImageView.image = LevelPackSetup.shared.levelImageArray[levelNumber!]
         }
         levelImageView.layer.masksToBounds = false
         
@@ -743,7 +743,7 @@ class LevelStatsViewController: UIViewController, UICollectionViewDelegate, UICo
 
         let board = packNumber == 1 ? GameMode.current(in: defaults).modeLeaderboard : nil
         let gcViewController = GKGameCenterViewController(
-            leaderboardID: board ?? LevelPackSetup().levelLeaderboardsArray[levelNumber!],
+            leaderboardID: board ?? LevelPackSetup.shared.levelLeaderboardsArray[levelNumber!],
             playerScope: .global, timeScope: .allTime)
         gcViewController.gameCenterDelegate = self
         // **The mode's own best-height board** (James, round 360: "The Game Center button to

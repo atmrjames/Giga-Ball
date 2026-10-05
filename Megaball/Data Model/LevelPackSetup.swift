@@ -14,6 +14,17 @@ import GameKit
 // This is always constant and never changes throughout use of app - can be referred to directly
 
 class LevelPackSetup {
+
+    /// The one copy the game reads from.
+    ///
+    /// **Built once, not on every question** (round 375). Every property here is a `let`, so
+    /// every instance is the same table - and building one costs 4.4 milliseconds, most of it
+    /// the image arrays, each a `UIImage(named:)` per theme, ball, paddle, level and power-up.
+    /// The game asked for a fresh one in more than a hundred places, several of them mid-play:
+    /// the colour of a falling power-up's halo built two for every drop, which is where James's
+    /// phone log put `HITCH 41ms after: brick hit, power-up dropped`. Built the first time it is
+    /// asked for, on whatever thread asks, as Swift builds every `static let`.
+    static let shared = LevelPackSetup()
     let numberOfLevels: [Int] = [1, 1, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10]
     let startLevelNumber: [Int] = [0, 0, 1, 11, 21, 31, 41, 51, 61, 71, 81, 91, 101]
     
@@ -715,14 +726,14 @@ class LevelPackSetup {
     /// Both answers depend on nothing but the arrays declared above, which are constants, so
     /// there is nothing for a per-instance answer to be right about that a shared one is not.
     private static let retiredIndices: Set<Int> = {
-        let setup = LevelPackSetup()
+        let setup = LevelPackSetup.shared
         return Set(setup.powerUpNameArray.indices.filter {
             PowerUpCatalogue.powerUp(named: setup.powerUpNameArray[$0])?.availability == .retired
         })
     }()
 
     static let referenceOrder: [Int] = {
-        let setup = LevelPackSetup()
+        let setup = LevelPackSetup.shared
         let retired = LevelPackSetup.retiredIndices
         return setup.powerUpCorrectOrderArray.filter { retired.contains($0) == false }
     }()

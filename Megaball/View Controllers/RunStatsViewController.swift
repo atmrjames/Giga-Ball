@@ -248,7 +248,7 @@ class RunStatsViewController: UIViewController, UITableViewDataSource, UITableVi
             ?? UITableViewCell(style: .value1, reuseIdentifier: "highlight")
         cell.backgroundColor = .clear
         let highlight = highlights[indexPath.row]
-        let setup = LevelPackSetup()
+        let setup = LevelPackSetup.shared
 
         cell.textLabel?.text = setup.powerUpNameArray.indices.contains(highlight.index)
             ? "\(highlight.title): \(setup.powerUpNameArray[highlight.index])" : highlight.title

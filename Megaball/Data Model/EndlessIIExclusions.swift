@@ -96,7 +96,7 @@ extension GameScene {
     /// silently empty it, and returning nothing for a power-up that ends nothing - which is
     /// most of them, and the reason this reads as short.
     static func endlessIIExclusiveIndicesEnded(byCollecting index: Int) -> [Int] {
-        let names = LevelPackSetup().powerUpNameArray
+        let names = LevelPackSetup.shared.powerUpNameArray
         guard names.indices.contains(index),
               let collected = EndlessIIExclusive(powerUpName: names[index]) else { return [] }
         return EndlessIIExclusions.ended(byCollecting: collected)

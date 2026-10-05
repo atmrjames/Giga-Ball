@@ -2476,3 +2476,27 @@ final class DensityStepArrivalTests: XCTestCase {
         XCTAssertLessThan(spent, 0.002, "eleven density questions took \(Int(spent*1000))ms")
     }
 }
+
+/// **The game's tables are built once** (round 375, James's phone: `HITCH 41ms after: brick hit,
+/// power-up dropped`). A `LevelPackSetup` costs about 4ms to build - most of it a `UIImage` per
+/// theme, ball, paddle, level and power-up - and a falling power-up's halo built two to read its
+/// colour. Everything the game asks now asks the one shared copy.
+final class SharedTablesTests: XCTestCase {
+
+    func testThereIsOneSharedTableAndItIsTheSameAsAFreshOne() {
+        XCTAssertTrue(LevelPackSetup.shared === LevelPackSetup.shared)
+        let fresh = LevelPackSetup()
+        XCTAssertEqual(LevelPackSetup.shared.powerUpNameArray, fresh.powerUpNameArray)
+        XCTAssertEqual(LevelPackSetup.shared.levelNameArray, fresh.levelNameArray)
+        XCTAssertEqual(LevelPackSetup.shared.startLevelNumber, fresh.startLevelNumber)
+    }
+
+    /// A drop's halo colour is a lookup, not a table build.
+    func testAHalosColourIsCheap() {
+        _ = GameScene.powerUpGlowColour(forIndex: 0)
+        let started = Date.timeIntervalSinceReferenceDate
+        for index in 0..<60 { _ = GameScene.powerUpGlowColour(forIndex: index) }
+        XCTAssertLessThan(Date.timeIntervalSinceReferenceDate - started, 0.01,
+                          "sixty halo colours took longer than one table build")
+    }
+}
