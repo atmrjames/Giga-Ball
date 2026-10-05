@@ -2967,8 +2967,10 @@ paddle, level and power-up - and every one of its properties is a `let`, so ever
 same table. The game built a fresh one in more than a hundred places, some mid-play: a falling
 power-up's halo built two to choose its colour. `LevelPackSetup.shared` is built once and every
 call in the app asks it; tests still build their own where they like, which is the same table.
-`SharedTablesTests`. The halo itself (an `SKShapeNode` with `glowWidth`) costs 1.5-3ms to add
-and one long frame the first time a drop glows; left as it is for now.
+`SharedTablesTests`. The halo itself (an `SKShapeNode` with `glowWidth`) costs 1.5-3ms to add.
+A long frame seen once beside the first glowing drops did not come back with the tables shared:
+the first glowing second measured 16.7ms at worst with a warm-up halo and without one, so no
+warm-up was kept. Two more notes for the device's hitch log: `build-in` and `intro cleared`.
 
 **Round 374: first hits, and every layout conflict in the logs.**
 

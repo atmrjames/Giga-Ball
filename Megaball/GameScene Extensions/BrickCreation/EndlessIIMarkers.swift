@@ -509,6 +509,7 @@ extension GameScene {
 
     func runEndlessIIBuildIn() {
         guard endlessIIBuildInBricks.isEmpty == false else { return }
+        noteForHitchWatch("build-in")
         guard endlessMode else { return runClassicBuildIn() }
         endlessIIBuildingIn = true
 

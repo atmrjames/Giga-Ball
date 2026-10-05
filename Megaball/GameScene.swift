@@ -8172,6 +8172,7 @@ laserTimer?.invalidate()
 	}
 
 	@objc func levelIntroDidClearReceived(notification: Notification) {
+		noteForHitchWatch("intro cleared")
 		endlessIILevelIntroShowing = false
 		rollInLivesRow()
 	}
