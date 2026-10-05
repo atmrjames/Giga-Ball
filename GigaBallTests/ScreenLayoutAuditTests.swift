@@ -16,6 +16,7 @@
 //
 
 import XCTest
+import ObjectiveC
 import UIKit
 @testable import Giga_Ball
 
@@ -1860,5 +1861,55 @@ final class PauseMenuButtonTests: XCTestCase {
                 XCTAssertEqual(cell.accessibilityLabel, name, "\(sender) row \(row), let go")
             }
         }
+    }
+}
+
+
+/// **No in-game screen asks for two layouts at once** (round 374, from James's phone log: on every
+/// run, conflicts between the ball rack's height and its collapsed zero, the storyboard's
+/// 414-by-736 card against its own safe-area pins, and the score and resume labels' storyboard
+/// ties against what the code and the stack had put in their place).
+///
+/// UIKit resolves a conflict by breaking a constraint and says so only in the console, so a render
+/// cannot see it - the screen looks right because the constraint it broke was the one that should
+/// have gone. This listens where UIKit announces the break (a private `UIView` hook, in the test
+/// target only, handed straight on to UIKit's own and put back afterwards) while the in-game
+/// gallery lays every screen out at every shape.
+final class InGameScreenConflictTests: XCTestCase {
+
+    private static var broken: [String] = []
+
+    func testNoInGameScreenBreaksAConstraintToLayItselfOut() throws {
+        let selector = NSSelectorFromString(
+            "engine:willBreakConstraint:dueToMutuallyExclusiveConstraints:")
+        let method = try XCTUnwrap(class_getInstanceMethod(UIView.self, selector),
+                                   "UIKit has renamed its hook; this test needs a new one")
+        typealias Hook = @convention(c) (UIView, Selector, AnyObject, NSLayoutConstraint,
+                                         NSArray) -> Void
+        let original = unsafeBitCast(method_getImplementation(method), to: Hook.self)
+        let listening: @convention(block) (UIView, AnyObject, NSLayoutConstraint, NSArray)
+            -> Void = { view, engine, constraint, all in
+                InGameScreenConflictTests.broken.append(
+                    "\(constraint)\n    " + (all as? [NSLayoutConstraint] ?? []).map { "\($0)" }
+                        .joined(separator: "\n    "))
+                original(view, selector, engine, constraint, all)
+            }
+        let previous = method_setImplementation(method, imp_implementationWithBlock(listening))
+        defer { method_setImplementation(method, previous) }
+        InGameScreenConflictTests.broken = []
+
+        for name in ["testWriteTheWholeFamilyOut", "testEveryEndingPutsTheBoardAboveTheStatistics",
+                     "testADailyEndingPutsTheBoardBetweenTheScoreAndTheStatistics"] {
+            InGameGalleryTests(selector: NSSelectorFromString(name)).invokeTest()
+        }
+        for name in ["testNoMenuRunsItsContentToTheEdgeOfALargeWindow",
+                     "testNothingMovesWhenTheSameWindowChangesWidthClass",
+                     "testNoScreenChangesWidthWhenTheWindowCrossesTheWidthClass"] {
+            MenuGalleryAuditTests(selector: NSSelectorFromString(name)).invokeTest()
+        }
+        // And every menu screen, at a phone's size, an iPad's and either side of the width class
+        // on a Mac, which is where James's round 369 log carried the rest
+        XCTAssertEqual(InGameScreenConflictTests.broken, [],
+                       "UIKit broke a constraint to lay an in-game screen out")
     }
 }

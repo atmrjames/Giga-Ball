@@ -1108,12 +1108,19 @@ final class BallRackView: UIView {
         balls.axis = .horizontal
         balls.alignment = .center
         addSubview(balls)
+        let ownHeight = heightAnchor.constraint(equalTo: balls.heightAnchor, constant: padding*2)
+        ownHeight.priority = .required - 1
+        // **Just under required** (round 374). A screen with no balls line collapses the rack to
+        // nothing with a required zero height of its own, and against a required pill height the
+        // two were a conflict on every such screen - twelve of them in a gallery run, and in
+        // James's phone log at the end of every run. One point below required, nothing else
+        // ever competes with it, so it still sets the height whenever the rack is showing
         NSLayoutConstraint.activate([
             balls.centerXAnchor.constraint(equalTo: centerXAnchor),
             balls.centerYAnchor.constraint(equalTo: centerYAnchor),
             leadingAnchor.constraint(equalTo: balls.leadingAnchor, constant: -padding),
             trailingAnchor.constraint(equalTo: balls.trailingAnchor, constant: padding),
-            heightAnchor.constraint(equalTo: balls.heightAnchor, constant: padding*2),
+            ownHeight,
         ])
         // The pill is the stack plus the HUD's own padding on all four sides, rather than a
         // fixed height: a ball sized for an iPad needs a taller pill than one sized for a

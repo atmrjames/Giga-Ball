@@ -802,7 +802,21 @@ final class TallySoundTests: XCTestCase {
     }
 
     func testTheBeepIsInTheBundle() {
-        XCTAssertNotNil(Bundle.main.url(forResource: "countdownTick", withExtension: "m4a"))
+        XCTAssertNotNil(Bundle.main.url(forResource: "countdownTick", withExtension: "caf"))
+    }
+
+    /// **No in-game sound needs decoding when it first plays** (round 374, from James's phone:
+    /// first hits of Spawner, Exploding and Portal bricks among the hitches - 7 to 13ms of AAC
+    /// decoding each, in the frame of the hit). Every sound SpriteKit plays is PCM in a CAF or one
+    /// of the short original MP3s; the one AAC left is the button click, which an
+    /// `AVAudioPlayer` decodes ahead of time.
+    func testNoInGameSoundIsCompressedAudioThatDecodesOnFirstPlay() throws {
+        let sounds = Bundle.main.urls(forResourcesWithExtension: "m4a", subdirectory: nil) ?? []
+        XCTAssertEqual(sounds.map { $0.deletingPathExtension().lastPathComponent }, ["buttonClick"],
+                       "an AAC sound SpriteKit plays costs its first frame a decode")
+        for name in ["spawner", "explosion", "portalJump", "fixedBrick", "cull", "infill"] {
+            XCTAssertNotNil(GameScene.mayhemSound(name), "\(name) is missing")
+        }
     }
 }
 

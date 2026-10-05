@@ -2959,6 +2959,36 @@ testers:
   falling power-up's position by `brickWidth`, so a bare `GameScene()` with a power-up on
   screen traps converting NaN to Int. A real scene is always laid out before play.
 
+**Round 374: first hits, and every layout conflict in the logs.**
+
+- **The first hit of a Spawner, Exploding or Portal brick cost 7 to 13ms** - measured by hitting
+  every brick of real rows in a presented scene, and only with sound on: SpriteKit decodes a sound
+  the first time it plays it, on the main thread, and these were four-second AAC `.m4a`s. The
+  eleven sounds SpriteKit plays are 16-bit PCM `.caf` now (`afconvert -f caff -d LEI16`, lossless
+  from the delivered files), so a first play is a read and not a decode: Spawner's first hit went
+  from 12.9 to 1.3ms. The sounds folder grows from 0.7MB to 6.2MB. `buttonClick` stays an `.m4a`,
+  because an `AVAudioPlayer` plays it and decodes ahead of time; `TallySound` takes the CAF tick
+  first. `testNoInGameSoundIsCompressedAudioThatDecodesOnFirstPlay`.
+- **The Auto Layout conflicts are gone** from every in-game screen and every menu screen at every
+  shape, and `InGameScreenConflictTests` says so: it listens on UIKit's private
+  `engine:willBreakConstraint:dueToMutuallyExclusiveConstraints:` (test target only, handed on to
+  UIKit's own and restored) while the in-game gallery and the menu audits lay everything out.
+  Thirty-odd per gallery run before; it fails against the old storyboard.
+  - The ball rack's own height is a point below required, so collapsing it to nothing is not a
+    conflict.
+  - The level intro's and pause screen's regular-width 414 by 736 was always broken by their own
+    safe-area pins, on an iPad and on James's Mac; removed.
+  - The storyboard ties that round 363's sweep and round 329's retirement take away each pass -
+    the score columns' centre, edge and stacked ties, the resume card's label ties - are priority
+    999, because UIKit reinstalls them on a trait change part-way through a pass, which is when
+    they were logged. Nothing competes with them where they apply, and the sweeps still clear them.
+  - Three tables pinned to both safe-area edges and centred as well - Settings and both level
+    lists - had their centre ties at 999: the column's insets differ by a thirtieth of a point
+    after pixel rounding, and the centre tie said they could not.
+  Every in-game render compared pixel for pixel before and after: identical but for six iPad
+  between-levels and intro renders whose text moved by under a pixel (looked at: no visible
+  difference). The menus are identical but for the Daily Challenge's countdown, which ticked.
+
 **Round 373: the device's hitch log, read.**
 
 James's phone (iPhone19,7, iOS 27.0.1), two Mayhem runs with round 371's `hitchWatch`: every
@@ -3016,7 +3046,7 @@ the music crossfade does not hold on a device.
   partner following a resize and an off-centre anchor. Left as equivalent: the button row's
   re-layout threshold (a mutant only re-lays out more often), `>=` against `>` at a float
   boundary, and the underButtons blend (both ends are 85).
-- **Queued for 1.4, not 1.3: the Auto Layout warnings in James's Mac log** (round 369). None show
+- **Queued for 1.4, not 1.3 - and done in round 374 after all: the Auto Layout warnings in James's Mac log** (round 369). None show
   in a phone-sized run; they are storyboard scenes designed at 414 by 736 meeting a larger
   window, the ball rack's zero-height rule, pairs of fixed-height labels, and the mode row's name
   against its play button at some widths. UIKit resolves every one, nothing on screen is wrong,

@@ -1593,7 +1593,15 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	/// `.m4a` because that is what arrived - "portalJump.m4a in File Sharing is a sound effect
 	/// file to play when the ball goes through a portal" - and `.mp3` first because the ten
 	/// sounds already in the game are mp3s and a replacement dropped in beside one should win.
-	static let mayhemSoundKinds = ["mp3", "m4a"]
+	static let mayhemSoundKinds = ["caf", "mp3", "m4a"]
+	// **CAF first, and every in-game sound is one now** (round 374). James's phone log had first
+	// hits of Spawner, Exploding and Portal bricks among its hitches, and they were the sounds:
+	// SpriteKit decodes a sound file the first time it plays it, on the main thread, and an AAC
+	// `.m4a` of four seconds took 7 to 13 milliseconds to decode in the frame of the hit - with
+	// sound off the same first hits cost under one. Stored as 16-bit PCM there is nothing to
+	// decode, only a read: Spawner's first hit went from 12.9ms to 1.3. Converted losslessly from
+	// the delivered files with `afconvert -f caff -d LEI16`; `buttonClick` stays an `.m4a`,
+	// because an `AVAudioPlayer` plays it and `prepareToPlay` decodes it ahead of time
 
 	/// Plays one of those, if it exists and the player wants sounds.
 	///

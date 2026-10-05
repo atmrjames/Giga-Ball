@@ -105,7 +105,8 @@ enum TallySound {
     }
 
     private static var player: AVAudioPlayer? = {
-        guard let url = Bundle.main.url(forResource: "countdownTick", withExtension: "m4a"),
+        guard let url = Bundle.main.url(forResource: "countdownTick", withExtension: "caf")
+                ?? Bundle.main.url(forResource: "countdownTick", withExtension: "m4a"),
               let made = try? AVAudioPlayer(contentsOf: url) else { return nil }
         made.volume = volume
         made.enableRate = true
