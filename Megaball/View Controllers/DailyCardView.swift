@@ -44,6 +44,10 @@ final class DailyCardView: UIView {
     private let boardCard = UIView()
     private let boardTitle = UILabel()
     private let boardRows = UIStackView()
+    /// The leading places, in a window of their own (round 376).
+    let boardScroll = UIScrollView()
+    /// The player's own place, pinned above the leading places (round 376).
+    let ownRow = UIStackView()
     private let lowerStack = UIStackView()
 
     private func build() {
@@ -116,10 +120,47 @@ final class DailyCardView: UIView {
         boardTitle.textColor = UIColor(white: 1, alpha: 0.5)
         boardTitle.textAlignment = .center
         boardRows.axis = .vertical
-        boardRows.spacing = 4
-        let boardStack = UIStackView(arrangedSubviews: [boardTitle, boardRows])
+        boardRows.spacing = DailyCardView.boardRowGap
+        boardRows.translatesAutoresizingMaskIntoConstraints = false
+        boardScroll.translatesAutoresizingMaskIntoConstraints = false
+        boardScroll.showsHorizontalScrollIndicator = false
+        boardScroll.alwaysBounceVertical = false
+        boardScroll.contentInsetAdjustmentBehavior = .never
+        boardScroll.addSubview(boardRows)
+        let shownAtOnce = boardScroll.heightAnchor.constraint(equalTo: boardRows.heightAnchor)
+        shownAtOnce.priority = .defaultHigh
+        NSLayoutConstraint.activate([
+            boardRows.topAnchor.constraint(equalTo: boardScroll.contentLayoutGuide.topAnchor),
+            boardRows.bottomAnchor.constraint(equalTo: boardScroll.contentLayoutGuide.bottomAnchor),
+            boardRows.leadingAnchor.constraint(equalTo: boardScroll.contentLayoutGuide.leadingAnchor,
+                                               constant: DailyCardView.ownRowInset),
+            boardRows.trailingAnchor.constraint(equalTo: boardScroll.contentLayoutGuide.trailingAnchor,
+                                                constant: -DailyCardView.ownRowInset),
+            boardRows.widthAnchor.constraint(equalTo: boardScroll.frameLayoutGuide.widthAnchor,
+                                             constant: -2*DailyCardView.ownRowInset),
+            // In by the pinned row's own inset, so the two lists' columns line up - and it
+            // leaves the scroll bar a margin to run in rather than over the scores
+            shownAtOnce,
+            boardScroll.heightAnchor.constraint(lessThanOrEqualToConstant:
+                                                    DailyCardView.boardWindowHeight),
+        ])
+        // **The board scrolls inside its card** (James, round 376: "allow it to be scrollable,
+        // showing at least the top 10 players"). As tall as its rows up to four and a half of
+        // them, and the half is deliberate: a row cut through the middle is what says there is
+        // more below, where a window that ended on a whole row would look like the whole board.
+        // The page has its own scroll as well (round 371), for a window too short for the card;
+        // this one is the board's, so ten places do not push the day off the top to be read
+        ownRow.axis = .vertical
+        ownRow.isLayoutMarginsRelativeArrangement = true
+        ownRow.directionalLayoutMargins = NSDirectionalEdgeInsets(
+            top: 4, leading: DailyCardView.ownRowInset,
+            bottom: 4, trailing: DailyCardView.ownRowInset)
+        ownRow.layer.cornerRadius = 8
+        ownRow.isHidden = true
+        let boardStack = UIStackView(arrangedSubviews: [boardTitle, ownRow, boardScroll])
         boardStack.axis = .vertical
         boardStack.spacing = 6
+        boardStack.setCustomSpacing(DailyCardView.ownRowGap, after: ownRow)
         boardStack.translatesAutoresizingMaskIntoConstraints = false
         boardCard.addSubview(boardStack)
         boardCard.isHidden = true
@@ -225,7 +266,7 @@ final class DailyCardView: UIView {
     /// can be reused for any day the pager scrolls to.
     func show(key: String, isToday: Bool, record: DailyChallengeRecord?,
               standing: LeaderboardStanding?, boardBest: Int? = nil,
-              board: [DailyBoardRow] = [], players: Int = 0) {
+              board: [DailyBoardRow] = [], own: DailyBoardRow? = nil, players: Int = 0) {
         let challenge = DailyChallengeGenerator.challenge(forKey: key)
 
         modeLabel.text = challenge.mode.name.uppercased()
@@ -279,8 +320,8 @@ final class DailyCardView: UIView {
         }
 
         showTwists(challenge)
-        showBoard(board, unit: challenge.mode == .classic ? "" : "m", players: players)
-        if board.isEmpty {
+        showBoard(board, own: own, unit: challenge.mode == .classic ? "" : "m", players: players)
+        if board.isEmpty && own == nil {
             showResult(record, mode: challenge.mode, isToday: isToday, standing: standing,
                        boardBest: boardBest)
         } else {
@@ -293,57 +334,43 @@ final class DailyCardView: UIView {
         // the leader's figure as its first row - so the second card was the same facts twice
     }
 
-    /// The day's leading places, one row each (round 354).
+    /// The day's leading places, one row each (round 354), under the player's own (round 376).
     ///
     /// Rank, name and score in three columns so the scores line up down the right, and the
-    /// player's own row in lime - which is also how a player placed below the rows shown finds
-    /// themselves, added under them by `DailyBoardRow.shown`.
-    private func showBoard(_ rows: [DailyBoardRow], unit: String, players: Int = 0) {
+    /// player's own row in lime. Given `own`, the player's place is pinned above the board on a
+    /// band of its own with a gap under it - "the current player at the top with a gap and
+    /// highlighted with their position" - and the leaders scroll beneath it; a player in the top
+    /// ten is in both places, as on Game Center's board. Without it the rows are one list, with
+    /// a player below the leaders set apart at its foot (`DailyBoardRow.shown`, round 357).
+    private func showBoard(_ rows: [DailyBoardRow], own: DailyBoardRow? = nil, unit: String,
+                           players: Int = 0) {
         boardRows.arrangedSubviews.forEach { $0.removeFromSuperview() }
-        boardCard.isHidden = rows.isEmpty
+        ownRow.arrangedSubviews.forEach { $0.removeFromSuperview() }
+        boardCard.isHidden = rows.isEmpty && own == nil
         boardTitle.text = DailyCardView.boardHeading(players: players)
-        let lime = #colorLiteral(red: 0.8235294118, green: 1, blue: 0, alpha: 1)
-        let leading = rows.first?.isLocalPlayer == true
+        let leading = own?.rank == 1 || rows.first?.isLocalPlayer == true
         DailyCardView.dress(boardCard, glass: boardGlass, lime: leading)
         boardTitle.textColor = leading ? DailyCardView.onLime : UIColor(white: 1, alpha: 0.5)
         // **Lime when the player leads** (James, round 357: "If the current user is the top
         // scorer make the top score section background colour giga-ball yellow/green with the
         // text and icons dark purple") - the look the posted-score card wore for a leader in
         // round 350, moved to the card that now stands in for it
+
+        ownRow.isHidden = own == nil
+        if let own {
+            ownRow.addArrangedSubview(DailyCardView.boardLine(for: own, unit: unit,
+                                                              leading: leading))
+            ownRow.backgroundColor = leading
+                ? DailyCardView.onLime.withAlphaComponent(0.12)
+                : DailyCardView.lime.withAlphaComponent(0.14)
+            // A band behind it as well as the lime words, so it reads as the player's own line
+            // rather than the first of the list - it is the one row not in rank order
+        }
+
         for (position, row) in rows.enumerated() {
-            let own = leading ? DailyCardView.onLime : lime
-            let colour = row.isLocalPlayer ? own : (leading ? DailyCardView.onLime : UIColor.white)
-            let rank = UILabel()
-            rank.text = "\(row.rank)"
-            rank.font = UIViewController.gameScoreFont(ofSize: 14)
-            rank.textColor = row.isLocalPlayer || leading
-                ? colour : UIColor(white: 1, alpha: 0.55)
-            rank.widthAnchor.constraint(equalToConstant: 26).isActive = true
-            let name = UILabel()
-            name.text = row.name
-            name.font = .systemFont(ofSize: 15, weight: row.isLocalPlayer ? .bold : .regular)
-            name.textColor = colour
-            name.lineBreakMode = .byTruncatingTail
-            name.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
-            let score = UILabel()
-            score.text = "\(row.score)" + unit
-            score.font = UIViewController.gameScoreFont(ofSize: 15)
-            score.textColor = colour
-            score.textAlignment = .right
-            score.setContentHuggingPriority(.required, for: .horizontal)
-            score.setContentCompressionResistancePriority(.required, for: .horizontal)
-            let line = UIStackView(arrangedSubviews: [rank, name, score])
-            line.axis = .horizontal
-            line.spacing = 8
-            line.alignment = .firstBaseline
-            line.isAccessibilityElement = true
-            line.accessibilityLabel = "\(row.rank), \(row.name), \(score.text ?? "")"
-            // One element a row, read the way it is laid out: place, player, score
-            line.accessibilityTraits = .button
-            line.accessibilityHint = "Opens the day's leaderboard"
-            // The card under the row is the door to Game Center's board, so the row says so
-            boardRows.addArrangedSubview(line)
-            if position > 0, row.isLocalPlayer, row.rank > rows[position - 1].rank + 1,
+            boardRows.addArrangedSubview(DailyCardView.boardLine(for: row, unit: unit,
+                                                                 leading: leading))
+            if own == nil, position > 0, row.isLocalPlayer, row.rank > rows[position - 1].rank + 1,
                let above = boardRows.arrangedSubviews.dropLast().last {
                 boardRows.setCustomSpacing(14, after: above)
             }
@@ -351,6 +378,79 @@ final class DailyCardView: UIView {
             // bottom of the leaderboard section with a little gap, showing their position and
             // score"). The gap is what says the places between are not shown
         }
+
+        boardScroll.contentOffset = .zero
+        boardScroll.indicatorStyle = leading ? .black : .white
+        // One card is reused by the pager for every day, and each day's board opens at its top
+        DispatchQueue.main.async { [weak self] in
+            guard let self, self.boardScroll.contentSize.height
+                    > self.boardScroll.bounds.height + 0.5 else { return }
+            self.boardScroll.flashScrollIndicators()
+        }
+        // The menus' affordance (`applyScrollAffordance`): an indicator shown once, and only
+        // when there is more of the board than its window holds
+    }
+
+    /// The board's lime, for the player's own row on an ordinary card.
+    static let lime = #colorLiteral(red: 0.8235294118, green: 1, blue: 0, alpha: 1)
+    /// The space between one place and the next.
+    static let boardRowGap: CGFloat = 4
+    /// The gap under the player's own place, which says the rows below are a different list.
+    static let ownRowGap: CGFloat = 14
+    /// How far the pinned row's words sit inside its band, and every other row with them.
+    static let ownRowInset: CGFloat = 8
+
+    /// Four and a half places: see where the board's window is built.
+    static let boardWindowHeight: CGFloat = {
+        let sample = boardLine(for: DailyBoardRow(rank: 10, name: "Player", score: 99_999,
+                                                  isLocalPlayer: false),
+                               unit: "m", leading: false)
+        let row = sample.systemLayoutSizeFitting(UIView.layoutFittingCompressedSize).height
+        return (4*(row + boardRowGap) + 0.4*row).rounded()
+    }()
+    // Four whole places and the fifth cut through its middle. "4.5 rows" counted the gaps as
+    // well and landed at the fifth row's foot, where the cut read as a clipped line of text
+    // Measured off a row built the way every row is, rather than a font's line height times
+    // a count: the three labels share a baseline and the row is as tall as that makes it
+
+    /// One place: rank, name and score.
+    static func boardLine(for row: DailyBoardRow, unit: String, leading: Bool) -> UIStackView {
+        let own = leading ? onLime : lime
+        let colour = row.isLocalPlayer ? own : (leading ? onLime : UIColor.white)
+        let rank = UILabel()
+        rank.text = "\(row.rank)"
+        rank.font = UIViewController.gameScoreFont(ofSize: 14)
+        rank.textColor = row.isLocalPlayer || leading
+            ? colour : UIColor(white: 1, alpha: 0.55)
+        rank.adjustsFontSizeToFitWidth = true
+        rank.minimumScaleFactor = 0.6
+        rank.widthAnchor.constraint(equalToConstant: 30).isActive = true
+        // Wider than the 26 it was, and shrinking rather than clipping: the pinned row carries
+        // the player's own place, which can be a four- or five-figure number
+        let name = UILabel()
+        name.text = row.name
+        name.font = .systemFont(ofSize: 15, weight: row.isLocalPlayer ? .bold : .regular)
+        name.textColor = colour
+        name.lineBreakMode = .byTruncatingTail
+        name.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        let score = UILabel()
+        score.text = "\(row.score)" + unit
+        score.font = UIViewController.gameScoreFont(ofSize: 15)
+        score.textColor = colour
+        score.textAlignment = .right
+        score.setContentHuggingPriority(.required, for: .horizontal)
+        score.setContentCompressionResistancePriority(.required, for: .horizontal)
+        let line = UIStackView(arrangedSubviews: [rank, name, score])
+        line.axis = .horizontal
+        line.spacing = 8
+        line.alignment = .firstBaseline
+        line.isAccessibilityElement = true
+        line.accessibilityLabel = "\(row.rank), \(row.name), \(score.text ?? "")"
+        // One element a row, read the way it is laid out: place, player, score
+        line.accessibilityTraits = .button
+        line.accessibilityHint = "Opens the day's leaderboard"
+        // The card under the row is the door to Game Center's board, so the row says so
+        return line
     }
 
     private var boardGlass: UIVisualEffectView?

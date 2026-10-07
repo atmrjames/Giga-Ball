@@ -460,6 +460,41 @@ final class EndlessIIPaddleSceneTests: XCTestCase {
                        + "not the middle of the paddle")
     }
 
+    /// **Aimed Sticky over a Sticky takes the Sticky off the ring as well as off the paddle**
+    /// (James, round 376: "Aimed sticky turns continued to count down but sticky paddle stayed
+    /// with 5 turns. When aimed sticky ended, it still showed sticky paddle with 5 turns
+    /// remaining even though it wasn't actually active. It stayed like this for the rest of the
+    /// game").
+    func testAimedStickyClearsTheStickysRing() {
+        let scene = paddleScene()
+        scene.stickyPaddleCatches = 5
+        scene.stickyPaddleCatchesTotal = 5
+        scene.stickyPaddleIconBar.isHidden = false
+        scene.stickyPaddleIconBar.xScale = 1
+
+        scene.endlessIICollectAimedSticky()
+
+        XCTAssertEqual(scene.stickyPaddleCatches, 0)
+        XCTAssertTrue(scene.stickyPaddleIconBar.isHidden,
+                      "the ring reads this bar, and a bar left showing is a Sticky left showing")
+        XCTAssertEqual(scene.stickyPaddleIconBar.xScale, 0, accuracy: 0.001)
+    }
+
+    /// **The Auto-Aim mark shows while a ball waits on the paddle, when the launch will be
+    /// aimed** (James, round 376: "With sticky and auto aim active, when the ball is on the paddle
+    /// the aimed brick glow outline doesn't show until the ball is released").
+    func testAHeldLaunchIsMarkedOnlyWhenItWillBeAimed() {
+        let scene = paddleScene()
+        scene.endlessIIAutoAimOwedTurn = true
+        XCTAssertTrue(scene.heldLaunchWillBeAutoAimed, "a sticky catch paid the aim's turn")
+        scene.endlessIIAutoAimOwedTurn = false
+        XCTAssertFalse(scene.heldLaunchWillBeAutoAimed,
+                       "the first serve of a life takes no aim, so it is not marked")
+        scene.endlessIIAutoAimOwedTurn = true
+        scene.endlessIICollectAimedSticky()
+        XCTAssertFalse(scene.heldLaunchWillBeAutoAimed, "an Aimed Sticky shot is the player's own")
+    }
+
     func testTheLastAimedCatchStillOwnsItsLaunch() {
         // Round 10 report: "On the last go of an aimed sticky power up the ball stuck to
         // the paddle, no arrow appeared... The ball then fell to the bottom of the screen

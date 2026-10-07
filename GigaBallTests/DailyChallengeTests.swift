@@ -2476,6 +2476,55 @@ final class DailyAlwaysOnTests: XCTestCase {
         }
     }
 
+    /// **The description names the power-up** (James, round 376: "For the always on twist, tell
+    /// me what power up it is in the description").
+    func testTheDescriptionNamesTheDaysPowerUp() {
+        var key = "2026-11-15"
+        for _ in 0..<30 {
+            let mode = DailyChallengeGenerator.challenge(forKey: key).mode
+            if let index = DailyTwist.alwaysOnPowerUp(forKey: key, mode: mode) {
+                let name = LevelPackSetup.shared.powerUpNameArray[index]
+                XCTAssertTrue(DailyTwist.alwaysOn.blurb(forKey: key).contains(name),
+                              "\(key): the blurb does not say it is \(name)")
+            }
+            key = DailyChallengeGenerator.previousKey(of: key)!
+        }
+    }
+
+    /// **And it stays full** (James, round 376: "During the game the progress bar of the always
+    /// on power up continuously counted down and then reset. It should just stay full the whole
+    /// time") - a Mayhem clock held at its total, and a tray bar held at full width.
+    func testTheStandingPowerUpIsHeldFull() throws {
+        var key = "2026-11-15"
+        var found: (String, Int)?
+        for _ in 0..<400 {
+            if let index = DailyTwist.alwaysOnPowerUp(forKey: key, mode: .endlessII),
+               GameScene.endlessIIClock(forPowerUp: index) != nil {
+                found = (key, index)
+                break
+            }
+            key = DailyChallengeGenerator.previousKey(of: key)!
+        }
+        let (day, index) = try XCTUnwrap(found, "no day stands on a Mayhem clock")
+        let scene = scene(.endlessII, key: day)
+        let path = try XCTUnwrap(GameScene.endlessIIClock(forPowerUp: index))
+        scene[keyPath: path].collect(turns: 5)
+        scene[keyPath: path].spendTurn()
+        scene[keyPath: path].spendTurn()
+        scene.holdDailyStandingPowerUpFull(index)
+        XCTAssertEqual(scene[keyPath: path].remaining, scene[keyPath: path].total, accuracy: 0.001)
+
+        let bar = SKSpriteNode()
+        bar.isHidden = false
+        bar.xScale = 0.4
+        bar.run(.scaleX(to: 0, duration: 10))
+        scene.iconTimerArray = (0..<8).map { _ in bar }
+        let classic = try XCTUnwrap(GameScene.trayPowerUpFamilies.first?.first)
+        scene.holdDailyStandingPowerUpFull(classic)
+        XCTAssertEqual(bar.xScale, 1, accuracy: 0.001, "the bar stays full")
+        XCTAssertFalse(bar.hasActions(), "and stops counting down")
+    }
+
     /// Neither the standing power-up nor anything that would end it falls.
     func testTheStandingPowerUpAndItsRivalsDoNotDrop() {
         let scene = scene(.endlessII)
@@ -3847,6 +3896,82 @@ final class DailyBoardRowTests: XCTestCase {
         XCTAssertEqual(rows.map(\.rank), [1, 2, 3])
     }
 
+    // MARK: The menu's board (round 376)
+    //
+    // James: "Daily challenge menu view leaderboard improvements: Game Center leaderboard,
+    // allow it to be scrollable, showing at least the top 10 players, plus the current player
+    // at the top with a gap and highlighted with their position."
+
+    func testTheMenuListsTheTopTenUnderThePlayersOwnPlace() {
+        let me = DailyBoardRow(rank: 37, name: "Me", score: 3_000, isLocalPlayer: true)
+        let board = DailyBoardRow.menuBoard(leaders: leaders(12), local: me,
+                                            limit: DailyChallengeViewController.boardRowsShown)
+        XCTAssertGreaterThanOrEqual(DailyChallengeViewController.boardRowsShown, 10,
+                                    "at least the top 10 players")
+        XCTAssertEqual(board.leaders.map(\.rank), Array(1...10))
+        XCTAssertEqual(board.own, me, "the current player at the top, with their position")
+    }
+
+    /// A player in the top ten is in both places, as on Game Center's own board: the pinned row
+    /// says where they are, the list says who is around them.
+    func testAPlayerInTheTopTenIsPinnedAndInPlace() {
+        var top = leaders(10)
+        top[3] = DailyBoardRow(rank: 4, name: "Me", score: 9_600, isLocalPlayer: true)
+        let board = DailyBoardRow.menuBoard(leaders: top, local: top[3], limit: 10)
+        XCTAssertEqual(board.own?.rank, 4)
+        XCTAssertEqual(board.leaders.filter(\.isLocalPlayer).map(\.rank), [4])
+    }
+
+    /// Round 361's rule carries over: no score posted, no row of the player's own anywhere.
+    func testAPlayerWhoHasNotPostedHasNoPinnedRow() {
+        let zero = DailyBoardRow(rank: 4, name: "Me", score: 0, isLocalPlayer: true)
+        let board = DailyBoardRow.menuBoard(leaders: leaders(3) + [zero], local: zero,
+                                            limit: 10, localHasPosted: false)
+        XCTAssertNil(board.own)
+        XCTAssertEqual(board.leaders.map(\.rank), [1, 2, 3])
+    }
+
+    func testTheCardPinsThePlayerAboveAGapAndScrollsTheRest() {
+        let card = DailyCardView()
+        let me = DailyBoardRow(rank: 37, name: "Me", score: 3_000, isLocalPlayer: true)
+        card.show(key: DailyChallengeSession.shared.todayKey, isToday: true, record: nil,
+                  standing: nil, board: leaders(10), own: me)
+        card.widthAnchor.constraint(equalToConstant: 350).isActive = true
+        card.setNeedsLayout()
+        card.layoutIfNeeded()
+
+        XCTAssertFalse(card.ownRow.isHidden)
+        let pinned = labels(in: card.ownRow).compactMap(\.text)
+        XCTAssertEqual(Array(pinned.prefix(2)), ["37", "Me"], "highlighted with their position")
+        XCTAssertTrue(pinned.last?.hasPrefix("3000") ?? false, "and their score: \(pinned)")
+        // A prefix, because today's day may be an endless one and score in metres
+        XCTAssertFalse(card.ownRow.isDescendant(of: card.boardScroll),
+                       "pinned: it stays put while the places under it scroll")
+        let gap = card.boardScroll.frame.minY - card.ownRow.frame.maxY
+        XCTAssertGreaterThanOrEqual(gap, DailyCardView.ownRowGap - 0.5, "with a gap")
+
+        XCTAssertEqual(labels(in: card.boardScroll).filter { $0.text?.hasPrefix("Player") == true }.count,
+                       10)
+        XCTAssertGreaterThan(card.boardScroll.contentSize.height,
+                             card.boardScroll.bounds.height + 1,
+                             "ten places are more than the window, so the board scrolls")
+        XCTAssertEqual(card.boardScroll.bounds.height, DailyCardView.boardWindowHeight,
+                       accuracy: 0.5)
+    }
+
+    /// A short board is not given a window taller than itself.
+    func testAShortBoardIsOnlyAsTallAsItsRows() {
+        let card = DailyCardView()
+        card.show(key: DailyChallengeSession.shared.todayKey, isToday: true, record: nil,
+                  standing: nil, board: leaders(2))
+        card.widthAnchor.constraint(equalToConstant: 350).isActive = true
+        card.layoutIfNeeded()
+        XCTAssertTrue(card.ownRow.isHidden, "nobody to pin before the player has posted")
+        XCTAssertEqual(card.boardScroll.bounds.height, card.boardScroll.contentSize.height,
+                       accuracy: 0.5)
+        XCTAssertLessThan(card.boardScroll.bounds.height, DailyCardView.boardWindowHeight)
+    }
+
     func testALineReadsPlaceNameAndAGroupedScore() {
         let row = DailyBoardRow(rank: 1, name: "James", score: 12_340, isLocalPlayer: false)
         XCTAssertEqual(row.line(unit: "m"), "1. James  12340m",
@@ -4232,5 +4357,46 @@ final class TwistLineGapTests: XCTestCase {
             XCTAssertGreaterThan(badge, font.lineHeight, "\(font.pointSize)")
             XCTAssertEqual(DailyTwist.twistLineHeight(for: font), ceil(badge))
         }
+    }
+}
+
+
+/// **A Theme day plays on a background of its own as well** (James, round 376: "The daily
+/// challenge theme twist should apply a random game background as well as a theme").
+final class DailyThemeBackgroundTests: XCTestCase {
+
+    private func day(_ key: String, _ twists: [DailyTwist]) -> DailyChallenge {
+        DailyChallenge(dateKey: key, mode: .endlessII, classicLevel: nil, twists: twists)
+    }
+
+    func testAThemeDayDrawsABackgroundThatIsNotClassic() {
+        var key = "2026-11-15"
+        var drawn = Set<GameBackground>()
+        for _ in 0..<60 {
+            let ground = DailyTwist.forcedBackground(for: day(key, [.dailyTheme]))
+            XCTAssertNotNil(ground, key)
+            XCTAssertNotEqual(ground, .classic, "\(key): Classic is what most players already have")
+            XCTAssertEqual(ground, DailyTwist.forcedBackground(for: day(key, [.dailyTheme])),
+                           "the same day draws the same background on every device")
+            if let ground { drawn.insert(ground) }
+            key = DailyChallengeGenerator.previousKey(of: key)!
+        }
+        XCTAssertGreaterThan(drawn.count, 4, "the draw moves from day to day")
+        XCTAssertNil(DailyTwist.forcedBackground(for: day("2026-11-15", [.oneLife])),
+                     "only a Theme day")
+    }
+
+    func testTheDescriptionNamesTheBackground() {
+        var key = "2026-11-15"
+        for _ in 0..<60 {
+            let challenge = DailyChallengeGenerator.challenge(forKey: key)
+            if challenge.twists.contains(.dailyTheme),
+               let ground = DailyTwist.forcedBackground(for: challenge) {
+                XCTAssertTrue(DailyTwist.dailyTheme.blurb(forKey: key).contains(ground.name), key)
+                return
+            }
+            key = DailyChallengeGenerator.previousKey(of: key)!
+        }
+        XCTFail("no Theme day in sixty")
     }
 }

@@ -929,6 +929,51 @@ final class DailyEndScreenLayoutTests: XCTestCase {
         XCTAssertTrue(pause.packNameLabel.text?.hasPrefix("Daily Challenge\n") ?? false)
     }
 
+    /// James, round 376: "I came back to a paused daily challenge game after having the app
+    /// closed for an hour or so. The app was still running in the background. The pause view
+    /// didn't have the daily challenge and twist info at the top."
+    ///
+    /// What emptied the session was never found, so this empties it by hand and asks only
+    /// that coming back puts the day, and the header, back.
+    func testComingBackToAPausedDailyKeepsItsDayAndTwists() throws {
+        let pause = try XCTUnwrap(dailyCompleteScreen(sender: "Pause"))
+        let day = DailyChallengeSession.shared.active
+        XCTAssertFalse(pause.dailySummaryLabel.isHidden, "the header is there to begin with")
+
+        let window = UIWindow(frame: pause.view.frame)
+        window.rootViewController = pause
+        window.isHidden = false
+        defer { window.isHidden = true }
+        // The return only relabels a screen that is still showing
+
+        DailyChallengeSession.shared.active = nil
+        pause.foregroundNotificationKeyReceived(Notification(name: .foregroundNotification))
+
+        XCTAssertEqual(DailyChallengeSession.shared.active?.dateKey, day?.dateKey,
+                       "the run's twists read the same session, so it has to have its day back")
+        XCTAssertFalse(pause.dailySummaryLabel.isHidden, "the twists are back at the top")
+        XCTAssertTrue(pause.packNameLabel.text?.hasPrefix("Daily Challenge\n") ?? false,
+                      "and so is the day: \(pause.packNameLabel.text ?? "nil")")
+    }
+
+    /// The same repair from the other way back in: a screen opened from the pause menu closing.
+    func testClosingAScreenOpenedFromAPausedDailyKeepsItsDay() throws {
+        let pause = try XCTUnwrap(dailyCompleteScreen(sender: "Pause"))
+        DailyChallengeSession.shared.active = nil
+        pause.returnPauseNotificationKeyReceived(Notification(name: .returnPauseNotification))
+        XCTAssertNotNil(DailyChallengeSession.shared.active)
+        XCTAssertFalse(pause.dailySummaryLabel.isHidden)
+    }
+
+    /// An ending is not a paused run and has nothing to put back: a finished daily's screen
+    /// must not revive a day the menus have already closed.
+    func testOnlyAPausedRunTakesItsDayBack() throws {
+        let over = try XCTUnwrap(dailyCompleteScreen())
+        DailyChallengeSession.shared.active = nil
+        XCTAssertFalse(over.reclaimTheRunsDaily())
+        XCTAssertNil(DailyChallengeSession.shared.active)
+    }
+
     /// A daily says its numbers under the button rather than on the screen.
     ///
     /// "Perhaps the stats summary isn't important in daily challenges. All stats can go under
@@ -2035,5 +2080,18 @@ final class LevelUnlockHintTests: XCTestCase {
         XCTAssertEqual(LevelSelectorViewController.unlockHint(row: 3, previousLevelOpen: false,
                                                              previousLevelName: "Star"),
                        "Complete Level 3 to unlock")
+    }
+}
+
+
+/// **The run's time on the game-over list** (James, round 376: "Put the time as one of the stats
+/// listed on the game over screen"), written the way the statistics screen writes it.
+final class GameOverTimeTests: XCTestCase {
+
+    func testTheTimeReadsAsMinutesAndSecondsAndHoursWhenItGetsThere() {
+        XCTAssertEqual(PauseMenuViewController.runTime(38), "0:38")
+        XCTAssertEqual(PauseMenuViewController.runTime(196), "3:16")
+        XCTAssertEqual(PauseMenuViewController.runTime(3725), "1:02:05")
+        XCTAssertEqual(PauseMenuViewController.runTime(-5), "0:00")
     }
 }

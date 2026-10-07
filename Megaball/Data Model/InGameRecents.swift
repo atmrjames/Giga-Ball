@@ -312,6 +312,34 @@ extension GameScene {
     /// running (each slot covers a good-and-bad pair), and the family member seen most
     /// recently is the one that was caught. Mayhem's own power-ups answer precisely,
     /// through their clocks.
+    /// Each of Endless Mayhem's own power-ups and the clock that runs it, by power-up index.
+    ///
+    /// One table, read by the pause screen's "which are running" and by the Always On twist's
+    /// hold (round 376) - it was a list written inside the first, and the second would have
+    /// been a copy of it.
+    static let endlessIIClocksByPowerUp: [(index: Int, clock: ReferenceWritableKeyPath<GameScene, EndlessIIClock>)] = [
+        (31, \.endlessIIAimedStickyClock), (32, \.endlessIIMagnetismClock),
+        (33, \.endlessIIPortalPaddleClock), (34, \.endlessIIPaddleHaloClock),
+        (35, \.endlessIIBallSteeringClock), (36, \.endlessIIInertPaddleClock),
+        (37, \.endlessIIFlippedAngleClock), (38, \.endlessIIReversedControlsClock),
+        (42, \.endlessIIWreckingBallClock), (43, \.endlessIIAuraClock),
+        (45, \.endlessIIDescentClock), (46, \.endlessIIAutoAimClock),
+        (47, \.endlessIIWrapAroundClock), (51, \.endlessIIRandomisedBounceClock),
+        (52, \.endlessIIGhostBallClock), (40, \.endlessIIClearAndRetreatClock),
+        (53, \.endlessIISafetyPaddleClock),
+        (54, \.endlessIIDriftClock), (55, \.endlessIIPaddleSurfaceClock),
+        (59, \.endlessIIDoublePaddleClock),
+        (60, \.endlessIIMirrorPaddleClock),
+        (62, \.endlessIIBallSpinClock),
+    ]
+    // In the order the pause screen has always listed them, which is why it is a list and not
+    // a dictionary
+
+    static func endlessIIClock(forPowerUp index: Int)
+        -> ReferenceWritableKeyPath<GameScene, EndlessIIClock>? {
+        endlessIIClocksByPowerUp.first { $0.index == index }?.clock
+    }
+
     func activeRecentPowerUpIndices() -> Set<Int> {
         var active: Set<Int> = []
 
@@ -335,21 +363,8 @@ extension GameScene {
         // (play-test round 9: it read as COLLECTED while visibly standing there)
 
         guard gameMode == .endlessII else { return active }
-        let clocks: [(EndlessIIClock, Int)] = [
-            (endlessIIAimedStickyClock, 31), (endlessIIMagnetismClock, 32),
-            (endlessIIPortalPaddleClock, 33), (endlessIIPaddleHaloClock, 34),
-            (endlessIIBallSteeringClock, 35), (endlessIIInertPaddleClock, 36),
-            (endlessIIFlippedAngleClock, 37), (endlessIIReversedControlsClock, 38),
-            (endlessIIWreckingBallClock, 42), (endlessIIAuraClock, 43),
-            (endlessIIDescentClock, 45), (endlessIIAutoAimClock, 46),
-            (endlessIIWrapAroundClock, 47), (endlessIIRandomisedBounceClock, 51),
-            (endlessIIGhostBallClock, 52), (endlessIIClearAndRetreatClock, 40),
-            (endlessIISafetyPaddleClock, 53),
-            (endlessIIDriftClock, 54), (endlessIIPaddleSurfaceClock, 55),
-            (endlessIIDoublePaddleClock, 59),
-            (endlessIIMirrorPaddleClock, 60),
-            (endlessIIBallSpinClock, 62),
-        ]
+        let clocks: [(EndlessIIClock, Int)] = GameScene.endlessIIClocksByPowerUp
+            .map { (self[keyPath: $0.clock], $0.index) }
         for (clock, index) in clocks where clock.isRunning { active.insert(index) }
         InGameRecents.shared.activePowerUpRings = clocks
             .filter { $0.0.isRunning }

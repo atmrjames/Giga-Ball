@@ -870,3 +870,47 @@ final class InfillSpeaksTests: XCTestCase {
         XCTAssertNotNil(scene.mayhemSoundLastPlayed["infill"])
     }
 }
+
+
+/// **Zap clears Indestructible bricks and nothing that only looks like one** (James, round 376:
+/// "Zap indestructible bricks removed a power-up brick type, it shouldn't"). Power-up bricks and
+/// Portals are both built on the Indestructible artwork and wear their own picture over it.
+final class ZapSparesWhatIsNotIndestructibleTests: XCTestCase {
+
+    private func brick(_ scene: GameScene, at x: CGFloat) -> SKSpriteNode {
+        let brick = SKSpriteNode(texture: scene.brickIndestructible2Texture,
+                                 size: CGSize(width: 40, height: 20))
+        brick.name = BrickCategoryName
+        brick.position = CGPoint(x: x, y: 200)
+        brick.physicsBody = SKPhysicsBody(rectangleOf: brick.size)
+        scene.addChild(brick)
+        return brick
+    }
+
+    func testZapLeavesPowerUpBricksAndPortals() {
+        let scene = GameScene(size: CGSize(width: 400, height: 800))
+        scene.gameMode = .endlessII
+        scene.totalStatsArray = [TotalStats()]
+        scene.multiplier = Scoring.multiplierBase
+        scene.hapticsSetting = false
+        scene.soundsSetting = false
+        scene.ballLostBool = false
+        scene.powerUpTextureArray = scene.powerUpTexturesInOrder
+
+        let indestructible = brick(scene, at: -100)
+        let powerUpBrick = brick(scene, at: 0)
+        powerUpBrick.endlessIIPowerUpIndex = 4
+        let portal = brick(scene, at: 100)
+        scene.makePortal(portal)
+
+        let zap = SKSpriteNode(texture: scene.powerUpRemoveIndestructibleBricks)
+        scene.addChild(zap)
+        scene.applyPowerUp(node: zap)
+
+        XCTAssertTrue(indestructible.isHidden || indestructible.texture === scene.brickNullTexture,
+                      "the Indestructible brick is what Zap is for")
+        XCTAssertFalse(powerUpBrick.isHidden, "a power-up brick is not an Indestructible brick")
+        XCTAssertEqual(powerUpBrick.texture, scene.brickIndestructible2Texture)
+        XCTAssertFalse(portal.isHidden, "nor is a Portal")
+    }
+}

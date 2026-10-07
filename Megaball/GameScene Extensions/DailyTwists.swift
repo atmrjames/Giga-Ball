@@ -355,6 +355,11 @@ extension GameScene {
         return DailyTwist.forcedTheme(for: DailyChallengeSession.shared.active)
     }
 
+    var dailyForcedBackground: GameBackground? {
+        guard isDailyChallenge else { return nil }
+        return DailyTwist.forcedBackground(for: DailyChallengeSession.shared.active)
+    }
+
     /// The power-up that is on all day, or nil on a day that is not an Always On day.
     var dailyAlwaysOnPowerUp: Int? {
         guard isDailyChallenge, let challenge = DailyChallengeSession.shared.active,
@@ -377,16 +382,55 @@ extension GameScene {
     func tickDailyAlwaysOn() {
         guard let index = dailyAlwaysOnPowerUp else { return }
         guard gameState.currentState is Playing, isPaused == false else { return }
-        guard dailyStandingPowerUpIsRunning(index) == false else { return }
+        guard dailyStandingPowerUpIsRunning(index) == false else {
+            holdDailyStandingPowerUpFull(index)
+            return
+        }
         guard powerUpTextureArray.indices.contains(index) else { return }
 
+        let before = classicPowerUpEndings
         let carrier = SKSpriteNode(texture: powerUpTextureArray[index])
         applyPowerUp(node: carrier, silently: true, standing: true)
+        for (key, ending) in classicPowerUpEndings where before[key] !== ending {
+            removeAction(forKey: key)
+        }
+        // **And it never runs out** (James, round 376: "During the game the progress bar of the
+        // always on power up continuously counted down and then reset. It should just stay full
+        // the whole time"). The collection starts the power-up's own timer, which used to end it
+        // ten seconds later for this tick to collect it again: a bar that emptied and refilled,
+        // and a paddle that shrank and grew back. The timer this collection started is stopped -
+        // its ending stays filed, so a Wipe still ends it - and `holdDailyStandingPowerUpFull`
+        // keeps the bar and the clocks at full
         // Through a carrier sprite because the switch reads a texture, which is the identity
         // every collection in the game is decided by. Silently, because nothing here is a
         // catch: no sound, no haptic, no statistic, and nothing taken off the count of
         // power-ups on screen - the player caught this one once, this morning, by opening the
         // day
+    }
+
+    /// Keeps the standing power-up's indicator full and its clock from running down.
+    ///
+    /// The tray bar for the original power-ups, the clock for Mayhem's own (which the ring reads),
+    /// and the catches for the two counted in paddle hits - each held where it started, so the
+    /// HUD says what the twist means: on, all run.
+    func holdDailyStandingPowerUpFull(_ index: Int) {
+        if let slot = GameScene.trayPowerUpFamilies.firstIndex(where: { $0.contains(index) }),
+           iconTimerArray.indices.contains(slot), iconTimerArray[slot].isHidden == false {
+            let bar = iconTimerArray[slot]
+            bar.removeAllActions()
+            if bar.xScale != 1 { bar.xScale = 1 }
+        }
+        if index == 6, stickyPaddleCatchesTotal > 0, stickyPaddleCatches > 0 {
+            stickyPaddleCatches = stickyPaddleCatchesTotal
+        }
+        if let path = GameScene.endlessIIClock(forPowerUp: index) {
+            var clock = self[keyPath: path]
+            if clock.isRunning, clock.total > 0, clock.remaining < clock.total {
+                clock.remaining = clock.total
+                clock.goodbye = 0
+                self[keyPath: path] = clock
+            }
+        }
     }
 
     /// Whether the day's standing power-up is running now.

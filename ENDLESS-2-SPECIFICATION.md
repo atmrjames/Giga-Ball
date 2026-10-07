@@ -2959,6 +2959,52 @@ testers:
   falling power-up's position by `brickWidth`, so a bare `GameScene()` with a power-up on
   screen traps converting NaN to Int. A real scene is always laid out before play.
 
+**Round 376: a play-test list, and the daily menu's board.**
+
+- **Zap Indestructible spares a power-up brick.** It cleared anything not breakable by a hit,
+  and a power-up brick is one; it now skips them as it skips portals.
+  `ZapSparesWhatIsNotIndestructibleTests`.
+- **Brick Descent steps the moment it is caught**, then every three seconds: the clock starts
+  full on a fresh catch. A Lock still holds it, which the full clock had walked straight past.
+  A second Descent while one is running does not jump a row.
+- **Aimed Sticky takes the Sticky Paddle's ring off when it takes over.** The report: Sticky
+  stayed at "5 turns" for the rest of the game, though it had ended. The aim marker now shows
+  while the ball is held, when the next launch will be aimed (`heldLaunchWillBeAutoAimed`).
+- **The game-over screen lists the run's time first** (`PauseMenuViewController.runTime`, m:ss
+  or h:mm:ss).
+- **A Theme day also picks a background**, from every background but Classic, on its own seeded
+  stream (`DailyChallenge.forcedBackground`). The scene uses it in place of the player's setting,
+  and the setting is never written to. The twist's description names both theme and background.
+- **Always On names its power-up** in the description, and the power-up's bar stays full rather
+  than running down and refilling (`holdDailyStandingPowerUpFull`): tray bar, sticky catches and
+  Mayhem clock. `InGameRecents.endlessIIClocksByPowerUp` is the one table of which clock belongs
+  to which Mayhem power-up.
+- **A paused daily keeps its day.** The report: back after an hour in the background, the pause
+  screen had lost the day and the twists, and a relaunch brought them back. A relaunch reads the
+  day from the save made at the moment of pausing, so the session had the day then and lost it
+  later. No cause was found. Trait changes leave the header alone (measured), and nothing that
+  runs on a return from the background writes to the session. The pause screen now keeps the day
+  it was opened on and puts it back when the app returns and when a screen opened from it
+  closes. The scene's twists read the same session, so this protects the run as well as the
+  header. If it is seen again, the useful fact is whether More Stats or Settings was opened from
+  that pause.
+- **The daily menu's board** (James: "scrollable, showing at least the top 10 players, plus the
+  current player at the top with a gap and highlighted with their position").
+  - The menu asks Game Center for ten places.
+  - The player's own place is pinned above them on a lime band, with a gap. A player in the top
+    ten is in both places, as on Game Center's own board (`DailyBoardRow.menuBoard`).
+  - The leaders scroll in a window four places and a half tall, cut through the fifth row.
+  - The pause screen and the closed day's report keep the older order (`shown`), with the
+    player under a few leaders.
+- **Release readiness, checked:**
+  - The daily's test clock has been compiled out of release builds since round 298.
+  - No debug output outside `#if DEBUG`, and no purchase code still live.
+  - The privacy manifest's one required-reason API (UserDefaults, CA92.1) is the only one the
+    code uses.
+  - Encryption is declared exempt.
+  - The iPad declares all four orientations and not `UIRequiresFullScreen`, so Split View and
+    Stage Manager are open to it.
+
 **Round 375: one copy of the game's tables.**
 
 The device log's other hitch, `HITCH 41ms after: brick hit, power-up dropped`, measured: a

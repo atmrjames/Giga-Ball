@@ -502,13 +502,17 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
         statsUnderTheResult.isActive = false
         statsWellUnderTheResult.isActive = false
         let text = NSMutableAttributedString()
-        var items: [(String, String, Int)] = [
-            ("rectangle.fill", "Paddle hits", summary.paddleHits),
-            ("square.grid.3x2.fill", "Bricks destroyed", summary.bricksDestroyed),
-            ("arrow.down.circle.fill", "Power-ups collected", summary.powerUpsCollected)]
+        var items: [(String, String, String)] = [
+            ("clock", "Time", PauseMenuViewController.runTime(summary.durationSeconds)),
+            ("rectangle.fill", "Paddle hits", "\(summary.paddleHits)"),
+            ("square.grid.3x2.fill", "Bricks destroyed", "\(summary.bricksDestroyed)"),
+            ("arrow.down.circle.fill", "Power-ups collected", "\(summary.powerUpsCollected)")]
         if summary.isEndless == false {
-            items.insert(("flag.fill", "Levels cleared", summary.levelsCleared), at: 0)
+            items.insert(("flag.fill", "Levels cleared", "\(summary.levelsCleared)"), at: 0)
         }
+        // **The time is one of them** (James, round 376: "Put the time as one of the stats listed
+        // on the game over screen"). It was only on the detail screen behind Statistics; it is
+        // the run's whole length, so it leads, after how far a Classic run got
         // Every game over carries its run's numbers now, not only the endless ones
         // (play-test round 13) - and a classic run leads with how far it got, which is the
         // thing an endless run says with its height
@@ -537,6 +541,16 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
         runStatsLabel.attributedText = text
     }
     // Asked of the session, which outlives the scene until the menus return
+
+    /// A run's length as the statistics screen writes it: minutes and seconds, hours when it
+    /// gets there.
+    static func runTime(_ seconds: Int) -> String {
+        let seconds = max(0, seconds)
+        if seconds >= 3600 {
+            return String(format: "%d:%02d:%02d", seconds/3600, seconds/60 % 60, seconds % 60)
+        }
+        return String(format: "%d:%02d", seconds/60, seconds % 60)
+    }
 
     var standing: LeaderboardStanding?
     /// The day's leading places, for a daily's end screen (round 354).
@@ -608,6 +622,9 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
         // Sets up an observer to watch for notifications to check if the user has returned to the pause menu from the settings menu
         NotificationCenter.default.addObserver(self, selector: #selector(self.killBallRemoveVCKeyReceived), name: .killBallRemoveVC, object: nil)
         // Sets up an observer to watch for notifications to check if the user has killed the ball from the settings menu to then remove the pause menu
+        NotificationCenter.default.addObserver(self, selector: #selector(self.foregroundNotificationKeyReceived), name: .foregroundNotification, object: nil)
+        if sender == "Pause" { dailyOfThisRun = DailyChallengeSession.shared.active }
+        // See `reclaimTheRunsDaily`
         
         let skipTally = UITapGestureRecognizer(target: self,
                                               action: #selector(tapToSkipHeightTally))
@@ -2385,7 +2402,43 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
         ]
     }
     
+    /// The day the paused run belongs to, as it stood when the run was paused.
+    private(set) var dailyOfThisRun: DailyChallenge?
+
+    /// Puts the paused run's day back if something has emptied the session behind it.
+    ///
+    /// **James, round 376: "I came back to a paused daily challenge game after having the app
+    /// closed for an hour or so. The app was still running in the background. The pause view
+    /// didn't have the daily challenge and twist info at the top. I then closed the app and
+    /// reopened it and that info reappeared."** Both halves of the header are written from
+    /// `DailyChallengeSession.shared.active`, so for both to go the session had to be empty
+    /// when the screen was labelled again - and it was not empty when the run paused, because
+    /// the save written at that same moment still carried the day and the relaunch read it
+    /// back. What emptied it in between was not found: no trait change does it, and nothing
+    /// that runs on a return from the background writes to the session. So this does not
+    /// depend on finding it. A paused run keeps the day it was paused on, and the session
+    /// gets it back before the screen is labelled again, when the app comes back and when a
+    /// screen opened from here closes. That matters beyond the header, too: the scene's
+    /// twists read the same session, so a run unpaused with it empty would have carried on
+    /// without them.
+    ///
+    /// - Returns: whether the day had to be put back.
+    @discardableResult
+    func reclaimTheRunsDaily() -> Bool {
+        guard sender == "Pause", let day = dailyOfThisRun,
+              DailyChallengeSession.shared.active == nil else { return false }
+        DailyChallengeSession.shared.active = day
+        return true
+    }
+
+    @objc func foregroundNotificationKeyReceived(_ notification: Notification) {
+        guard viewIfLoaded?.window != nil, reclaimTheRunsDaily() else { return }
+        updateLabels()
+        // Only when the day had gone: everything else on this screen is as it was left
+    }
+
     @objc func returnPauseNotificationKeyReceived(_ notification: Notification) {
+        reclaimTheRunsDaily()
         revealAnimate()
         userSettings()
         updateLabels()

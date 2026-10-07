@@ -1092,7 +1092,15 @@ extension GameScene {
     static let endlessIIDescentRows = 6
 
     func endlessIICollectDescent() {
+        let fresh = endlessIIDescentClock.isRunning == false
         endlessIIDescentClock.collect(turns: GameScene.endlessIIDescentRows)
+        if fresh { endlessIIDescentAccumulated = GameScene.endlessIIDescentStep }
+        // **The first row goes now** (James, round 376: "it takes a while until the first
+        // descent. The first descent should happen as the power-up is collected, then 3s
+        // gaps"). The cadence counted up from nothing, so the first step came three seconds
+        // after the catch and read as the power-up not having worked. Starting it full puts the
+        // first row on the next frame the field can move. A second Descent caught while one is
+        // running keeps the rhythm it is in rather than jumping a row
     }
 
     /// How often the field steps down while Descent runs.
@@ -1134,6 +1142,11 @@ extension GameScene {
         // The raw delta here used to let a locked Descent keep stepping while its clock
         // stood still - free rows for the length of the freeze
         guard endlessIIDescentAccumulated >= GameScene.endlessIIDescentStep else { return }
+        guard endlessIILocked == false else { return }
+        // **A Lock holds a step that is already due**, not only the time towards the next one.
+        // The frozen delta used to be enough on its own, because the cadence started from
+        // nothing; since round 376 a fresh Descent starts with its first step due, and a Lock
+        // caught on top of it before that frame would otherwise have let the row go
 
         guard endlessMoveInProgress == false else { return }
         // A step already animating finishes first - two moves at once would stack their

@@ -250,9 +250,25 @@ enum DailyTwist: String, CaseIterable, Codable {
 
     /// And its blurb for that day, which names the theme rather than promising "one".
     func blurb(forKey key: String) -> String {
-        guard self == .dailyTheme else { return blurb }
-        let theme = DailyTwist.themeName(forKey: key)
-        return theme.isEmpty ? blurb : "The whole run is played in the \(theme) theme"
+        switch self {
+        case .dailyTheme:
+            let theme = DailyTwist.themeName(forKey: key)
+            guard theme.isEmpty == false else { return blurb }
+            let day = DailyChallengeGenerator.challenge(forKey: key)
+            guard let ground = DailyTwist.forcedBackground(for: day) else {
+                return "The whole run is played in the \(theme) theme"
+            }
+            return "The whole run is played in the \(theme) theme, on the \(ground.name) background"
+        case .alwaysOn:
+            // **Which one** (James, round 376: "For the always on twist, tell me what power up it
+            // is in the description"). The day's mode is part of the draw, and it is the day's own
+            let day = DailyChallengeGenerator.challenge(forKey: key)
+            guard let index = DailyTwist.alwaysOnPowerUp(forKey: key, mode: day.mode),
+                  LevelPackSetup.shared.powerUpNameArray.indices.contains(index) else { return blurb }
+            return "\(LevelPackSetup.shared.powerUpNameArray[index]) is active for the whole run"
+        default:
+            return blurb
+        }
     }
 
     var blurb: String {
@@ -655,6 +671,18 @@ enum DailyTwist: String, CaseIterable, Codable {
                                    themeCount: LevelPackSetup.shared.themeNameArray.count)
         }
         return nil
+    }
+
+    /// The background a Theme day is played on (round 376). James: "The daily challenge theme
+    /// twist should apply a random game background as well as a theme." Drawn on a stream of its
+    /// own, like the theme, and never Classic for the theme's reason: a twist that hands back
+    /// what most players already have has done nothing.
+    static func forcedBackground(for challenge: DailyChallenge?) -> GameBackground? {
+        guard let challenge, challenge.twists.contains(.dailyTheme) else { return nil }
+        let choices = GameBackground.inDisplayOrder.filter { $0 != .classic }
+        guard choices.isEmpty == false else { return nil }
+        var stream = DailySeededGenerator(seed: DailyDay.seed(forKey: challenge.dateKey) &+ 0xBA6D)
+        return choices[stream.roll(choices.count)]
     }
 
     static func dailyThemeIndex(forKey key: String, themeCount: Int) -> Int {
@@ -1834,6 +1862,28 @@ struct DailyBoardRow: Equatable {
             rows.append(local)
         }
         return rows
+    }
+
+    /// The daily menu's board: the player's own place on its own, then the leading places.
+    ///
+    /// **James, round 376: "Daily challenge menu view leaderboard improvements: Game Center
+    /// leaderboard, allow it to be scrollable, showing at least the top 10 players, plus the
+    /// current player at the top with a gap and highlighted with their position."** Game
+    /// Center's own board is laid out this way: the player's row first, where it never has to be
+    /// looked for, and the board from the top under it - so a player in the top ten is in both
+    /// places, which is how they see where they stand among the others. `shown` keeps the older
+    /// order, the player under the leaders, for the pause screen and the day's report, which
+    /// have room for a few rows and no more.
+    ///
+    /// The same rule for a player who has not posted (round 361): no row of their own, and no
+    /// row among the leaders either.
+    static func menuBoard(leaders: [DailyBoardRow], local: DailyBoardRow?, limit: Int,
+                          localHasPosted: Bool = true)
+        -> (own: DailyBoardRow?, leaders: [DailyBoardRow]) {
+        let others = localHasPosted ? leaders : leaders.filter { $0.isLocalPlayer == false }
+        let top = Array(others.sorted { $0.rank < $1.rank }.prefix(limit))
+        guard localHasPosted else { return (nil, top) }
+        return (local ?? top.first(where: \.isLocalPlayer), top)
     }
 
     /// "1. Name  12,340m", for a place with room for one line of text.

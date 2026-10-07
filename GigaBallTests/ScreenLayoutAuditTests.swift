@@ -1692,6 +1692,8 @@ final class GameCentreLineOnEveryScreenTests: XCTestCase {
             let root = screen.view!
             func frame(_ view: UIView) -> CGRect { view.convert(view.bounds, to: root) }
             XCTAssertFalse(screen.runStatsLabel.isHidden, "\(name): the list is showing")
+            XCTAssertTrue(screen.runStatsLabel.attributedText?.string.contains("Time") == true,
+                          "\(name): the run's time is one of the stats (James, round 376)")
             let caption = frame(screen.leaderboardTitle)
             let board = frame(screen.resultLabel)
             let stats = frame(screen.moreStatsButton)

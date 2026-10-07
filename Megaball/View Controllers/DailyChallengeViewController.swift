@@ -60,11 +60,14 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
     var boardTops: [String: [DailyBoardRow]] = [:]
     /// How many posted to each day's board, as Game Center reported it (round 360).
     var boardPlayers: [String: Int] = [:]
-    /// How many places a card lists before the player's own.
+    /// The player's own place on each day's board, pinned above the leaders (round 376).
+    var boardOwn: [String: DailyBoardRow] = [:]
+    /// How many places a card lists under the player's own.
     ///
-    /// Three: at five, with the player's own place under them, the list ran off the bottom of
-    /// the page on an iPhone 17 Pro, and the whole board is one tap away on Game Center.
-    static let boardRowsShown = 3
+    /// Ten (James, round 376: "showing at least the top 10 players"). It was three, because at
+    /// five the list ran off the bottom of the page on an iPhone 17 Pro; the board scrolls in
+    /// its own window now, so the number of places no longer decides the card's height.
+    static let boardRowsShown = 10
     var boardBestsRequested: Set<String> = []
     // Where today's posted score stands, once Game Center has answered - asked for at
     // most once per visit to the screen, because the answer barely moves and the ask
@@ -698,10 +701,12 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
                                               count: DailyChallengeViewController.boardRowsShown) {
             [weak self] answer in
             guard let self, let answer else { return }
-            self.boardTops[key] = DailyBoardRow.shown(
+            let board = DailyBoardRow.menuBoard(
                 leaders: answer.leaders, local: answer.local,
                 limit: DailyChallengeViewController.boardRowsShown,
                 localHasPosted: self.totalStatsArray[0].dailyRecord(forKey: key)?.posted == true)
+            self.boardTops[key] = board.leaders
+            self.boardOwn[key] = board.own
             self.boardPlayers[key] = answer.players
             if let best = answer.leaders.first?.score {
                 self.boardBests[key] = best
@@ -933,7 +938,8 @@ extension DailyChallengeViewController: UICollectionViewDataSource,
                        standing: isToday ? todayStanding : nil,
                        boardBest: boardBests[key]
                            ?? totalStatsArray[0].dailyRecord(forKey: key)?.closingBoardBest,
-                       board: boardTops[key] ?? [], players: boardPlayers[key] ?? 0)
+                       board: boardTops[key] ?? [], own: boardOwn[key],
+                       players: boardPlayers[key] ?? 0)
         cell.card.twistTapped = { [weak self] twist in self?.explain(twist, on: key) }
         cell.card.twistsExplainerTapped = { [weak self] in self?.explainTheDaysTwists(on: key) }
         // The card lists the day's twists by icon and name only since round 308, so the block

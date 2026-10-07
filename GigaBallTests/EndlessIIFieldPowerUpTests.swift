@@ -334,16 +334,39 @@ final class EndlessIIFieldPowerUpTests: XCTestCase {
         XCTAssertTrue(scene.endlessIIDescentOwnsExtraSteps)
     }
 
-    func testDescentStepsOnItsTimerAndNotBeforeIt() {
+    /// **The first row goes as it is caught, and then one every three seconds** (James, round
+    /// 376: "it takes a while until the first descent. The first descent should happen as the
+    /// power-up is collected, then 3s gaps").
+    func testDescentStepsAsItIsCaughtAndThenOnItsTimer() {
         let scene = fieldScene()
         scene.endlessIICollectDescent()
 
+        scene.endlessIIPaddleFrameDelta = 1.0/60
+        scene.tickEndlessIIDescent()
+        XCTAssertEqual(scene.endlessHeight, 1, "the first row goes on the first frame")
+        scene.endlessMoveInProgress = false
+        // The step's own animation, finished - a bare scene runs no actions, and Descent
+        // rightly waits for a step in progress before it takes another
+
         scene.endlessIIPaddleFrameDelta = GameScene.endlessIIDescentStep/2
         scene.tickEndlessIIDescent()
-        XCTAssertEqual(scene.endlessHeight, 0, "half a step is no step")
+        XCTAssertEqual(scene.endlessHeight, 1, "half a step is no step")
 
         scene.tickEndlessIIDescent()
-        XCTAssertEqual(scene.endlessHeight, 1, "the second half completes it")
+        XCTAssertEqual(scene.endlessHeight, 2, "the second half completes the next")
+    }
+
+    /// A second Descent caught while one runs keeps the rhythm it is in.
+    func testASecondDescentDoesNotJumpARow() {
+        let scene = fieldScene()
+        scene.endlessIICollectDescent()
+        scene.endlessIIPaddleFrameDelta = 1.0/60
+        scene.tickEndlessIIDescent()
+        XCTAssertEqual(scene.endlessHeight, 1)
+
+        scene.endlessIICollectDescent()
+        scene.tickEndlessIIDescent()
+        XCTAssertEqual(scene.endlessHeight, 1, "a top-up is more rows, not an extra one now")
     }
 
     func testDescentDoesNothingWithoutTheClock() {

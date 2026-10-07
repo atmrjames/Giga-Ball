@@ -6854,7 +6854,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		// Remove indestructible bricks
 			enumerateChildNodes(withName: BrickCategoryName) { (node, _) in
 				let temporarySprite = node as! SKSpriteNode
-				guard node.endlessIIRole != .portal else { return }
+				guard node.endlessIIRole != .portal,
+					  (node as? SKSpriteNode)?.endlessIIPowerUpIndex == nil else { return }
+				// **Nor a power-up brick** (James, round 376: "Zap indestructible bricks removed a
+				// power-up brick type, it shouldn't"). Both are built on the Indestructible
+				// artwork (round 271) and wear their own picture over it, so asked by texture they
+				// look like the thing Zap clears; asked what they are, neither is.
 				// A Portal is built on the Indestructible texture but it is not one of them.
 				// It is never destroyed by anything - clearing the indestructibles would
 				// take the way out of the field with them
@@ -10123,7 +10128,10 @@ laserTimer?.invalidate()
 	/// draws the same four in miniature and a picker that paints them differently from the
 	/// game is worse than no picker at all.
 	func applyBackgroundSetting() {
-		let setting = GameBackground.stored(defaults.integer(forKey: "backgroundSetting"))
+		let setting = dailyForcedBackground
+			?? GameBackground.stored(defaults.integer(forKey: "backgroundSetting"))
+		// A Theme day's own background, for the run, without touching the player's setting -
+		// the forced theme's rule (round 376)
 
 		let overlay = backgroundOverlay ?? {
 			let node = SKSpriteNode()

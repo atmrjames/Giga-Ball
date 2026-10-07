@@ -48,6 +48,17 @@ extension GameScene {
         endlessIIAimedStickyClock.collect(turns: Int(GameScene.endlessIIPaddlePowerUpTurns))
         stickyPaddleCatches = 0
         stickyPaddleCatchesTotal = 0
+        stickyPaddleIcon.texture = iconStickyPaddleDisabledTexture
+        stickyPaddleIconBar.removeAllActions()
+        stickyPaddleIconBar.isHidden = true
+        stickyPaddleIconBar.xScale = 0
+        // **And its ring with it** (James, round 376, with a screenshot: "I got sticky paddle with
+        // aimed sticky. Aimed sticky turns continued to count down but sticky paddle stayed with 5
+        // turns. When aimed sticky ended, it still showed sticky paddle with 5 turns remaining
+        // even though it wasn't actually active. It stayed like this for the rest of the game").
+        // The catches were zeroed here and the tray bar the ring reads was left full, so the ring
+        // kept a Sticky that no longer existed - and nothing else would ever hide it, because the
+        // bar is only cleared when the last catch is *spent*, and there were none left to spend
         showEndlessIIStickyFace()
         // **Aimed Sticky is a variant of Sticky, not a rival** (James, round 260: "it should
         // be another variant of the sticky power-up, so it should apply the sticky paddle
@@ -819,7 +830,14 @@ extension GameScene {
     func refreshEndlessIIAutoAimMarker() {
         let aiming = gameMode == .endlessII
             && (endlessIIAutoAimClock.isRunning || endlessIIAutoAimOwedTurn)
-            && ballIsOnPaddle == false && ballLostBool == false
+            && (ballIsOnPaddle == false || heldLaunchWillBeAutoAimed)
+            && ballLostBool == false
+        // **And on the paddle when the launch will be aimed** (James, round 376: "With sticky and
+        // auto aim active, when the ball is on the paddle the aimed brick glow outline doesn't
+        // show until the ball is released"). A sticky catch pays the aim's turn and the launch
+        // then goes at the brick (round 311), so the marker can say so while the ball waits. Not
+        // at the first serve of a life, which takes no aim, and not under Aimed Sticky, whose
+        // shot is the player's own
         // **Not while the ball is gone** (James, round 299: "auto aim graphic needs to
         // disappear immediately if the ball is lost whilst its visible"). The marker says
         // where the *next bounce* is going, and between losing a ball and serving the next one
@@ -910,6 +928,12 @@ extension GameScene {
     }
 
     static let autoAimMarkerName = "endlessIIAutoAimMarker"
+
+    /// Whether a ball held on the paddle will be sent at the marked brick when it leaves.
+    var heldLaunchWillBeAutoAimed: Bool {
+        endlessIIAutoAimOwedTurn && endlessIIAimedStickyClock.isRunning == false
+            && endlessIIAimHold == false
+    }
 
     /// Sends a ball leaving the paddle at the lowest brick instead of wherever it was going.
     /// Returns whether it did - asked at the end of the bounce, so it overrides the angle
