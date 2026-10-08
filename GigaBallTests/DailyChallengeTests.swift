@@ -1836,6 +1836,32 @@ final class DailyFogRevealTests: XCTestCase {
         XCTAssertFalse(opening.hasActions(), "the scene is holding the timer, not the brick")
     }
 
+    /// James, round 380: "With the foggy twist active, if the level build in animation is
+    /// skipped by the user tapping on the screen, all the bricks build in instantly, but remain
+    /// visible until the ball is released from the paddle. The bricks should build in as they
+    /// do, but then become hidden before the ball is released."
+    func testASkippedBuildInStillFogsTheFieldBeforeTheLaunch() {
+        let scene = fogScene()
+        guard scene.dailyFogIsOn else { return }
+
+        let landed = brick(in: scene)
+        let waiting = brick(in: scene)
+        scene.applyDailyFog(to: [landed, waiting])
+        scene.scheduleDailyFog(for: landed, landingAt: 0.2)
+        scene.scheduleDailyFog(for: waiting, landingAt: 1.5)
+        // One brick whose fog is already timed, one still to land: the skip catches both
+
+        scene.endlessIIBuildingIn = true
+        XCTAssertTrue(scene.finishEndlessIIBuildIn(), "the tap was spent on the build-in")
+
+        for brick in [landed, waiting] {
+            XCTAssertTrue(brick.hasActions(),
+                          "its look and fade are under way, not waiting for the launch")
+            XCTAssertTrue(scene.dailyFogTaking.contains { $0 === brick })
+        }
+        XCTAssertTrue(scene.dailyFogHasClosed)
+    }
+
     func testNothingHappensOnADayWithoutTheTwist() {
         let scene = GameScene()
         DailyChallengeSession.shared.active = nil

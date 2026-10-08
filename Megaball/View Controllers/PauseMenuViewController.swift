@@ -585,7 +585,8 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
                 let band = CGRect(x: 0, y: top, width: width, height: rowHeight)
                 draw("\(row.rank)", font: UIViewController.gameScoreFont(ofSize: 11),
                      in: CGRect(x: inset, y: band.minY, width: rankWidth - 6, height: rowHeight),
-                     alignment: .right,
+                     alignment: .left,
+                     // **Left in its cell, as the menu card has it** (James, round 380)
                      colour: row.isLocalPlayer ? lime : UIColor(white: 1, alpha: 0.5))
                 draw(row.name, font: .systemFont(ofSize: 12,
                                                  weight: row.isLocalPlayer ? .bold : .regular),

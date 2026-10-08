@@ -720,8 +720,10 @@ extension GameScene {
             // this build-in never owned
         }
         endlessIIBuildInFinalY.removeAll()
+        dailyFogReschedulesWhatTheSkipCancelled()
         closeDailyFog()
-        // A skipped build-in still gets its look at a fogged field, just a shorter one
+        // A skipped build-in still gets its look at a fogged field, just a shorter one - every
+        // brick of it, including those whose own fog the `removeAllActions` above cancelled
         return true
     }
 

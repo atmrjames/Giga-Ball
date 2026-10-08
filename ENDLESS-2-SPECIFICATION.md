@@ -2959,6 +2959,27 @@ testers:
   falling power-up's position by `brickWidth`, so a bare `GameScene()` with a power-up on
   screen traps converting NaN to Int. A real scene is always laid out before play.
 
+**Round 380: the ending board's ranks, Foggy after a skip, and the guide's new pages.**
+
+- **The rank sits at the left of its cell** in a daily ending's board, as it does on the menu
+  card (James, with a screenshot).
+- **Foggy closes after a skipped build-in.** James: "if the level build in animation is
+  skipped by the user tapping on the screen, all the bricks build in instantly, but remain
+  visible until the ball is released."
+  - Each landed brick's fog is a wait held by the scene, and the skip clears the scene's
+    actions to stop the rows' knocks, which cancelled every one of those waits.
+  - The bricks had already moved from `dailyFogPending` to `dailyFogTaking`, so the sweep
+    after the skip found nothing to take.
+  - The skip now hands them back first (`dailyFogReschedulesWhatTheSkipCancelled`), and
+    they get the sweep's look and fade.
+  - `testASkippedBuildInStillFogsTheFieldBeforeTheLaunch`.
+- **The Quick Start Guide's eight pictures are replaced** with James's new versions:
+  `IntroView1` to `7` by name, and "IntroView6 Copy" as `IntroView8`, the Version 1.3 page.
+  - James then corrected them all to 375 by 621. The delivered Power-Ups page
+    (`IntroView4`) still measures 375 by 644 at all three scales.
+  - The guide fits each picture with its proportions kept, so it shows whole and about 4%
+    smaller than its neighbours. Checked on the simulator.
+
 **Round 379: round ends at any width, the magnet's fade, and a screen that scrolls.**
 
 - **The paddle's ends stay round when it is big or small.** James: "The ends of the paddle with

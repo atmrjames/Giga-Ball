@@ -1233,6 +1233,25 @@ extension GameScene {
     /// Without this the list only ever grows, and `snapDailyFogShut` on a *later* launch
     /// would re-hide bricks the fog had long finished with - including any a strike had
     /// revealed since, which is exactly what a reveal promises cannot happen.
+    /// Hands back to the sweeper the bricks whose fog a skipped build-in has just cancelled.
+    ///
+    /// **James, round 380: "With the foggy twist active, if the level build in animation is
+    /// skipped by the user tapping on the screen, all the bricks build in instantly, but remain
+    /// visible until the ball is released from the paddle. The bricks should build in as they
+    /// do, but then become hidden before the ball is released."** Each landed brick's fog is a
+    /// wait held by the scene (`scheduleDailyFog`), and the skip clears the scene's actions to
+    /// stop the rows' knocks - which took every one of those waits with them. The bricks had
+    /// already left `dailyFogPending` for `dailyFogTaking`, so the sweep that follows the skip,
+    /// which only reads the pending list, found nothing, and the whole field stood until the
+    /// launch took it at once. Back on the pending list, they get the sweep's look and fade
+    /// like a field built with no animation at all.
+    func dailyFogReschedulesWhatTheSkipCancelled() {
+        guard dailyFogIsOn, dailyFogHasClosed == false else { return }
+        let cancelled = dailyFogTaking.filter { $0.parent != nil && $0.isHidden == false }
+        dailyFogTaking.removeAll()
+        dailyFogPending.append(contentsOf: cancelled)
+    }
+
     func dailyFogTaken(_ brick: SKSpriteNode) {
         if let index = dailyFogTaking.firstIndex(where: { $0 === brick }) {
             dailyFogTaking.remove(at: index)
