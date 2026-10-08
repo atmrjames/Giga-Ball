@@ -2959,6 +2959,40 @@ testers:
   falling power-up's position by `brickWidth`, so a bare `GameScene()` with a power-up on
   screen traps converting NaN to Int. A real scene is always laid out before play.
 
+**Round 378: James's list - the boards, a twist's name, the ending's numbers, two graphics.**
+
+- **The menu board pins the player only from outside the list.** His screenshot: a board of one
+  with "1 atmrjames 4234" pinned and listed. In the list they are already in lime
+  (`DailyBoardRow.menuBoard`).
+- **Always On says which**: "Slow Ball Always On", the way a Theme day says "Pixel Theme"
+  (`DailyTwist.alwaysOnName`, shared with the description).
+- **An ending lists three numbers**: time, paddle hits, bricks destroyed
+  (`PauseMenuViewController.endingStats`). Levels cleared and power-ups collected were already
+  on the Statistics screen.
+- **A daily ending's board is a small grid**: rank, player and score in columns, 16-point
+  rows, a faint backing and hairlines, the player's row on a lime band
+  (`PauseMenuViewController.boardGrid`). It is drawn as a picture in the result text, so it
+  sits where the lines did on every screen. VoiceOver is given the rows as words.
+  - Rendering it turned up a fault this round does not fix: a Classic daily's Complete
+    screen with a speed bonus is over-full on smaller phones. It is queued in the open table
+    with the measurements and needs James's decision.
+- **The Portal Paddle's glow is 40 points bigger than the paddle at any width.**
+  - Measured in a presented scene, the margins were 40, 631 and -14 points at 1x, 2x
+    (Expand) and 0.5x (Shrink). `paddle.size` already carries the paddle's scale, and the
+    sum multiplied by it again.
+  - With the sum corrected, the picture was still wrong: short of the ends at 2x and
+    square-ended at 0.5x. SpriteKit nine-slices on a sprite's own scale, and a parent's
+    scale then stretches the slices again.
+  - So the glow is now the paddle's sibling in the scene: placed on it every frame, its
+    visibility copied, and widened by its own scale (`paddleGlowSize`).
+  - The test that should have caught it had copied the bad sum into its own arithmetic.
+    It now reads the drawn frames.
+- **Magnetism's field shows.** It was at z 0.5, under Mayhem's climbing backdrop at 0.6, in
+  the only mode Magnetism appears in. It is at 0.8 now (`magnetFieldZ`, against the newly
+  named `endlessIIBackdropZ`). The dots were also enlarged (4.5-point round caps), drawn as
+  added light, and given an opacity floor of 0.4 where it was 0.12. Already lime, and already
+  running down into the paddle.
+
 **Round 377: four achievement names, and a question closed.**
 
 - **The four Mayhem achievements Game Center refused** (round 372's log) were never missing from
@@ -3537,6 +3571,7 @@ James, after the round 358b push: three play-test notes.
 | ~~Aimed Sticky's sounds~~ | **Answered, round 356** ("aimed sticky sounds should use the sticky paddle sound"). It did, and the ordinary bounce played under it - see round 356 |
 | ~~Portal Paddle with Auto-Aim~~ | **Answered, round 356**: "Portal Paddle and auto-aim should not run together". The pair is back in the matrix |
 | ~~The daily board in the app~~ | **Seen working, 1 October** - James: "In-app daily leaderboards look good". Round 357 reshaped both screens to his notes |
+| **A Classic daily's Complete screen with a speed bonus does not fit on smaller phones** | Found in round 378, rendering the day's board as a grid. Measured on a rendered window, with a two-twist day: on a 375x667 (SE) window **before any board arrives**, the Level Score figure is squashed out of sight and the total rides up into its heading; on a 402x874 (iPhone 17 Pro) it fits until the board comes, and then the figures give (Level Score 2.7 points tall of its 35 with three rows). The chain from the total down to the buttons is held by required floors and the header does not shrink for height (`inGameHeaderScale` reads width only), so whatever is tallest gives. Four attempts to make the board give way instead were tried and taken out: each moved the squeeze to another label, or measured a breakdown still mid-tally. **Needs a decision:** which part of this screen gives on a short phone - a height-aware header scale (every in-game screen), the total on the columns' row, or fewer board rows on this one screen. The old text board did the same, a few points less |
 
 **Backlogged**
 

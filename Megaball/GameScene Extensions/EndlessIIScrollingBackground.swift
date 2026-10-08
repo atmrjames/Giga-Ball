@@ -45,6 +45,9 @@ enum EndlessIIBackdropScroll {
 
 extension GameScene {
 
+    /// The climbing backdrop's layer: over the painted background, under the bricks (1).
+    static let endlessIIBackdropZ: CGFloat = 0.6
+
     /// The asset slot the real artwork fills (§8.5). A vertically-looping tile.
     static let endlessIIBackdropAssetName = "EndlessMayhemBackdrop"
 
@@ -59,7 +62,7 @@ extension GameScene {
             tile.size = CGSize(width: frame.width, height: height)
             tile.anchorPoint = CGPoint(x: 0.5, y: 0)
             tile.position = CGPoint(x: 0, y: -frame.height/2 + CGFloat(index)*height)
-            tile.zPosition = 0.6
+            tile.zPosition = GameScene.endlessIIBackdropZ
             // Above the painted background overlay (0.5), below the bricks and the field's
             // own furniture (1) - the layer the run climbs past
             addChild(tile)

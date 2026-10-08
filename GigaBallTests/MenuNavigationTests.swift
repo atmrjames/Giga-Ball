@@ -830,6 +830,31 @@ final class DailyEndScreenLayoutTests: XCTestCase {
         return pause
     }
 
+    /// James, round 378: "In the GAME OVER / COMPLETE view at the end of a Daily Challenge for
+    /// the leaderboard, use a small table grid so the rank, username and score is better laid
+    /// out. Keep it small and subtle so it still fits nicely on the page."
+    func testTheDaysBoardIsASmallGridAndVoiceOverStillReadsIt() throws {
+        let pause = try XCTUnwrap(dailyCompleteScreen())
+        pause.dailyBoard = [
+            DailyBoardRow(rank: 1, name: "atmrjames", score: 4234, isLocalPlayer: true),
+            DailyBoardRow(rank: 2, name: "8lossom", score: 3051, isLocalPlayer: false)]
+        pause.dailyBoardPlayers = 2
+        pause.updateResultLine()
+
+        let text = try XCTUnwrap(pause.resultLabel.attributedText)
+        var grids: [UIImage] = []
+        text.enumerateAttribute(.attachment, in: NSRange(location: 0, length: text.length)) { value, _, _ in
+            if let image = (value as? NSTextAttachment)?.image { grids.append(image) }
+        }
+        let grid = try XCTUnwrap(grids.first, "one grid, not lines of text")
+        XCTAssertEqual(grid.size.width, PauseMenuViewController.boardGridWidth)
+        XCTAssertEqual(grid.size.height, PauseMenuViewController.boardGridRowHeight*2,
+                       "a row a place, at the small row height")
+        XCTAssertLessThanOrEqual(PauseMenuViewController.boardGridRowHeight, 16, "small")
+        XCTAssertTrue(pause.resultLabel.accessibilityLabel?.contains("1. atmrjames  4234") ?? false,
+                      "a picture says nothing to VoiceOver, so the rows are given as words")
+    }
+
     /// Level Score and Speed Bonus share a line, and the total is under both.
     func testTheBreakdownIsTwoLinesRatherThanThree() throws {
         let pause = try XCTUnwrap(dailyCompleteScreen(),
@@ -2093,5 +2118,21 @@ final class GameOverTimeTests: XCTestCase {
         XCTAssertEqual(PauseMenuViewController.runTime(196), "3:16")
         XCTAssertEqual(PauseMenuViewController.runTime(3725), "1:02:05")
         XCTAssertEqual(PauseMenuViewController.runTime(-5), "0:00")
+    }
+
+    /// James, round 378, with a Classic Complete screen listing five: "Limit the number of stats
+    /// listed on the COMPLETE / GAME OVER view to 3, with the others being listed in the
+    /// Statistics view. Those 3 should be time, paddle hits, bricks destroyed."
+    func testAnEndingListsTimePaddleHitsAndBricksDestroyed() {
+        for endless in [false, true] {
+            let summary = InGameRecents.RunSummary(
+                height: 0, durationSeconds: 76, paddleHits: 21, bricksDestroyed: 82,
+                ballsLost: 1, powerUpsSeen: 2, powerUpsCollected: 1,
+                score: 1549, levelsCleared: 0, isEndless: endless)
+            let shown = PauseMenuViewController.endingStats(summary)
+            XCTAssertEqual(shown.map(\.1), ["Time", "Paddle hits", "Bricks destroyed"],
+                           endless ? "endless" : "classic")
+            XCTAssertEqual(shown.map(\.2), ["1:16", "21", "82"])
+        }
     }
 }

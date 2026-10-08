@@ -5888,7 +5888,7 @@ final class PaddlePortalLookTests: XCTestCase {
     }
 
     private func glow(_ scene: GameScene) -> SKSpriteNode? {
-        scene.paddle.childNode(withName: GameScene.paddleGlowName) as? SKSpriteNode
+        scene.endlessIIPaddleGlowNode
     }
 
     /// **The asset name, not the object.** `SKTexture(imageNamed:)` hands back a fresh
@@ -5944,14 +5944,16 @@ final class PaddlePortalLookTests: XCTestCase {
 
         let glow = try XCTUnwrap(self.glow(scene))
         XCTAssertNil(glow.physicsBody, "a glow the ball can hit is a paddle bigger than it looks")
-        XCTAssertLessThan(glow.zPosition, 0, "behind the paddle, not over it")
-        XCTAssertEqual(glow.position, .zero, "centred on the paddle")
-        XCTAssertEqual(glow.size.width - scene.paddle.size.width,
+        XCTAssertLessThan(glow.zPosition, scene.paddle.zPosition, "behind the paddle, not over it")
+        XCTAssertEqual(glow.position, scene.paddle.position, "centred on the paddle")
+        XCTAssertEqual(glow.frame.width - scene.paddle.frame.width,
                        scene.endlessIIPaddleGlowMargin().width, accuracy: 0.001)
 
         scene.paddle.size.width = 150
+        scene.paddle.position.x = 60
         scene.tickEndlessIIPaddleDressing()
-        XCTAssertEqual(try XCTUnwrap(self.glow(scene)).size.width - 150,
+        XCTAssertEqual(try XCTUnwrap(self.glow(scene)).position.x, 60, "and where it goes")
+        XCTAssertEqual(try XCTUnwrap(self.glow(scene)).frame.width - 150,
                        scene.endlessIIPaddleGlowMargin().width, accuracy: 0.001,
                        "an expanded paddle keeps the same rim of light rather than a "
                        + "proportionally thicker one")
@@ -6412,16 +6414,19 @@ final class PaddleGlowMarginTests: XCTestCase {
     }
 
     private func glow(in scene: GameScene) throws -> SKSpriteNode {
-        try XCTUnwrap(scene.paddle.childNode(withName: GameScene.paddleGlowName) as? SKSpriteNode,
+        try XCTUnwrap(scene.endlessIIPaddleGlowNode,
                       "the Portal Paddle is running, so there is a glow")
     }
 
     /// What the player sees: the glow's width on screen, less the paddle's own.
+    ///
+    /// **Read off the two frames, not worked out** (round 378). This was
+    /// `glow.size.width*glow.xScale*paddle.xScale - paddle.size.width*paddle.xScale`, which is
+    /// the belief the code held - that a sprite's `size` leaves its scale out - so the test and
+    /// the bug agreed while the glow measured 815 points round a 184-point paddle. Both are the
+    /// scene's children now, and a sprite's `frame` is what it draws.
     private func marginOnScreen(_ scene: GameScene, _ glow: SKSpriteNode) -> CGFloat {
-        glow.size.width*glow.xScale*scene.paddle.xScale
-            - scene.paddle.size.width*scene.paddle.xScale
-        // The glow undoes its parent's stretch on its own scale since round 354, so both scales
-        // count
+        glow.frame.width - scene.paddle.frame.width
     }
 
     /// James, round 354: "portal paddle glow still extends incorrectly ... it gets too wide when
@@ -6432,8 +6437,10 @@ final class PaddleGlowMarginTests: XCTestCase {
         scene.paddle.xScale = 2
         scene.refreshEndlessIIPaddleGlow()
         let glow = try glow(in: scene)
-        XCTAssertEqual(glow.xScale*scene.paddle.xScale, 1, accuracy: 0.001,
-                       "drawn at one to one on screen")
+        XCTAssertFalse(glow.parent === scene.paddle,
+                       "not drawn through the paddle's scale, which stretches the slices again")
+        XCTAssertEqual(glow.size.width/glow.xScale, glow.texture?.size().width ?? 0,
+                       accuracy: 0.5, "widened by its own scale, which is what nine-slices")
         XCTAssertGreaterThan(glow.centerRect.minX, 0, "the ends are sliced off the stretch")
     }
 
@@ -6452,6 +6459,20 @@ final class PaddleGlowMarginTests: XCTestCase {
             XCTAssertEqual(margin, plain, accuracy: 0.5,
                            "at \(stretch)x the paddle the glow reaches \(Int(margin)) points "
                            + "past it, where a normal paddle's reaches \(Int(plain))")
+        }
+    }
+
+    /// James, round 378: "Can you check the paddle portal glow graphic when the paddle is big or
+    /// small, it should remain just slightly bigger than the paddle so the glow effect looks
+    /// right, but from memory it grows too big and shrinks too small."
+    func testTheGlowIsJustBiggerThanABigOrSmallPaddle() throws {
+        let scene = mayhem()
+        let margin = scene.endlessIIPaddleGlowMargin().width
+        for stretch in [CGFloat(0.5), 1, 2] {
+            scene.paddle.xScale = stretch
+            scene.refreshEndlessIIPaddleGlow()
+            XCTAssertEqual(marginOnScreen(scene, try glow(in: scene)), margin, accuracy: 0.5,
+                           "at \(stretch)x, just bigger than the paddle")
         }
     }
 
@@ -6511,6 +6532,14 @@ final class EndlessIIMagnetFieldTests: XCTestCase {
         let top = try XCTUnwrap(first.map(\.from.y).max())
         let laterTop = try XCTUnwrap(later.map(\.from.y).max())
         XCTAssertEqual(laterTop, top - 3, accuracy: 0.01, "three points on, three points lower")
+    }
+
+    /// James, round 378: "Check the magnet graphic looks right, it's either not showing up or
+    /// too subtle." It was layered under Mayhem's climbing backdrop, in the one mode that has
+    /// Magnetism. Over the backdrop, and still under the bricks it pulls the ball past.
+    func testTheFieldIsDrawnOverMayhemsBackdrop() {
+        XCTAssertGreaterThan(GameScene.magnetFieldZ, GameScene.endlessIIBackdropZ)
+        XCTAssertLessThan(GameScene.magnetFieldZ, 1, "under the bricks, balls and drops")
     }
 
     /// The field is the region the pull acts in: the magnet's reach, or less where the field's

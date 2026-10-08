@@ -502,20 +502,9 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
         statsUnderTheResult.isActive = false
         statsWellUnderTheResult.isActive = false
         let text = NSMutableAttributedString()
-        var items: [(String, String, String)] = [
-            ("clock", "Time", PauseMenuViewController.runTime(summary.durationSeconds)),
-            ("rectangle.fill", "Paddle hits", "\(summary.paddleHits)"),
-            ("square.grid.3x2.fill", "Bricks destroyed", "\(summary.bricksDestroyed)"),
-            ("arrow.down.circle.fill", "Power-ups collected", "\(summary.powerUpsCollected)")]
-        if summary.isEndless == false {
-            items.insert(("flag.fill", "Levels cleared", "\(summary.levelsCleared)"), at: 0)
-        }
-        // **The time is one of them** (James, round 376: "Put the time as one of the stats listed
-        // on the game over screen"). It was only on the detail screen behind Statistics; it is
-        // the run's whole length, so it leads, after how far a Classic run got
-        // Every game over carries its run's numbers now, not only the endless ones
-        // (play-test round 13) - and a classic run leads with how far it got, which is the
-        // thing an endless run says with its height
+        let items = PauseMenuViewController.endingStats(summary)
+        // Every game over carries its run's numbers, not only the endless ones (play-test round
+        // 13). Which three is `endingStats`'s
         for (position, item) in items.enumerated() {
             if position > 0 { text.append(NSAttributedString(string: "\n")) }
             let badge = NSTextAttachment()
@@ -541,6 +530,90 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
         runStatsLabel.attributedText = text
     }
     // Asked of the session, which outlives the scene until the menus return
+
+    /// The day's leading places as a small three-column table: rank, player, score.
+    ///
+    /// Small and quiet, as asked: twelve-point type, a faint backing, hairlines between rows,
+    /// and the player's own row in lime on a faint lime band - the menu card's look in
+    /// miniature (round 376), so the two boards read as the same board.
+    static let boardGridWidth: CGFloat = 236
+    static let boardGridRowHeight: CGFloat = 16
+
+    static func boardGrid(_ rows: [DailyBoardRow], unit: String) -> UIImage {
+        let width = boardGridWidth
+        let rowHeight = boardGridRowHeight
+        let size = CGSize(width: width, height: rowHeight*CGFloat(rows.count))
+        let lime = #colorLiteral(red: 0.8235294118, green: 1, blue: 0, alpha: 1)
+        return UIGraphicsImageRenderer(size: size).image { context in
+            let backing = UIBezierPath(roundedRect: CGRect(origin: .zero, size: size),
+                                       cornerRadius: 6)
+            UIColor(white: 1, alpha: 0.05).setFill()
+            backing.fill()
+            backing.addClip()
+
+            let rankWidth: CGFloat = 26
+            let inset: CGFloat = 8
+            for (position, row) in rows.enumerated() {
+                let top = rowHeight*CGFloat(position)
+                if row.isLocalPlayer {
+                    lime.withAlphaComponent(0.14).setFill()
+                    context.fill(CGRect(x: 0, y: top, width: width, height: rowHeight))
+                }
+                if position > 0 {
+                    UIColor(white: 1, alpha: 0.08).setFill()
+                    context.fill(CGRect(x: inset, y: top, width: width - inset*2, height: 0.5))
+                }
+                let colour = row.isLocalPlayer ? lime : UIColor(white: 1, alpha: 0.8)
+                func draw(_ string: String, font: UIFont, in rect: CGRect,
+                          alignment: NSTextAlignment, colour: UIColor) {
+                    let paragraph = NSMutableParagraphStyle()
+                    paragraph.alignment = alignment
+                    paragraph.lineBreakMode = .byTruncatingTail
+                    let attributes: [NSAttributedString.Key: Any] =
+                        [.font: font, .foregroundColor: colour, .paragraphStyle: paragraph]
+                    let height = (string as NSString).size(withAttributes: attributes).height
+                    (string as NSString).draw(
+                        with: CGRect(x: rect.minX, y: rect.midY - height/2,
+                                     width: rect.width, height: height),
+                        options: [.usesLineFragmentOrigin, .truncatesLastVisibleLine],
+                        attributes: attributes, context: nil)
+                }
+                let score = "\(row.score)" + unit
+                let scoreFont = UIViewController.gameScoreFont(ofSize: 12)
+                let scoreWidth = ceil((score as NSString)
+                    .size(withAttributes: [.font: scoreFont]).width) + 2
+                let band = CGRect(x: 0, y: top, width: width, height: rowHeight)
+                draw("\(row.rank)", font: UIViewController.gameScoreFont(ofSize: 11),
+                     in: CGRect(x: inset, y: band.minY, width: rankWidth - 6, height: rowHeight),
+                     alignment: .right,
+                     colour: row.isLocalPlayer ? lime : UIColor(white: 1, alpha: 0.5))
+                draw(row.name, font: .systemFont(ofSize: 12,
+                                                 weight: row.isLocalPlayer ? .bold : .regular),
+                     in: CGRect(x: inset + rankWidth, y: band.minY,
+                                width: width - inset*2 - rankWidth - scoreWidth - 6,
+                                height: rowHeight),
+                     alignment: .left, colour: colour)
+                draw(score, font: scoreFont,
+                     in: CGRect(x: width - inset - scoreWidth, y: band.minY,
+                                width: scoreWidth, height: rowHeight),
+                     alignment: .right, colour: colour)
+            }
+        }
+    }
+
+    /// The three numbers an ending lists under Statistics: icon, label, value.
+    ///
+    /// **Three, and these three** (James, round 378: "Limit the number of stats listed on the
+    /// COMPLETE / GAME OVER view to 3, with the others being listed in the Statistics view. Those
+    /// 3 should be time, paddle hits, bricks destroyed"). It had grown to five on a Classic
+    /// ending - levels cleared, then round 376's time - and five lines of small print under a
+    /// score and a hi-score is a second screen on the first. Levels cleared and power-ups
+    /// collected were already on the Statistics screen, so nothing went anywhere new.
+    static func endingStats(_ summary: InGameRecents.RunSummary) -> [(String, String, String)] {
+        [("clock", "Time", runTime(summary.durationSeconds)),
+         ("rectangle.fill", "Paddle hits", "\(summary.paddleHits)"),
+         ("square.grid.3x2.fill", "Bricks destroyed", "\(summary.bricksDestroyed)")]
+    }
 
     /// A run's length as the statistics screen writes it: minutes and seconds, hours when it
     /// gets there.
@@ -1320,17 +1393,25 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
             // label"). The board's rows below carry the player's own place, so the line said
             // it twice; it stays only as the confirmation while the board has not answered
             let text = NSMutableAttributedString(string: lines.joined(separator: "\n"))
-            let lime = #colorLiteral(red: 0.8235294118, green: 1, blue: 0, alpha: 1)
-            for row in dailyBoard {
+            if dailyBoard.isEmpty == false {
                 if text.length > 0 { text.append(NSAttributedString(string: "\n")) }
-                text.append(NSAttributedString(
-                    string: row.line(unit: unit),
-                    attributes: row.isLocalPlayer
-                        ? [.foregroundColor: lime, .font: UIFont.boldSystemFont(ofSize: 12)]
-                        : [.foregroundColor: UIColor(white: 1, alpha: 0.75)]))
+                let grid = PauseMenuViewController.boardGrid(dailyBoard, unit: unit)
+                let attachment = NSTextAttachment()
+                attachment.image = grid
+                attachment.bounds = CGRect(origin: CGPoint(x: 0, y: -2), size: grid.size)
+                text.append(NSAttributedString(attachment: attachment))
             }
             // **The day's top places, under the placing** (round 354), the player's own in lime.
-            // Three at most, one line each, so the block still fits above the buttons on an SE
+            // Three at most. On a Classic day with a speed bonus the screen is already over-full
+            // on smaller phones before any board arrives, and the board adds to it - queued in
+            // ENDLESS-2-SPECIFICATION §12.0 (round 378) rather than worked round here.
+            // **In a small grid** (James, round 378: "use a small table grid so the rank, username
+            // and score is better laid out. Keep it small and subtle so it still fits nicely on
+            // the page"). They were "1. Name  4234" lines centred one under another, so neither
+            // the names nor the scores lined up. Drawn as a picture in the text rather than as
+            // views beside it: the label is already placed between the placing and the buttons
+            // on every screen size, and columns in a centred label would need its width at the
+            // moment the text is written, which this screen does not reliably know
             if dailyBoard.isEmpty == false, let count = DailyBoardRow.playersLine(dailyBoardPlayers) {
                 text.append(NSAttributedString(
                     string: "\n" + count,
@@ -1343,6 +1424,11 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
             resultLabel.isHidden = empty
             leaderboardTitle.isHidden = empty
             resultLabel.attributedText = text
+            resultLabel.accessibilityLabel = dailyBoard.isEmpty ? nil
+                : (lines + dailyBoard.map { $0.line(unit: unit) }
+                   + [DailyBoardRow.playersLine(dailyBoardPlayers)].compactMap { $0 })
+                    .joined(separator: ", ")
+            // The grid is a picture, so VoiceOver is given its rows as words
             return
         }
 

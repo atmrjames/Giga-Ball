@@ -2491,6 +2491,25 @@ final class DailyAlwaysOnTests: XCTestCase {
         }
     }
 
+    /// James, round 378: "For the Daily Challenge always on twist, use a similar setup to the
+    /// theme twist, name the always on power-up in the twist name, e.g. Slow Ball Always On."
+    func testTheTwistsNameIsThePowerUpAlwaysOn() {
+        var key = "2026-11-15"
+        var seen = 0
+        for _ in 0..<30 {
+            let mode = DailyChallengeGenerator.challenge(forKey: key).mode
+            if let index = DailyTwist.alwaysOnPowerUp(forKey: key, mode: mode) {
+                XCTAssertEqual(DailyTwist.alwaysOn.displayName(forKey: key),
+                               LevelPackSetup.shared.powerUpNameArray[index] + " Always On", key)
+                seen += 1
+            }
+            key = DailyChallengeGenerator.previousKey(of: key)!
+        }
+        XCTAssertGreaterThan(seen, 0, "a month with no power-up drawn proves nothing")
+        XCTAssertEqual(DailyTwist.oneLife.displayName(forKey: key), DailyTwist.oneLife.displayName,
+                       "every other twist keeps its own name")
+    }
+
     /// **And it stays full** (James, round 376: "During the game the progress bar of the always
     /// on power up continuously counted down and then reset. It should just stay full the whole
     /// time") - a Mayhem clock held at its total, and a tray bar held at full width.
@@ -3912,14 +3931,18 @@ final class DailyBoardRowTests: XCTestCase {
         XCTAssertEqual(board.own, me, "the current player at the top, with their position")
     }
 
-    /// A player in the top ten is in both places, as on Game Center's own board: the pinned row
-    /// says where they are, the list says who is around them.
-    func testAPlayerInTheTopTenIsPinnedAndInPlace() {
+    /// James, round 378: "No need to show the current user above the Daily Challenge
+    /// leaderboard, if they also appear in the top # leaderboard otherwise they just appear
+    /// twice." His screenshot: a board of one, "1 atmrjames 4234" pinned and listed.
+    func testAPlayerInTheListIsNotPinnedAsWell() {
+        let me = DailyBoardRow(rank: 1, name: "atmrjames", score: 4_234, isLocalPlayer: true)
+        let alone = DailyBoardRow.menuBoard(leaders: [me], local: me, limit: 10)
+        XCTAssertNil(alone.own, "they just appear twice")
+        XCTAssertEqual(alone.leaders, [me], "once, in the list, in lime")
+
         var top = leaders(10)
         top[3] = DailyBoardRow(rank: 4, name: "Me", score: 9_600, isLocalPlayer: true)
-        let board = DailyBoardRow.menuBoard(leaders: top, local: top[3], limit: 10)
-        XCTAssertEqual(board.own?.rank, 4)
-        XCTAssertEqual(board.leaders.filter(\.isLocalPlayer).map(\.rank), [4])
+        XCTAssertNil(DailyBoardRow.menuBoard(leaders: top, local: top[3], limit: 10).own)
     }
 
     /// Round 361's rule carries over: no score posted, no row of the player's own anywhere.

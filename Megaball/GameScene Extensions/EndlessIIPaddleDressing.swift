@@ -141,7 +141,7 @@ extension GameScene {
     /// No physics body, like the bricks' - a child sprite has none unless given one, and a
     /// glow the ball could bounce off would be a paddle bigger than it looks.
     func refreshEndlessIIPaddleGlow() {
-        let existing = paddle.childNode(withName: GameScene.paddleGlowName) as? SKSpriteNode
+        let existing = endlessIIPaddleGlowNode
         guard endlessIIPortalPaddleClock.isRunning,
               let texture = endlessIIPaddleGlowTexture()
         else { existing?.removeFromParent(); return }
@@ -149,43 +149,59 @@ extension GameScene {
         let glow = existing ?? {
             let made = SKSpriteNode()
             made.name = GameScene.paddleGlowName
-            made.zPosition = -0.1
-            paddle.addChild(made)
+            addChild(made)
             return made
         }()
 
-        let margin = endlessIIPaddleGlowMargin()
-        let stretch = max(abs(paddle.xScale), 0.01)
-        glow.texture = texture
-        glow.xScale = 1/stretch
-        glow.size = CGSize(width: paddle.size.width*stretch + margin.width,
-                           height: paddle.size.height + margin.height)
         let art = texture.size()
+        glow.texture = texture
+        glow.xScale = 1
+        glow.yScale = 1
+        glow.size = art
         let cap = art.width > 0 ? min(0.45, (art.height/2)/art.width) : 0
         glow.centerRect = CGRect(x: cap, y: 0, width: 1 - cap*2, height: 1)
-        // **The rounded ends keep their size, and so does the rim** (James, round 354: "portal
-        // paddle glow still extends incorrectly - it should stay the same size relative to the
-        // paddle, not expand at the same rate as the paddle. It gets too wide when extending").
-        // Round 327 kept the *margin* at forty points by dividing it by the paddle's stretch,
-        // and the halo's size was then right - but a child is drawn through its parent's
-        // `xScale`, so the picture itself was still stretched: its soft rounded ends doubled in
-        // width with the paddle, and the glow bloomed out past the tips. Now the glow undoes
-        // the parent's stretch on its own scale and is sized in screen points, and the picture
-        // is nine-sliced so only its straight middle grows
-        // **Divided by the paddle's scale, because the glow is the paddle's child** (James,
-        // round 327: "paddle glow is expanding and shrinking too far. It should stay 40 points
-        // bigger than the paddle, not expand at the same rate"). Round 320 made the margin an
-        // absolute 40 points rather than a ratio, and it was right until Expand and Shrink
-        // stopped writing `paddle.size` and started animating `xScale` instead (round 321's
-        // fix for a paddle caught mid-resize). A child's size is in the parent's coordinates,
-        // so a doubled paddle drew the margin at double as well - a ratio again by the back
-        // door, from the one direction the round 320 note did not cover. Dividing puts 40
-        // points on the screen at every width. Only the width: `scaleX` is the only one
-        // Expand and Shrink touch, and the height is already in screen points
-        glow.position = .zero
-        // Centred on the paddle node, which is where the paddle's own picture is drawn - and
-        // a split paddle keeps its full span (round 313s), so one halo across the whole of it
-        // is right rather than one per piece
+        let wanted = GameScene.paddleGlowSize(paddleDrawnSize: paddle.frame.size,
+                                              margin: endlessIIPaddleGlowMargin())
+        glow.xScale = art.width > 0 ? wanted.width/art.width : 1
+        glow.yScale = art.height > 0 ? wanted.height/art.height : 1
+        glow.position = paddle.position
+        glow.zPosition = paddle.zPosition - 0.1
+        glow.isHidden = paddle.isHidden
+        glow.alpha = paddle.alpha
+        // **Beside the paddle, not on it, and widened by its own scale** (James, round 378: "it
+        // should remain just slightly bigger than the paddle so the glow effect looks right, but
+        // from memory it grows too big and shrinks too small"). It was the paddle's child, so it
+        // was drawn through the paddle's `xScale` - the scale Expand and Shrink animate - and
+        // every round since 320 tried to undo that from inside: a margin divided by the stretch
+        // (327), then an inverse scale and a nine-slice (354). Measured in a presented scene in
+        // round 378, the sums were off - the halo was 815 points round a 184-point paddle - and
+        // with the sums put right the picture was still wrong: short of the ends at double
+        // width, square-ended at half. SpriteKit nine-slices on a sprite's own scale, and a
+        // parent's scale then stretches the slices again, so no arithmetic on a child gives a
+        // halo whose ends keep their shape. As a sibling at scale one there is nothing to undo:
+        // its width is the paddle's drawn width plus the margin, and the nine-slice keeps the
+        // soft ends their drawn size at any width.
+        //
+        // Followed every frame from the dressing tick, which runs in `update` after touches
+        // have moved the paddle, so it is where the paddle is in the frame that is drawn. It
+        // takes the paddle's visibility too, which as a child it used to inherit. One halo
+        // across a split paddle's whole span, as before (round 313s): the paddle node's frame
+        // is the span.
+    }
+
+    /// The Portal Paddle's glow, which stands in the scene beside the paddle (round 378).
+    var endlessIIPaddleGlowNode: SKSpriteNode? {
+        childNode(withName: GameScene.paddleGlowName) as? SKSpriteNode
+    }
+
+    /// How big the glow is drawn, in screen points: `margin` bigger than the paddle as drawn.
+    ///
+    /// **From the paddle's drawn size**, which already carries Expand's and Shrink's scale -
+    /// §8.6's trap is that a sprite's `size` does too. Round 354's sum multiplied that by the
+    /// stretch a second time; see `refreshEndlessIIPaddleGlow` for the rest.
+    static func paddleGlowSize(paddleDrawnSize: CGSize, margin: CGSize) -> CGSize {
+        CGSize(width: abs(paddleDrawnSize.width) + margin.width,
+               height: abs(paddleDrawnSize.height) + margin.height)
     }
 
     private func dressEndlessIIPaddle() {
@@ -363,8 +379,11 @@ extension GameScene {
         }
         while endlessIIMagnetField.count < surfaces.count {
             let field = SKShapeNode()
-            field.lineWidth = 3
+            field.lineWidth = GameScene.magnetFieldDotWidth
             field.lineCap = .round
+            field.blendMode = .add
+            // Added light, like the paddle's glow: lime laid over the dark field brightens it
+            // rather than sitting on it as an olive mark (round 378)
             field.zPosition = GameScene.magnetFieldZ
             field.strokeColor = GameScene.endlessIIHaloColour
             addChild(field)
@@ -393,8 +412,14 @@ extension GameScene {
         }
     }
 
-    /// Between the backdrop (0) and the bricks (1), so the field is behind everything it acts on.
-    static let magnetFieldZ: CGFloat = 0.5
+    /// Between the backdrops and the bricks (1), so the field is behind everything it acts on.
+    ///
+    /// **Above Mayhem's climbing backdrop** (James, round 378: "Check the magnet graphic looks
+    /// right, it's either not showing up or too subtle"). It was 0.5, written against the painted
+    /// background at 0 - and Mayhem, the only mode with Magnetism, lays its scrolling backdrop
+    /// tiles over that at 0.6. So the field was drawn underneath a veil, in the one mode it
+    /// exists in. 0.8 is over the backdrop and still under the bricks, balls and drops.
+    static let magnetFieldZ: CGFloat = 0.8
 
     /// How fast the drawn strength follows the real one, per second: about a fifth of a second
     /// from nothing to full, which reads as the field answering the ball rather than lagging it.
@@ -429,10 +454,18 @@ extension GameScene {
             .max() ?? 0
     }
 
-    /// The lines' opacity for a strength: faint at the edge of the region, strong at the paddle.
+    /// How wide a dot is drawn: a round cap this wide on a one-point stroke.
+    static let magnetFieldDotWidth: CGFloat = 4.5
+
+    /// The lines' opacity for a strength: plain at the edge of the region, full at the paddle.
+    ///
+    /// **From 0.4, where it was 0.12** (James, round 378: "it's either not showing up or too
+    /// subtle"). With the field moved out from under Mayhem's backdrop it showed, as rows of
+    /// three-point olive dots that a player watching the ball would not see. Bigger dots, added
+    /// light and a floor a player can see at the edge of the region.
     static func magnetFieldAlpha(strength: CGFloat) -> CGFloat {
         let clamped = min(max(strength, 0), 1)
-        return clamped == 0 ? 0 : 0.12 + clamped*0.68
+        return clamped == 0 ? 0 : 0.4 + clamped*0.6
     }
 
     /// The field's lines, in the paddle's own frame: `magnetFieldLines` verticals evenly across

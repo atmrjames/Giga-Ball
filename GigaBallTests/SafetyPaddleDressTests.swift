@@ -263,7 +263,7 @@ final class SplitPaddleTintTests: XCTestCase {
             XCTAssertEqual(half.colorBlendFactor, 0, accuracy: 0.0001,
                            "a split Portal Paddle is lit, not painted")
         }
-        XCTAssertNotNil(scene.paddle.childNode(withName: GameScene.paddleGlowName),
+        XCTAssertNotNil(scene.endlessIIPaddleGlowNode,
                         "and with no tint, the halo is the only thing saying Portal")
     }
 
@@ -278,7 +278,7 @@ final class SplitPaddleTintTests: XCTestCase {
                        "nothing is painted on it - `paint` with no tint takes the blend to "
                        + "zero and leaves the colour alone, since a colour at zero blend is "
                        + "not drawn")
-        XCTAssertNotNil(scene.paddle.childNode(withName: GameScene.paddleGlowName))
+        XCTAssertNotNil(scene.endlessIIPaddleGlowNode)
     }
 
     /// **Magnetism was the last power-up tinting the paddle, and now nothing does** (James,
@@ -297,7 +297,7 @@ final class SplitPaddleTintTests: XCTestCase {
 
         XCTAssertEqual(scene.paddle.colorBlendFactor, 0, accuracy: 0.0001,
                        "nothing paints the paddle any more")
-        XCTAssertNil(scene.paddle.childNode(withName: GameScene.paddleGlowName),
+        XCTAssertNil(scene.endlessIIPaddleGlowNode,
                      "and Magnetism still has no halo - the lines are its whole signal")
     }
 

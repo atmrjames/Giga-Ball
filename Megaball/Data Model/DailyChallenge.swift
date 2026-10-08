@@ -239,13 +239,35 @@ enum DailyTwist: String, CaseIterable, Codable {
         return names.indices.contains(index) ? names[index] : ""
     }
 
-    /// The twist's name for a particular day: "Ice Theme" on a Theme day, the plain name
-    /// otherwise (round 321).
+    /// The power-up an Always On day holds, by name - the one `tickDailyAlwaysOn` keeps running.
+    ///
+    /// The day's mode is part of the draw, and it is the day's own, so this asks the generator
+    /// for the day rather than taking a mode from whoever is asking.
+    static func alwaysOnName(forKey key: String) -> String? {
+        let day = DailyChallengeGenerator.challenge(forKey: key)
+        let names = LevelPackSetup.shared.powerUpNameArray
+        guard let index = alwaysOnPowerUp(forKey: key, mode: day.mode),
+              names.indices.contains(index) else { return nil }
+        return names[index]
+    }
+
+    /// The twist's name for a particular day: "Ice Theme" on a Theme day (round 321), "Slow
+    /// Ball Always On" on an Always On day (round 378), the plain name otherwise.
     func displayName(forKey key: String) -> String {
-        guard self == .dailyTheme else { return displayName }
-        let theme = DailyTwist.themeName(forKey: key)
-        return theme.isEmpty ? displayName : theme + " Theme"
-        // **"Rainbow Theme", not "Theme - Rainbow"** (James, round 350)
+        switch self {
+        case .dailyTheme:
+            let theme = DailyTwist.themeName(forKey: key)
+            return theme.isEmpty ? displayName : theme + " Theme"
+            // **"Rainbow Theme", not "Theme - Rainbow"** (James, round 350)
+        case .alwaysOn:
+            return DailyTwist.alwaysOnName(forKey: key).map { $0 + " Always On" } ?? displayName
+            // **The power-up in the name** (James, round 378: "For the Daily Challenge always on
+            // twist, use a similar setup to the theme twist, name the always on power-up in the
+            // twist name, e.g. Slow Ball Always On"). The card, the intro and the pause screen
+            // all list twists by name alone, so the name is where it has to be said
+        default:
+            return displayName
+        }
     }
 
     /// And its blurb for that day, which names the theme rather than promising "one".
@@ -261,11 +283,9 @@ enum DailyTwist: String, CaseIterable, Codable {
             return "The whole run is played in the \(theme) theme, on the \(ground.name) background"
         case .alwaysOn:
             // **Which one** (James, round 376: "For the always on twist, tell me what power up it
-            // is in the description"). The day's mode is part of the draw, and it is the day's own
-            let day = DailyChallengeGenerator.challenge(forKey: key)
-            guard let index = DailyTwist.alwaysOnPowerUp(forKey: key, mode: day.mode),
-                  LevelPackSetup.shared.powerUpNameArray.indices.contains(index) else { return blurb }
-            return "\(LevelPackSetup.shared.powerUpNameArray[index]) is active for the whole run"
+            // is in the description")
+            guard let name = DailyTwist.alwaysOnName(forKey: key) else { return blurb }
+            return "\(name) is active for the whole run"
         default:
             return blurb
         }
@@ -1870,10 +1890,15 @@ struct DailyBoardRow: Equatable {
     /// leaderboard, allow it to be scrollable, showing at least the top 10 players, plus the
     /// current player at the top with a gap and highlighted with their position."** Game
     /// Center's own board is laid out this way: the player's row first, where it never has to be
-    /// looked for, and the board from the top under it - so a player in the top ten is in both
-    /// places, which is how they see where they stand among the others. `shown` keeps the older
-    /// order, the player under the leaders, for the pause screen and the day's report, which
-    /// have room for a few rows and no more.
+    /// looked for, and the board from the top under it. `shown` keeps the older order, the
+    /// player under the leaders, for the pause screen and the day's report, which have room for
+    /// a few rows and no more.
+    ///
+    /// **Pinned only from outside the list** (James, round 378, with a screenshot of himself at
+    /// 1 twice: "No need to show the current user above the Daily Challenge leaderboard, if they
+    /// also appear in the top # leaderboard otherwise they just appear twice"). Round 376 put a
+    /// player in the top ten in both places, as Game Center does; on a board of two it was the
+    /// same line twice, one under the other. In the list they are already picked out in lime.
     ///
     /// The same rule for a player who has not posted (round 361): no row of their own, and no
     /// row among the leaders either.
@@ -1882,8 +1907,9 @@ struct DailyBoardRow: Equatable {
         -> (own: DailyBoardRow?, leaders: [DailyBoardRow]) {
         let others = localHasPosted ? leaders : leaders.filter { $0.isLocalPlayer == false }
         let top = Array(others.sorted { $0.rank < $1.rank }.prefix(limit))
-        guard localHasPosted else { return (nil, top) }
-        return (local ?? top.first(where: \.isLocalPlayer), top)
+        guard localHasPosted, let local,
+              top.contains(where: \.isLocalPlayer) == false else { return (nil, top) }
+        return (local, top)
     }
 
     /// "1. Name  12,340m", for a place with room for one line of text.
