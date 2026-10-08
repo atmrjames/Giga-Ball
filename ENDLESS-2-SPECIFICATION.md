@@ -2995,8 +2995,10 @@ testers:
     and 0.5x.
   - The two identity checks on these pictures now look through the copy
     (`originalPaddleArt`).
-  - The Retro paddle draws through three of the same six sprites. A harness could not
-    switch the theme, so it was not rendered.
+  - The Retro paddle draws through three of the same six sprites, and was rendered in its
+    Portal art at the same four widths: the purple ends keep one shape throughout and only
+    the lime middle stretches. (It was first logged as not rendered, because the log read
+    the plain `paddle` node, which keeps the plain art under Retro's own sprite.)
 - **Magnetism's dots** (James: "make the dots longer and the spaces between them larger, and
   make them transparent, getting more opaque towards the paddle with a maximum of 50%
   opacity").
