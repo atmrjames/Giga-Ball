@@ -44,6 +44,13 @@ enum AchievementCatalogue {
     ///
     /// Append-only, like every other array in this family: a shipped identifier can never be
     /// renamed, because Game Center has it.
+    ///
+    /// **The one exception was four that Game Center never had** (round 377). Entries 68, 69,
+    /// 75 and 76 were written here as `mayhemFiveHundred`, `mayhemOneK`, `mayhemThirtyMinutes`
+    /// and `mayhemOneHour`, and App Store Connect created them under the names below - so every
+    /// report of them was refused ("No AchievementDescription could be found") and no player
+    /// holds them under the old names. The earned flags are kept by index, so a player who
+    /// earned one locally still has it, and the next report carries the name that lands.
     static let identifiers: [String] = [
         "achievementEndlessTen",              // 0 Endless Mode 10m Milestone
         "achievementEndlessHundred",          // 1 Endless Mode 100m Milestone
@@ -113,15 +120,15 @@ enum AchievementCatalogue {
         "thousandPacksComplete",              // 65 Pack Millennium
         "mayhemTen",                          // 66 Endless Mayhem
         "mayhemHundred",                      // 67 Endless Mayhem
-        "mayhemFiveHundred",                  // 68 Endless Mayhem
-        "mayhemOneK",                         // 69 Endless Mayhem
+        "achievementEndlessMayhemFiveHundred", // 68 Endless Mayhem
+        "achievementEndlessMayhemOneK",       // 69 Endless Mayhem
         "mayhemFiveKTotal",                   // 70 Endless Mayhem
         "mayhemTenKTotal",                    // 71 Endless Mayhem
         "mayhemOneMinute",                    // 72 Endless Mayhem
         "mayhemFiveMinutes",                  // 73 Endless Mayhem
         "mayhemTenMinutes",                   // 74 Endless Mayhem
-        "mayhemThirtyMinutes",                // 75 Endless Mayhem
-        "mayhemOneHour",                      // 76 Endless Mayhem
+        "mayhemThirtyMins",                   // 75 Endless Mayhem
+        "mayhemSixtyMins",                    // 76 Endless Mayhem
         "mayhemClear",                        // 77 Tidying Up Amongst The Mayhem
         "mayhemPowerUpBrick",                 // 78 Feel The Power Of The Brick
         "mayhemWreckingGiga",                 // 79 Giga-Wrecking Ball!
@@ -258,6 +265,56 @@ enum AchievementCatalogue {
     // are: a daily *run* in Mayhem is a Mayhem run, and the checks that award them do not ask
     // whose scoreboard it is going to. What `mayhemOnly` decides is which **tab** they are
     // listed under, and that is Mayhem
+
+    // MARK: The four renamed in round 377
+
+    /// The entries whose identifiers were corrected in round 377 - see `identifiers`.
+    static let renamedInRound377 = [68, 69, 75, 76]
+
+    /// Set once Game Center has taken the corrected four, so they are sent once per device.
+    static let renamedReportedKey = "achievementsRenamedInRound377Reported"
+
+    /// The corrected identifiers a player has earned here and Game Center still has to hear.
+    ///
+    /// **An achievement is reported once, at the moment it is earned** (`award`), and never
+    /// again: a second award finds the flag set and stops. So a TestFlight player who reached
+    /// 500m in Mayhem before round 377 holds the flag, the one report it made carried a name
+    /// Game Center refused, and correcting the name alone would leave that achievement missing
+    /// from Game Center for good. Nothing else is resent - every other identifier has always
+    /// matched App Store Connect, so its one report was one Game Center could take.
+    static func owedAfterRename(earned: [Bool], alreadySent: Bool) -> [String] {
+        guard alreadySent == false else { return [] }
+        return renamedInRound377
+            .filter { $0 < earned.count && $0 < identifiers.count && earned[$0] }
+            .map { identifiers[$0] }
+    }
+
+    /// Sends the corrected four to Game Center, once, for a player who earned them.
+    ///
+    /// Without a banner: the player earned these a while ago and saw them unlock then. The flag
+    /// is set only when Game Center says it took them, so a failed send is tried again at the
+    /// next sign-in.
+    static func reportRenamed(earned: [Bool], store: KeyValueStore,
+                              report: @escaping ([GKAchievement], @escaping (Error?) -> Void) -> Void
+                                = { GKAchievement.report($0, withCompletionHandler: $1) }) {
+        let owed = owedAfterRename(earned: earned,
+                                   alreadySent: store.object(forKey: renamedReportedKey) as? Bool
+                                                    ?? false)
+        guard owed.isEmpty == false else { return }
+        let achievements = owed.map { identifier -> GKAchievement in
+            let achievement = GKAchievement(identifier: identifier)
+            achievement.percentComplete = 100
+            achievement.showsCompletionBanner = false
+            return achievement
+        }
+        report(achievements) { error in
+            if let error {
+                Log.gameCenter.error("Resending the renamed achievements: \(error.localizedDescription, privacy: .public)")
+                return
+            }
+            DispatchQueue.main.async { store.set(true, forKey: renamedReportedKey) }
+        }
+    }
 
     /// Marks achievements earned outside a running game, and reports them to Game Center.
     ///

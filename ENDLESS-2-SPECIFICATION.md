@@ -2959,6 +2959,26 @@ testers:
   falling power-up's position by `brickWidth`, so a bare `GameScene()` with a power-up on
   screen traps converting NaN to Int. A real scene is always laid out before play.
 
+**Round 377: four achievement names, and a question closed.**
+
+- **The four Mayhem achievements Game Center refused** (round 372's log) were never missing from
+  App Store Connect: they exist there as `achievementEndlessMayhemFiveHundred`,
+  `achievementEndlessMayhemOneK`, `mayhemThirtyMins` and `mayhemSixtyMins`, and the game had
+  spelled them differently. `AchievementCatalogue.identifiers` now carries those names. This
+  is the one exception to the array's rule that a shipped name is never renamed: Game Center
+  never held the old four.
+- **Correcting the names alone would have stranded anyone who had earned them.** An
+  achievement is reported once, when it is earned, and never again. So a TestFlight player
+  who reached 500m before this round holds the earned flag locally, while the one report
+  that flag made was refused. `AchievementCatalogue.reportRenamed` sends the four, without a
+  banner, to a player who earned them, once, when Game Center signs in. The once-only flag is
+  set only after Game Center accepts them, so a failed send is retried at the next sign-in.
+  `RenamedMayhemAchievementTests`.
+- **The daily's "newer version exists" question is closed** (DAILY-CHALLENGE-SPECIFICATION
+  §13). James chose not checking, and accepting that versions may differ for up to 14 days.
+  Nothing is built for it. The rule it leaves every later release is §2.1's: new pool content
+  activates at least 14 days after the release it ships in.
+
 **Round 376: a play-test list, and the daily menu's board.**
 
 - **Zap Indestructible spares a power-up brick.** It cleared anything not breakable by a hit,
@@ -3078,7 +3098,8 @@ the music crossfade does not hold on a device.
 - **Four achievements Game Center does not know**: `mayhemFiveHundred`, `mayhemOneK`,
   `mayhemThirtyMinutes` and `mayhemOneHour` ("No AchievementDescription could be found"). The IDs
   are spelled in `AchievementCatalogue.identifiers`; they need creating, or checking, in App Store
-  Connect.
+  Connect. **Answered, round 377:** App Store Connect had them all along under other names, and
+  the game's four were corrected to match (see round 377).
 - Still in the log and still queued for 1.4: the in-game screens' label pairs (centre ±17, heights
   22 and 36) and the ball rack's zero height - UIKit resolves both, on a phone as well as the Mac.
 

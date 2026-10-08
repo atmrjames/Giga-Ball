@@ -1173,15 +1173,15 @@ class LevelPackSetup {
         "Pack Millennium", // 65 thousandPacksComplete
         "Endless Mayhem 10m Milestone",             // 66 mayhemTen
         "Endless Mayhem 100m Milestone",            // 67 mayhemHundred
-        "Endless Mayhem 500m Milestone",            // 68 mayhemFiveHundred
-        "Endless Mayhem 1,000m Milestone",          // 69 mayhemOneK
+        "Endless Mayhem 500m Milestone",            // 68 achievementEndlessMayhemFiveHundred
+        "Endless Mayhem 1,000m Milestone",          // 69 achievementEndlessMayhemOneK
         "Endless Mayhem 5,000m Total Height",       // 70 mayhemFiveKTotal
         "Endless Mayhem 10,000m Total Height",      // 71 mayhemTenKTotal
         "Endless Mayhem 1 Minute Milestone",        // 72 mayhemOneMinute
         "Endless Mayhem 5 Minute Milestone",        // 73 mayhemFiveMinutes
         "Endless Mayhem 10 Minute Milestone",       // 74 mayhemTenMinutes
-        "Endless Mayhem 30 Minute Milestone",       // 75 mayhemThirtyMinutes
-        "Endless Mayhem 1 Hour Milestone",          // 76 mayhemOneHour
+        "Endless Mayhem 30 Minute Milestone",       // 75 mayhemThirtyMins
+        "Endless Mayhem 1 Hour Milestone",          // 76 mayhemSixtyMins
         "Tidying Up Amongst The Mayhem",            // 77 mayhemClear
         "Feel The Power Of The Brick",              // 78 mayhemPowerUpBrick
         "Giga-Wrecking Ball!",                      // 79 mayhemWreckingGiga
@@ -1277,15 +1277,15 @@ class LevelPackSetup {
         "Complete 1,000 packs", // 65 thousandPacksComplete
         "Reach 10m in Endless Mayhem",              // 66 mayhemTen
         "Reach 100m in Endless Mayhem",             // 67 mayhemHundred
-        "Reach 500m in Endless Mayhem",             // 68 mayhemFiveHundred
-        "Reach 1,000m in Endless Mayhem",           // 69 mayhemOneK
+        "Reach 500m in Endless Mayhem",             // 68 achievementEndlessMayhemFiveHundred
+        "Reach 1,000m in Endless Mayhem",           // 69 achievementEndlessMayhemOneK
         "Reach 5,000m Total Height in Endless Mayhem",// 70 mayhemFiveKTotal
         "Reach 10,000m Total Height in Endless Mayhem",// 71 mayhemTenKTotal
         "Survive 1 minute in Endless Mayhem",       // 72 mayhemOneMinute
         "Survive 5 minutes in Endless Mayhem",      // 73 mayhemFiveMinutes
         "Survive 10 minutes in Endless Mayhem",     // 74 mayhemTenMinutes
-        "Survive 30 minutes in Endless Mayhem",     // 75 mayhemThirtyMinutes
-        "Survive 1 hour in Endless Mayhem",         // 76 mayhemOneHour
+        "Survive 30 minutes in Endless Mayhem",     // 75 mayhemThirtyMins
+        "Survive 1 hour in Endless Mayhem",         // 76 mayhemSixtyMins
         "Clear Endless Mayhem of all active bricks",                // 77 mayhemClear
         "Collect a power-up from a power-up brick",                 // 78 mayhemPowerUpBrick
         "Have Giga-Ball and Wrecking Ball power-up at the same time",// 79 mayhemWreckingGiga
@@ -1377,15 +1377,15 @@ class LevelPackSetup {
         "Completed 1,000 packs", // 65 thousandPacksComplete
         "Passed 10m in Endless Mayhem",             // 66 mayhemTen
         "Passed 100m in Endless Mayhem",            // 67 mayhemHundred
-        "Passed 500m in Endless Mayhem",            // 68 mayhemFiveHundred
-        "Passed 1,000m in Endless Mayhem",          // 69 mayhemOneK
+        "Passed 500m in Endless Mayhem",            // 68 achievementEndlessMayhemFiveHundred
+        "Passed 1,000m in Endless Mayhem",          // 69 achievementEndlessMayhemOneK
         "Passed 5,000m Total Height in Endless Mayhem",// 70 mayhemFiveKTotal
         "Passed 10,000m Total Height in Endless Mayhem",// 71 mayhemTenKTotal
         "Survived 1 minute in Endless Mayhem",      // 72 mayhemOneMinute
         "Survived 5 minutes in Endless Mayhem",     // 73 mayhemFiveMinutes
         "Survived 10 minutes in Endless Mayhem",    // 74 mayhemTenMinutes
-        "Survived 30 minutes in Endless Mayhem",    // 75 mayhemThirtyMinutes
-        "Survived 1 hour in Endless Mayhem",        // 76 mayhemOneHour
+        "Survived 30 minutes in Endless Mayhem",    // 75 mayhemThirtyMins
+        "Survived 1 hour in Endless Mayhem",        // 76 mayhemSixtyMins
         "Endless Mayhem cleared of all active bricks",                // 77 mayhemClear
         "Collected a power-up from a power-up brick",                 // 78 mayhemPowerUpBrick
         "Had Giga-Ball and Wrecking Ball power-up at the same time",  // 79 mayhemWreckingGiga
@@ -1477,15 +1477,15 @@ class LevelPackSetup {
         "AchivementBadge.png", // 65 thousandPacksComplete
         "AchivementBadge.png",                      // 66 mayhemTen
         "AchivementBadge.png",                      // 67 mayhemHundred
-        "AchivementBadge.png",                      // 68 mayhemFiveHundred
-        "AchivementBadge.png",                      // 69 mayhemOneK
+        "AchivementBadge.png",                      // 68 achievementEndlessMayhemFiveHundred
+        "AchivementBadge.png",                      // 69 achievementEndlessMayhemOneK
         "AchivementBadge.png",                      // 70 mayhemFiveKTotal
         "AchivementBadge.png",                      // 71 mayhemTenKTotal
         "AchivementBadge.png",                      // 72 mayhemOneMinute
         "AchivementBadge.png",                      // 73 mayhemFiveMinutes
         "AchivementBadge.png",                      // 74 mayhemTenMinutes
-        "AchivementBadge.png",                      // 75 mayhemThirtyMinutes
-        "AchivementBadge.png",                      // 76 mayhemOneHour
+        "AchivementBadge.png",                      // 75 mayhemThirtyMins
+        "AchivementBadge.png",                      // 76 mayhemSixtyMins
         "AchivementBadge.png",                      // 77 mayhemClear
         "AchivementBadge.png",                      // 78 mayhemPowerUpBrick
         "AchivementBadge.png",                      // 79 mayhemWreckingGiga

@@ -5,8 +5,9 @@
 (Monochromatic's Blackout filter, Always On, Brick Swap, Landslide, Full Deck and daily themes
 included), nineteen achievements
 (`AchievementCatalogue.earnableInDaily`, round 310), and both leaderboards live in App Store
-Connect. **Out of 1.3, in 1.4:** Mayhem Rules, the notifications and share card of §11.5, and
-the "a newer version exists" flag of §13 (build it before the first pool addition, not after).
+Connect. **Out of 1.3, in 1.4:** Mayhem Rules and the notifications and share card of §11.5.
+The "a newer version exists" flag of §13 will not be built (James, round 377): the app does not
+check, and the 14-day activation rule in §2.1 is the whole defence.
 The paragraph below is the status as it accumulated round by round, kept as history.
 
 *Status history:* phases 1-3 built, plus §12.5 (interruption and offline posting) in full and phase
@@ -148,11 +149,11 @@ modes. The rule:
   it for dates on or after activation. Old versions compute old-pool challenges for dates
   before their pools changed — and for dates *after* a newer version activated content they
   do not have, they diverge.
-- Divergence is handled socially, not cryptographically: when the app knows a newer version
-  exists (a lightweight flag — see §13), the challenge screen says "update to play today's
-  challenge" once the local generator is stale. Scores still post (we cannot verify
-  server-side anyway; Game Center never could), but the window between a release and its
-  uptake is kept harmless by **activating new pool content at least 14 days after release**.
+- Divergence is handled by timing, not by checking: **new pool content activates at least 14
+  days after the release that carries it**, so a player who updates within a fortnight never
+  computes a different day from anyone else. A player still on an old version after that
+  plays a slightly different day and their score still posts; nothing tells them (round 377,
+  §13). Scores cannot be verified server-side anyway, and Game Center never could.
 - Corollary: pool weights and contents are **append-only with activation dates**. Nothing is
   ever removed or reweighted retroactively, so any past date replays identically for ever —
   which is what makes §8's replay honest.
@@ -835,8 +836,12 @@ must be *posted* inside the window, not merely earned in it. As shipped:
   endless mode and mayhem runs by 10, not 100." Built as `endlessHeightToPoints`, and the
   normalised figure each day posted with is kept on its own record rather than recomputed, so
   changing the factor again cannot rewrite history.
-- **The "newer version exists" flag** (§2.1): App Store lookup API, or piggyback on iCloud
-  KVS from newer clients, or accept silent divergence for the 14-day window?
+- ~~**The "newer version exists" flag** (§2.1): App Store lookup API, or piggyback on iCloud
+  KVS from newer clients, or accept silent divergence for the 14-day window?~~
+  **Answered, round 377.** James: "not checking, and accepting that versions may differ for up
+  to 14 days." Nothing to build. What it asks of every later release is the rule in §2.1: a
+  twist, level or mode added to a pool carries an activation date at least 14 days after the
+  release it ships in, and the golden-record test keeps every past day reading the same.
 - **Abandoned first attempts** (§7): does quitting post the partial score or burn the
   attempt with nothing? Posting-partial is the anti-cheese answer and the recommendation.
   *As built in phase 3: quitting to the menu burns it* - the quit path leaves the scene

@@ -16,6 +16,7 @@
 //
 
 import XCTest
+import GameKit
 @testable import Giga_Ball
 
 final class AchievementAwardTests: XCTestCase {
@@ -259,5 +260,76 @@ final class EndlessMilestoneProgressTests: XCTestCase {
         for index in TotalStats.endlessMilestones.keys {
             XCTAssertTrue(AchievementCatalogue.identifiers.indices.contains(index), "\(index)")
         }
+    }
+}
+
+/// James, round 377, with App Store Connect open: "Here's those achievements as they are in App
+/// Store Connect. Please correct your references to them - achievementEndlessMayhemFiveHundred,
+/// achievementEndlessMayhemOneK, mayhemThirtyMins, mayhemSixtyMins."
+final class RenamedMayhemAchievementTests: XCTestCase {
+
+    /// The four names Game Center has, at the four places the game awards them.
+    func testTheFourAreNamedAsAppStoreConnectHasThem() {
+        XCTAssertEqual(AchievementCatalogue.renamedInRound377.map { AchievementCatalogue.identifiers[$0] },
+                       ["achievementEndlessMayhemFiveHundred", "achievementEndlessMayhemOneK",
+                        "mayhemThirtyMins", "mayhemSixtyMins"])
+        let names = LevelPackSetup.shared.achievementsNameArray
+        XCTAssertEqual(AchievementCatalogue.renamedInRound377.map { names[$0] },
+                       ["Endless Mayhem 500m Milestone", "Endless Mayhem 1,000m Milestone",
+                        "Endless Mayhem 30 Minute Milestone", "Endless Mayhem 1 Hour Milestone"],
+                       "the corrected names sit at the achievements they belong to")
+    }
+
+    /// The names Game Center refused are gone from the game entirely.
+    func testTheRefusedNamesAreGone() {
+        for refused in ["mayhemFiveHundred", "mayhemOneK", "mayhemThirtyMinutes", "mayhemOneHour"] {
+            XCTAssertFalse(AchievementCatalogue.identifiers.contains(refused), refused)
+        }
+    }
+
+    /// One already earned under a refused name is sent again, once, so it reaches Game Center.
+    func testOneEarnedUnderTheOldNameIsSentOnceItLands() {
+        var earned = Array(repeating: false, count: AchievementCatalogue.identifiers.count)
+        earned[68] = true
+        earned[75] = true
+        earned[66] = true
+        // 66 is earned too, and was never renamed: its one report always had a name to land on
+
+        let store = InMemoryKeyValueStore()
+        var sent: [[String]] = []
+        let report: ([GKAchievement], @escaping (Error?) -> Void) -> Void = { batch, done in
+            sent.append(batch.map(\.identifier))
+            done(nil)
+        }
+        AchievementCatalogue.reportRenamed(earned: earned, store: store, report: report)
+        XCTAssertEqual(sent, [["achievementEndlessMayhemFiveHundred", "mayhemThirtyMins"]])
+
+        let landed = expectation(description: "the flag is set on the main queue")
+        DispatchQueue.main.async { landed.fulfill() }
+        wait(for: [landed], timeout: 1)
+        AchievementCatalogue.reportRenamed(earned: earned, store: store, report: report)
+        XCTAssertEqual(sent.count, 1, "once Game Center has them, they are not sent again")
+    }
+
+    /// A send that fails is tried again at the next sign-in rather than given up on.
+    func testAFailedSendIsTriedAgain() {
+        var earned = Array(repeating: false, count: AchievementCatalogue.identifiers.count)
+        earned[76] = true
+        let store = InMemoryKeyValueStore()
+        var attempts = 0
+        let failing: ([GKAchievement], @escaping (Error?) -> Void) -> Void = { _, done in
+            attempts += 1
+            done(NSError(domain: "GKErrorDomain", code: 3))
+        }
+        AchievementCatalogue.reportRenamed(earned: earned, store: store, report: failing)
+        AchievementCatalogue.reportRenamed(earned: earned, store: store, report: failing)
+        XCTAssertEqual(attempts, 2)
+    }
+
+    /// Nothing is sent for a player who earned none of them.
+    func testNothingIsSentForAPlayerWithoutThem() {
+        XCTAssertEqual(AchievementCatalogue.owedAfterRename(
+            earned: Array(repeating: false, count: AchievementCatalogue.identifiers.count),
+            alreadySent: false), [])
     }
 }

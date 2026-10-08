@@ -1041,6 +1041,12 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
             gameCenterSetting = false
         }
         defaults.set(gameCenterSetting, forKey: "gameCenterSetting")
+        if gameCenterSetting, let stats = totalStatsArray.first {
+            AchievementCatalogue.reportRenamed(earned: stats.achievementsUnlockedArray,
+                                               store: defaults)
+        }
+        // The four Mayhem achievements whose names were corrected in round 377, sent once to a
+        // player who earned them under the old names - see `owedAfterRename`
         reportYesterdaysDailyIfDue()
         // Signing in can finish after the splash has gone, and the report needs Game Center -
         // so it is asked again here, and its own guards decide whether now is the moment

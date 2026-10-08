@@ -555,15 +555,15 @@ class TotalStats: Codable {
         false, // 65 thousandPacksComplete
         false, // 66 mayhemTen
         false, // 67 mayhemHundred
-        false, // 68 mayhemFiveHundred
-        false, // 69 mayhemOneK
+        false, // 68 achievementEndlessMayhemFiveHundred
+        false, // 69 achievementEndlessMayhemOneK
         false, // 70 mayhemFiveKTotal
         false, // 71 mayhemTenKTotal
         false, // 72 mayhemOneMinute
         false, // 73 mayhemFiveMinutes
         false, // 74 mayhemTenMinutes
-        false, // 75 mayhemThirtyMinutes
-        false, // 76 mayhemOneHour
+        false, // 75 mayhemThirtyMins
+        false, // 76 mayhemSixtyMins
         false, // 77 mayhemClear
         false, // 78 mayhemPowerUpBrick
         false, // 79 mayhemWreckingGiga
@@ -656,15 +656,15 @@ class TotalStats: Codable {
         "0.0%", // 65 thousandPacksComplete
         "0.0%", // 66 mayhemTen
         "0.0%", // 67 mayhemHundred
-        "0.0%", // 68 mayhemFiveHundred
-        "0.0%", // 69 mayhemOneK
+        "0.0%", // 68 achievementEndlessMayhemFiveHundred
+        "0.0%", // 69 achievementEndlessMayhemOneK
         "0.0%", // 70 mayhemFiveKTotal
         "0.0%", // 71 mayhemTenKTotal
         "0.0%", // 72 mayhemOneMinute
         "0.0%", // 73 mayhemFiveMinutes
         "0.0%", // 74 mayhemTenMinutes
-        "0.0%", // 75 mayhemThirtyMinutes
-        "0.0%", // 76 mayhemOneHour
+        "0.0%", // 75 mayhemThirtyMins
+        "0.0%", // 76 mayhemSixtyMins
         "0.0%",  // 77 mayhemClear
         "0.0%",  // 78 mayhemPowerUpBrick
         "0.0%",  // 79 mayhemWreckingGiga
@@ -756,15 +756,15 @@ class TotalStats: Codable {
         Date(), // 65 thousandPacksComplete
         Date(timeIntervalSince1970: 0), // 66 mayhemTen
         Date(timeIntervalSince1970: 0), // 67 mayhemHundred
-        Date(timeIntervalSince1970: 0), // 68 mayhemFiveHundred
-        Date(timeIntervalSince1970: 0), // 69 mayhemOneK
+        Date(timeIntervalSince1970: 0), // 68 achievementEndlessMayhemFiveHundred
+        Date(timeIntervalSince1970: 0), // 69 achievementEndlessMayhemOneK
         Date(timeIntervalSince1970: 0), // 70 mayhemFiveKTotal
         Date(timeIntervalSince1970: 0), // 71 mayhemTenKTotal
         Date(timeIntervalSince1970: 0), // 72 mayhemOneMinute
         Date(timeIntervalSince1970: 0), // 73 mayhemFiveMinutes
         Date(timeIntervalSince1970: 0), // 74 mayhemTenMinutes
-        Date(timeIntervalSince1970: 0), // 75 mayhemThirtyMinutes
-        Date(timeIntervalSince1970: 0), // 76 mayhemOneHour
+        Date(timeIntervalSince1970: 0), // 75 mayhemThirtyMins
+        Date(timeIntervalSince1970: 0), // 76 mayhemSixtyMins
         Date(timeIntervalSince1970: 0), // 77 mayhemClear
         Date(timeIntervalSince1970: 0), // 78 mayhemPowerUpBrick
         Date(timeIntervalSince1970: 0), // 79 mayhemWreckingGiga
