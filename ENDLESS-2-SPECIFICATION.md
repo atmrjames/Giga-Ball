@@ -2975,10 +2975,7 @@ testers:
   - `testASkippedBuildInStillFogsTheFieldBeforeTheLaunch`.
 - **The Quick Start Guide's eight pictures are replaced** with James's new versions:
   `IntroView1` to `7` by name, and "IntroView6 Copy" as `IntroView8`, the Version 1.3 page.
-  - James then corrected them all to 375 by 621. The delivered Power-Ups page
-    (`IntroView4`) still measures 375 by 644 at all three scales.
-  - The guide fits each picture with its proportions kept, so it shows whole and about 4%
-    smaller than its neighbours. Checked on the simulator.
+  - James then corrected them all to 375 by 621, the size every page has always been.
 
 **Round 379: round ends at any width, the magnet's fade, and a screen that scrolls.**
 
