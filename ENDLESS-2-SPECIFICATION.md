@@ -3004,6 +3004,12 @@ testers:
   - Encryption is declared exempt.
   - The iPad declares all four orientations and not `UIRequiresFullScreen`, so Split View and
     Stage Manager are open to it.
+- **Mirror Paddle's first catch is no longer slow.** A catch-by-catch pass earlier in this
+  session timed it at 27ms; measured again in a presented Mayhem scene, it costs 5ms with
+  nothing warmed and 2.4ms the second time, and the frames after it run on time. Each
+  first-use suspect is under a quarter of a millisecond cold: the shadow's drawn texture, the
+  sound lookup (the mirror has no sound of its own), the body and the heavy haptic. The 27ms
+  was most likely the per-call `LevelPackSetup` that round 375 made shared. Nothing changed.
 
 **Round 375: one copy of the game's tables.**
 
