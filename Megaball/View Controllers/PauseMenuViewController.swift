@@ -365,7 +365,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
         // And the same air under the run's name that the level intro and the between-levels
         // card keep, for the same reason: PAUSED and the level's name both carry a halo, and
         // the storyboard's fifteen points let the two lights run together.
-        let scale = UIViewController.inGameHeaderScale(inside: containterView)
+        let scale = UIViewController.inGameHeaderScale(inside: windowForTheHeader)
         for tie in [levelNameLabelNormalConstraint, levelTitleLowerConstraint].compactMap({ $0 })
         where tie.constant == 15 {
             tie.constant = (UIViewController.inGameHeaderToResultGap*scale).rounded()
@@ -384,7 +384,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
     /// laid out many times - a rotation, an iPad window dragged narrower - lands on the same
     /// size each pass rather than scaling what it scaled last time.
     private func sizeTheTitleBlockForTheScreen() {
-        let scale = UIViewController.inGameHeaderScale(inside: containterView)
+        let scale = UIViewController.inGameHeaderScale(inside: windowForTheHeader)
         guard scale != titleBlockScale else { return }
         titleBlockScale = scale
 
@@ -633,6 +633,18 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
     /// How many places the end screen lists. Three rather than the menu's five: this screen
     /// is already full on the smallest phone, and the rest are one tap away on Game Center.
     static let dailyBoardRowsShown = 3
+
+    /// How many leaders the fullest ending lists: a Classic day's Complete screen with a speed
+    /// bonus, whose breakdown takes two rows more than any other (James, round 378: "Fewer
+    /// leaderboard rows on this one screen"). One leader, and the player under them when they
+    /// are not it - at most two rows, against three and the player.
+    static let dailyBoardRowsShownUnderABreakdown = 1
+
+    /// The number of leaders this ending lists.
+    var dailyBoardRowsWanted: Int {
+        showsDailyBreakdown ? PauseMenuViewController.dailyBoardRowsShownUnderABreakdown
+                            : PauseMenuViewController.dailyBoardRowsShown
+    }
     // Where the finished run stands on its board, once Game Center has answered - today's
     // board for a daily, the mode's own for an endless or classic run
 
@@ -678,6 +690,8 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
             sizeTheTitleBlockForTheScreen()
         }
         if packNameLabel?.fitFixedHeightToItsText() == true { containterView.setNeedsLayout() }
+        firmUpTheLabels(in: containterView)
+        showTheScrollWhenThereIsMore()
         // **The day on its own line, with room for it** (James, round 341: "the date for the
         // daily challenge on the pause screen is truncated"). After the sizing above, because
         // that scales the storyboard's one-line box and this is what grows it to two
@@ -690,6 +704,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        putTheScreenInAScroll()
         
         NotificationCenter.default.addObserver(self, selector: #selector(self.returnPauseNotificationKeyReceived), name: .returnPauseNotification, object: nil)
         // Sets up an observer to watch for notifications to check if the user has returned to the pause menu from the settings menu
@@ -806,7 +821,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
     private func askForTheDaysBoard() {
         guard sender != "Pause", isDailyChallenge,
               let key = DailyChallengeSession.shared.active?.dateKey else { return }
-        let shown = PauseMenuViewController.dailyBoardRowsShown
+        let shown = dailyBoardRowsWanted
         GameCenterHandler().loadDailyBoardTop(forKey: key, count: shown) { [weak self] answer in
             guard let self, let answer else { return }
             self.dailyBoard = DailyBoardRow.shown(leaders: answer.leaders, local: answer.local,
@@ -2403,13 +2418,14 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
         if activePowerUpHUD == nil, rings.isEmpty == false {
             let hud = PausedPowerUpHUD()
             hud.translatesAutoresizingMaskIntoConstraints = false
-            view.addSubview(hud)
+            containterView.addSubview(hud)
             NSLayoutConstraint.activate([
-                hud.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+                hud.centerXAnchor.constraint(equalTo: containterView.centerXAnchor),
                 hud.topAnchor.constraint(equalTo: runStatsLabel.bottomAnchor, constant: 14),
                 hud.heightAnchor.constraint(equalToConstant: 34),
-                hud.widthAnchor.constraint(equalTo: view.widthAnchor),
+                hud.widthAnchor.constraint(equalTo: containterView.widthAnchor),
             ])
+            // In the container with the label it hangs from, so it scrolls with it (round 378)
             hud.onSelect = { [weak self] index in self?.explainPowerUp(index) }
             activePowerUpHUD = hud
         }
@@ -2488,6 +2504,105 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
         ]
     }
     
+    // MARK: - The screen's own scroll
+
+    /// Lets the pause and ending screens scroll when what they hold is taller than the window.
+    ///
+    /// **James, round 378, on a Classic daily's Complete screen squashing its figures on smaller
+    /// phones: "can we make the view scrollable - do we even need to support this phone screen
+    /// size."** We do - the deployment target runs on the iPhone SE's 375 by 667, and that is
+    /// also the smallest window the app allows on an iPad or a Mac (round 342). The screen was
+    /// one container pinned to the window, so when its content was taller than the window
+    /// something inside had to give, and on the fullest ending that was the figures: Level
+    /// Score drawn 2.7 points tall of 35, the total riding up into its own heading.
+    ///
+    /// The container now sits in a scroll view that takes over its four pins. It is at least
+    /// the window's height, and exactly that wherever the content fits, at a priority above
+    /// the screen's "wanted" gaps (750) and below the labels' resistance to being squashed,
+    /// which is raised to 800 here. So a screen with too much in it first closes its gaps to
+    /// their floors, as it always has, and then grows and scrolls rather than crushing
+    /// anything. A screen that fits does not move: the scroll does not bounce, and its
+    /// indicator only shows when there is more below (`showTheScrollWhenThereIsMore`).
+    private func putTheScreenInAScroll() {
+        guard let container = containterView, let parent = container.superview,
+              container.superview !== pageScroll else { return }
+        let ties = parent.constraints.filter { $0.firstItem === container || $0.secondItem === container }
+
+        pageScroll.translatesAutoresizingMaskIntoConstraints = false
+        pageScroll.showsHorizontalScrollIndicator = false
+        pageScroll.showsVerticalScrollIndicator = false
+        pageScroll.alwaysBounceVertical = false
+        pageScroll.contentInsetAdjustmentBehavior = .never
+        pageScroll.delaysContentTouches = false
+        pageScroll.indicatorStyle = .white
+        pageScroll.backgroundColor = .clear
+        parent.insertSubview(pageScroll, at: parent.subviews.firstIndex(of: container) ?? 0)
+        NSLayoutConstraint.activate(ties.map { tie in
+            let moved = NSLayoutConstraint(
+                item: tie.firstItem === container ? pageScroll : tie.firstItem as Any,
+                attribute: tie.firstAttribute, relatedBy: tie.relation,
+                toItem: tie.secondItem === container ? pageScroll : tie.secondItem,
+                attribute: tie.secondAttribute, multiplier: tie.multiplier,
+                constant: tie.constant)
+            moved.priority = tie.priority
+            return moved
+        })
+        // The storyboard's own pins, moved across unchanged: centred on the screen, and in
+        // from the safe area - which on an iPad or a Mac is the column `capMenuContentSize` sets
+
+        container.removeFromSuperview()
+        pageScroll.addSubview(container)
+        let content = pageScroll.contentLayoutGuide
+        let frame = pageScroll.frameLayoutGuide
+        let fits = container.heightAnchor.constraint(equalTo: frame.heightAnchor)
+        fits.priority = UILayoutPriority(760)
+        NSLayoutConstraint.activate([
+            container.topAnchor.constraint(equalTo: content.topAnchor),
+            container.bottomAnchor.constraint(equalTo: content.bottomAnchor),
+            container.leadingAnchor.constraint(equalTo: content.leadingAnchor),
+            container.trailingAnchor.constraint(equalTo: content.trailingAnchor),
+            container.widthAnchor.constraint(equalTo: frame.widthAnchor),
+            container.heightAnchor.constraint(greaterThanOrEqualTo: frame.heightAnchor),
+            fits,
+        ])
+        firmUpTheLabels(in: container)
+    }
+
+    /// The screen's scroll - see `putTheScreenInAScroll`.
+    let pageScroll = UIScrollView()
+
+    /// What the header sizes itself to: the window the screen is seen through, not the
+    /// container, which can now be taller than it. Measured off the container, a screen that
+    /// grew to scroll would grow its header, which would grow the screen.
+    private var windowForTheHeader: UIView {
+        containterView.superview === pageScroll ? pageScroll : containterView
+    }
+
+    /// Raises every label still at the default resistance to squashing above the scroll's own
+    /// wish to stay a screen tall, so the screen grows before a label is crushed. A label that
+    /// has been given a lower resistance on purpose - the signed-out note, which gives way on
+    /// an ending - keeps it. Asked again after labels are added in code.
+    private func firmUpTheLabels(in root: UIView) {
+        for sub in root.subviews {
+            if let label = sub as? UILabel,
+               label.contentCompressionResistancePriority(for: .vertical) == .defaultHigh {
+                label.setContentCompressionResistancePriority(UILayoutPriority(800), for: .vertical)
+            }
+            firmUpTheLabels(in: sub)
+        }
+    }
+
+    /// Shows the scroll's indicator, once, when the screen holds more than the window.
+    private func showTheScrollWhenThereIsMore() {
+        let more = pageScroll.contentSize.height > pageScroll.bounds.height + 0.5
+        pageScroll.showsVerticalScrollIndicator = more
+        if more, flashedTheScroll == false {
+            flashedTheScroll = true
+            pageScroll.flashScrollIndicators()
+        }
+    }
+    private var flashedTheScroll = false
+
     /// The day the paused run belongs to, as it stood when the run was paused.
     private(set) var dailyOfThisRun: DailyChallenge?
 

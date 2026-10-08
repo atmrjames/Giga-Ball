@@ -1542,7 +1542,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 
 	/// Magnetism's field lines, one node per paddle (round 368), and how strongly they are drawn
 	/// now - eased towards the nearest falling ball's closeness. See `drawEndlessIIMagnetField`.
-	var endlessIIMagnetField: [SKShapeNode] = []
+	var endlessIIMagnetField: [SKNode] = []
 	var endlessIIMagnetFieldStrength: CGFloat = 0
 	var endlessIIMagnetFieldPhase: CGFloat = 0
 
@@ -1967,7 +1967,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		paddleSticky.texture = stickyPaddleTexture
 		paddleSticky.size.width = paddleWidth
 		paddleSticky.size.height = ballSize*1.1
-		paddleCenterRectZero()
+		paddleCenterRectPlus()
 		paddleRetroTexture.isHidden = true
 		paddleRetroLaserTexture.isHidden = true
 		paddleRetroStickyTexture.isHidden = true
@@ -3463,6 +3463,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     /// happens to know about.
     override func didFinishUpdate() {
         holdTheWaitingBallStill()
+        keepThePaddleArtAtItsDrawnSize()
+        // Last thing before the frame is drawn, after the contacts that collect power-ups and
+        // change the paddle's picture - so no frame is ever drawn with the natural-size one
 
         guard paddleLaser.position.x != paddle.position.x
                 || paddleLaser.position.y != paddle.position.y - paddle.size.height/2
@@ -6448,7 +6451,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				runPaddleSizeScale(paddleRetroTexture, to: 1.0, duration: 0.2)
 				runPaddleSizeScale(paddleRetroLaserTexture, to: 1.0, duration: 0.2)
 				runPaddleSizeScale(paddleRetroStickyTexture, to: 1.0, duration: 0.2)
-				paddleCenterRectZero()
+				paddleCenterRectPlus()
 			} else if paddleSizeTarget == 1.0 {
 				runPaddleSizeScale(paddle, to: 1.5, duration: 0.2, completion: {
 					self.paddle.physicsBody!.collisionBitMask = CollisionTypes.paddleCategory.rawValue | CollisionTypes.boarderCategory.rawValue
@@ -6512,7 +6515,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				self.runPaddleSizeScale(self.paddleRetroTexture, to: 1, duration: 0.2)
 				self.runPaddleSizeScale(self.paddleRetroLaserTexture, to: 1, duration: 0.2)
 				self.runPaddleSizeScale(self.paddleRetroStickyTexture, to: 1, duration: 0.2)
-				self.paddleCenterRectZero()
+				self.paddleCenterRectPlus()
 				self.paddleSizeIcon.texture = self.iconPaddleSizeDisabledTexture
 				self.paddleSizeIconBar.isHidden = true
 				// Hide power-up icons
@@ -6585,7 +6588,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				runPaddleSizeScale(paddleRetroTexture, to: 1.0, duration: 0.2)
 				runPaddleSizeScale(paddleRetroLaserTexture, to: 1.0, duration: 0.2)
 				runPaddleSizeScale(paddleRetroStickyTexture, to: 1.0, duration: 0.2)
-				paddleCenterRectZero()
+				paddleCenterRectPlus()
 			}
 			// Resize paddle based on its current size
 
@@ -6610,7 +6613,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				self.runPaddleSizeScale(self.paddleRetroTexture, to: 1, duration: 0.2)
 				self.runPaddleSizeScale(self.paddleRetroLaserTexture, to: 1, duration: 0.2)
 				self.runPaddleSizeScale(self.paddleRetroStickyTexture, to: 1, duration: 0.2)
-				self.paddleCenterRectZero()
+				self.paddleCenterRectPlus()
 				self.paddleSizeIcon.texture = self.iconPaddleSizeDisabledTexture
 				self.paddleSizeIconBar.isHidden = true
 				// Hide power-up icons
@@ -7575,15 +7578,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	//
 	// The two now compute the same thing from the same place, so they cannot disagree
 	
-	func paddleCenterRectZero() {
-		paddle.centerRect = CGRect(x: 0.0/80.0, y: 0.0/10.0, width: 80.0/80.0, height: 10.0/10.0)
-		paddleLaser.centerRect = CGRect(x: 0.0/80.0, y: 0.0/16.0, width: 80.0/80.0, height: 16.0/16.0)
-		paddleSticky.centerRect = CGRect(x: 0.0/80.0, y: 0.0/11.0, width: 80.0/80.0, height: 11.0/11.0)
-		paddleRetroTexture.centerRect = CGRect(x: 0.0/91.0, y: 0.0/26.0, width: 91.0/91.0, height: 26.0/26.0)
-		paddleRetroLaserTexture.centerRect = CGRect(x: 0.0/91.0, y: 0.0/26.0, width: 91.0/91.0, height: 26.0/26.0)
-		paddleRetroStickyTexture.centerRect = CGRect(x: 20.0/91.0, y: 0.0/24.0, width: 51.0/91.0, height: 24.0/24.0)
-	}
-	
 	/// The nine-slice that protects a paddle picture's rounded ends while its middle stretches.
 	///
 	/// Named rather than written inline because two things now want them: `paddleCenterRectPlus`
@@ -7598,6 +7592,18 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	static let paddleRetroLaserCapRect = CGRect(x: 25.0/91.0, y: 0.0/26.0, width: 41.0/91.0, height: 26.0/26.0)
 	static let paddleRetroStickyCapRect = CGRect(x: 20.0/91.0, y: 0.0/24.0, width: 51.0/91.0, height: 24.0/24.0)
 
+	/// Protects the paddle's ends, **always** (round 378).
+	///
+	/// James: "The ends of the paddle with the portal glow texture look distorted when big or
+	/// small. The shape at the ends should be preserved so it stays rounded." There used to be
+	/// a second setting, `paddleCenterRectZero`, the whole texture with nothing protected,
+	/// worn at the standard width. Every way back to that width put it on at the *start* of
+	/// a 0.2-second resize: an Expand running out, a Shrink cancelling an Expand, a lost
+	/// ball, a resumed size ending. So for the whole animation, a paddle up to two and a half
+	/// times as wide stretched its rounded ends with its middle. The halo around a Portal
+	/// Paddle makes that easy to see. Rendered at the standard width, a protected paddle and
+	/// an unprotected one are identical - a nine-slice at its natural size is the picture -
+	/// so the unprotected setting bought nothing and is gone.
 	func paddleCenterRectPlus() {
 		paddle.centerRect = GameScene.paddleCapRect
 		paddleLaser.centerRect = GameScene.paddleLaserCapRect
@@ -7607,6 +7613,74 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		paddleRetroStickyTexture.centerRect = GameScene.paddleRetroStickyCapRect
 	}
 
+	// MARK: - The paddle's pictures at the size they are drawn
+
+	/// The six sprites that draw the paddle: the bar and its laser and sticky overlays, in the
+	/// ordinary art and the Retro art.
+	var paddleArtNodes: [SKSpriteNode] {
+		[paddle, paddleLaser, paddleSticky, paddleRetroTexture, paddleRetroLaserTexture,
+		 paddleRetroStickyTexture]
+	}
+
+	/// Gives every paddle sprite its picture at the height it is drawn, once per picture.
+	///
+	/// **Why the ends were not round** (James, round 378: "The ends of the paddle with the portal
+	/// glow texture look distorted when big or small. The shape at the ends should be preserved
+	/// so it stays rounded"). A nine-slice keeps its caps at the *picture's* natural width
+	/// while their height follows the sprite. The plain paddle's picture is 75 by 10 points
+	/// and the sprite is drawn 91.8 by 12.2 on an iPhone 17 Pro, so a protected end came out
+	/// about a fifth narrower than it is tall - flattened at Expand's widths and at Shrink's
+	/// alike, and stretched instead wherever the protection was off. No cap rect can fix that,
+	/// because the mismatch is between the picture and the sprite. So the sprite is handed the
+	/// same pixels declared at the size they are drawn (`atDrawnHeight`): a protected end is
+	/// then the picture's own end at every width.
+	///
+	/// Asked every frame from `didFinishUpdate`, in every mode, because fourteen places put a picture on
+	/// one of these sprites and the scene file puts the first ones there. A picture already at
+	/// its drawn height is left alone, so on almost every frame this is six comparisons.
+	func keepThePaddleArtAtItsDrawnSize() {
+		for node in paddleArtNodes {
+			guard let texture = node.texture else { continue }
+			let height = abs(node.size.height/(node.yScale == 0 ? 1 : node.yScale))
+			guard height > 0.5, abs(texture.size().height - height) > 0.5 else { continue }
+			node.texture = GameScene.atDrawnHeight(texture, height: height)
+		}
+	}
+
+	/// The same pixels as `texture`, with a natural height of `height` points.
+	///
+	/// Only the declared scale changes - `UIImage(cgImage:scale:)` - so nothing is redrawn and
+	/// nothing is blurred, and the copy keeps the original's filtering, which matters to the
+	/// Retro art's hard pixels. Kept by picture name and height where there is a name, because
+	/// `SKTexture(imageNamed:)` hands back a new object every call and several callers ask on
+	/// every frame.
+	static func atDrawnHeight(_ texture: SKTexture, height: CGFloat) -> SKTexture {
+		let name = texture.description.contains("'<data>'")
+			? "\(ObjectIdentifier(texture))" : texture.description
+		let key = "\(name)@\(Int((height*100).rounded()))"
+		// A picture made from image data rather than the catalogue describes itself as
+		// `<data>`, so two of them would share a name - those are kept by object instead
+		if let kept = drawnSizeArt[key] { return kept }
+		let image = texture.cgImage()
+		let scale = CGFloat(image.height)/height
+		guard scale > 0 else { return texture }
+		let made = SKTexture(image: UIImage(cgImage: image, scale: scale, orientation: .up))
+		made.filteringMode = texture.filteringMode
+		drawnSizeArt[key] = made
+		drawnSizeOriginals[ObjectIdentifier(made)] = texture
+		return made
+	}
+
+	private static var drawnSizeArt: [String: SKTexture] = [:]
+	private static var drawnSizeOriginals: [ObjectIdentifier: SKTexture] = [:]
+
+	/// The picture a drawn-size copy was made from, or the picture itself - for the checks that
+	/// ask *which* picture a sprite is wearing by comparing it with the scene's own.
+	static func originalPaddleArt(_ texture: SKTexture?) -> SKTexture? {
+		guard let texture else { return nil }
+		return drawnSizeOriginals[ObjectIdentifier(texture)] ?? texture
+	}
+
 	/// Which cap rect belongs to the picture a paddle is currently wearing.
 	///
 	/// A split segment always needs its caps protected - it is narrower than the art is drawn,
@@ -7614,7 +7688,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	/// is the *unprotected* whole-texture rect whenever the paddle is at its standard width.
 	/// That copy was the distortion James reported in round 182.
 	func paddleCapRect(for texture: SKTexture?) -> CGRect {
-		switch texture {
+		switch GameScene.originalPaddleArt(texture) {
 		case paddleLaser: return GameScene.paddleLaserCapRect
 		case paddleSticky: return GameScene.paddleStickyCapRect
 		case paddleRetroTexture.texture: return GameScene.paddleRetroCapRect
@@ -7736,7 +7810,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		deactivateGigaBall()
 		// Giga-Ball/Undestructiball reset
 		
-		paddleCenterRectZero()
+		paddleCenterRectPlus()
 		runPaddleSizeScale(paddle, to: 1.0, duration: 0.2, completion: {
 			self.paddle.physicsBody!.collisionBitMask = CollisionTypes.paddleCategory.rawValue | CollisionTypes.boarderCategory.rawValue
 		})
@@ -10658,7 +10732,7 @@ laserTimer?.invalidate()
 							self.runPaddleSizeScale(self.paddleRetroTexture, to: 1, duration: 0.2)
 							self.runPaddleSizeScale(self.paddleRetroLaserTexture, to: 1, duration: 0.2)
 							self.runPaddleSizeScale(self.paddleRetroStickyTexture, to: 1, duration: 0.2)
-							self.paddleCenterRectZero()
+							self.paddleCenterRectPlus()
 							self.paddleSizeIcon.texture = self.iconPaddleSizeDisabledTexture
 							self.paddleSizeIconBar.isHidden = true
 						}

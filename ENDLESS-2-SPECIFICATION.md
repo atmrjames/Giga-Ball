@@ -2959,6 +2959,56 @@ testers:
   falling power-up's position by `brickWidth`, so a bare `GameScene()` with a power-up on
   screen traps converting NaN to Int. A real scene is always laid out before play.
 
+**Round 379: round ends at any width, the magnet's fade, and a screen that scrolls.**
+
+- **The paddle's ends stay round when it is big or small.** James: "The ends of the paddle with
+  the portal glow texture look distorted when big or small. The shape at the ends should be
+  preserved so it stays rounded." Two causes, measured in a presented scene:
+  - The ends were only protected while the paddle was resized, and every way back to the
+    standard width dropped the protection at the start of a 0.2-second animation. So for
+    that whole animation the ends stretched. They are protected all the time now
+    (`paddleCenterRectPlus`); `paddleCenterRectZero` is gone.
+  - Even protected, they were a fifth too narrow. A nine-slice keeps its caps at the
+    picture's natural width, while the plain paddle's picture is 75 by 10 points and is
+    drawn at 91.8 by 12.2. So each sprite is now handed the same pixels declared at the
+    height it is drawn (`keepThePaddleArtAtItsDrawnSize`, from `didFinishUpdate`, every
+    mode). Protected at the standard width, the paddle is pixel-identical to the
+    unprotected picture, and its ends are the picture's own at 2x, 1.33x mid-shrink
+    and 0.5x.
+  - The two identity checks on these pictures now look through the copy
+    (`originalPaddleArt`).
+  - The Retro paddle draws through three of the same six sprites. A harness could not
+    switch the theme, so it was not rendered.
+- **Magnetism's dots** (James: "make the dots longer and the spaces between them larger, and
+  make them transparent, getting more opaque towards the paddle with a maximum of 50%
+  opacity").
+  - They are now 8-point lime capsules with 14-point gaps, where they were round caps on
+    a 1-point stroke 11 points apart.
+  - Each dot is its own sprite, clear at the top of the field and half-opaque at the
+    paddle (`magnetFieldDotAlpha`).
+  - The whole field still fades in as the ball comes in. Nothing is ever drawn above
+    50%.
+- **The pause and ending screens scroll when they hold more than the window.** James asked
+  whether the SE's size needs supporting at all. It does: iOS 17 runs on the iPhone SE at
+  375 by 667, and that is also the smallest window the app allows on an iPad or a Mac
+  (round 342).
+  - The container now sits in a scroll view that takes over its four storyboard pins
+    (`putTheScreenInAScroll`).
+  - The container is at least the window's height, and exactly that wherever the content
+    fits, at priority 760. That is above the screen's wanted gaps (750) and below the
+    labels' resistance to squashing, which is raised to 800 (`firmUpTheLabels`).
+  - So an over-full screen closes its gaps first, as before, then grows and scrolls
+    instead of crushing a figure.
+  - The header now sizes itself from the window rather than the container. Measured from
+    the container, a screen that grew would grow its header, and then itself again.
+  - The power-up row on the pause screen moved into the container, so it scrolls with
+    the label it hangs from.
+  - Rendered: the fullest ending scrolls 20 points on an iPhone 17 Pro and 144 on an SE,
+    with every figure whole.
+- **Fewer leaderboard rows on that screen**: a Classic day's Complete with a speed bonus lists
+  one leader, and the player under them when they are not it
+  (`dailyBoardRowsShownUnderABreakdown`).
+
 **Round 378: James's list - the boards, a twist's name, the ending's numbers, two graphics.**
 
 - **The menu board pins the player only from outside the list.** His screenshot: a board of one
@@ -3571,7 +3621,7 @@ James, after the round 358b push: three play-test notes.
 | ~~Aimed Sticky's sounds~~ | **Answered, round 356** ("aimed sticky sounds should use the sticky paddle sound"). It did, and the ordinary bounce played under it - see round 356 |
 | ~~Portal Paddle with Auto-Aim~~ | **Answered, round 356**: "Portal Paddle and auto-aim should not run together". The pair is back in the matrix |
 | ~~The daily board in the app~~ | **Seen working, 1 October** - James: "In-app daily leaderboards look good". Round 357 reshaped both screens to his notes |
-| **A Classic daily's Complete screen with a speed bonus does not fit on smaller phones** | Found in round 378, rendering the day's board as a grid. Measured on a rendered window, with a two-twist day: on a 375x667 (SE) window **before any board arrives**, the Level Score figure is squashed out of sight and the total rides up into its heading; on a 402x874 (iPhone 17 Pro) it fits until the board comes, and then the figures give (Level Score 2.7 points tall of its 35 with three rows). The chain from the total down to the buttons is held by required floors and the header does not shrink for height (`inGameHeaderScale` reads width only), so whatever is tallest gives. Four attempts to make the board give way instead were tried and taken out: each moved the squeeze to another label, or measured a breakdown still mid-tally. **Needs a decision:** which part of this screen gives on a short phone - a height-aware header scale (every in-game screen), the total on the columns' row, or fewer board rows on this one screen. The old text board did the same, a few points less |
+| ~~**A Classic daily's Complete screen with a speed bonus does not fit on smaller phones**~~ **Fixed, round 379** - James: "can we make the view scrollable ... Fewer leaderboard rows on this one screen." Both: see round 379. Kept below for the measurements | Found in round 378, rendering the day's board as a grid. Measured on a rendered window, with a two-twist day: on a 375x667 (SE) window **before any board arrives**, the Level Score figure is squashed out of sight and the total rides up into its heading; on a 402x874 (iPhone 17 Pro) it fits until the board comes, and then the figures give (Level Score 2.7 points tall of its 35 with three rows). The chain from the total down to the buttons is held by required floors and the header does not shrink for height (`inGameHeaderScale` reads width only), so whatever is tallest gives. Four attempts to make the board give way instead were tried and taken out: each moved the squeeze to another label, or measured a breakdown still mid-tally. **Needs a decision:** which part of this screen gives on a short phone - a height-aware header scale (every in-game screen), the total on the columns' row, or fewer board rows on this one screen. The old text board did the same, a few points less |
 
 **Backlogged**
 

@@ -378,14 +378,8 @@ extension GameScene {
             surfaces.append(mirror)
         }
         while endlessIIMagnetField.count < surfaces.count {
-            let field = SKShapeNode()
-            field.lineWidth = GameScene.magnetFieldDotWidth
-            field.lineCap = .round
-            field.blendMode = .add
-            // Added light, like the paddle's glow: lime laid over the dark field brightens it
-            // rather than sitting on it as an olive mark (round 378)
+            let field = SKNode()
             field.zPosition = GameScene.magnetFieldZ
-            field.strokeColor = GameScene.endlessIIHaloColour
             addChild(field)
             endlessIIMagnetField.append(field)
         }
@@ -402,14 +396,32 @@ extension GameScene {
             + CGFloat(frameDelta)*GameScene.magnetFieldFlowSpeed).truncatingRemainder(dividingBy: span)
         // Its own phase, wrapped at its own spacing: the tether's wrapped at eighteen points,
         // and a field read off it would jump a dot's width once every cycle
-        let halfWidth = abs(paddle.size.width)/2
-        let path = GameScene.magnetFieldPath(halfWidth: halfWidth, height: height,
+        let halfWidth = abs(paddle.frame.width)/2
+        let dots = GameScene.magnetFieldDots(halfWidth: halfWidth, height: height,
                                              phase: endlessIIMagnetFieldPhase)
         for (field, surface) in zip(endlessIIMagnetField, surfaces) {
-            field.path = path
+            while field.children.count < dots.count {
+                let dot = SKSpriteNode(texture: GameScene.magnetFieldDotTexture)
+                dot.size = CGSize(width: GameScene.magnetFieldDotWidth,
+                                  height: GameScene.magnetFieldDot)
+                field.addChild(dot)
+            }
+            for (index, child) in field.children.enumerated() {
+                guard index < dots.count else { child.isHidden = true; continue }
+                child.isHidden = false
+                child.position = dots[index]
+                child.alpha = GameScene.magnetFieldDotAlpha(y: dots[index].y, height: height)
+            }
             field.position = CGPoint(x: surface.position.x, y: paddleTopY)
             field.alpha = GameScene.magnetFieldAlpha(strength: endlessIIMagnetFieldStrength)
         }
+        // **Sprites, one a dot** (James, round 378: "make the dots longer and the spaces
+        // between them larger, and make them transparent, getting more opaque towards the
+        // paddle with a maximum of 50% opacity"). One dotted line was one shape node, and a
+        // stroke has one opacity from end to end; a dot that fades with its height has to be
+        // its own node. They share one small picture, so SpriteKit draws the lot in a batch -
+        // cheaper than the shape it replaces, which rebuilt a path every frame. The pool only
+        // grows to the tallest field it has been asked for, and hides what it does not need
     }
 
     /// Between the backdrops and the bricks (1), so the field is behind everything it acts on.
@@ -431,9 +443,37 @@ extension GameScene {
     /// How many lines stand across the paddle.
     static let magnetFieldLines = 5
 
-    /// A dot's length and the gap after it, in points. Short with round caps is a dot.
-    static let magnetFieldDot: CGFloat = 1
-    static let magnetFieldGap: CGFloat = 11
+    /// A dot's length and the gap after it, in points: a short dash with round ends.
+    ///
+    /// Longer and further apart than round 368's (James, round 378), which were round caps on
+    /// a one-point stroke eleven points apart and read as a texture rather than as a flow.
+    static let magnetFieldDot: CGFloat = 8
+    static let magnetFieldGap: CGFloat = 14
+
+    /// How wide a dot is.
+    static let magnetFieldDotWidth: CGFloat = 3.5
+
+    /// The one picture every dot wears: a lime capsule, drawn once.
+    static let magnetFieldDotTexture: SKTexture = {
+        let size = CGSize(width: magnetFieldDotWidth, height: magnetFieldDot)
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 3
+        let image = UIGraphicsImageRenderer(size: size, format: format).image { _ in
+            endlessIIHaloColour.setFill()
+            UIBezierPath(roundedRect: CGRect(origin: .zero, size: size),
+                         cornerRadius: magnetFieldDotWidth/2).fill()
+        }
+        return SKTexture(image: image)
+    }()
+
+    /// The most opaque a dot is drawn: at the paddle, with a ball right on top of it.
+    static let magnetFieldMostOpaque: CGFloat = 0.5
+
+    /// A dot's own opacity for how high up the field it is: clear at the top, half at the paddle.
+    static func magnetFieldDotAlpha(y: CGFloat, height: CGFloat) -> CGFloat {
+        guard height > 0 else { return 0 }
+        return magnetFieldMostOpaque*min(max(1 - y/height, 0), 1)
+    }
 
     /// How tall the field stands: the magnet's reach, or up to the field's bottom rows where
     /// the pull stops, whichever is lower. Never below nothing.
@@ -454,44 +494,37 @@ extension GameScene {
             .max() ?? 0
     }
 
-    /// How wide a dot is drawn: a round cap this wide on a one-point stroke.
-    static let magnetFieldDotWidth: CGFloat = 4.5
-
-    /// The lines' opacity for a strength: plain at the edge of the region, full at the paddle.
-    ///
-    /// **From 0.4, where it was 0.12** (James, round 378: "it's either not showing up or too
-    /// subtle"). With the field moved out from under Mayhem's backdrop it showed, as rows of
-    /// three-point olive dots that a player watching the ball would not see. Bigger dots, added
-    /// light and a floor a player can see at the edge of the region.
+    /// The whole field's opacity for a strength: faint at the edge of the region, full at the
+    /// paddle. A dot's own opacity is multiplied by it, so nothing is ever drawn above
+    /// `magnetFieldMostOpaque`.
     static func magnetFieldAlpha(strength: CGFloat) -> CGFloat {
         let clamped = min(max(strength, 0), 1)
         return clamped == 0 ? 0 : 0.4 + clamped*0.6
     }
 
-    /// The field's lines, in the paddle's own frame: `magnetFieldLines` verticals evenly across
-    /// the paddle, from its top to `height` above it, as dots that have run `phase` points
+    /// The field's dots, in the paddle's own frame: `magnetFieldLines` columns evenly across the
+    /// paddle, from its top to `height` above it, each dot's centre having run `phase` points
     /// down towards it.
-    static func magnetFieldPath(halfWidth: CGFloat, height: CGFloat, phase: CGFloat) -> CGPath {
-        let path = CGMutablePath()
-        guard height > 1, halfWidth > 0 else { return path }
+    static func magnetFieldDots(halfWidth: CGFloat, height: CGFloat, phase: CGFloat) -> [CGPoint] {
+        guard height > magnetFieldDot, halfWidth > 0 else { return [] }
         let lines = magnetFieldLines
         let span = magnetFieldDot + magnetFieldGap
         let offset = phase.truncatingRemainder(dividingBy: span)
+        var dots: [CGPoint] = []
         for line in 0..<lines {
             let share = lines == 1 ? 0 : CGFloat(line)/CGFloat(lines - 1)*2 - 1
             let x = share*halfWidth*0.8
             // Inside the ends, where the paddle's rounded caps would leave a line standing on
             // nothing
-            var y = height - offset
-            while y > 0 {
-                path.move(to: CGPoint(x: x, y: y))
-                path.addLine(to: CGPoint(x: x, y: max(0, y - magnetFieldDot)))
+            var y = height - magnetFieldDot/2 - offset
+            while y >= magnetFieldDot/2 {
+                dots.append(CGPoint(x: x, y: y))
                 y -= span
             }
         }
-        return path
+        return dots
         // Measured from the top down, so a larger phase puts every dot lower: the dots run
-        // down the lines into the paddle as `endlessIIMagnetFlowPhase` grows
+        // down the lines into the paddle as the phase grows
     }
 
 }

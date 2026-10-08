@@ -855,6 +855,52 @@ final class DailyEndScreenLayoutTests: XCTestCase {
                       "a picture says nothing to VoiceOver, so the rows are given as words")
     }
 
+    /// James, round 378, on the fullest ending squashing its figures on smaller phones: "can we
+    /// make the view scrollable - do we even need to support this phone screen size. Fewer
+    /// leaderboard rows on this one screen."
+    func testTheFullestEndingScrollsOnAnSERatherThanCrushingItsFigures() throws {
+        let pause = try XCTUnwrap(dailyCompleteScreen())
+        XCTAssertTrue(pause.showsDailyBreakdown, "this is the screen it was about")
+        XCTAssertEqual(pause.dailyBoardRowsWanted,
+                       PauseMenuViewController.dailyBoardRowsShownUnderABreakdown)
+        XCTAssertLessThan(pause.dailyBoardRowsWanted, PauseMenuViewController.dailyBoardRowsShown,
+                          "fewer leaderboard rows on this one screen")
+
+        let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 375, height: 667))
+        window.rootViewController = pause
+        window.isHidden = false
+        defer { window.isHidden = true }
+        pause.dailyBoard = DailyBoardRow.shown(
+            leaders: [DailyBoardRow(rank: 1, name: "8lossom", score: 5051, isLocalPlayer: false)],
+            local: DailyBoardRow(rank: 3, name: "atmrjames", score: 4234, isLocalPlayer: true),
+            limit: pause.dailyBoardRowsWanted)
+        pause.dailyBoardPlayers = 3
+        pause.updateResultLine()
+        pause.view.setNeedsLayout()
+        pause.view.layoutIfNeeded()
+
+        for label in [pause.dailyLevelTitle, pause.dailyLevelLabel, pause.dailyBonusTitle,
+                      pause.dailyBonusLabel, pause.dailyTotalTitle, pause.dailyTotalLabel] {
+            XCTAssertEqual(label.bounds.height, label.intrinsicContentSize.height, accuracy: 0.5,
+                           "\(label.text ?? "a label") is drawn whole, not squashed")
+        }
+        XCTAssertTrue(pause.containterView.isDescendant(of: pause.pageScroll),
+                      "the screen is in a scroll")
+        XCTAssertGreaterThan(pause.pageScroll.contentSize.height,
+                             pause.pageScroll.bounds.height,
+                             "and on an SE there is more of it than the window, so it scrolls")
+    }
+
+    /// A screen that fits does not scroll, and is laid out as it always was.
+    func testAnEndingThatFitsDoesNotScroll() throws {
+        let pause = try XCTUnwrap(dailyCompleteScreen(sender: "Pause"))
+        pause.view.setNeedsLayout()
+        pause.view.layoutIfNeeded()
+        XCTAssertEqual(pause.pageScroll.contentSize.height, pause.pageScroll.bounds.height,
+                       accuracy: 0.5)
+        XCTAssertFalse(pause.pageScroll.alwaysBounceVertical, "and it does not bounce")
+    }
+
     /// Level Score and Speed Bonus share a line, and the total is under both.
     func testTheBreakdownIsTwoLinesRatherThanThree() throws {
         let pause = try XCTUnwrap(dailyCompleteScreen(),

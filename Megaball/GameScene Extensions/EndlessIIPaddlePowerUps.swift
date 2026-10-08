@@ -130,7 +130,11 @@ extension GameScene {
         if endlessIIShapeOwnsTheBounce == false, endlessIIWantsStickyFace,
            paddleSticky.isHidden == false {
             let wanted = endlessIIPaddleTopTexture
-            if paddleSticky.texture !== wanted { paddleSticky.texture = wanted }
+            if GameScene.originalPaddleArt(paddleSticky.texture) !== wanted {
+                paddleSticky.texture = wanted
+            }
+            // The original, because the sprite wears a drawn-size copy of it (round 378,
+            // `keepThePaddleArtAtItsDrawnSize`) and a copy is a different object
         }
         // **The overlay follows whichever of the two is running, both ways.** A grip starting
         // over a bare paddle has nothing else to dress it - the shaped path runs only while a

@@ -6494,44 +6494,47 @@ final class PaddleGlowMarginTests: XCTestCase {
 /// magnetic region of the paddle, and increase in opacity the closer the ball gets."
 final class EndlessIIMagnetFieldTests: XCTestCase {
 
-    private func segments(_ path: CGPath) -> [(from: CGPoint, to: CGPoint)] {
-        var found: [(CGPoint, CGPoint)] = []
-        var pen = CGPoint.zero
-        path.applyWithBlock { element in
-            switch element.pointee.type {
-            case .moveToPoint: pen = element.pointee.points[0]
-            case .addLineToPoint:
-                found.append((pen, element.pointee.points[0]))
-                pen = element.pointee.points[0]
-            default: break
-            }
-        }
-        return found.map { (from: $0.0, to: $0.1) }
-    }
-
     /// Vertical dotted lines, across the paddle, from its top up the height of the region.
     func testTheFieldIsVerticalDotsAcrossThePaddle() {
-        let dots = segments(GameScene.magnetFieldPath(halfWidth: 60, height: 300, phase: 0))
-        let columns = Set(dots.map { Int($0.from.x.rounded()) })
+        let dots = GameScene.magnetFieldDots(halfWidth: 60, height: 300, phase: 0)
+        let columns = Set(dots.map { Int($0.x.rounded()) })
         XCTAssertEqual(columns.count, GameScene.magnetFieldLines, "this many lines")
         XCTAssertTrue(columns.allSatisfy { abs($0) <= 60 }, "inside the paddle's width")
         for dot in dots {
-            XCTAssertEqual(dot.from.x, dot.to.x, "vertical")
-            XCTAssertLessThanOrEqual(abs(dot.from.y - dot.to.y), GameScene.magnetFieldDot + 0.01,
-                                     "a dot, not a dash")
-            XCTAssertGreaterThanOrEqual(min(dot.from.y, dot.to.y), -0.01, "nothing below the paddle")
-            XCTAssertLessThanOrEqual(max(dot.from.y, dot.to.y), 300.01, "nothing above the region")
+            XCTAssertGreaterThanOrEqual(dot.y - GameScene.magnetFieldDot/2, -0.01,
+                                        "nothing below the paddle")
+            XCTAssertLessThanOrEqual(dot.y + GameScene.magnetFieldDot/2, 300.01,
+                                     "nothing above the region")
         }
         XCTAssertGreaterThan(dots.count, GameScene.magnetFieldLines*10, "a dotted line, not a few")
     }
 
     /// "The dots on the line should move towards the paddle."
     func testTheDotsRunDownIntoThePaddle() throws {
-        let first = segments(GameScene.magnetFieldPath(halfWidth: 60, height: 300, phase: 0))
-        let later = segments(GameScene.magnetFieldPath(halfWidth: 60, height: 300, phase: 3))
-        let top = try XCTUnwrap(first.map(\.from.y).max())
-        let laterTop = try XCTUnwrap(later.map(\.from.y).max())
+        let first = GameScene.magnetFieldDots(halfWidth: 60, height: 300, phase: 0)
+        let later = GameScene.magnetFieldDots(halfWidth: 60, height: 300, phase: 3)
+        let top = try XCTUnwrap(first.map(\.y).max())
+        let laterTop = try XCTUnwrap(later.map(\.y).max())
         XCTAssertEqual(laterTop, top - 3, accuracy: 0.01, "three points on, three points lower")
+    }
+
+    /// James, round 378: "For the magnet power-up graphic, make the dots longer and the spaces
+    /// between them larger, and make them transparent, getting more opaque towards the paddle
+    /// with a maximum of 50% opacity."
+    func testTheDotsAreLongerFurtherApartAndFadeUpToHalfAtThePaddle() {
+        XCTAssertGreaterThanOrEqual(GameScene.magnetFieldDot, 6, "longer than round 368's dots")
+        XCTAssertGreaterThan(GameScene.magnetFieldGap, 11, "and further apart")
+        let height: CGFloat = 300
+        XCTAssertEqual(GameScene.magnetFieldDotAlpha(y: 0, height: height), 0.5, accuracy: 0.001,
+                       "half opaque at the paddle")
+        XCTAssertEqual(GameScene.magnetFieldDotAlpha(y: height, height: height), 0, accuracy: 0.001,
+                       "clear at the top")
+        XCTAssertGreaterThan(GameScene.magnetFieldDotAlpha(y: 50, height: height),
+                             GameScene.magnetFieldDotAlpha(y: 250, height: height),
+                             "more opaque towards the paddle")
+        XCTAssertLessThanOrEqual(GameScene.magnetFieldDotAlpha(y: 0, height: height)
+                                 * GameScene.magnetFieldAlpha(strength: 1), 0.5 + 0.0001,
+                                 "never past half, however close the ball")
     }
 
     /// James, round 378: "Check the magnet graphic looks right, it's either not showing up or
@@ -6601,7 +6604,9 @@ final class EndlessIIMagnetFieldTests: XCTestCase {
         XCTAssertGreaterThan(field.alpha, 0, "the ball is in the region, so the field shows")
         XCTAssertLessThan(field.zPosition, 1, "behind the bricks (1)")
         XCTAssertLessThan(field.zPosition, 2, "and the power-ups (2); the ball is drawn at 3")
-        XCTAssertEqual(field.strokeColor, GameScene.endlessIIHaloColour)
+        let dot = try XCTUnwrap(field.children.first as? SKSpriteNode)
+        XCTAssertTrue(dot.texture === GameScene.magnetFieldDotTexture,
+                      "every dot wears the one lime capsule")
 
         scene.paddle.position.x = -40
         scene.drawEndlessIIMagnetField()
