@@ -4078,6 +4078,24 @@ final class DailyBoardRowTests: XCTestCase {
                        accuracy: 0.5)
     }
 
+    /// Round 382, rendering the menu on an iPad Pro 11 in landscape: a short page closed the
+    /// board's window to nothing, and the card showed the player's pinned row with not one
+    /// leader under it. Pressed from outside harder than its own gaps, it keeps a few places.
+    func testAShortPageStillShowsAFewPlaces() {
+        let card = DailyCardView()
+        let me = DailyBoardRow(rank: 137, name: "Me", score: 4_210, isLocalPlayer: true)
+        card.show(key: DailyChallengeSession.shared.todayKey, isToday: true, record: nil,
+                  standing: nil, board: leaders(10), own: me)
+        card.widthAnchor.constraint(equalToConstant: 350).isActive = true
+        let short = card.heightAnchor.constraint(equalToConstant: 200)
+        short.priority = UILayoutPriority(790)
+        short.isActive = true
+        card.layoutIfNeeded()
+        XCTAssertGreaterThanOrEqual(card.boardScroll.bounds.height,
+                                    DailyCardView.boardWindowFloor - 0.5,
+                                    "two places and a half, and the page scrolls for the rest")
+    }
+
     /// A short board is not given a window taller than itself.
     func testAShortBoardIsOnlyAsTallAsItsRows() {
         let card = DailyCardView()

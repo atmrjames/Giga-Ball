@@ -2965,6 +2965,54 @@ testers:
   falling power-up's position by `brickWidth`, so a bare `GameScene()` with a power-up on
   screen traps converting NaN to Int. A real scene is always laid out before play.
 
+**Round 382: frame cost, iPad and Mac shapes, touch tests, and the listing.**
+
+- **The new per-frame work, timed** (`testTheNewPerFrameWorkIsCheap`, on a full field). Paddle
+  art kept at its drawn size costs 0.001 ms in the steady state, in every mode. The Portal
+  glow costs 0.12 ms and Magnetism's field 0.13 ms - each under 1% of a frame on the
+  simulator. The test holds each to a twentieth of a frame.
+- **This week's screens at iPad and Mac shapes**, rendered: iPad Pro 13 full screen, split
+  half, iPad Pro 11 landscape and a 1200 by 800 window.
+  - **The daily menu's board closed to nothing on a short page**, found on iPad Pro 11
+    landscape: the card showed the player's pinned row and no leaders. The window has a
+    floor of two places and a half now (`boardWindowFloor`), above the wanted gaps, so a
+    short page scrolls (round 371) instead. `testAShortPageStillShowsAFewPlaces`.
+  - The endings hold their figures at every shape. On iPad landscape and the Mac window the
+    buttons sit just below the fold and the screen scrolls to them (round 379).
+  - The 900 by 420 shape in `WindowSizeTests` is below round 342's 667-point floor, so no
+    window can be that shape. What it renders is not a finding.
+- **The scene's touch handling has tests** (`SceneTouchTests`, from rounds 381 and 382's CRAP
+  passes). A `UITouch` subclass places a finger exactly, on a presented Classic level, and
+  checks seven behaviours:
+  - a drag moves the paddle by the travel times the sensitivity, and the waiting ball rides
+    with it;
+  - a drag's lift does not serve, and a tap that does not move does;
+  - the paddle stays inside both walls however far the finger goes;
+  - a tap during the build-in finishes it rather than serving;
+  - a long enough swipe up pauses when swipe-to-pause is on, and is a drag when it is off;
+  - the pause button pauses.
+  - **A flick of more than 100 points with the ball in play earns Paddle Speed**, and not
+    while the ball waits; **the pause button does nothing on a No Breaks day**. Both were
+    added because mutation testing found them unpinned.
+  - **Mutation, which earned its keep twice.**
+    - The drag handler first killed 0 of 15, because the drag started at x = 0, where the
+      finger's travel and the sum of its two positions are the same number. Starting
+      off-centre, plus the Paddle Speed test, takes it to 8 of 15. The rest are Mayhem's aim
+      branches, which a Classic level never reaches and `AimHoldControl`'s own tests cover,
+      plus an absolute value and a boundary.
+    - The tap and release handler kills 11 of 30. The survivors are the same aim branches,
+      the held-extra-ball launch, and resets of `touchBeganWhilstPlaying` that only a second
+      tap would show.
+    - The pause button's guard: 3 of 3 once the No Breaks test was in.
+- **The App Store listing text** (`App Store Connect Media/V1.3 - 2026/Listing text.txt`,
+  git-ignored), checked against the code: 65 power-ups (66 entries, Jagged Paddle retired),
+  37 of them Mayhem's, 20 twists and 98 achievements still hold. The description and What's
+  New now mention the in-app daily leaderboards, yesterday's result, every run's three end
+  statistics and the updated Quick Start Guide; every field is within its limit. The in-app
+  What's New is James's own words (round 352) and reads its count from the catalogue, so it
+  is unchanged. Of the nine screenshots, the Daily Challenge one shows the signed-out view
+  with no leaderboard, and is worth retaking on a signed-in phone; the rest still match.
+
 **Round 381: a deep pass - review, coverage, mutation, documentation.**
 
 James: "a deep dive round of testing, CRAP, mutation testing, documentation updates", plus a

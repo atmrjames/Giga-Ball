@@ -129,6 +129,16 @@ final class DailyCardView: UIView {
         boardScroll.addSubview(boardRows)
         let shownAtOnce = boardScroll.heightAnchor.constraint(equalTo: boardRows.heightAnchor)
         shownAtOnce.priority = .defaultHigh
+        let atLeastAFew = boardScroll.heightAnchor.constraint(
+            greaterThanOrEqualToConstant: DailyCardView.boardWindowFloor)
+        atLeastAFew.priority = UILayoutPriority(800)
+        let neverPastTheRows = boardScroll.heightAnchor.constraint(
+            lessThanOrEqualTo: boardRows.heightAnchor)
+        // **A floor of two places and a half** (round 382, found rendering the menu on an iPad Pro
+        // 11 in landscape): on a short page the window was the first thing to give, and it gave
+        // all the way - the card showed the player's own pinned row and not one leader. Above
+        // the wanted gaps, so a short page scrolls (round 371) rather than closing the board;
+        // and never taller than the rows themselves, so a board of one is one row tall
         NSLayoutConstraint.activate([
             boardRows.topAnchor.constraint(equalTo: boardScroll.contentLayoutGuide.topAnchor),
             boardRows.bottomAnchor.constraint(equalTo: boardScroll.contentLayoutGuide.bottomAnchor),
@@ -141,6 +151,8 @@ final class DailyCardView: UIView {
             // In by the pinned row's own inset, so the two lists' columns line up - and it
             // leaves the scroll bar a margin to run in rather than over the scores
             shownAtOnce,
+            atLeastAFew,
+            neverPastTheRows,
             boardScroll.heightAnchor.constraint(lessThanOrEqualToConstant:
                                                     DailyCardView.boardWindowHeight),
         ])
@@ -409,13 +421,18 @@ final class DailyCardView: UIView {
     /// How far the pinned row's words sit inside its band, and every other row with them.
     static let ownRowInset: CGFloat = 8
 
+    /// Two and a half places: the least the window closes to on a short page.
+    static let boardWindowFloor: CGFloat = (2*(boardRowHeight + boardRowGap) + 0.5*boardRowHeight).rounded()
+
     /// Four and a half places: see where the board's window is built.
-    static let boardWindowHeight: CGFloat = {
+    static let boardWindowHeight: CGFloat = (4*(boardRowHeight + boardRowGap) + 0.4*boardRowHeight).rounded()
+
+    /// One place's height, measured off a row built the way every row is.
+    static let boardRowHeight: CGFloat = {
         let sample = boardLine(for: DailyBoardRow(rank: 10, name: "Player", score: 99_999,
                                                   isLocalPlayer: false),
                                unit: "m", leading: false)
-        let row = sample.systemLayoutSizeFitting(UIView.layoutFittingCompressedSize).height
-        return (4*(row + boardRowGap) + 0.4*row).rounded()
+        return sample.systemLayoutSizeFitting(UIView.layoutFittingCompressedSize).height
     }()
     // Four whole places and the fifth cut through its middle. "4.5 rows" counted the gaps as
     // well and landed at the fifth row's foot, where the cut read as a clipped line of text

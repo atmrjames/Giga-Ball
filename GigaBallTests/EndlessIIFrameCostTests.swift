@@ -466,6 +466,46 @@ final class EndlessIIFrameCostTests: XCTestCase {
                        + "is a hitch the player feels as the paddle stuttering")
     }
 
+    /// The per-frame work rounds 378 to 381 added, timed on a full field (round 382): the paddle's
+    /// pictures kept at their drawn size, in every mode; the Portal glow, placed twice a frame;
+    /// and Magnetism's field, a sprite a dot. Each has to stay a small share of a frame.
+    func testTheNewPerFrameWorkIsCheap() throws {
+        let scene = loadedField()
+        scene.totalStatsArray = [TotalStats()]
+        scene.paddleTexture = SKTexture(imageNamed: "regularPaddle")
+        scene.paddle.texture = scene.paddleTexture
+        scene.paddle.size = CGSize(width: 91.8, height: 12.24)
+        scene.paddle.position = CGPoint(x: 0, y: -300)
+        scene.addChild(scene.paddle)
+        scene.addChild(scene.ball)
+        scene.ball.physicsBody = SKPhysicsBody(circleOfRadius: 7)
+        scene.ballIsOnPaddle = false
+        scene.finalBrickRowHeight = 100
+        print("\nPer-frame work added in rounds 378 to 381:")
+
+        let art = cost("Paddle art at drawn size") { scene.keepThePaddleArtAtItsDrawnSize() }
+        XCTAssertEqual(scene.paddle.texture?.size().height ?? 0, 12.24, accuracy: 0.05,
+                       "the picture was resized, so the steady state was what got timed")
+
+        scene.endlessIIPortalPaddleClock.collect(turns: 5)
+        let glow = cost("Portal glow") { scene.refreshEndlessIIPaddleGlow() }
+        XCTAssertNotNil(scene.endlessIIPaddleGlowNode, "the glow drew nothing, so this timed a guard")
+
+        scene.endlessIICollectMagnetism()
+        scene.ball.position = CGPoint(x: 10, y: -200)
+        scene.ball.physicsBody?.velocity = CGVector(dx: 0, dy: -400)
+        let magnet = cost("Magnetism's field") {
+            scene.frameDelta = self.frame
+            scene.drawEndlessIIMagnetField()
+        }
+        let dots = scene.endlessIIMagnetField.first?.children.filter { $0.isHidden == false }.count ?? 0
+        XCTAssertGreaterThan(dots, 20, "the field drew no dots, so this timed a guard")
+
+        for (name, each) in [("paddle art", art), ("glow", glow), ("magnet", magnet)] {
+            XCTAssertLessThan(each, frame/20, "\(name) costs more than a twentieth of a frame")
+        }
+    }
+
     /// The four James named, timed side by side.
     func testWhatAFrameOfMayhemSpendsItsTimeOn() {
         let scene = loadedField()
