@@ -164,11 +164,25 @@ final class SceneTouchTests: XCTestCase {
     override func tearDown() {
         window?.isHidden = true
         window = nil
+        forgetAnyPausedRun()
         super.tearDown()
     }
 
-    private func playing() throws -> GameScene {
-        GameMode.classic.makeCurrent(in: GameScene.settingsStore)
+    /// Clears the save a pause leaves behind.
+    ///
+    /// **A paused run is saved so it can be resumed**, and under tests it is saved to the tests'
+    /// own settings suite - so the next scene built resumed it. Found in round 383: a Mayhem test
+    /// that followed `testASwipeUpPausesWhenItIsOn` was handed that Classic run back, had no Aimed
+    /// Sticky to catch with, and failed at its first line. Cleared before every scene and after
+    /// every test, so the order the runner chooses cannot decide the result.
+    private func forgetAnyPausedRun() {
+        GameScene.settingsStore.set(false, forKey: SavedGame.resumeFlagKey)
+        SavedGame.clear(from: GameScene.settingsStore)
+    }
+
+    private func playing(_ mode: GameMode = .classic) throws -> GameScene {
+        forgetAnyPausedRun()
+        mode.makeCurrent(in: GameScene.settingsStore)
         let board = UIStoryboard(name: "Main", bundle: Bundle(for: GameViewController.self))
         let game = try XCTUnwrap(board.instantiateViewController(withIdentifier: "gameView")
                                  as? GameViewController)
@@ -317,6 +331,93 @@ final class SceneTouchTests: XCTestCase {
         defer { DailyChallengeSession.shared.active = nil }
         scene.touchesBegan([PlacedTouch(at: scene.pauseButton.position)], with: nil)
         XCTAssertTrue(scene.gameState.currentState is Playing, "no breaks means no breaks")
+    }
+
+    // MARK: Aimed Sticky (round 383)
+    //
+    // James's rules for a ball held by Aimed Sticky, from three rounds of play-testing:
+    // round 215, "drag below the paddle moves the paddle. Drag above the paddle moves the arrow
+    // relative to the drag. Tap releases the ball"; round 232, "a tap above the paddle moves
+    // the arrow to the tap position. A tap below the paddle launches the ball"; and round 275,
+    // "if I let my finger go after the ball lands on the paddle, the ball releases. In this
+    // case, it should stay on the paddle. It should only release on a tap". All of it lives in
+    // the touch handlers, which until now were only driven in Classic.
+
+    /// A Mayhem run with the first ball caught by Aimed Sticky and held for aiming.
+    private func aimedHold() throws -> GameScene {
+        let scene = try playing(.endlessII)
+        scene.releaseBall()
+        scene.endlessIICollectAimedSticky()
+        scene.ball.physicsBody?.velocity = CGVector(dx: 0, dy: -300)
+        scene.ball.position = CGPoint(x: scene.paddle.position.x, y: scene.paddleTopY + 8)
+        XCTAssertTrue(scene.endlessIIAimedCatch(scene.ball, isExtra: false), "the ball was caught")
+        XCTAssertTrue(scene.endlessIIAimHold, "and is held for aiming")
+        return scene
+    }
+
+    private func tap(_ scene: GameScene, at point: CGPoint) {
+        scene.touchesBegan([PlacedTouch(at: point)], with: nil)
+        scene.touchesEnded([PlacedTouch(at: point)], with: nil)
+    }
+
+    /// "A tap below the paddle launches the ball."
+    func testATapBelowThePaddleFiresTheHeldBall() throws {
+        let scene = try aimedHold()
+        tap(scene, at: CGPoint(x: scene.paddle.position.x, y: scene.paddle.position.y - 30))
+        XCTAssertFalse(scene.endlessIIAimHold, "fired")
+        XCTAssertFalse(scene.ballIsOnPaddle)
+        XCTAssertGreaterThan(scene.ball.physicsBody?.velocity.dy ?? 0, 0, "and upwards")
+    }
+
+    /// "A tap above the paddle moves the arrow to the tap position" - and the ball stays, until
+    /// a tap below sends it there.
+    func testATapAboveThePaddleAimsAndTheNextTapBelowFiresThere() throws {
+        let scene = try aimedHold()
+        let aim = CGPoint(x: scene.paddle.position.x + 120, y: scene.paddle.position.y + 260)
+        tap(scene, at: aim)
+        XCTAssertTrue(scene.endlessIIAimHold, "still held")
+        XCTAssertTrue(scene.ballIsOnPaddle)
+        XCTAssertTrue(scene.endlessIIAimTouched)
+        XCTAssertEqual(scene.endlessIIAimTouchX, aim.x, accuracy: 0.01, "the arrow points at the tap")
+        XCTAssertEqual(scene.endlessIIAimTouchY, aim.y, accuracy: 0.01)
+
+        tap(scene, at: CGPoint(x: scene.paddle.position.x, y: scene.paddle.position.y - 30))
+        let velocity = try XCTUnwrap(scene.ball.physicsBody?.velocity)
+        XCTAssertGreaterThan(velocity.dx, 0, "towards the right, where the arrow pointed")
+        XCTAssertGreaterThan(velocity.dy, 0)
+    }
+
+    /// "Drag below the paddle moves the paddle" - with the held ball on it, still held.
+    func testADragBelowThePaddleCarriesItAndTheHeldBall() throws {
+        let scene = try aimedHold()
+        let before = scene.paddle.position.x
+        let offset = scene.ball.position.x - scene.paddle.position.x
+        let start = CGPoint(x: 40, y: scene.paddle.position.y - 30)
+        scene.touchesBegan([PlacedTouch(at: start)], with: nil)
+        scene.touchesMoved([PlacedTouch(at: CGPoint(x: start.x + 30, y: start.y), from: start)],
+                           with: nil)
+        scene.touchesEnded([PlacedTouch(at: CGPoint(x: start.x + 30, y: start.y))], with: nil)
+        XCTAssertEqual(scene.paddle.position.x, before + 30*scene.paddleMovementFactor,
+                       accuracy: 0.01)
+        XCTAssertEqual(scene.ball.position.x - scene.paddle.position.x, offset, accuracy: 0.5,
+                       "the ball comes with it")
+        XCTAssertTrue(scene.endlessIIAimHold, "a drag is not a tap, so it is still held")
+    }
+
+    /// "If I let my finger go after the ball lands on the paddle ... it should stay on the
+    /// paddle. It should only release on a tap."
+    func testAFingerAlreadyDownWhenTheBallLandsDoesNotFireOnLift() throws {
+        let scene = try playing(.endlessII)
+        scene.releaseBall()
+        scene.endlessIICollectAimedSticky()
+        let finger = CGPoint(x: scene.paddle.position.x, y: scene.paddle.position.y - 30)
+        scene.touchesBegan([PlacedTouch(at: finger)], with: nil)
+        scene.ball.physicsBody?.velocity = CGVector(dx: 0, dy: -300)
+        scene.ball.position = CGPoint(x: scene.paddle.position.x, y: scene.paddleTopY + 8)
+        XCTAssertTrue(scene.endlessIIAimedCatch(scene.ball, isExtra: false))
+        scene.touchesEnded([PlacedTouch(at: finger)], with: nil)
+        XCTAssertTrue(scene.endlessIIAimHold, "the lift ended a paddle move, not a tap")
+        XCTAssertTrue(scene.ballIsOnPaddle)
     }
 
     /// Touching the pause button pauses.

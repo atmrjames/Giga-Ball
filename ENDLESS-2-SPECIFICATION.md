@@ -2965,6 +2965,40 @@ testers:
   falling power-up's position by `brickWidth`, so a bare `GameScene()` with a power-up on
   screen traps converting NaN to Int. A real scene is always laid out before play.
 
+**Round 383: Aimed Sticky by touch, the auto-aim marker, and the Information screen.**
+
+- **Aimed Sticky, driven through the real touch handlers** (`SceneTouchTests`, on a presented
+  Mayhem run with the ball truly caught by `endlessIIAimedCatch`). Each test is one of James's
+  rules from rounds 215, 232 and 275:
+  - a tap below the paddle fires the held ball;
+  - a tap above the paddle points the arrow at the tap and keeps the ball, and the next tap
+    below fires it that way;
+  - a drag below the paddle carries the paddle and the held ball, and keeps it held;
+  - a finger already down when the ball lands does not fire on its lift.
+- **A paused run leaked between tests.** A pause saves the run, under tests to the tests' own
+  settings suite, so the next scene a test built resumed it. A Mayhem test that followed the
+  swipe-to-pause test was handed a Classic run back and failed at its first line. The class
+  clears any saved run before each scene and after each test now
+  (`forgetAnyPausedRun`). The suite's preferences were checked afterwards: no resume flag
+  left.
+- **The auto-aim marker, drawn** (`refreshEndlessIIAutoAimMarker`, 40% covered at round 381).
+  It is tested on a small field now:
+  - it outlines the lowest brick the ball can reach, and comes and goes with Auto-Aim;
+  - it shows while a held ball's launch will be aimed (round 376's report), but not for the
+    first serve of a life;
+  - it never shows while the ball is lost, and a brick below the launch is never the target.
+- **The Information screen's rows** (`InformationRowTests`). Its tap handler was the
+  highest-scoring function in the app (CRAP 380), and four of its rows opened Safari or Mail
+  directly.
+  - The addresses are named once now (`ItemsViewController.link(for:)`) and opened through
+    `openLink`, which a test replaces. The rate row's `fatalError` went with the change.
+  - The tap feedback's forced cast is optional now.
+  - Tested: every screen row opens the screen its title names; every link goes to its
+    address and opens no screen; Share presents the system's share sheet; and opened over a
+    paused game the screen is a reference, with nothing that leaves the run.
+  - The menu highlight handlers below it in the CRAP list only swap a button's pressed
+    picture, and were left.
+
 **Round 382: frame cost, iPad and Mac shapes, touch tests, and the listing.**
 
 - **The new per-frame work, timed** (`testTheNewPerFrameWorkIsCheap`, on a full field). Paddle

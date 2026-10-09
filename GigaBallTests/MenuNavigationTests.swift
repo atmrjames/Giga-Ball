@@ -2203,3 +2203,98 @@ final class GameOverTimeTests: XCTestCase {
         }
     }
 }
+
+/// The Information screen's rows, every one tapped (round 383).
+///
+/// **From the CRAP pass**: `ItemsViewController.tableView(_:didSelectRowAt:)` was the
+/// highest-scoring function in the app - eleven rows, each its own branch, and not one reached by
+/// a test, because four of them opened Safari or Mail. The links now go through `link(for:)` and
+/// `openLink`, so a test can ask where each would go without going there.
+final class InformationRowTests: XCTestCase {
+
+    private var window: UIWindow?
+
+    override func tearDown() {
+        window?.isHidden = true
+        window = nil
+        super.tearDown()
+    }
+
+    private func information(from: String = "") throws -> ItemsViewController {
+        let board = UIStoryboard(name: "Main", bundle: Bundle(for: ItemsViewController.self))
+        let screen = try XCTUnwrap(board.instantiateViewController(withIdentifier: "itemsView")
+                                   as? ItemsViewController)
+        screen.navigatedFrom = from
+        let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 402, height: 874))
+        window.windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene
+        window.rootViewController = screen
+        window.makeKeyAndVisible()
+        self.window = window
+        screen.view.layoutIfNeeded()
+        return screen
+    }
+
+    private func tap(_ row: ItemsViewController.InfoRow, on screen: ItemsViewController) throws {
+        let index = try XCTUnwrap(screen.infoRows.firstIndex(of: row), "no \(row) row")
+        screen.tableView(screen.itemsTableView, didSelectRowAt: IndexPath(row: index, section: 0))
+    }
+
+    /// Each row that opens a screen opens the one its title names.
+    func testEachScreenRowOpensItsScreen() throws {
+        let expected: [(ItemsViewController.InfoRow, (UIViewController) -> Bool)] = [
+            (.powerUps, { ($0 as? ItemsDetailViewController)?.senderID == 2 }),
+            (.achievements, { ($0 as? ItemsDetailViewController)?.senderID == 3 }),
+            (.brickTypes, { $0 is BrickTypesViewController }),
+            (.statistics, { $0 is StatsViewController }),
+            (.quickStart, { $0 is IntroViewController }),
+            (.about, { $0 is AboutViewController }),
+        ]
+        for (row, opened) in expected {
+            let screen = try information()
+            try tap(row, on: screen)
+            let child = try XCTUnwrap(screen.children.last, "\(row) opened nothing")
+            XCTAssertTrue(opened(child), "\(row) opened \(type(of: child))")
+        }
+    }
+
+    /// Each row that leaves the app goes where its title says, and nowhere else.
+    func testEachLinkGoesWhereItsTitleSays() throws {
+        let expected: [(ItemsViewController.InfoRow, String)] = [
+            (.website, "https://giga-ball.app"),
+            (.contact, "mailto:contact@giga-ball.app?subject=Giga-Ball"),
+            (.soundCloud, MusicViewController.soundCloudSet),
+            (.rate, "https://apps.apple.com/app/id1494628204?action=write-review"),
+        ]
+        for (row, address) in expected {
+            let screen = try information()
+            var opened: [URL] = []
+            screen.openLink = { opened.append($0) }
+            try tap(row, on: screen)
+            XCTAssertEqual(opened.map(\.absoluteString), [address], "\(row)")
+            XCTAssertTrue(screen.children.isEmpty, "\(row) leaves the app; it opens no screen")
+        }
+    }
+
+    /// Share offers the App Store page through the system's share sheet.
+    func testShareOffersTheAppStorePage() throws {
+        let screen = try information()
+        var sheets: [UIViewController] = []
+        screen.presentSheet = { sheets.append($0) }
+        try tap(.share, on: screen)
+        XCTAssertEqual(sheets.count, 1)
+        XCTAssertTrue(sheets.first is UIActivityViewController)
+        // Received rather than presented: passing alone and failing in a full run, the real
+        // presentation was a test of the window's state, not of this row
+    }
+
+    /// Opened over a paused game it is a reference, not a menu: nothing that leaves the run.
+    func testFromThePauseMenuItIsAReferenceOnly() throws {
+        let screen = try information(from: "PauseMenu")
+        let rows = screen.infoRows
+        for leaving in [ItemsViewController.InfoRow.quickStart, .soundCloud, .rate, .share,
+                        .website, .contact, .about] {
+            XCTAssertFalse(rows.contains(leaving), "\(leaving) is offered over a paused game")
+        }
+        XCTAssertTrue(rows.contains(.powerUps))
+    }
+}

@@ -204,8 +204,10 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
     // Add content to cells
 
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        let cell = self.itemsTableView.cellForRow(at: indexPath) as! SettingsTableViewCell
-        cell.showTapFeedback()
+        let cell = self.itemsTableView.cellForRow(at: indexPath) as? SettingsTableViewCell
+        cell?.showTapFeedback()
+        // Optional rather than forced (round 383): a tap is always on a cell that is showing,
+        // but the row's work does not depend on the cell, and a test can now ask every row
         
         switch infoRows[indexPath.row] {
         case .powerUps:
@@ -220,23 +222,10 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
             showGameCenterLeaderboards()
         case .quickStart:
             moveToIntro()
-        case .website:
-            if let site = URL(string: "https://giga-ball.app") {
-                UIApplication.shared.open(site)
-            }
-        case .contact:
-            if let mail = URL(string: "mailto:contact@giga-ball.app?subject=Giga-Ball") {
-                UIApplication.shared.open(mail)
-            }
-        case .soundCloud:
-            if let purchaseSoundTrackURL = URL(string: MusicViewController.soundCloudSet) {
-            // One address, named on the screen the music lives on (round 210)
-                UIApplication.shared.open(purchaseSoundTrackURL)
-            }
-        case .rate:
-            guard let writeReviewURL = URL(string: "https://apps.apple.com/app/id1494628204?action=write-review")
-                else { fatalError("Expected a valid URL") }
-            UIApplication.shared.open(writeReviewURL, options: [:], completionHandler: nil)
+        case .website, .contact, .soundCloud, .rate:
+            if let link = ItemsViewController.link(for: infoRows[indexPath.row]) { openLink(link) }
+            // The four addresses are named once, in `link(for:)`; the SoundCloud one still
+            // lives on the screen the music lives on (round 210)
         case .share:
             let shareURL: [Any] = ["Check out Giga-Ball on the App Store", URL(string: "https://apps.apple.com/app/id1494628204")!]
             let shareSheet = UIActivityViewController(activityItems: shareURL, applicationActivities: nil)
@@ -244,7 +233,7 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
             if ( UIDevice.current.userInterfaceIdiom == UIUserInterfaceIdiom.pad ){
                 let rectOfCellInTableView = tableView.rectForRow(at: indexPath)
                 let rectOfCellInSuperview = tableView.convert(rectOfCellInTableView, to: tableView.backgroundView)
-                let popUpPosition = rectOfCellInSuperview.origin.y + cell.cellView2.frame.height/2
+                let popUpPosition = rectOfCellInSuperview.origin.y + rectOfCellInTableView.height/2
                 // Determine y poision of selected cell
 
                 if let popoverController = shareSheet.popoverPresentationController {
@@ -255,7 +244,9 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
             }
             // Determine where to display the share sheet on iPads
             
-            self.present(shareSheet, animated: true, completion: nil)
+            if let presentSheet { presentSheet(shareSheet) } else {
+                self.present(shareSheet, animated: true, completion: nil)
+            }
         case .about:
             moveToAbout()
         }
@@ -265,6 +256,29 @@ class ItemsViewController: UIViewController, UITableViewDelegate, UITableViewDat
         // Update table view
     }
     
+    /// Where a row that leaves the app goes; nil for a row that opens a screen here.
+    ///
+    /// One place for the four addresses (round 383, from the CRAP pass: this handler was the
+    /// highest-scoring function in the app, and its link rows each built and opened their own
+    /// URL inline, which no test could reach without really opening Safari or Mail).
+    static func link(for row: InfoRow) -> URL? {
+        switch row {
+        case .website: return URL(string: "https://giga-ball.app")
+        case .contact: return URL(string: "mailto:contact@giga-ball.app?subject=Giga-Ball")
+        case .soundCloud: return URL(string: MusicViewController.soundCloudSet)
+        case .rate: return URL(string: "https://apps.apple.com/app/id1494628204?action=write-review")
+        default: return nil
+        }
+    }
+
+    /// How a link is opened: by the system, or by a test that wants to know where it went.
+    var openLink: (URL) -> Void = { UIApplication.shared.open($0) }
+
+    /// Who presents the share sheet: this screen when nil, or a test that wants to see it. A
+    /// real presentation depends on the state of the app's window at the moment it is asked,
+    /// which in a full test run belongs to whatever ran before (round 383).
+    var presentSheet: ((UIViewController) -> Void)?
+
     func tableView(_ tableView: UITableView, didHighlightRowAt indexPath: IndexPath) {
         if hapticsSetting {
             interfaceHaptic.impactOccurred()

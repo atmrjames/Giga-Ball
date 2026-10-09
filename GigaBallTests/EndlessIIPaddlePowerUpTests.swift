@@ -495,6 +495,91 @@ final class EndlessIIPaddleSceneTests: XCTestCase {
         XCTAssertFalse(scene.heldLaunchWillBeAutoAimed, "an Aimed Sticky shot is the player's own")
     }
 
+    // MARK: The auto-aim marker on the field (round 383, from the CRAP pass)
+
+    /// A paddle, a ball and two bricks: one low and off to the side, one higher and straight up.
+    private func aimField() -> (GameScene, low: SKSpriteNode, high: SKSpriteNode) {
+        let scene = paddleScene()
+        scene.paddle.size = CGSize(width: 90, height: 12)
+        scene.paddle.position = CGPoint(x: 0, y: -300)
+        scene.addChild(scene.paddle)
+        scene.ball.size = CGSize(width: 10, height: 10)
+        scene.addChild(scene.ball)
+        func brick(at point: CGPoint) -> SKSpriteNode {
+            let brick = SKSpriteNode(color: .white, size: CGSize(width: 36, height: 18))
+            brick.name = BrickCategoryName
+            brick.position = point
+            scene.addChild(brick)
+            return brick
+        }
+        let low = brick(at: CGPoint(x: 60, y: 0))
+        let high = brick(at: CGPoint(x: 0, y: 120))
+        scene.ballIsOnPaddle = false
+        scene.ballLostBool = false
+        return (scene, low, high)
+    }
+
+    private func marker(_ scene: GameScene) -> SKShapeNode? {
+        scene.childNode(withName: GameScene.autoAimMarkerName) as? SKShapeNode
+    }
+
+    /// Auto-Aim running and the ball in play: the lowest brick the ball can reach is outlined.
+    func testTheMarkerOutlinesTheLowestReachableBrick() throws {
+        let (scene, low, _) = aimField()
+        scene.endlessIIAutoAimClock.collect(turns: 5)
+        scene.refreshEndlessIIAutoAimMarker()
+        let mark = try XCTUnwrap(marker(scene), "Auto-Aim is running, so the target is shown")
+        XCTAssertEqual(mark.position, low.position, "the lower brick, which is the next one hit")
+        XCTAssertNotNil(mark.path)
+    }
+
+    /// No Auto-Aim, no marker; and it goes when Auto-Aim ends.
+    func testTheMarkerComesAndGoesWithAutoAim() {
+        let (scene, _, _) = aimField()
+        scene.refreshEndlessIIAutoAimMarker()
+        XCTAssertNil(marker(scene))
+        scene.endlessIIAutoAimClock.collect(turns: 5)
+        scene.refreshEndlessIIAutoAimMarker()
+        XCTAssertNotNil(marker(scene))
+        scene.endlessIIAutoAimClock = EndlessIIClock()
+        scene.refreshEndlessIIAutoAimMarker()
+        XCTAssertNil(marker(scene), "Auto-Aim over, the outline goes with it")
+    }
+
+    /// James, round 376: "With sticky and auto aim active, when the ball is on the paddle the
+    /// aimed brick glow outline doesn't show until the ball is released. It should show the
+    /// aimed brick whilst the ball is on the paddle." Shown when the held launch will be aimed,
+    /// and not for the first serve of a life, which takes no aim.
+    func testTheMarkerShowsWhileAHeldBallWillBeAimed() {
+        let (scene, _, _) = aimField()
+        scene.endlessIIAutoAimClock.collect(turns: 5)
+        scene.ballIsOnPaddle = true
+        scene.endlessIIAutoAimOwedTurn = false
+        scene.refreshEndlessIIAutoAimMarker()
+        XCTAssertNil(marker(scene), "the first serve of a life is not aimed")
+        scene.endlessIIAutoAimOwedTurn = true
+        scene.refreshEndlessIIAutoAimMarker()
+        XCTAssertNotNil(marker(scene), "a sticky catch paid the aim's turn: the launch will be aimed")
+    }
+
+    /// And never while a ball is lost.
+    func testNoMarkerWhileTheBallIsLost() {
+        let (scene, _, _) = aimField()
+        scene.endlessIIAutoAimClock.collect(turns: 5)
+        scene.ballLostBool = true
+        scene.refreshEndlessIIAutoAimMarker()
+        XCTAssertNil(marker(scene))
+    }
+
+    /// A brick below the launch point cannot be reached, so it is never the target.
+    func testABrickBelowTheLaunchIsNotTheTarget() throws {
+        let (scene, low, high) = aimField()
+        low.position.y = -350
+        scene.endlessIIAutoAimClock.collect(turns: 5)
+        scene.refreshEndlessIIAutoAimMarker()
+        XCTAssertEqual(try XCTUnwrap(marker(scene)).position, high.position)
+    }
+
     func testTheLastAimedCatchStillOwnsItsLaunch() {
         // Round 10 report: "On the last go of an aimed sticky power up the ball stuck to
         // the paddle, no arrow appeared... The ball then fell to the bottom of the screen
