@@ -1747,10 +1747,16 @@ final class DailyFogRevealTests: XCTestCase {
 
     private func fogScene() -> GameScene {
         let scene = GameScene()
-        DailyChallengeSession.shared.active = DailyChallengeGenerator.challenge(
-            forKey: DailyChallengeSession.shared.todayKey)
+        DailyChallengeSession.shared.active = DailyChallenge(
+            dateKey: DailyChallengeSession.shared.todayKey, mode: .classic, classicLevel: 0,
+            twists: [.fogOfWar])
         return scene
     }
+    // **A Foggy day of its own, not today's** (round 381, found by mutation testing). This was
+    // today's real challenge, and every test below opened `guard scene.dailyFogIsOn else {
+    // return }` - so on any day the calendar had not made Foggy, which is most of them, the
+    // whole class passed without asserting anything. Six mutants of round 380's fix, the guard
+    // removed outright among them, survived a run on such a day. The guards are assertions now
 
     private func brick(in scene: GameScene) -> SKSpriteNode {
         let node = SKSpriteNode()
@@ -1766,7 +1772,7 @@ final class DailyFogRevealTests: XCTestCase {
 
     func testTheOpeningFieldIsNotHiddenAsItIsBuilt() {
         let scene = fogScene()
-        guard scene.dailyFogIsOn else { return }
+        XCTAssertTrue(scene.dailyFogIsOn, "the fixture is a Foggy day")
         // Only meaningful on a Fog of War day; the pool decides which days those are
 
         let opening = brick(in: scene)
@@ -1778,7 +1784,7 @@ final class DailyFogRevealTests: XCTestCase {
         // The look belongs to the opening field. A row that showed itself every time one
         // was generated would not be a fog at all
         let scene = fogScene()
-        guard scene.dailyFogIsOn else { return }
+        XCTAssertTrue(scene.dailyFogIsOn, "the fixture is a Foggy day")
         scene.dailyFogHasClosed = true
 
         let later = brick(in: scene)
@@ -1789,7 +1795,7 @@ final class DailyFogRevealTests: XCTestCase {
     func testClosingTheFogHappensOnceHoweverManyTimesItIsAsked() {
         // The build-in can finish, be skipped, or both across one run
         let scene = fogScene()
-        guard scene.dailyFogIsOn else { return }
+        XCTAssertTrue(scene.dailyFogIsOn, "the fixture is a Foggy day")
 
         scene.applyDailyFog(to: [brick(in: scene)])
         scene.closeDailyFog()
@@ -1813,7 +1819,7 @@ final class DailyFogRevealTests: XCTestCase {
         // The fog travels down with the build-in now: a scheduled brick leaves the pending
         // list at once, so the sweeper at the end of the build-in has nothing left to take
         let scene = fogScene()
-        guard scene.dailyFogIsOn else { return }
+        XCTAssertTrue(scene.dailyFogIsOn, "the fixture is a Foggy day")
 
         let opening = brick(in: scene)
         scene.applyDailyFog(to: [opening])
@@ -1828,7 +1834,7 @@ final class DailyFogRevealTests: XCTestCase {
         // §8.6: countBricks() gates row generation on a brick having no actions, so a wait
         // of most of a second attached to a brick would hold the whole field's descent
         let scene = fogScene()
-        guard scene.dailyFogIsOn else { return }
+        XCTAssertTrue(scene.dailyFogIsOn, "the fixture is a Foggy day")
 
         let opening = brick(in: scene)
         scene.applyDailyFog(to: [opening])
@@ -1842,7 +1848,7 @@ final class DailyFogRevealTests: XCTestCase {
     /// do, but then become hidden before the ball is released."
     func testASkippedBuildInStillFogsTheFieldBeforeTheLaunch() {
         let scene = fogScene()
-        guard scene.dailyFogIsOn else { return }
+        XCTAssertTrue(scene.dailyFogIsOn, "the fixture is a Foggy day")
 
         let landed = brick(in: scene)
         let waiting = brick(in: scene)
@@ -2568,6 +2574,70 @@ final class DailyAlwaysOnTests: XCTestCase {
         scene.holdDailyStandingPowerUpFull(classic)
         XCTAssertEqual(bar.xScale, 1, accuracy: 0.001, "the bar stays full")
         XCTAssertFalse(bar.hasActions(), "and stops counting down")
+    }
+
+    /// Mutation testing, round 381: an Always On Sticky Paddle keeps all its catches, and no
+    /// other day's power-up touches them.
+    func testAStandingStickyKeepsAllItsCatches() {
+        let scene = scene(.classic)
+        scene.stickyPaddleCatchesTotal = 5
+        scene.stickyPaddleCatches = 2
+        scene.holdDailyStandingPowerUpFull(6)
+        XCTAssertEqual(scene.stickyPaddleCatches, 5, "Sticky Paddle is index 6: held at full")
+
+        scene.stickyPaddleCatches = 2
+        scene.holdDailyStandingPowerUpFull(4)
+        XCTAssertEqual(scene.stickyPaddleCatches, 2, "another power-up leaves the catches alone")
+    }
+
+    /// From the CRAP pass, round 381: the tick itself, which nothing drove. It collects the day's
+    /// power-up and stops the timer that collection started, so the power-up never runs out.
+    func testTheTickCollectsTheDaysPowerUpAndStopsItsTimer() throws {
+        var key = "2026-11-15"
+        var found: String?
+        for _ in 0..<400 {
+            if let index = DailyTwist.alwaysOnPowerUp(forKey: key, mode: .classic), index != 6,
+               GameScene.trayPowerUpFamilies.contains(where: { $0.contains(index) }) {
+                // Not Sticky Paddle, which counts catches rather than running a timer
+                found = key
+                break
+            }
+            key = DailyChallengeGenerator.previousKey(of: key)!
+        }
+        let scene = scene(.classic, key: try XCTUnwrap(found, "no day stands on a tray power-up"))
+        let index = try XCTUnwrap(scene.dailyAlwaysOnPowerUp)
+        scene.hapticsSetting = false
+        scene.soundsSetting = false
+        scene.ballLostBool = false
+        scene.powerUpTextureArray = scene.powerUpTexturesInOrder
+        scene.addChild(scene.ball)
+        scene.ball.physicsBody = SKPhysicsBody(circleOfRadius: 6)
+        scene.addChild(scene.paddle)
+        scene.iconTimerArray = (0..<8).map { _ in
+            let bar = SKSpriteNode()
+            bar.isHidden = true
+            bar.xScale = 0
+            return bar
+        }
+        scene.gameState.enter(Playing.self)
+        scene.isPaused = false
+
+        XCTAssertTrue(scene.classicPowerUpEndings.isEmpty)
+        let tallies = scene.totalStatsArray[0].powerupsCollected
+        InGameRecents.shared.reset()
+        defer { InGameRecents.shared.reset() }
+        scene.tickDailyAlwaysOn()
+        XCTAssertEqual(scene.totalStatsArray[0].powerupsCollected, tallies,
+                       "not counted: the day's power-up is not a catch")
+        XCTAssertTrue(InGameRecents.shared.sightings.isEmpty,
+                      "and collected silently, so the in-game list does not say it was caught")
+        XCTAssertFalse(scene.classicPowerUpEndings.isEmpty,
+                       "power-up \(index) was collected, and its ending is filed so a Wipe can end it")
+        // Read off the ending rather than the tray bar: this fixture's `iconTimerArray` is its
+        // own nodes, where a real scene's are the named bars the collection lights
+        for key in scene.classicPowerUpEndings.keys {
+            XCTAssertNil(scene.action(forKey: key), "\(key): and its timer is not running")
+        }
     }
 
     /// Neither the standing power-up nor anything that would end it falls.
@@ -4433,6 +4503,42 @@ final class DailyThemeBackgroundTests: XCTestCase {
         XCTAssertGreaterThan(drawn.count, 4, "the draw moves from day to day")
         XCTAssertNil(DailyTwist.forcedBackground(for: day("2026-11-15", [.oneLife])),
                      "only a Theme day")
+    }
+
+    /// From the CRAP pass, round 381: the scene wears the day's background, and the player's own
+    /// setting is left as it was.
+    func testTheSceneWearsTheDaysBackgroundAndLeavesTheSettingAlone() throws {
+        var key = "2026-11-15"
+        var found: (DailyChallenge, UIColor)?
+        for _ in 0..<200 {
+            let challenge = day(key, [.dailyTheme])
+            if let ground = DailyTwist.forcedBackground(for: challenge),
+               case .solid(let colour) = ground.paint {
+                found = (challenge, colour)
+                break
+            }
+            key = DailyChallengeGenerator.previousKey(of: key)!
+        }
+        let (challenge, colour) = try XCTUnwrap(found, "no Theme day drew a solid background")
+        DailyChallengeSession.shared.active = challenge
+        defer { DailyChallengeSession.shared.active = nil }
+
+        let scene = GameScene()
+        let stored = scene.defaults.object(forKey: "backgroundSetting") as? Int
+        scene.applyBackgroundSetting()
+        let overlay = try XCTUnwrap(scene.backgroundOverlay)
+        XCTAssertFalse(overlay.isHidden)
+        XCTAssertNil(overlay.texture)
+        var drawn: (CGFloat, CGFloat, CGFloat, CGFloat) = (0, 0, 0, 0)
+        var wanted: (CGFloat, CGFloat, CGFloat, CGFloat) = (0, 0, 0, 0)
+        overlay.color.getRed(&drawn.0, green: &drawn.1, blue: &drawn.2, alpha: &drawn.3)
+        colour.getRed(&wanted.0, green: &wanted.1, blue: &wanted.2, alpha: &wanted.3)
+        for (a, b) in [(drawn.0, wanted.0), (drawn.1, wanted.1), (drawn.2, wanted.2)] {
+            XCTAssertEqual(a, b, accuracy: 0.001, "the day's background, not the player's")
+        }
+        // By component: two equal colours are not always `==` once a sprite has held one
+        XCTAssertEqual(scene.defaults.object(forKey: "backgroundSetting") as? Int, stored,
+                       "and the player's own setting is never written to")
     }
 
     func testTheDescriptionNamesTheBackground() {

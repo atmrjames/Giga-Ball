@@ -286,6 +286,19 @@ scene. The ones that bite widest:
   and missing them crashed the app on launch for a player with years of synced data;
   `CloudKitHandler.padded(_:toMatch:)` now grows a short cloud array to match the local one, so
   that particular trap is closed.
+- **A sprite's `size` already includes its `xScale` and `yScale`.** Expand and Shrink animate
+  the paddle's scale, so `paddle.size.width` is the width on screen. Round 354 multiplied it by
+  the stretch again and the Portal glow measured 815 points round a 184-point paddle - and the
+  test agreed, because it repeated the same sum. Measure frames, don't recompute them.
+- **A nine-slice keeps its caps at the picture's natural width**, while their height follows
+  the sprite. Drawn at any size other than the picture's own, protected ends come out
+  squashed or stretched; the paddle's sprites are handed drawn-size copies for this
+  (`keepThePaddleArtAtItsDrawnSize`, round 379). A parent's scale stretches a child's slices
+  again, so a nine-sliced halo cannot be a child of the thing it surrounds.
+- **`removeAllActions()` on the scene cancels every wait the scene is holding**, not only the
+  ones the caller meant. Skipping a build-in did it to stop the rows' knocks and took each
+  brick's fog timer with it (round 380). Anything scheduled on the scene must survive that or
+  be rescheduled by whoever clears it.
 - **A style has to be in a pool to exist.** Being in the enum, the grid, the reference page
   and the progression is not enough. From the outside, "never offered" looks exactly like
   "very rare".

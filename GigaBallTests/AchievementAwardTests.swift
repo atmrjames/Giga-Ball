@@ -327,6 +327,28 @@ final class RenamedMayhemAchievementTests: XCTestCase {
     }
 
     /// Nothing is sent for a player who earned none of them.
+    /// Mutation testing, round 381: a stats array shorter than the catalogue - an older file,
+    /// before `makeStoredArraysConsistent` has grown it - names only the indices it has.
+    func testAShortStatsArrayIsReadOnlyAsFarAsItGoes() {
+        let earned = Array(repeating: true, count: 69)
+        XCTAssertEqual(AchievementCatalogue.owedAfterRename(earned: earned, alreadySent: false),
+                       ["achievementEndlessMayhemFiveHundred"],
+                       "68 is there; 69 is exactly the end, and it and 75 and 76 are not read")
+        // Sixty-nine long on purpose: one past the last index is where a bound written `<=`
+        // would read, and trap
+    }
+
+    /// And sent without a banner: the player saw these unlock when they earned them.
+    func testTheResendIsQuiet() {
+        var earned = Array(repeating: false, count: AchievementCatalogue.identifiers.count)
+        earned[75] = true
+        var banners: [Bool] = []
+        AchievementCatalogue.reportRenamed(earned: earned, store: InMemoryKeyValueStore()) { batch, _ in
+            banners = batch.map(\.showsCompletionBanner)
+        }
+        XCTAssertEqual(banners, [false])
+    }
+
     func testNothingIsSentForAPlayerWithoutThem() {
         XCTAssertEqual(AchievementCatalogue.owedAfterRename(
             earned: Array(repeating: false, count: AchievementCatalogue.identifiers.count),

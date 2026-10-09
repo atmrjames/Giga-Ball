@@ -379,6 +379,12 @@ final class DailyCardView: UIView {
             // score"). The gap is what says the places between are not shown
         }
 
+        let shown = rows + (own.map { [$0] } ?? [])
+        guard shown != boardLastShown else { return }
+        boardLastShown = shown
+        // Only when the board itself changed (round 381, from the review): the pager reloads
+        // every card whenever Game Center answers anything, and the same board shown again
+        // kept its place and blinked its scroll bar each time
         boardScroll.contentOffset = .zero
         boardScroll.indicatorStyle = leading ? .black : .white
         // One card is reused by the pager for every day, and each day's board opens at its top
@@ -390,6 +396,9 @@ final class DailyCardView: UIView {
         // The menus' affordance (`applyScrollAffordance`): an indicator shown once, and only
         // when there is more of the board than its window holds
     }
+
+    /// The rows last put on the board, so the same board shown again keeps its place.
+    private var boardLastShown: [DailyBoardRow] = []
 
     /// The board's lime, for the player's own row on an ordinary card.
     static let lime = #colorLiteral(red: 0.8235294118, green: 1, blue: 0, alpha: 1)

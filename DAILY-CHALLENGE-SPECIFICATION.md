@@ -221,7 +221,11 @@ Drawn in this order, each from the day's PRNG stream:
    7.7% plain (one every 13 days), 81.9% carrying a theme or B&W once that category is open,
    83.2% of those paired with another twist, 64.9% with two or more twists, and 20 distinct
    twists met inside the year.
-5. **Theme** — usually the player's own settings; some days force a dress (§5).
+5. **Theme** — usually the player's own settings; some days force a dress (§5). A Theme day
+   also forces a game background, drawn from every background but Classic on a seeded stream
+   of its own (`DailyTwist.forcedBackground`, round 376), and its name and description say both:
+   "Pixel Theme", "played in the Pixel theme, on the Glow background". The player's own
+   background setting is never written to.
 
 ## 4. Twists
 
@@ -240,7 +244,7 @@ and its hooks into the scene. The launch pool, from the brief plus fills:
 | **No Bad News** | Only beneficial power-ups drop | All | |
 | **Power Shower** | Drop rate greatly up | All | |
 | **Drought** | Drop rate greatly down | All | |
-| **Always On** | One power-up permanently active | All | Drawn from a curated subset (§4.1) |
+| **Always On** | One power-up permanently active | All | Drawn from a curated subset (§4.1). **Named for its power-up** wherever twists are listed - "Slow Ball Always On" (round 378, James: "use a similar setup to the theme twist") - and its description says the same (round 376). Its bar and clock are held full for the whole run (`holdDailyStandingPowerUpFull`, round 376): the power-up's own timer is stopped as it is collected, with its ending still filed so a Wipe can end it |
 | **Upside Down** | The level's brick layout is mirrored vertically | Classic | **Built, round 187.** Bricks build "the wrong way around" — layout-only; gravity and paddle unchanged. Reflected about the middle of the rows the level *occupies*, not the whole grid: a level that only fills the top third would otherwise be dropped into the player's lap, which is a different game rather than the same one seen upside down |
 | **Mirrored** | The level's layout is mirrored horizontally | Classic | **Built, round 187.** The "wrong way around" for muscle memory. A negation of x, because the columns are laid out symmetrically about the field's centre line |
 | **Brick Swap** | The level's brick types are remapped for the day (e.g. all normals become multi-hit) | Classic | **Built, round 196.** Three remaps: **Hardened** (normals take three hits - the example above), **Softened** (multi-hits become ordinary, the generous draw) and **Veiled** (normals hide until struck; unlike Fog of War the multi-hits and indestructibles stay standing as landmarks). Drawn deterministically from the day key **on its own seeded stream, never a roll in `rawChallenge`** - the challenge stream's layout is what keeps every played day stable, so a twist's private details come from a separate stream keyed off the same date. Applied at `brickCreation` beside the layout flip, through the scene's texture properties so the Retro theme survives it, and standing down on a resume. Two rules carry tests: **nothing may become indestructible and indestructibles stay** (a Classic level must remain completable - a level that cannot be finished is a much worse day than a hard one), and **a remap that finds nothing to change hardens instead** (a Softened day on a level with no multi-hits would visibly do nothing, and "does nothing" reads as broken). **A softened brick is painted white** (round 361): levels colour their ordinary bricks and never their multi-hits, so a multi-hit turned ordinary was blended into the sprite's default clear colour and drawn as nothing - James met it on Bridge on 3 October as "invisible bricks destroyed on the first hit". In the `layout` category, at most one of the three per day |

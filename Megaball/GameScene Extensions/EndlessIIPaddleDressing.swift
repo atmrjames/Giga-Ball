@@ -86,8 +86,10 @@ extension GameScene {
     /// both names rather than renamed, so that if a square-themed glow is ever drawn this does
     /// not quietly take its place.
     func endlessIIPaddleGlowTexture() -> SKTexture? {
-        endlessIIPaddleGlowArt().map { SKTexture(imageNamed: $0.glow) }
+        endlessIIPaddleGlowArt().flatMap { GameScene.catalogueTexture($0.glow) }
     }
+    // The catalogue's kept picture rather than a new `SKTexture(imageNamed:)`: this is asked
+    // every frame a Portal Paddle runs (round 381, from the review)
 
     /// The glow picture for the paddle's current shape, and the paddle picture it was drawn
     /// against.
@@ -125,9 +127,9 @@ extension GameScene {
     /// Asked per shape because a shaped paddle's picture is taller than the plain one while
     /// its glow grows by the same absolute amount, so the margin is the one thing they share.
     func endlessIIPaddleGlowMargin() -> CGSize {
-        guard let art = endlessIIPaddleGlowArt() else { return .zero }
-        let paddle = SKTexture(imageNamed: art.paddle).size()
-        let glow = SKTexture(imageNamed: art.glow).size()
+        guard let art = endlessIIPaddleGlowArt(),
+              let paddle = GameScene.catalogueTexture(art.paddle)?.size(),
+              let glow = GameScene.catalogueTexture(art.glow)?.size() else { return .zero }
         guard paddle.width > 0, paddle.height > 0 else { return .zero }
         return CGSize(width: glow.width - paddle.width, height: glow.height - paddle.height)
     }
@@ -154,12 +156,15 @@ extension GameScene {
         }()
 
         let art = texture.size()
-        glow.texture = texture
-        glow.xScale = 1
-        glow.yScale = 1
-        glow.size = art
-        let cap = art.width > 0 ? min(0.45, (art.height/2)/art.width) : 0
-        glow.centerRect = CGRect(x: cap, y: 0, width: 1 - cap*2, height: 1)
+        if glow.texture !== texture {
+            glow.texture = texture
+            glow.xScale = 1
+            glow.yScale = 1
+            glow.size = art
+            let cap = art.width > 0 ? min(0.45, (art.height/2)/art.width) : 0
+            glow.centerRect = CGRect(x: cap, y: 0, width: 1 - cap*2, height: 1)
+        }
+        // Set up when the picture changes - a shape coming or going - and not every frame
         let wanted = GameScene.paddleGlowSize(paddleDrawnSize: paddle.frame.size,
                                               margin: endlessIIPaddleGlowMargin())
         glow.xScale = art.width > 0 ? wanted.width/art.width : 1

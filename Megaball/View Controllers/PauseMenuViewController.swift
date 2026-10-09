@@ -537,6 +537,21 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
     /// and the player's own row in lime on a faint lime band - the menu card's look in
     /// miniature (round 376), so the two boards read as the same board.
     static let boardGridWidth: CGFloat = 236
+
+    /// The size a place is written at in the grid: eleven points, or smaller until it fits.
+    ///
+    /// **Shrunk to fit rather than cut short** (round 381, from the review). The column is sized
+    /// for the leaders' places, and the player's own row can be in the thousands, which at
+    /// eleven points came out as "1..." - the one number that row exists to say. The menu
+    /// card's label does the same with `adjustsFontSizeToFitWidth`.
+    static func boardGridRankSize(_ rank: String, width: CGFloat) -> CGFloat {
+        var size: CGFloat = 11
+        while size > 6, (rank as NSString).size(
+            withAttributes: [.font: UIViewController.gameScoreFont(ofSize: size)]).width > width {
+            size -= 0.5
+        }
+        return size
+    }
     static let boardGridRowHeight: CGFloat = 16
 
     static func boardGrid(_ rows: [DailyBoardRow], unit: String) -> UIImage {
@@ -583,7 +598,10 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
                 let scoreWidth = ceil((score as NSString)
                     .size(withAttributes: [.font: scoreFont]).width) + 2
                 let band = CGRect(x: 0, y: top, width: width, height: rowHeight)
-                draw("\(row.rank)", font: UIViewController.gameScoreFont(ofSize: 11),
+                let rankText = "\(row.rank)"
+                let rankSize = PauseMenuViewController.boardGridRankSize(rankText,
+                                                                         width: rankWidth - 6)
+                draw(rankText, font: UIViewController.gameScoreFont(ofSize: rankSize),
                      in: CGRect(x: inset, y: band.minY, width: rankWidth - 6, height: rowHeight),
                      alignment: .left,
                      // **Left in its cell, as the menu card has it** (James, round 380)
@@ -2582,10 +2600,13 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
     /// Raises every label still at the default resistance to squashing above the scroll's own
     /// wish to stay a screen tall, so the screen grows before a label is crushed. A label that
     /// has been given a lower resistance on purpose - the signed-out note, which gives way on
-    /// an ending - keeps it. Asked again after labels are added in code.
+    /// an ending - keeps it, and so does the Game Center heading, whose resistance
+    /// `arrangeTheDailyEnding` sets to exactly 750 mid-run so that it can give way (round 381,
+    /// from the review: this used to raise it on the next pass). Asked again after labels are
+    /// added in code.
     private func firmUpTheLabels(in root: UIView) {
         for sub in root.subviews {
-            if let label = sub as? UILabel,
+            if let label = sub as? UILabel, label !== leaderboardTitle,
                label.contentCompressionResistancePriority(for: .vertical) == .defaultHigh {
                 label.setContentCompressionResistancePriority(UILayoutPriority(800), for: .vertical)
             }

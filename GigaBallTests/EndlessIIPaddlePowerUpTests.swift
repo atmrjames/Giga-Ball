@@ -6476,6 +6476,37 @@ final class PaddleGlowMarginTests: XCTestCase {
         }
     }
 
+    /// Mutation testing, round 381: the glow is the margin taller as well as wider.
+    func testTheGlowIsTheMarginBiggerBothWays() {
+        let size = GameScene.paddleGlowSize(paddleDrawnSize: CGSize(width: 90, height: 12),
+                                            margin: CGSize(width: 40, height: 30))
+        XCTAssertEqual(size, CGSize(width: 130, height: 42))
+    }
+
+    /// Round 381, from the review: since the glow is the paddle's sibling, it is placed again
+    /// after the actions and the wall clamp, so it never runs a frame behind the paddle.
+    func testTheGlowIsPlacedAgainAfterThePaddleHasMoved() throws {
+        let scene = mayhem()
+        scene.refreshEndlessIIPaddleGlow()
+        scene.paddle.position.x = 77
+        scene.paddle.xScale = 1.5
+        scene.didFinishUpdate()
+        let glow = try glow(in: scene)
+        XCTAssertEqual(glow.position.x, 77)
+        XCTAssertEqual(marginOnScreen(scene, glow), scene.endlessIIPaddleGlowMargin().width,
+                       accuracy: 0.5)
+    }
+
+    /// Round 381, from the review: the mirror wears the paddle's protected nine-slice, so its
+    /// picture has to be at the height it is drawn too, or its ends come out too narrow.
+    func testTheMirrorIsDrawnInAPictureAtItsDrawnHeight() throws {
+        let scene = mayhem()
+        scene.paddle.texture = SKTexture(imageNamed: "regularPaddle")
+        scene.paddle.size = CGSize(width: 91.8, height: 12.24)
+        let dress = try XCTUnwrap(scene.endlessIIMirrorPaddleDrawnDress)
+        XCTAssertEqual(dress.size().height, 12.24, accuracy: 0.05)
+    }
+
     /// And it is the artwork's own margin, which is the forty points James asked for.
     func testTheMarginIsTheOneTheArtworkWasDrawnWith() throws {
         let scene = mayhem()
@@ -6507,6 +6538,14 @@ final class EndlessIIMagnetFieldTests: XCTestCase {
                                      "nothing above the region")
         }
         XCTAssertGreaterThan(dots.count, GameScene.magnetFieldLines*10, "a dotted line, not a few")
+    }
+
+    /// Mutation testing, round 381: the lines stand across the paddle's middle four fifths,
+    /// the outermost inside the rounded ends, the rest evenly between.
+    func testTheLinesSpreadEvenlyAcrossThePaddle() {
+        let columns = Set(GameScene.magnetFieldDots(halfWidth: 60, height: 300, phase: 0)
+            .map { ($0.x*100).rounded()/100 }).sorted()
+        XCTAssertEqual(columns, [-48, -24, 0, 24, 48])
     }
 
     /// "The dots on the line should move towards the paddle."

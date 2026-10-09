@@ -86,7 +86,7 @@ extension GameScene {
         guard gameMode == .endlessII else { return }
         guard childNode(withName: GameScene.endlessIIMirrorPaddleName) == nil else { return }
 
-        let mirror = SKSpriteNode(texture: endlessIIMirrorPaddleDress,
+        let mirror = SKSpriteNode(texture: endlessIIMirrorPaddleDrawnDress,
                                   size: CGSize(width: max(1, paddle.size.width),
                                                height: max(1, paddle.size.height)))
         // Never zero on either axis: `SKPhysicsBody(rectangleOf:)` with an empty rectangle
@@ -413,6 +413,28 @@ extension GameScene {
         return paddle.texture ?? paddleTexture
     }
 
+    /// The picture the mirror is *drawn* in: the dress, at the height the paddle is drawn.
+    ///
+    /// **Round 381, from the review of round 379.** The mirror wears the paddle's nine-slice
+    /// (`endlessIIPaddleDressCenterRect`), which since round 379 protects the ends at every
+    /// width - and a protected end keeps the picture's *natural* width while its height follows
+    /// the sprite. The paddle's own sprites are handed drawn-size copies for exactly that reason
+    /// (`keepThePaddleArtAtItsDrawnSize`); the mirror is not one of them, and with a shape
+    /// running it wore a fresh catalogue picture at natural size, so its domed or wedged ends
+    /// came out a fifth too narrow. The plain and Retro dresses are already the paddle's copies.
+    ///
+    /// From the catalogue's kept picture rather than a new one each frame. The body is still
+    /// traced from `endlessIIMirrorPaddleDress`, the picture itself, which is what its cache
+    /// knows.
+    var endlessIIMirrorPaddleDrawnDress: SKTexture? {
+        let dress = endlessIIMirrorPaddleShapeArtName.flatMap { GameScene.catalogueTexture($0) }
+            ?? endlessIIMirrorPaddleDress
+        guard let dress else { return nil }
+        let height = abs(paddle.size.height/(paddle.yScale == 0 ? 1 : paddle.yScale))
+        guard height > 0.5, abs(dress.size().height - height) > 0.5 else { return dress }
+        return GameScene.atDrawnHeight(dress, height: height)
+    }
+
     /// Keeps the mirror level with the paddle and opposite it, and takes it away when the
     /// clock stops. Called every frame from the paddle tick.
     ///
@@ -478,7 +500,8 @@ extension GameScene {
         // Every frame: it follows the paddle's position and its drawn size, which is a
         // position and a size write rather than anything rebuilt
 
-        mirror.texture = endlessIIMirrorPaddleDress
+        let drawn = endlessIIMirrorPaddleDrawnDress
+        if mirror.texture !== drawn { mirror.texture = drawn }
         mirror.color = GameScene.endlessIIMirrorPaddleColour
         mirror.colorBlendFactor = 1
         // Re-tinted after the dress, every frame: the dress follows the paddle's own

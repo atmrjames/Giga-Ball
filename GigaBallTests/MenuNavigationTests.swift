@@ -891,6 +891,27 @@ final class DailyEndScreenLayoutTests: XCTestCase {
                              "and on an SE there is more of it than the window, so it scrolls")
     }
 
+    /// Round 381, from the review: a player's own place in the thousands was drawn as "1..." in
+    /// the ending's grid. It is shrunk to fit its column instead, and a leader's place is not.
+    func testAPlaceInTheThousandsFitsItsColumn() {
+        let column: CGFloat = 20
+        XCTAssertEqual(PauseMenuViewController.boardGridRankSize("3", width: column), 11)
+        let big = PauseMenuViewController.boardGridRankSize("12345", width: column)
+        XCTAssertLessThan(big, 11, "smaller, so it fits")
+        XCTAssertLessThanOrEqual(("12345" as NSString).size(withAttributes:
+            [.font: UIViewController.gameScoreFont(ofSize: big)]).width, column + 0.5)
+    }
+
+    /// Round 381, from the review: the Game Center heading's resistance is set to give way mid-run
+    /// (`arrangeTheDailyEnding`), and the scroll's label firming must not take that back.
+    func testTheScrollLeavesTheGameCenterHeadingFreeToGiveWay() throws {
+        let pause = try XCTUnwrap(dailyCompleteScreen(sender: "Pause"))
+        pause.view.setNeedsLayout()
+        pause.view.layoutIfNeeded()
+        XCTAssertEqual(pause.leaderboardTitle.contentCompressionResistancePriority(for: .vertical),
+                       .defaultHigh)
+    }
+
     /// A screen that fits does not scroll, and is laid out as it always was.
     func testAnEndingThatFitsDoesNotScroll() throws {
         let pause = try XCTUnwrap(dailyCompleteScreen(sender: "Pause"))

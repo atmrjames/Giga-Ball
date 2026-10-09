@@ -1961,10 +1961,16 @@ Settled in review, recorded so they are not re-argued.
 
 ## 11. Still open
 
-1. **Does Tiny survive?** Kept unless sub-cell sizing turns out to be a rewrite rather
+1. ~~**Does Tiny survive?** Kept unless sub-cell sizing turns out to be a rewrite rather
    than an addition — the call comes when §8.1 is built, and Big alone still gives the size
-   axis if it goes.
-2. **Rarity tuning.** How, rather than whether: §6.4.
+   axis if it goes.~~ **Settled in the building (closed round 381, James agreeing).** Tiny
+   survived. Sub-cell sizing was an addition: Tiny bricks ramp with height, fall, and appear
+   inside the formations and set rows (§12.0).
+2. ~~**Rarity tuning.** How, rather than whether: §6.4.~~ **Settled the way §6.4 says** (closed
+   round 381): the weights are data, and they have been tuned since against play tests one
+   report at a time. Not a question any more, just the ongoing work §6.4 describes.
+
+Nothing is open in this section.
 
 ---
 
@@ -2958,6 +2964,72 @@ testers:
 - **A fixture trap, recorded so it is not mistaken for a bug:** `saveCurrentGame` divides a
   falling power-up's position by `brickWidth`, so a bare `GameScene()` with a power-up on
   screen traps converting NaN to Int. A real scene is always laid out before play.
+
+**Round 381: a deep pass - review, coverage, mutation, documentation.**
+
+James: "a deep dive round of testing, CRAP, mutation testing, documentation updates", plus a
+review of rounds 376 to 380 and a release re-check.
+
+- **Review of rounds 376 to 380: six findings, all fixed.**
+  - **The shaped Mirror Paddle's ends were flattened**, a regression from round 379. The
+    mirror wears the paddle's now-always-protected nine-slice but was drawn in a fresh
+    natural-size shape picture. It is drawn in a drawn-size copy now
+    (`endlessIIMirrorPaddleDrawnDress`). Checked by eye with Convex: same ends as the paddle
+    at normal width and at Expand.
+  - **The ending grid cut a rank in the thousands to "1..."**. It shrinks to fit now
+    (`boardGridRankSize`).
+  - **The Portal glow made three textures every frame.** It uses the catalogue's kept ones,
+    and is reconfigured only when its picture changes.
+  - **The glow ran a frame behind the paddle** during a resize or at a wall, once it became a
+    sibling. It is placed again in `didFinishUpdate`.
+  - **The scroll's label firming overrode the Game Center heading's deliberate priority.**
+    That heading is left alone now.
+  - **The daily board flashed its scroll bar on every reload.** It flashes only when the
+    rows change.
+- **The Foggy tests had been testing nothing on most days.** Their fixture used *today's*
+  challenge and each test began `guard scene.dailyFogIsOn else { return }`, so the class
+  passed without an assertion whenever the calendar had not dealt a Foggy day. Mutation testing
+  found it: six mutants of round 380's fix survived, the guard removed outright among them. The
+  fixture is a Foggy day of its own now, and the guards are assertions. All six tests pass with
+  the fog genuinely on.
+- **CRAP and coverage:**
+  - App coverage is 80.25%, up from 79.1% at the last measured pass. 79 functions score
+    over 30, down from 88.
+  - The top of the list is long-standing: touch handlers, `didMove`, table selections.
+  - Of the new code, three were over 30. `applyBackgroundSetting` (72) had no test reaching
+    it since round 376 added the Theme day's background, and `tickDailyAlwaysOn` (35) was 7%
+    covered. Both have tests now: the scene wears the day's background and leaves the
+    player's setting alone, and the tick collects quietly and stops its timer.
+    `refreshEndlessIIAutoAimMarker` (36) is at 40%.
+- **Mutation:** nine targets across the new logic, then the gaps re-run after tests were
+  added.
+  - The daily menu board's rule: 5 of 6 killed. The survivor only reorders tied ranks.
+  - The Theme background draw: 5 of 6. The survivor only matters with a single theme.
+  - The renamed-achievement resend: 8 of 11, then 3 of 4 on the bounds line after a
+    69-long stats array and a no-banner check were added. The last survivor is a bound no
+    real index reaches.
+  - The glow size: 1 of 2, then 2 of 2.
+  - The magnet field: 18 of 24, then the spread across the paddle killed. What survives
+    is boundary cases at exactly zero.
+  - The Always On hold and tick: 3 of 8, then 8 of 14, then the line that collects quietly
+    2 of 2 once the in-game list was asserted.
+  - Foggy after a skip: 0 of 6, then 5 of 6 (see the Foggy tests above).
+  - The ending grid's drawing: 1 of 17. Expected: the tests check its size, not its pixels,
+    and it was checked by eye.
+- **Documentation:** SPECIFICATION.md brought to the app as it stands (eight-page guide, the
+  scrolling end screens, three ending stats, the daily board, round 377's achievement
+  exception, the drawn-size paddle art); the daily spec's Always On and Theme entries; three
+  traps in CLAUDE.md (a sprite's `size` carries its scale; a nine-slice keeps natural-width
+  caps; the scene's `removeAllActions` cancels every wait it holds); §11's two notes closed.
+- **Release check:** a Release build for a generic iOS device with Xcode 27.0 (27A266a), the
+  version Xcode Cloud should be set to, succeeds.
+  - The product is 1.3 (83), declares encryption exempt and carries
+    `PrivacyInfo.xcprivacy`. The debug-only strings (the hitch log, the test clock's launch
+    argument) are absent.
+  - It is 214 MB, of which the asset catalogue is 170: every picture at 1x, 2x and 3x. App
+    thinning sends a device only its own scale, so the download is far smaller. Dropping the
+    1x files, which no supported iPhone uses, is a later tidy-up rather than a release
+    matter.
 
 **Round 380: the ending board's ranks, Foggy after a skip, and the guide's new pages.**
 

@@ -8,7 +8,8 @@ you in six months — can understand the app without reading 5,600 lines of `Gam
 [FUTURE-RELEASES.md](FUTURE-RELEASES.md). Where current behaviour is awkward, that is
 recorded here as fact, not as a proposal.
 
-Current version 1.2 (August 2026), with 1.3 in progress on `release-1.3`. Bundle ID
+Current version 1.2 (August 2026), with 1.3 on `release-1.3` and on TestFlight for internal
+testers since 19 September 2026. Bundle ID
 `com.atmrjames.Megaball`, product name `Giga-Ball`, Apple ID `1494628204`.
 
 ---
@@ -177,7 +178,8 @@ Endless 2.0 exists.
 One challenge a day, the same for every player, changing at 00:00 UTC. Each day draws a mode
 (Classic, Endless or Endless Mayhem), a Classic level where it is Classic, and up to three
 twists - Time Trial, Foggy, Mirrored, Upside Down, One Life, No Power-Ups, Always On,
-Monochromatic, a daily theme and more. The first run of the day is the **competition run** and
+Monochromatic, a daily theme and more. A twist that draws something says what: "Pixel Theme"
+on the Glow background, "Slow Ball Always On" (rounds 376 and 378). The first run of the day is the **competition run** and
 posts to the two daily boards (the day's, and a running total across days); every run after it
 is **free play** and posts nothing. A daily never unlocks Classic content or touches the other
 modes' records. Streaks, per-day results and nineteen achievements of its own. In full in
@@ -367,7 +369,7 @@ Game ─┬─ Pause Menu (pause, game over, pack complete — one screen, three
       ├─ Between Levels (level intro and level results)
       └─ Warning (confirmations: reset data, single-level play, first pause)
 
-Intro / onboarding: 5 pages, shown on first launch only
+Intro / onboarding (the Quick Start Guide): 8 pages, shown on first launch and from Info
 ```
 
 Each mode's row on the main menu also carries a **play button** (round 346), in the level
@@ -376,6 +378,14 @@ the pack `Progression.quickPlayPack` picks (every pack open: one at random; othe
 open pack not yet finished), and the daily starts today's through the same Free Play pop-up and
 the same `DailyChallengeSession.beginRun` as the briefing screen's own button. The row's body
 still opens the mode's screen. A red dot on the daily's icon means today's challenge is unplayed.
+
+**The pause and ending screens scroll when they hold more than the window** (round 379). The
+fullest of them, a Classic daily's Complete with a speed bonus and the day's board, is taller
+than an iPhone SE's 375 by 667, which is a supported size and the smallest window the app
+allows on an iPad or a Mac. An over-full screen first closes its gaps to their floors, then
+grows and scrolls rather than squashing a figure; one that fits does not move. An ending lists
+three of the run's numbers - time, paddle hits, bricks destroyed - and the rest are behind
+Statistics (round 378).
 
 Screens are presented by adding child view controllers and their views as subviews, not
 by navigation controller pushes or modal presentation. The pause menu, between-levels
@@ -468,7 +478,11 @@ that screen, whose Continue starts the next level. `ResumeTransitionTests` drive
 - **98 achievements in 1.3** (41 in 1.2), covering pack completions, score thresholds, level
   counts, speed runs, no-ball-lost runs, power-up usage, height milestones in both endless
   modes, and nineteen the daily can award. `AchievementCatalogue.identifiers` is the list,
-  append-only, because Game Center holds every identifier that has shipped.
+  append-only, because Game Center holds every identifier that has shipped. The one exception
+  is round 377's four Mayhem milestones, which were spelled differently from App Store
+  Connect and so had never reached Game Center; they were renamed to match, and a player who
+  earned one under the old name is sent it once at their next sign-in
+  (`AchievementCatalogue.reportRenamed`).
 - Submission happens at the end of every level and game, and when opening stats screens.
   It is guarded on the player being authenticated. **The per-level boards are the exception:
   they exist and nothing has posted to them for years**, so anything reading a standing uses
@@ -481,9 +495,13 @@ that screen, whose Continue starts the next level. `ResumeTransitionTests` drive
   James had its boards approved on 21 August 2026, and this line went on saying they did not
   exist.
 - **A daily's ending is different** (round 357): the Game Center block sits straight under
-  the score, lists the day's top three with the player's own place under them, and opens the
-  day's board when tapped. The daily menu's card shows the same board, lime when the player
-  leads, in place of the posted score once there is a board to show.
+  the score, lists the day's top three with the player's own place under them in a small
+  rank, player and score grid (round 378), and opens the day's board when tapped. A Classic
+  day's Complete with a speed bonus lists one leader and the player, because its breakdown
+  takes the room (round 379). The daily menu's card shows the top ten in a window that
+  scrolls, with the player's own place pinned above them when they are not among them (rounds
+  376 and 378), lime when the player leads, in place of the posted score once there is a board
+  to show.
 
 - **Every leaderboard button opens its own board** (round 360): a game over's Game Center
   heading - trophy, words and chevron, dressed as Statistics - and its button open the run's
@@ -573,6 +591,14 @@ that followed from it: the scene letterboxes rather than crops (and since round 
 fill the window instead - see §4), and the menus cap their
 content to a phone's width and centre it. **The app participates in iPadOS multitasking**,
 and has to be laid out as though it does.
+
+**The paddle's pictures are handed to SpriteKit at the size they are drawn** (round 379).
+A nine-slice keeps its caps at the *picture's* natural width while their height follows the
+sprite, and the paddle art is drawn about 1.22 times its natural size, so protected ends came
+out a fifth too narrow. `keepThePaddleArtAtItsDrawnSize` gives the paddle's six sprites, and
+the Mirror Paddle, the same pixels declared at their drawn height, and the ends are protected
+at every width. Related: a sprite's `size` already includes its `xScale`, which is how the
+Portal glow came to be sized from the paddle's stretch twice (round 378).
 
 **Audio session activation is synchronous on the main thread** during launch, which iOS
 logs a warning about.

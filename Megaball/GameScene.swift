@@ -3466,6 +3466,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         keepThePaddleArtAtItsDrawnSize()
         // Last thing before the frame is drawn, after the contacts that collect power-ups and
         // change the paddle's picture - so no frame is ever drawn with the natural-size one
+        if gameMode == .endlessII { refreshEndlessIIPaddleGlow() }
+        // **And the Portal glow placed again here**, after the actions and the wall clamp have
+        // moved and sized the paddle: since round 378 it is the paddle's sibling rather than its
+        // child, so it does not move with it, and placed only from `update` it ran a frame
+        // behind every Expand and every clamp (round 381, from the review)
 
         guard paddleLaser.position.x != paddle.position.x
                 || paddleLaser.position.y != paddle.position.y - paddle.size.height/2
