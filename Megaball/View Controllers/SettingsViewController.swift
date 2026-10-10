@@ -174,6 +174,9 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         row != SettingRow.interfaceSound.rawValue
     }
 
+    /// Whether Game Center is signed in - a seam, because the suite's simulator never is.
+    var gameCenterIsSignedIn: () -> Bool = { GameCenterHandler.isAuthenticated }
+
     var settingRows: [SettingRow] {
         var rows: [SettingRow] = [.appIcon, .theme]
         if navigatedFrom == "PauseMenu" { rows = [] }
@@ -191,10 +194,14 @@ class SettingsViewController: UIViewController, UITableViewDelegate, UITableView
         // two sound switches still sit together
         if SettingsViewController.deviceHasHaptics { rows.append(.haptics) }
         rows += [.perspective, .paddleSpeed, .swipeUpToPause]
-        if navigatedFrom != "PauseMenu" { rows.append(.dailyResult) }
+        if navigatedFrom != "PauseMenu", gameCenterIsSignedIn() { rows.append(.dailyResult) }
         // **The daily result pop-up's switch, from the main menu only** (James, round 360: "not
         // available in-game"). It answers a question asked on the menus, about a pop-up that
-        // only ever appears on them
+        // only ever appears on them.
+        // **And only to a player signed in to Game Center** (James, round 384: "Hide the Daily
+        // Result Pop Up setting, this doesn't make any sense when Game Center isn't connected").
+        // The pop-up is the day's board, read the next time the menus open; with no board there
+        // is never one to show, and a switch for it switches nothing
 
         if navigatedFrom == "PauseMenu" { rows.append(.reset) }
         // Reset Ball from the pause menu, which works. From the main menu the same row is

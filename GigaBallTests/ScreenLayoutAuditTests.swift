@@ -1761,7 +1761,7 @@ final class PauseMenuButtonTests: XCTestCase {
     }
 
     private func screen(sender: String, endless: Bool = false, daily: Bool = false,
-                        posted: Bool = true) -> PauseMenuViewController? {
+                        posted: Bool = true, signedIn: Bool = true) -> PauseMenuViewController? {
         DailyChallengeSession.shared.active = daily
             ? DailyChallenge(dateKey: DailyChallengeSession.shared.todayKey, mode: .classic,
                              classicLevel: 1, twists: [])
@@ -1774,6 +1774,8 @@ final class PauseMenuButtonTests: XCTestCase {
         screen.endlessMode = endless
         screen.levelNumber = 1
         screen.totalStatsArray = [TotalStats()]
+        screen.gameCenterIsSignedIn = { signedIn }
+        // The suite's simulator is never signed in, so each test says which it is drawing
         return screen
     }
 
@@ -1804,6 +1806,21 @@ final class PauseMenuButtonTests: XCTestCase {
                        [PauseMenuViewController.noButton, "ButtonHome", "ButtonLeaderboard"])
     }
 
+    /// James, round 384, signed out of Game Center: "On the Game Over / Complete screen, hide
+    /// the Game Center information and button. Right now it says Submitted to today's
+    /// leaderboard even though that's not true."
+    func testASignedOutDailyEndingOffersNoBoardAndClaimsNoSubmission() throws {
+        let screen = try XCTUnwrap(screen(sender: "Complete", daily: true, posted: true,
+                                          signedIn: false))
+        XCTAssertEqual(artwork(screen).last, PauseMenuViewController.noButton,
+                       "no Game Center button")
+        XCTAssertEqual(screen.buttonAction(row: 2), .none)
+        screen.loadViewIfNeeded()
+        screen.updateResultLine()
+        XCTAssertTrue(screen.resultLabel.isHidden, "no 'Submitted to today's leaderboard'")
+        XCTAssertTrue(screen.leaderboardTitle.isHidden, "and no Game Center link")
+    }
+
     func testADailyFreeRunOffersAnotherGo() throws {
         // James, round 350: "show a replay level button to the left of the home button"
         let screen = try XCTUnwrap(screen(sender: "GameOver", daily: true, posted: false))
@@ -1822,9 +1839,12 @@ final class PauseMenuButtonTests: XCTestCase {
         ]
         for sender in ["Pause", "GameOver", "Complete"] {
             for endless in [false, true] {
-                for (daily, posted) in [(false, true), (true, true), (true, false)] {
+                for (daily, posted, signedIn) in [(false, true, true), (true, true, true),
+                                                  (true, false, true), (true, true, false),
+                                                  (false, true, false)] {
                     let screen = try XCTUnwrap(self.screen(sender: sender, endless: endless,
-                                                           daily: daily, posted: posted))
+                                                           daily: daily, posted: posted,
+                                                           signedIn: signedIn))
                     for row in 0..<3 {
                         let picture = screen.buttonArtwork(row: row)
                         let action = screen.buttonAction(row: row)
@@ -1913,5 +1933,46 @@ final class InGameScreenConflictTests: XCTestCase {
         // on a Mac, which is where James's round 369 log carried the rest
         XCTAssertEqual(InGameScreenConflictTests.broken, [],
                        "UIKit broke a constraint to lay an in-game screen out")
+    }
+}
+
+/// James, round 384, on iOS 18: "Some icons have white background and white icons. Make the
+/// icons in these instances dark purple like the other icons", and from an iPhone SE: "The close
+/// 'x' icon on the paddle speed setting view is different from others in the app ... check and
+/// unify them." Below iOS 26 every round button is one drawing now; on 26 every one is glass.
+final class RoundButtonsAreOneDrawingTests: XCTestCase {
+
+    func testAMenuCellsButtonIsGlassOrTheFlatDisc() throws {
+        let nib = UINib(nibName: "MainMenuCollectionViewCell",
+                        bundle: Bundle(for: MainMenuCollectionViewCell.self))
+        let cell = try XCTUnwrap(nib.instantiate(withOwner: nil).first as? MainMenuCollectionViewCell)
+        cell.setButton("ButtonClose")
+        if #available(iOS 26.0, *) {
+            XCTAssertTrue(cell.isGlass)
+        } else {
+            XCTAssertTrue(cell.drawnFlat, "drawn, not the artwork with its glyph cut out")
+        }
+    }
+
+    func testAButtonGivenGlassIsGlassOrTheFlatDisc() {
+        let button = UIButton(type: .custom)
+        button.setImage(UIImage(named: "ButtonHome"), for: .normal)
+        UIViewController().applyRoundGlass(to: button, radius: 25, symbol: "house.fill",
+                                           pointSize: 20, rimmed: false)
+        if #available(iOS 26.0, *) {
+            XCTAssertTrue(button.subviews.contains { $0 is UIVisualEffectView })
+        } else {
+            XCTAssertEqual(button.image(for: .normal),
+                           FlatRoundButton.image(symbol: "house.fill", side: 50),
+                           "the purple glyph on the pale disc, not the artwork's hole in it")
+            XCTAssertEqual(button.backgroundColor, .clear,
+                           "no pale background for a cut-out glyph to show through")
+        }
+    }
+
+    func testTheFlatDiscIsTheSizeItIsAskedFor() {
+        let disc = FlatRoundButton.image(symbol: "xmark", side: 50)
+        XCTAssertEqual(disc.size, CGSize(width: 50, height: 50))
+        XCTAssertFalse(disc === FlatRoundButton.image(symbol: "xmark", side: 50, pressed: true))
     }
 }

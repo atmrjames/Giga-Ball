@@ -86,8 +86,10 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
     // the date says Practice when it applies, and the play press itself warns when a run
     // will not post
     private let leaderboardButton = UIButton(type: .custom)
-    private let signedOutLabel = UILabel()
     private var countdownTimer: Timer?
+
+    /// Whether Game Center is signed in - a seam, because the suite's simulator never is.
+    var gameCenterIsSignedIn: () -> Bool = { GameCenterHandler.isAuthenticated }
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -113,6 +115,40 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
         countdownTimer = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) {
             [weak self] _ in self?.refreshCountdown()
         }
+
+        NotificationCenter.default.addObserver(self, selector: #selector(aScoreWasPosted),
+                                               name: .dailyScorePosted, object: nil)
+    }
+
+    /// A post has landed: today's board and rank are asked again.
+    ///
+    /// **James, round 384: "Daily challenge menu view leaderboard isn't refreshing with new
+    /// scores when they're posted unless the page is exited and re-entered."** The board is
+    /// asked for once per visit, and a run's score reaches Game Center a moment after the run
+    /// ends - so the visit that followed a run usually asked first and was answered with the
+    /// board as it stood before the post. Asked again when the post is confirmed, and once more
+    /// a few seconds later, because Game Center can take a moment to list a score it has just
+    /// accepted.
+    @objc private func aScoreWasPosted(_ notification: Notification) {
+        DispatchQueue.main.async { [weak self] in
+            self?.askAgainForTheBoards()
+            DispatchQueue.main.asyncAfter(deadline: .now() + DailyChallengeViewController.postSettleDelay) {
+                [weak self] in self?.askAgainForTheBoards()
+            }
+        }
+    }
+
+    /// How long after a post to ask a second time.
+    static let postSettleDelay: TimeInterval = 4
+
+    /// Forgets what was asked this visit and asks again for the day on screen.
+    func askAgainForTheBoards() {
+        loadData()
+        boardBestsRequested.removeAll()
+        todayRankRequested = false
+        todayStanding = nil
+        showChallenge()
+        days?.reloadData()
     }
 
     /// The badge's two size constraints, and the height they were last measured against.
@@ -412,18 +448,11 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
         countdownLabel.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(countdownLabel)
 
-        signedOutLabel.translatesAutoresizingMaskIntoConstraints = false
-        signedOutLabel.textAlignment = .center
-        signedOutLabel.numberOfLines = 0
-        signedOutLabel.font = .systemFont(ofSize: 12)
-        signedOutLabel.textColor = UIColor(white: 1, alpha: 0.38)
-        signedOutLabel.text = GameCenterHandler.notSignedInNote
-        signedOutLabel.isHidden = true
-        view.addSubview(signedOutLabel)
-        // Under the title, where a subtitle would go. The leaderboard button is already
-        // missing from the bottom row for a signed-out player, and its absence explains
-        // nothing (play-test round 16) - this is the screen's whole point being quietly
-        // qualified, so it belongs with the heading and not in an alert
+        // **The signed-out note is the card's now** (James, round 384: "move the note about not
+        // being signed into Game Center to below the daily challenge details container, into
+        // the position where the leaderboard would be"). It stood under the title from play-test
+        // round 16, and hidden it still held its height - two lines in a narrow window - which
+        // was the "big unnecessary gap beneath the game mode header" on an iPad in Split View
 
         let close = UIButton(type: .custom)
         close.setImage(UIImage(named: "ButtonClose"), for: .normal)
@@ -500,15 +529,8 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
             title.leadingAnchor.constraint(equalTo: content.leadingAnchor, constant: 34),
             title.trailingAnchor.constraint(equalTo: content.trailingAnchor, constant: -34),
 
-            signedOutLabel.topAnchor.constraint(equalTo: title.bottomAnchor, constant: 6),
-            signedOutLabel.leadingAnchor.constraint(equalTo: content.leadingAnchor,
-                                                    constant: 34),
-            signedOutLabel.trailingAnchor.constraint(equalTo: content.trailingAnchor,
-                                                     constant: -34),
-
-            days.topAnchor.constraint(equalTo: signedOutLabel.bottomAnchor, constant: 16),
-            // Hung off the note rather than the title: hidden, the note has no height, so
-            // the pager sits 22pt under the title exactly as it did before
+            days.topAnchor.constraint(equalTo: title.bottomAnchor, constant: 16),
+            // Straight under the title since round 384 - see where the note used to be built
             days.leadingAnchor.constraint(equalTo: content.leadingAnchor),
             days.trailingAnchor.constraint(equalTo: content.trailingAnchor),
             days.bottomAnchor.constraint(equalTo: dateLabel.topAnchor, constant: -14),
@@ -624,10 +646,9 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
         backArrow.isEnabled = canGoBack
         forwardArrow.isEnabled = canGoForward
 
-        leaderboardButton.isHidden = GKLocalPlayer.local.isAuthenticated == false
-        signedOutLabel.isHidden = GKLocalPlayer.local.isAuthenticated
-        // The same rule the level screens use: no Game Center, no leaderboard button - and
-        // now a line saying why, because the button's absence said nothing.
+        leaderboardButton.isHidden = gameCenterIsSignedIn() == false
+        // The same rule the level screens use: no Game Center, no leaderboard button - and a
+        // line on the card saying why, because the button's absence said nothing.
         // The boards themselves are App Store Connect work (James's side, §7)
 
         refreshCountdown()
@@ -939,7 +960,8 @@ extension DailyChallengeViewController: UICollectionViewDataSource,
                        boardBest: boardBests[key]
                            ?? totalStatsArray[0].dailyRecord(forKey: key)?.closingBoardBest,
                        board: boardTops[key] ?? [], own: boardOwn[key],
-                       players: boardPlayers[key] ?? 0)
+                       players: boardPlayers[key] ?? 0,
+                       signedIn: gameCenterIsSignedIn())
         cell.card.twistTapped = { [weak self] twist in self?.explain(twist, on: key) }
         cell.card.twistsExplainerTapped = { [weak self] in self?.explainTheDaysTwists(on: key) }
         // The card lists the day's twists by icon and name only since round 308, so the block

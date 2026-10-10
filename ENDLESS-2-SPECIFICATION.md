@@ -2965,6 +2965,89 @@ testers:
   falling power-up's position by `brickWidth`, so a bare `GameScene()` with a power-up on
   screen traps converting NaN to Int. A real scene is always laid out before play.
 
+**Round 384: James's long play-test list, four device logs, and the screens on small windows.**
+
+- **Mayhem tamed a little** (James: "this level of mayhem is good, but should be tamed just a
+  little bit").
+  - The power-up bar stops at the play zone's width and its rings shrink to fit past that
+    (`PowerUpRingHUD.maximumWidth`, `fitScale`). Eleven running at once had run off both
+    edges of an iPhone.
+  - While Lasers, Giga-Ball, Wrecking Ball, Ball Aura or a Multi-Ball's extra balls run, the
+    gap between drops is half as long again, twice as long for two or more
+    (`endlessIIDropGap`).
+  - At most two power-ups fall at once in Mayhem, whatever is running
+    (`endlessIIFallingPowerUpLimit`). Classic's Giga-Ball and Lasers keep raising theirs to
+    four.
+- **No power-up locks in Mayhem or a daily** (James: "They should remain locked in Classic
+  Mode and Endless Mode only"). Four places asked the player's unlocks; one rule answers them
+  now (`powerUpIsUnlockedForThisRun`). A day's level and theme were already drawn from
+  everything.
+- **Invisible bricks** flash on a paddle hit only when no breakable brick is in view: anywhere
+  in Classic, in the bottom row in both endless modes. The original Endless had been asking
+  Classic's question too. Classic counts any breakable brick now, not a list of six textures,
+  and stands down on a Fog of War day.
+- **Score drawn twice in Classic.** The level start wrote the label's own text over the last
+  level's placed digits (`showBankedScoreAtLevelStart`, the last direct write round 122 missed).
+- **A power-up brick ballooned on the Mac.** The carrier its power-up is handed over on was
+  built at its picture's natural size and only made transparent, and the collection animation
+  fades its node up. It is a falling power-up's size and hidden now
+  (`endlessIIBrickPowerUpCarrier`).
+- **Mayhem rows were thirty times the cost of Endless ones** (the iPad Pro of 2018's log:
+  `HITCH 72ms after: brick hit, row built, row built, row built, row built`, and a dozen
+  more). Measured on the simulator: a median 4.7 ms a row against 0.16.
+  - The run's release schedule was searched again for every power-up and every style question,
+    per brick. It is read once a run now (`arrivalTable`, `endlessIIArrivalTable`).
+  - The style chances and the density are asked once a row.
+  - The Directional re-point only maps the field when a Directional brick exists.
+  - A row costs a median 1.1 ms now, held at 2.5 by `MayhemRowCostTests`.
+- **The HUD's type follows the play zone off a phone** (`hudFontSize`). A landscape iPad
+  draws a phone-width play zone, and its 24-point score crowded the power-up bar. A phone is
+  exactly as it was.
+- **Game Center, signed out.**
+  - The daily card's leaderboard place carries "Sign into Game Center to post to and view the
+    global leaderboard", and the player's own score once they have played.
+  - The note under the screen's title is gone. Hidden, it still held two lines' height in a
+    narrow iPad window: the gap James saw under the header.
+  - An ending says nothing about Game Center and offers no board button
+    (`gameCenterIsSignedIn` on the screen, a seam for the tests). It had said "Submitted to
+    today's leaderboard".
+  - The Daily Result Pop-Up setting is not offered.
+  - The achievements page says "Sign into Game Center to enable achievements", with every
+    square still there.
+- **The day's result is a table** for days the board cannot reach: a mark, a name and a
+  figure in the board's columns, the player's own figure marked with a person rather than a
+  numbered list.
+- **The daily board**: a board of one is one row tall, since its floor is never more than its
+  rows (`boardWindowFloor(rows:)`). It asks Game Center again when a post is confirmed, and
+  four seconds later (`dailyScorePosted`).
+- **In-game screens on a short window** (James, from an iPhone SE).
+  - The pause and end screens' wordmark, Home and button row hold still while the middle
+    scrolls (`StickyScrollEnds`). They are offset by the scroll rather than taken out of it,
+    because the middle of the screen hangs from the button row. A frosted band behind each
+    end comes up as content passes beneath.
+  - The resume card scrolls in its own window between the wordmark and the button.
+  - The PASSED card's total stops above the rack of balls, not the line under it.
+- **Round buttons below iOS 26** are drawn by `FlatRoundButton`: the pale disc with a dark
+  purple glyph. The artwork's glyph is a hole in its disc, so on a pale disc it was white on
+  white (Home on the pause screen, close on the daily). The paddle speed close drew its own
+  thin glyph and now matches the rest.
+- **The Endless menus show their run list empty**, with the header at the top. This turns
+  round 326 round, at James's request.
+- **Locked power-ups' squares** do not open their page.
+- **From the logs**:
+  - Every successful achievement report was logged as "Error reporting ..." (59 sites), and
+    every report was sent while signed out, where GameKit can only refuse it. Reports go
+    through `GameCenterHandler.reportAchievements` now, which sends nothing signed out.
+  - `GameCenterHandler()` set GameKit's sign-in handler, so every score submission started a
+    fresh sign-in and displaced the menu's handler.
+  - The daily rules' pair of minimums conflicted on every daily screen with a blank level
+    name.
+  - The main menu's four rows asked for 480 points in a 667-point window at required.
+  - Fog of War's hidden field read as phantom bricks.
+- **Recorded, not changed:** the logs carry a few unexplained speed wobbles of 48 to 95 points a
+  second (`CROOKED BALL ... speed wobbled`), in Classic and Mayhem, on the phone and the Mac.
+  Nothing James reported matches them.
+
 **Round 383: Aimed Sticky by touch, the auto-aim marker, and the Information screen.**
 
 - **Aimed Sticky, driven through the real touch handlers** (`SceneTouchTests`, on a presented

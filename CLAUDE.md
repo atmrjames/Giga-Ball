@@ -302,6 +302,20 @@ scene. The ones that bite widest:
 - **A style has to be in a pool to exist.** Being in the enum, the grid, the reference page
   and the progression is not enough. From the outside, "never offered" looks exactly like
   "very rare".
+- **A hidden label keeps its height.** `isHidden` takes a view off the screen, not out of the
+  layout: outside a stack view it holds its intrinsic size and its constraints. The daily
+  screen's signed-out note under the title, hidden for a signed-in player, still held two lines
+  of height in a narrow iPad window (round 384). Collapse it, deactivate what hangs from it, or
+  put it in a stack.
+- **A scroll view measures its content after `viewDidLayoutSubviews`.** Its own layout pass
+  runs after the screen's, so `contentSize` read there is the size before the pass - nothing,
+  on first showing. Observe `contentSize` instead (`StickyScrollEnds`, round 384).
+- **The PNG round buttons' glyph is a hole in the disc**, so it is whatever colour is behind the
+  button. Below iOS 26 they are drawn by `FlatRoundButton` instead, from the glass buttons' SF
+  Symbols (round 384); the artwork on a pale background drew white on white.
+- **Setting `GKLocalPlayer.local.authenticateHandler` starts a sign-in.** Only the main menu
+  sets it. `GameCenterHandler()` set it in its initialiser until round 384, so every score
+  submission re-authenticated and replaced the menu's handler.
 
 ## Where outstanding work is tracked
 

@@ -463,3 +463,126 @@ final class PowerUpEligibilityTests: XCTestCase {
         }
     }
 }
+
+/// James, round 384, of Endless Mayhem: "when lasers, giga-ball, other powers that
+/// significantly increase the speed of destroying bricks are in play, can the power-up
+/// generation rate be reduced slightly. Can the number of falling power ups at one time also
+/// be limited. I think this level of mayhem is good, but should be tamed just a little bit."
+final class MayhemDropRateTests: XCTestCase {
+
+    private func scene(_ mode: GameMode) -> GameScene {
+        let scene = GameScene(size: CGSize(width: 402, height: 874))
+        scene.gameMode = mode
+        return scene
+    }
+
+    func testTheGapBetweenDropsGrowsSlightlyWhileFastClearersRun() {
+        XCTAssertEqual(GameScene.endlessIIDropGap(10, fastClearers: 0), 10, "nothing running")
+        XCTAssertEqual(GameScene.endlessIIDropGap(10, fastClearers: 1), 15, "half as long again")
+        XCTAssertEqual(GameScene.endlessIIDropGap(10, fastClearers: 2), 20, "twice as long")
+        XCTAssertEqual(GameScene.endlessIIDropGap(10, fastClearers: 4), 20,
+                       "and no longer than that, however many run")
+        XCTAssertEqual(GameScene.endlessIIDropGap(0, fastClearers: 2), 0,
+                       "a level that drops nothing still drops nothing")
+    }
+
+    func testLasersAndGigaBallCountAsFastClearersInMayhemOnly() {
+        let mayhem = scene(.endlessII)
+        XCTAssertEqual(mayhem.endlessIIFastClearersRunning, 0)
+        mayhem.laserPowerUpIsOn = true
+        XCTAssertEqual(mayhem.endlessIIFastClearersRunning, 1)
+        mayhem.ballDress = .giga
+        XCTAssertEqual(mayhem.endlessIIFastClearersRunning, 2)
+
+        let classic = scene(.classic)
+        classic.laserPowerUpIsOn = true
+        classic.ballDress = .giga
+        XCTAssertEqual(classic.endlessIIFastClearersRunning, 0,
+                       "Classic's drop rate is its leaderboards' and does not change")
+    }
+
+    func testMayhemNeverLetsMoreThanTwoFallAtOnce() {
+        let mayhem = scene(.endlessII)
+        mayhem.powerUpLimit = 4
+        // What collecting Giga-Ball or Lasers sets
+        XCTAssertEqual(mayhem.fallingPowerUpLimit, GameScene.endlessIIFallingPowerUpLimit)
+
+        let classic = scene(.classic)
+        classic.powerUpLimit = 4
+        XCTAssertEqual(classic.fallingPowerUpLimit, 4, "Classic keeps its four")
+    }
+}
+
+/// James, round 384: "Score overlapping text bug in classic mode. It looks like 2 scores are
+/// laid over one another." The level that follows another wrote its starting score as the
+/// label's own text while the last level's placed digits were still hanging off it.
+final class ScoreDrawnOnceTests: XCTestCase {
+
+    func testTheNextLevelsScoreReplacesTheLastOneRatherThanDrawingOverIt() {
+        let scene = GameScene(size: CGSize(width: 402, height: 874))
+        let label = SKLabelNode(fontNamed: "FugazOne-Regular")
+        label.fontSize = 24
+        scene.scoreLabel = label
+        scene.write("1873", into: label)
+        // Where the last level left it
+
+        scene.totalScore = 2306
+        scene.showBankedScoreAtLevelStart()
+
+        XCTAssertEqual(label.text ?? "", "", "the label's own text would draw under the digits")
+        XCTAssertEqual(label.children.filter { $0.name == "digits" }.count, 1,
+                       "one strip of digits, not two")
+        XCTAssertEqual(scene.shownText(of: label), "2306")
+    }
+}
+
+/// James, round 384: "For Daily Challenges, players that haven't unlocked all power-ups, themes
+/// or packs/levels, should have all the content available to them just in the Daily Challenge.
+/// They should remain locked in Classic Mode and Endless Mode only. Endless Mayhem and Daily
+/// Challenge don't have locked power-up limits."
+final class PowerUpLocksByModeTests: XCTestCase {
+
+    override func tearDown() {
+        DailyChallengeSession.shared.active = nil
+        super.tearDown()
+    }
+
+    private func scene(_ mode: GameMode) -> GameScene {
+        let scene = GameScene(size: CGSize(width: 402, height: 874))
+        scene.gameMode = mode
+        let stats = TotalStats()
+        stats.powerUpUnlockedArray = stats.powerUpUnlockedArray.map { _ in false }
+        scene.totalStatsArray = [stats]
+        scene.numberOfLives = 3
+        return scene
+    }
+
+    func testClassicAndEndlessKeepTheLocks() {
+        for mode in [GameMode.classic, .endless] {
+            XCTAssertFalse(scene(mode).powerUpIsUnlockedForThisRun(22), "\(mode): Lasers locked")
+        }
+    }
+
+    func testMayhemOffersEverything() {
+        XCTAssertTrue(scene(.endlessII).powerUpIsUnlockedForThisRun(22))
+    }
+
+    func testADailyOffersEverythingEvenInClassic() {
+        let classic = scene(.classic)
+        DailyChallengeSession.shared.active = DailyChallenge(
+            dateKey: "t", mode: .classic, classicLevel: 1, twists: [])
+        XCTAssertTrue(classic.powerUpIsUnlockedForThisRun(22))
+
+        classic.powerUpProbAllocation(levelNumber: 30)
+        let lockedPlayersTable = classic.powerUpProbArray
+
+        let unlockedPlayer = scene(.classic)
+        unlockedPlayer.totalStatsArray[0].powerUpUnlockedArray =
+            unlockedPlayer.totalStatsArray[0].powerUpUnlockedArray.map { _ in true }
+        unlockedPlayer.powerUpProbAllocation(levelNumber: 30)
+        XCTAssertEqual(lockedPlayersTable, unlockedPlayer.powerUpProbArray,
+                       "a player with nothing unlocked draws the same daily table as one with "
+                       + "everything - the day's own rules, such as no points power-ups, apply "
+                       + "to both alike")
+    }
+}

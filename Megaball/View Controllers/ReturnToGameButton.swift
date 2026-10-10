@@ -356,7 +356,20 @@ extension UIViewController {
             // Behind the glyph and not in the way of a touch: the button is still the control,
             // and the glass is only how it looks
         } else {
-            button.backgroundColor = UIColor(white: 0.92, alpha: 1)
+            button.backgroundColor = .clear
+            button.setImage(FlatRoundButton.image(symbol: symbol, side: radius*2), for: .normal)
+            button.setImage(FlatRoundButton.image(symbol: symbol, side: radius*2, pressed: true),
+                            for: .highlighted)
+            button.setBackgroundImage(nil, for: .normal)
+            // **One drawing for every round button below iOS 26** (James, round 384, on iOS 18:
+            // "Some icons have white background and white icons. Make the icons in these
+            // instances dark purple like the other icons", and "The close 'x' icon on the paddle
+            // speed setting view is different from others in the app ... check and unify them").
+            // This branch painted a pale disc and left the button whatever picture it came
+            // with - and the Home and close artwork is a pale disc with its glyph *cut out*, so
+            // on a pale disc the cut-out showed pale: white on white. The paddle speed close
+            // drew a thin 18-point glyph, where the menus' artwork draws a heavy one twice that
+            // size. `FlatRoundButton` draws them all, from the symbols the glass path uses
             button.tintColor = UIColor(red: 0.16, green: 0, blue: 0.24, alpha: 1)
             button.layer.cornerRadius = radius
             button.clipsToBounds = true
@@ -381,4 +394,48 @@ extension UIViewController {
     }
 
     private static var returnToGameTag: Int { 909_001 }
+}
+
+
+/// A round button as it is drawn below iOS 26: the pale disc, with the glyph in the app's dark
+/// purple (round 384).
+///
+/// The PNG buttons are a pale disc with the glyph cut out, so the glyph is whatever is behind
+/// the button - dark purple over the menus, and white over anything pale, which is how the Home
+/// button came to be drawn white on white. Drawn from the same SF Symbols the glass buttons use,
+/// the mark is the same everywhere and always purple. The glyph's share of the disc is the
+/// artwork's, measured off `ButtonClose`: the cross spans a little over a third of it.
+enum FlatRoundButton {
+
+    static let disc = UIColor(white: 0.92, alpha: 1)
+    static let pressedDisc = UIColor(white: 0.78, alpha: 1)
+    static let glyph = UIColor(red: 0.16, green: 0, blue: 0.24, alpha: 1)
+
+    /// How big the glyph is drawn against the disc.
+    static let glyphShare: CGFloat = 0.36
+
+    static func image(symbol: String, side: CGFloat, pressed: Bool = false) -> UIImage {
+        let key = "\(symbol)|\(side)|\(pressed)"
+        if let drawn = drawn[key] { return drawn }
+        let made = draw(symbol: symbol, side: side, pressed: pressed)
+        drawn[key] = made
+        return made
+        // Kept, because a cell asks again on every press and every release
+    }
+
+    private static var drawn: [String: UIImage] = [:]
+
+    private static func draw(symbol: String, side: CGFloat, pressed: Bool) -> UIImage {
+        let size = CGSize(width: side, height: side)
+        return UIGraphicsImageRenderer(size: size).image { _ in
+            (pressed ? pressedDisc : disc).setFill()
+            UIBezierPath(ovalIn: CGRect(origin: .zero, size: size)).fill()
+            guard let mark = UIImage(systemName: symbol, withConfiguration:
+                    UIImage.SymbolConfiguration(pointSize: side*glyphShare, weight: .heavy))?
+                .withTintColor(glyph, renderingMode: .alwaysOriginal) else { return }
+            let drawn = mark.size
+            mark.draw(in: CGRect(x: (side - drawn.width)/2, y: (side - drawn.height)/2,
+                                 width: drawn.width, height: drawn.height))
+        }.withRenderingMode(.alwaysOriginal)
+    }
 }

@@ -472,6 +472,15 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
     /// that one are both "everything you have done, by mode" (play-test round 126). The
     /// colours are repeated rather than shared only because the statistics page builds its
     /// own inside a method that also moves a storyboard constraint this screen does not have.
+    /// The achievements page's word to a player Game Center does not know (round 384).
+    static let achievementsSignedOutNote = "Sign into Game Center to enable achievements"
+
+    /// Shown under the achievements page's title while signed out.
+    let signedOutNote = UILabel()
+
+    /// Whether Game Center is signed in - a seam, because the suite's simulator never is.
+    var gameCenterIsSignedIn: () -> Bool = { GameCenterHandler.isAuthenticated }
+
     private func installAchievementTabs() {
         guard senderID == 3, let grid else { return }
 
@@ -499,11 +508,32 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
         emptyNote.isHidden = true
         itemsView.addSubview(emptyNote)
 
+        signedOutNote.translatesAutoresizingMaskIntoConstraints = false
+        signedOutNote.numberOfLines = 0
+        signedOutNote.textAlignment = .center
+        signedOutNote.font = .systemFont(ofSize: 13)
+        signedOutNote.textColor = UIColor(white: 1, alpha: 0.55)
+        signedOutNote.text = ItemsDetailViewController.achievementsSignedOutNote
+        signedOutNote.isHidden = gameCenterIsSignedIn()
+        itemsView.addSubview(signedOutNote)
+        let pickerUnderTheNote = picker.topAnchor.constraint(equalTo: signedOutNote.bottomAnchor,
+                                                             constant: 12)
+        let pickerAtTheTop = picker.topAnchor.constraint(equalTo: itemsTableView.topAnchor)
+        pickerUnderTheNote.isActive = signedOutNote.isHidden == false
+        pickerAtTheTop.isActive = signedOutNote.isHidden
+        // **A line under the title for a signed-out player** (James, round 384: "Add a note
+        // under the title of the Achievements info view that says 'Sign into Game Center to
+        // enable achievements'. The achievements details should still be visible"). Every
+        // square and every page under it is still there; the note says why none of them will be
+        // awarded. Hidden, it gives back its room - the picker goes back to the top
+
         gridTop?.isActive = false
         NSLayoutConstraint.activate([
+            signedOutNote.topAnchor.constraint(equalTo: itemsTableView.topAnchor),
+            signedOutNote.leadingAnchor.constraint(equalTo: grid.leadingAnchor, constant: 30),
+            signedOutNote.trailingAnchor.constraint(equalTo: grid.trailingAnchor, constant: -30),
             picker.leadingAnchor.constraint(equalTo: grid.leadingAnchor, constant: 20),
             picker.trailingAnchor.constraint(equalTo: grid.trailingAnchor, constant: -20),
-            picker.topAnchor.constraint(equalTo: itemsTableView.topAnchor),
             grid.topAnchor.constraint(equalTo: picker.bottomAnchor, constant: 14),
             emptyNote.topAnchor.constraint(equalTo: picker.bottomAnchor, constant: 40),
             emptyNote.leadingAnchor.constraint(equalTo: grid.leadingAnchor, constant: 30),
@@ -964,6 +994,7 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
 
     private func chooseGridItem(at indexPath: IndexPath) {
         if senderID == 2 {
+            guard gridItemAnswersAPress(at: indexPath) else { return }
             hideAnimate()
             moveToItemStats(passedIndex: powerUpIndex(at: indexPath), sender: "Power-Ups")
             return
@@ -1001,6 +1032,30 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
         defaults.set(brickSetting, forKey: "brickSetting")
     }
     
+    /// Whether a square answers a press at all.
+    ///
+    /// **Not a locked power-up** (James, round 384: "For locked power-ups on the power-up info
+    /// view, don't allow the locked cells to be clicked to enter the detail views for those
+    /// power-ups"). A locked square shows how to unlock it and nothing else, and its detail
+    /// page described a power-up the square itself is keeping back. Not highlighted either, so
+    /// it neither clicks nor lights up as though it would open.
+    func gridItemAnswersAPress(at indexPath: IndexPath) -> Bool {
+        guard senderID == 2 else { return true }
+        let item = powerUpIndex(at: indexPath)
+        let unlocked = totalStatsArray.first?.powerUpUnlockedArray
+        return unlocked?.indices.contains(item) == true && unlocked?[item] == true
+    }
+
+    func collectionView(_ collectionView: UICollectionView,
+                        shouldHighlightItemAt indexPath: IndexPath) -> Bool {
+        collectionView != grid || gridItemAnswersAPress(at: indexPath)
+    }
+
+    func collectionView(_ collectionView: UICollectionView,
+                        shouldSelectItemAt indexPath: IndexPath) -> Bool {
+        collectionView != grid || gridItemAnswersAPress(at: indexPath)
+    }
+
     func collectionView(_ collectionView: UICollectionView, didHighlightItemAt indexPath: IndexPath) {
         guard collectionView == backButtonCollectionView else {
             if hapticsSetting { interfaceHaptic.impactOccurred() }

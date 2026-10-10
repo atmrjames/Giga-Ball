@@ -632,3 +632,53 @@ extension UIView {
         subviews.flatMap { ($0 as? T).map { [$0] } ?? [] } + subviews.flatMap { $0.subviewsOfType(kind) }
     }
 }
+
+/// James, round 384: "For locked power-ups on the power-up info view, don't allow the locked
+/// cells to be clicked to enter the detail views for those power-ups."
+final class LockedPowerUpSquareTests: XCTestCase {
+
+    func testOnlyAnUnlockedPowerUpsSquareOpensItsPage() {
+        let page = ItemsDetailViewController()
+        page.senderID = 2
+        page.navigatedFrom = "MainMenu"
+        let stats = TotalStats()
+        stats.powerUpUnlockedArray = stats.powerUpUnlockedArray.map { _ in false }
+        let first = IndexPath(item: 0, section: 0)
+        let open = page.powerUpIndex(at: first)
+        stats.powerUpUnlockedArray[open] = true
+        page.totalStatsArray = [stats]
+
+        XCTAssertTrue(page.gridItemAnswersAPress(at: first), "an unlocked power-up opens")
+        let locked = IndexPath(item: 1, section: 0)
+        XCTAssertNotEqual(page.powerUpIndex(at: locked), open)
+        XCTAssertFalse(page.gridItemAnswersAPress(at: locked), "a locked one does not")
+    }
+}
+
+/// James, round 384, signed out of Game Center: "Add a note under the title of the Achievements
+/// info view that says 'Sign into Game Center to enable achievements'. The achievements details
+/// should still be visible to users not signed in to Game Center."
+final class AchievementsSignedOutNoteTests: XCTestCase {
+
+    private func achievements(signedIn: Bool) throws -> ItemsDetailViewController {
+        let board = UIStoryboard(name: "Main", bundle: Bundle(for: ItemsDetailViewController.self))
+        let page = try XCTUnwrap(board.instantiateViewController(withIdentifier: "itemsDetailView")
+                                    as? ItemsDetailViewController)
+        page.senderID = 3
+        page.navigatedFrom = "Items"
+        page.gameCenterIsSignedIn = { signedIn }
+        page.loadViewIfNeeded()
+        return page
+    }
+
+    func testASignedOutPlayerIsToldWhyAndStillSeesEveryAchievement() throws {
+        let page = try achievements(signedIn: false)
+        XCTAssertFalse(page.signedOutNote.isHidden)
+        XCTAssertEqual(page.signedOutNote.text, "Sign into Game Center to enable achievements")
+        XCTAssertGreaterThan(page.shownAchievements.count, 0, "the squares are all still there")
+    }
+
+    func testASignedInPlayerIsNotTold() throws {
+        XCTAssertTrue(try achievements(signedIn: true).signedOutNote.isHidden)
+    }
+}

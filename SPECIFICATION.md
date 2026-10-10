@@ -341,6 +341,11 @@ by `InbetweenLevels`: the next theme, the next app icon, two power-ups for the f
 packs, the pack-completion achievement, and the next pack. Finishing a level unlocks the
 next level in the same pack.
 
+**Power-up locks are Classic's and the original Endless's only** (round 384). Endless Mayhem
+and every Daily Challenge offer every power-up whatever the player has unlocked, through one
+rule (`GameScene.powerUpIsUnlockedForThisRun`); a day's level and theme were already drawn from
+everything. The locks stay on the campaign's rewards, where they have always been.
+
 **City is gated differently.** The first three packs can be played in any order, so no
 single completion knows it was the last. City opens once all three have a recorded best
 time. Between the starting state and the reward table, every theme, icon, power-up and
@@ -501,7 +506,8 @@ that screen, whose Continue starts the next level. `ResumeTransitionTests` drive
   takes the room (round 379). The daily menu's card shows the top ten in a window that
   scrolls, with the player's own place pinned above them when they are not among them (rounds
   376 and 378), lime when the player leads, in place of the posted score once there is a board
-  to show.
+  to show. It asks again when a post is confirmed (round 384). A day the board cannot reach
+  shows the player's figures as lines in the board's own columns: a mark, a name, a figure.
 
 - **Every leaderboard button opens its own board** (round 360): a game over's Game Center
   heading - trophy, words and chevron, dressed as Statistics - and its button open the run's
@@ -509,6 +515,15 @@ that screen, whose Continue starts the next level. `ResumeTransitionTests` drive
   Classic's pack screen its total. Only the information screen still opens the full list.
 - **Result screens beep as they count** (round 360): the countdown's beep on each tick of the
   count-up, rising, under In-Game Sound (`TallySound`).
+
+- **Signed out of Game Center** (round 384): an ending says nothing about Game Center and has
+  no board button; the daily card's board place says "Sign into Game Center to post to and view
+  the global leaderboard", with the player's own score once they have played; the Daily Result
+  Pop-Up setting is not offered; and the achievements page says "Sign into Game Center to enable
+  achievements" over every square. Achievements are not reported while signed out (the award is
+  kept in the player's stats either way), a report that fails is logged and one that succeeds
+  is not, and only the main menu sets GameKit's sign-in handler (setting it is what starts a
+  sign-in).
 
 Game Center can be disabled in settings.
 
@@ -528,7 +543,7 @@ Game Center can be disabled in settings.
 | Perspective Zoom | on / off: the tilt-based motion on menu backgrounds (was "Parallax"), and off whenever the system's Reduce Motion is on |
 | Paddle Speed | a slider from 1.0 to 5.0 in quarter steps, with a practice field (5.0 from round 346); x2.00 by default on every device (round 361; it was x1.50 on a phone) |
 | Swipe Up To Pause | on / off |
-| Daily Result Pop-Up | on / off, on by default: the main menu's Settings only. Whether the first launch after a posted daily closes says how it went (round 360, daily spec §11.6) |
+| Daily Result Pop-Up | on / off, on by default: the main menu's Settings only, and only while signed in to Game Center (round 384). Whether the first launch after a posted daily closes says how it went (round 360, daily spec §11.6) |
 | Reset Ball | the pause menu's settings only: puts a stuck ball back on the paddle |
 
 From the pause menu, App Icon and Ball & Paddle Theme are left out, because both restyle a game

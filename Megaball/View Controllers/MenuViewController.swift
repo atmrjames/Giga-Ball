@@ -83,7 +83,14 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         ])
 
         let rows = modeSelectTableView.heightAnchor.constraint(equalToConstant: 0)
+        rows.priority = .required - 1
         rows.isActive = true
+        // **A point under required** (round 384, from James's iPad and Mac logs: "Unable to
+        // simultaneously satisfy constraints ... ContentAwareTableView.height == 480" in a
+        // window 667 points tall). The two "within the room" constraints below are required
+        // and are meant to win when four rows do not fit - and they did, but only after UIKit
+        // had logged the clash and broken this one itself. Asked a point lower, it gives way
+        // the way it was always meant to, and quietly
         modeRowsHeight = rows
         // **Said outright rather than left to the content** (round 313). Without this the
         // table's height is its intrinsic content size, and that does not update inside the

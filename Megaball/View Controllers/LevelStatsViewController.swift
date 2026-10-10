@@ -466,35 +466,21 @@ class LevelStatsViewController: UIViewController, UICollectionViewDelegate, UICo
     func setupRunHistory() {
         pinTheLogoToTheModeSize()
         let empty = runHistory.isEmpty
-        centreTheHeader(empty)
-        runHistoryTable?.isHidden = empty
-        runHistoryTable?.wantsScrolling = empty == false
-        runHistoryTable?.isScrollEnabled = empty == false
-        // Both, because `ContentAwareTableView` sets `isScrollEnabled` from `wantsScrolling` on
-        // every layout - the flag alone lasted until the table next laid itself out
-        runHistorySortButton?.isHidden = empty
-        runHistoryCountLabel?.isHidden = empty
-        guard empty == false else {
-            logoWidth?.constant = UIViewController.menuModeLogoSize
-            header = MenuHeaderCollapse(restSize: UIViewController.menuModeLogoSize,
-                                        scrolledSize: UIViewController.menuModeLogoScrolledSize)
-            return
-        }
-        // **No runs yet: no list, nothing to scroll, and the header in the middle of the page**
-        // (James, round 326: "If there's no scores yet, hide the tableview and centre the icon
-        // and game mode header on the page whilst disabling scrolling. Same on the Endless Mode
-        // screen."). The table is only ever built for a first run, so on a fresh mode it never
-        // exists; the hiding is for the other way round, a list already on screen when Reset
-        // Data or an iCloud reset empties it. Both endless modes are this one screen, which is
-        // how the Endless Mode half of the request comes for free
+        centreTheHeader(false)
+        // **The list is shown even with nothing in it** (James, round 384: "For the Endless
+        // Mode and Endless Mayhem menu views, show an empty leaderboard below the game mode icon
+        // and heading"). Round 326 did the opposite - "If there's no scores yet, hide the
+        // tableview and centre the icon and game mode header on the page" - and the screen that
+        // made read as a splash rather than a menu: a logo in the middle of nothing, and a list
+        // that appeared from nowhere after the first run. The header stays at the top where
+        // every other mode's is, the list's own header row says how many runs there are, and
+        // the empty list says that the runs will be kept there. `centreTheHeader` is kept for
+        // the way back, in case the centring is ever wanted again
+        defer { showTheRunHistoryState(empty: empty) }
         guard runHistoryTable == nil else {
-            runHistoryCountLabel?.text = runHistory.count == 1
-                ? "1 run" : "\(runHistory.count) runs"
             runHistoryTable?.reloadData()
             return
         }
-
-
 
         let sort = UIButton(type: .system)
         sort.translatesAutoresizingMaskIntoConstraints = false
@@ -565,6 +551,54 @@ class LevelStatsViewController: UIViewController, UICollectionViewDelegate, UICo
         // ContentAwareTableView rather than a plain table (play-test request): when the
         // list has more runs than fit, the content fades at whichever edge continues,
         // and the extra clearance keeps the fade from crowding the buttons below
+    }
+
+    /// What an empty list says, in the place its first run will go.
+    static let noRunsYet = "No runs yet - your best heights will be listed here"
+
+    /// The list's header row and its empty state, for whatever is in it now.
+    private func showTheRunHistoryState(empty: Bool) {
+        runHistoryTable?.isHidden = false
+        runHistoryTable?.wantsScrolling = empty == false
+        runHistoryTable?.isScrollEnabled = empty == false
+        // Both, because `ContentAwareTableView` sets `isScrollEnabled` from `wantsScrolling` on
+        // every layout - the flag alone lasted until the table next laid itself out
+        runHistorySortButton?.isHidden = empty
+        // Nothing to sort, so no sort - the count beside it is the header row's whole message
+        runHistoryCountLabel?.isHidden = false
+        runHistoryCountLabel?.text = runHistory.count == 1 ? "1 run" : "\(runHistory.count) runs"
+        if empty {
+            let note = UILabel()
+            note.text = LevelStatsViewController.noRunsYet
+            note.font = .systemFont(ofSize: 14)
+            note.textColor = UIColor(white: 1, alpha: 0.45)
+            note.textAlignment = .center
+            note.numberOfLines = 0
+            let holder = UIView()
+            note.translatesAutoresizingMaskIntoConstraints = false
+            holder.addSubview(note)
+            let sides = [
+                note.leadingAnchor.constraint(equalTo: holder.leadingAnchor, constant: 12),
+                note.trailingAnchor.constraint(equalTo: holder.trailingAnchor, constant: -12),
+            ]
+            sides.forEach { $0.priority = .required - 1 }
+            // A point under required: the table sizes its background view after this, and at
+            // the nothing wide it starts at, two required twelve-point margins cannot both hold
+            NSLayoutConstraint.activate(sides + [
+                note.topAnchor.constraint(equalTo: holder.topAnchor, constant: 24),
+            ])
+            runHistoryTable?.backgroundView = holder
+            // Near the top of the list rather than in its middle, where the first run will
+            // appear
+        } else {
+            runHistoryTable?.backgroundView = nil
+        }
+        if empty {
+            logoWidth?.constant = UIViewController.menuModeLogoSize
+            header = MenuHeaderCollapse(restSize: UIViewController.menuModeLogoSize,
+                                        scrolledSize: UIViewController.menuModeLogoScrolledSize)
+        }
+        runHistoryTable?.reloadData()
     }
 
     private var logoWidth: NSLayoutConstraint?

@@ -672,18 +672,27 @@ extension GameScene {
     /// that has to be cleared.
     func endlessIIRepointBlockedDirectionals() {
         guard gameMode == .endlessII else { return }
+        var directionals: [SKSpriteNode] = []
+        enumerateChildNodes(withName: BrickCategoryName) { node, _ in
+            if let brick = node as? SKSpriteNode, brick.endlessIIRole == .directional {
+                directionals.append(brick)
+            }
+        }
+        guard directionals.isEmpty == false else { return }
+        // **Only when there is a Directional brick to ask about** (round 384, from the iPad's
+        // row-build hitches). The map below walks every brick in the field to place it, and this
+        // ran after every row - so most rows, which have no Directional brick anywhere, built a
+        // map of the whole field to ask it nothing
         let occupancy = endlessIIOccupancy()
         // Read once and asked of every brick, rather than rebuilt for each of the four sides
         // of each of them
-        enumerateChildNodes(withName: BrickCategoryName) { node, _ in
-            guard let brick = node as? SKSpriteNode,
-                  brick.endlessIIRole == .directional,
-                  let side = brick.endlessIIVulnerableSide,
-                  self.endlessIISideIsReachable(side, from: brick, in: occupancy) == false,
-                  let open = self.endlessIIOpenSides(from: brick, in: occupancy).randomElement()
-            else { return }
+        for brick in directionals {
+            guard let side = brick.endlessIIVulnerableSide,
+                  endlessIISideIsReachable(side, from: brick, in: occupancy) == false,
+                  let open = endlessIIOpenSides(from: brick, in: occupancy).randomElement()
+            else { continue }
             brick.endlessIIVulnerableSide = open
-            self.endlessIIDrawVulnerableEdge(on: brick, side: open)
+            endlessIIDrawVulnerableEdge(on: brick, side: open)
         }
     }
 

@@ -989,10 +989,16 @@ class InbetweenViewController: UIViewController, UITableViewDelegate {
     /// header's air is what gives way. A crowded header still reads; two blocks of text in
     /// the same place do not.
     private func keepTheScoresOffTheTapLine() {
-        let floor = livesLine?.isHidden == false ? livesLine! : tapLabel!
+        let floor: UIView = livesLine?.isHidden == false ? (livesRack ?? livesLine!) : tapLabel!
         totalScoreLabel.bottomAnchor.constraint(
             lessThanOrEqualTo: floor.topAnchor,
             constant: -InbetweenViewController.resultToBottomGap).isActive = true
+        // **The rack's top, not the line's** (James, round 384, from an iPad window: "On the
+        // level passed view, the spare balls and tap to continue labels move up at a certain
+        // width and overlap with the score label"). Round 339 put the balls above the words, and
+        // this floor went on measuring from the words - so a window short enough to bring the
+        // floor into play stopped the total just clear of "3 spare balls" and let the rack of
+        // balls above that line be drawn straight across it
     }
 
     /// The air between the last number and whatever sits under it.

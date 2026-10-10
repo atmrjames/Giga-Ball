@@ -378,16 +378,10 @@ final class PaddleSpeedViewController: UIViewController, MenuNavigable {
         closeButton = close
         // Remembered so the layout pass can draw it in beside the big play (round 176)
         close.translatesAutoresizingMaskIntoConstraints = false
-        close.backgroundColor = UIColor(white: 0.92, alpha: 1)
-        close.tintColor = UIColor(red: 0.16, green: 0, blue: 0.24, alpha: 1)
-        close.layer.cornerRadius = MainMenuCollectionViewCell.smallButtonSize/2
-        close.setImage(UIImage(systemName: "xmark",
-                               withConfiguration: UIImage.SymbolConfiguration(
-                                pointSize: 18, weight: .heavy)), for: .normal)
         close.addTarget(self, action: #selector(closeTapped), for: .touchUpInside)
         view.addSubview(close)
         applyRoundGlass(to: close, radius: MainMenuCollectionViewCell.smallButtonSize/2,
-                        symbol: "xmark", pointSize: 18, rimmed: false)
+                        symbol: "xmark", pointSize: 20, rimmed: false)
         // The wide position: this screen has no large centre button for a close to group
         // around, and a lone small button belongs at the edge where the thumb already is
         // (James, round 135)

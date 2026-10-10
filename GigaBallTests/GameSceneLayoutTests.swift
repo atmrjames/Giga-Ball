@@ -221,6 +221,55 @@ final class ScenePlaneTests: XCTestCase {
         XCTAssertGreaterThan(grown, empty)
     }
 
+    /// James, round 384: "I had more power ups than could show on the power up HUD... Can the
+    /// power up icons and progress bars shrink slightly when the bar is full to accommodate
+    /// more power ups if needed?" Eleven running at once stay inside the width they are given,
+    /// and the rings shrink to do it; three are drawn at their own size.
+    func testElevenPowerUpsShrinkToFitTheBarRatherThanRunningOffTheScreen() {
+        let hud = PowerUpRingHUD()
+        hud.iconSize = 30
+        hud.spacing = 12
+        hud.maximumWidth = 360
+        let eleven = (0..<11).map {
+            PowerUpRingHUD.Entry(id: "p\($0)", texture: SKTexture(), remaining: 1)
+        }
+        hud.update(with: eleven)
+        let until = Date().addingTimeInterval(0.4)
+        while Date() < until { RunLoop.current.run(until: Date().addingTimeInterval(0.02)) }
+        hud.update(with: eleven)
+        let width = hud.containerForTesting.path?.boundingBox.width ?? 0
+        XCTAssertEqual(width, 360, accuracy: 0.5, "the bar stops at the width it is given")
+        XCTAssertLessThan(hud.rowScaleForTesting, 1, "and the rings shrink to fit inside it")
+        XCTAssertGreaterThan(hud.rowScaleForTesting, 0.7, "slightly, not to nothing")
+
+        let three = Array(eleven.prefix(3))
+        hud.update(with: three)
+        let later = Date().addingTimeInterval(0.4)
+        while Date() < later { RunLoop.current.run(until: Date().addingTimeInterval(0.02)) }
+        hud.update(with: three)
+        XCTAssertEqual(hud.rowScaleForTesting, 1, "a bar with room draws the rings full size")
+    }
+
+    /// James, round 384, iPad multitasking: "The score and hi score labels in the top right of
+    /// the game view, the font stays the same size, even if the game view shrinks so it gets
+    /// close to overlapping the power-up HUD. It's ok if the font size gets smaller to maintain
+    /// a gap here and prevent any overlapping."
+    func testTheHudTypeFollowsThePlayZoneOffAPhone() {
+        let phoneUnit: CGFloat = 402.0/22
+        XCTAssertEqual(GameScene.hudFontSize(layoutUnit: phoneUnit, regularWidth: false, phone: true), 16,
+                       "a phone is exactly as it was")
+        XCTAssertEqual(GameScene.hudFontSize(layoutUnit: 12, regularWidth: false, phone: true), 16,
+                       "however small its play zone")
+        XCTAssertEqual(GameScene.hudFontSize(layoutUnit: 30, regularWidth: true, phone: false), 24,
+                       "a large iPad play zone keeps the iPad's 24 points")
+        XCTAssertEqual(GameScene.hudFontSize(layoutUnit: phoneUnit, regularWidth: true, phone: false), 16,
+                       "a landscape iPad's play zone is a phone's width, and gets a phone's type")
+        XCTAssertLessThan(GameScene.hudFontSize(layoutUnit: 13, regularWidth: false, phone: false), 16,
+                          "a small window's play zone gets smaller type still")
+        XCTAssertGreaterThanOrEqual(GameScene.hudFontSize(layoutUnit: 4, regularWidth: false, phone: false), 11,
+                                    "and never too small to read")
+    }
+
     /// And the bar is drawn *behind* the node that owns it, which is exactly why round 207's
     /// raise buried it under the mask. The constant the planes leave room for has to keep
     /// matching the real child, or the headroom is arithmetic about nothing.

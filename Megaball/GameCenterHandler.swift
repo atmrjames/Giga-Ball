@@ -28,6 +28,21 @@ final class GameCenterHandler: NSObject {
         return GKLocalPlayer.local.isAuthenticated
     }
 
+    /// Sends achievements to Game Center, when there is a signed-in player to send them for.
+    ///
+    /// **Not at all while signed out** (round 384, from James's Mac log, signed out of Game
+    /// Center: "<GKAchievement> has a nil or invalid internal player" and "The requested
+    /// operation could not be completed because local player has not been authenticated", for
+    /// every achievement a run earned). GameKit cannot take a report then and keeps nothing to
+    /// send later, so asking only filled the log; the award itself is already kept in the
+    /// player's own stats, which is what the achievements page reads. Every report in the app
+    /// goes through here, sixty-one of them.
+    static func reportAchievements(_ achievements: [GKAchievement],
+                                   withCompletionHandler completion: ((Error?) -> Void)? = nil) {
+        guard isAuthenticated else { return }
+        GKAchievement.report(achievements, withCompletionHandler: completion)
+    }
+
     /// What a screen says when it would have posted a score and could not (play-test round
     /// 16: a player who is not signed in has no way of knowing their runs are going nowhere).
     ///
@@ -39,19 +54,16 @@ final class GameCenterHandler: NSObject {
     var viewController: UIViewController?
     
     override init() {
-        
         super.init()
-        GKLocalPlayer.local.authenticateHandler = { gcAuthVC, error in
-            NotificationCenter.default.post(name: .authenticationChanged, object: GKLocalPlayer.local.isAuthenticated)
-            
-            if GKLocalPlayer.local.isAuthenticated {
-            } else if let vc = gcAuthVC {
-                self.viewController?.present(vc, animated: true)
-            }
-            else {
-                Log.gameCenter.error("Error authenticating to Game Center: \(error?.localizedDescription ?? "none", privacy: .public)")
-            }
-        }
+        // **No authentication handler here** (round 384, from James's Mac log: the sign-in was
+        // attempted and failed again at the start and end of every run). Setting
+        // `authenticateHandler` is what asks GameKit to authenticate, and this initialiser set
+        // it - so every `GameCenterHandler()` a score submission built started a new sign-in,
+        // nineteen call sites of them. It also replaced the main menu's handler, the one that
+        // presents Game Center's sign-in and tells the menus how it went, with this one, whose
+        // `viewController` nothing ever set and whose notification nothing ever observed.
+        // `MenuViewController.authGCPlayer` is the one owner now, once at launch and once per
+        // return to the foreground
     }
     
     let totalStatsStore = FileManager.default.urls(for: .documentDirectory,in: .userDomainMask).first?.appendingPathComponent("totalStatsStore.plist")

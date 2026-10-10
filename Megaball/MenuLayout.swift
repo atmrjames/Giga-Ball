@@ -1274,3 +1274,149 @@ extension UILabel {
         // needs telling
     }
 }
+
+// MARK: - A scrolling screen's fixed ends
+
+/// Keeps an in-game screen's header and its row of buttons where they are while the middle of
+/// the screen scrolls.
+///
+/// **James, round 384, from an iPhone SE: "If the in-game views need to be scrolled to view all
+/// the content, scroll the in-game info like height/score, balls spare, game mode details. Keep
+/// the UI buttons in a fixed position, like the play, settings and info buttons so they remain
+/// at the bottom and not scrolled out of view and the home button at the top ... the middle
+/// section of the views should be scrollable but the sections at the top with the UI and logo,
+/// and at the bottom with UI should be fixed."** Round 378 put the whole screen in a scroll, so
+/// on a short window the Play button was the thing scrolled out of reach.
+///
+/// The screens are one container laid out by the storyboard and a great deal of code, and the
+/// middle of them hangs from the button row. So the ends are not taken *out* of the scroll -
+/// that would mean rewiring every constraint that measures from them - but held still *in* it:
+/// each is offset by exactly as much as the page has scrolled, the header down and the buttons
+/// up, so on screen they do not move while everything between them does. Layout never sees the
+/// offset; it is a transform, which hit-testing follows and Auto Layout ignores. Where the
+/// screen fits there is nothing to scroll and nothing moves.
+///
+/// Behind each end is a band of the screen's own frosted glass, fading towards the middle,
+/// which comes up as content starts to pass beneath it - so a line scrolling under the logo or
+/// the buttons goes behind them rather than through them.
+final class StickyScrollEnds: NSObject, UIScrollViewDelegate {
+
+    let scroll: UIScrollView
+    private(set) var header: [UIView] = []
+    private(set) var footer: [UIView] = []
+    let headerBackdrop = ScrollEdgeBackdrop(fadesDownward: true)
+    let footerBackdrop = ScrollEdgeBackdrop(fadesDownward: false)
+
+    init(scroll: UIScrollView) {
+        self.scroll = scroll
+        super.init()
+        watching = [
+            scroll.observe(\.contentSize, options: [.new]) { [weak self] _, _ in self?.update() },
+            scroll.observe(\.bounds, options: [.new]) { [weak self] _, _ in self?.update() },
+        ]
+        // The scroll measures its content in its own layout pass, which runs after the screen's
+        // `viewDidLayoutSubviews` - so a screen that asked there was asking about the size the
+        // content had *before* the pass, and on first showing that is nothing. Watched instead,
+        // the ends move whenever there is a new answer
+    }
+
+    private var watching: [NSKeyValueObservation] = []
+
+    /// Puts the two bands into `content` and names what stays still.
+    ///
+    /// `headerBottom` and `footerTop` are where the bands stop - the bottom of the lowest thing
+    /// in the header and the top of the button row.
+    func install(in content: UIView, header: [UIView], footer: [UIView],
+                 headerBottom: NSLayoutYAxisAnchor, footerTop: NSLayoutYAxisAnchor) {
+        self.header = header
+        self.footer = footer
+        for band in [headerBackdrop, footerBackdrop] where band.superview == nil {
+            band.translatesAutoresizingMaskIntoConstraints = false
+            band.isUserInteractionEnabled = false
+            band.alpha = 0
+            content.addSubview(band)
+        }
+        NSLayoutConstraint.activate([
+            headerBackdrop.topAnchor.constraint(equalTo: content.topAnchor),
+            headerBackdrop.leadingAnchor.constraint(equalTo: content.leadingAnchor),
+            headerBackdrop.trailingAnchor.constraint(equalTo: content.trailingAnchor),
+            headerBackdrop.bottomAnchor.constraint(equalTo: headerBottom,
+                                                   constant: ScrollEdgeBackdrop.fade),
+            footerBackdrop.topAnchor.constraint(equalTo: footerTop,
+                                                constant: -ScrollEdgeBackdrop.fade),
+            footerBackdrop.leadingAnchor.constraint(equalTo: content.leadingAnchor),
+            footerBackdrop.trailingAnchor.constraint(equalTo: content.trailingAnchor),
+            footerBackdrop.bottomAnchor.constraint(equalTo: content.bottomAnchor),
+        ])
+        for view in header + footer {
+            var child: UIView? = view
+            while let current = child, current.superview !== content { child = current.superview }
+            if let child { content.bringSubviewToFront(child) }
+        }
+        // Above the middle, so it passes behind them; the ends themselves above the bands
+    }
+
+    /// How far the page can scroll.
+    var overflow: CGFloat { max(0, scroll.contentSize.height - scroll.bounds.height) }
+
+    /// Puts the ends back over the part of the page on screen. Called on every scroll and
+    /// after every layout pass, since a pass can change how much there is to scroll.
+    func update() {
+        let overflow = self.overflow
+        let offset = min(max(scroll.contentOffset.y, 0), overflow)
+        // Clamped, so a bounce past either end moves the ends with the page as it always has
+        let down = CGAffineTransform(translationX: 0, y: offset)
+        let up = CGAffineTransform(translationX: 0, y: offset - overflow)
+        for view in header + [headerBackdrop] where view.transform != down { view.transform = down }
+        for view in footer + [footerBackdrop] where view.transform != up { view.transform = up }
+        headerBackdrop.alpha = min(1, offset/ScrollEdgeBackdrop.fade)
+        footerBackdrop.alpha = min(1, (overflow - offset)/ScrollEdgeBackdrop.fade)
+    }
+
+    func scrollViewDidScroll(_ scrollView: UIScrollView) { update() }
+}
+
+/// A band of the screens' frosted glass that fades out along one edge.
+final class ScrollEdgeBackdrop: UIView {
+
+    /// How tall the fade is, and how far the page scrolls before a band is fully up.
+    static let fade: CGFloat = 16
+
+    /// The band's colour over its blur.
+    static let wash = UIColor(red: 0.13, green: 0.06, blue: 0.17, alpha: 0.9)
+
+    private let fadesDownward: Bool
+    private let fadeMask = CAGradientLayer()
+
+    init(fadesDownward: Bool) {
+        self.fadesDownward = fadesDownward
+        super.init(frame: .zero)
+        let blur = UIVisualEffectView(effect: UIBlurEffect(style: .dark))
+        blur.frame = bounds
+        blur.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        addSubview(blur)
+        let tint = UIView(frame: bounds)
+        tint.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        tint.backgroundColor = ScrollEdgeBackdrop.wash
+        addSubview(tint)
+        // The screens' own material: the dark blur every menu stands on, under a purple close
+        // to the colour the pause screen's blur and wash settle to over a dark field. Nearly
+        // opaque, because the point of the band is that what passes under it is gone - at the
+        // wash's own third the badge showed through the wordmark
+        layer.mask = fadeMask
+    }
+
+    required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+
+    override func layoutSubviews() {
+        super.layoutSubviews()
+        fadeMask.frame = bounds
+        let solid = UIColor.black.cgColor
+        let clear = UIColor.clear.cgColor
+        fadeMask.colors = fadesDownward ? [solid, solid, clear] : [clear, solid, solid]
+        let edge = bounds.height > 0 ? NSNumber(value: Double(ScrollEdgeBackdrop.fade/bounds.height)) : 0
+        fadeMask.locations = fadesDownward
+            ? [0, NSNumber(value: 1 - edge.doubleValue), 1]
+            : [0, edge, 1]
+    }
+}

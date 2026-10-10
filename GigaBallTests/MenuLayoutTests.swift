@@ -314,9 +314,9 @@ final class MenuHeaderSwapTests: XCTestCase {
     }
 }
 
-/// **The Endless and Mayhem screens before a first run** (James, round 326: "If there's no scores
-/// yet, hide the tableview and centre the icon and game mode header on the page whilst disabling
-/// scrolling. Same on the Endless Mode screen.").
+/// **The Endless and Mayhem screens before a first run.** Round 326 hid the list and centred the
+/// header; James, round 384, turned that round: "For the Endless Mode and Endless Mayhem menu
+/// views, show an empty leaderboard below the game mode icon and heading."
 ///
 /// Both modes are the one `LevelStatsViewController` at level 0, told apart by the stored mode, so
 /// one set of runs is given to both lists and either mode reads it.
@@ -360,26 +360,24 @@ final class EndlessModeScreenWithNoRunsTests: XCTestCase {
         rect(screen.levelImageView, in: screen).union(rect(screen.levelNameLabel, in: screen))
     }
 
-    func testWithNoRunsTheHeaderIsInTheMiddleOfThePage() {
+    func testWithNoRunsTheHeaderStaysAtTheTopOverAnEmptyList() {
         for (name, size) in shapes {
             let screen = screen(runs: [], in: size)
             let page = rect(screen.levelStatsView, in: screen)
             let block = header(screen)
-            XCTAssertEqual(block.midY, page.midY, accuracy: 1,
-                           "\(name): the header's middle is at \(Int(block.midY)), the page's at \(Int(page.midY))")
-            XCTAssertEqual(block.midX, page.midX, accuracy: 1, "\(name): and centred across it")
-        }
-    }
-
-    func testWithNoRunsThereIsNoListAndNothingScrolls() {
-        for (name, size) in shapes {
-            let screen = screen(runs: [], in: size)
-            XCTAssertTrue(screen.runHistoryTable == nil || screen.runHistoryTable?.isHidden == true,
-                          "\(name): no run list")
-            let scrolling = screen.levelStatsView.subviews
-                .compactMap { $0 as? UIScrollView }
-                .filter { $0.isHidden == false && $0.isScrollEnabled }
-            XCTAssertTrue(scrolling.isEmpty, "\(name): nothing on the page scrolls, found \(scrolling)")
+            XCTAssertLessThan(block.midY, page.midY - 100, "\(name): the header is at the top")
+            guard let table = screen.runHistoryTable else {
+                XCTFail("\(name): no list at all")
+                continue
+            }
+            XCTAssertFalse(table.isHidden, "\(name): the empty list is shown")
+            XCTAssertEqual(table.numberOfRows(inSection: 0), 0)
+            XCTAssertGreaterThanOrEqual(rect(table, in: screen).minY, block.maxY,
+                                        "\(name): under the header")
+            let note = table.backgroundView?.subviews.compactMap { $0 as? UILabel }.first
+            XCTAssertEqual(note?.text, LevelStatsViewController.noRunsYet,
+                           "\(name): and it says what it is for")
+            XCTAssertFalse(table.isScrollEnabled, "\(name): nothing to scroll")
         }
     }
 
@@ -413,9 +411,9 @@ final class EndlessModeScreenWithNoRunsTests: XCTestCase {
         }
     }
 
-    /// And a list emptied while the screen is open - Reset Data, or an iCloud reset - goes back
-    /// to the empty page rather than leaving an empty table under a header at the top.
-    func testEmptyingTheRunsWhileTheScreenIsOpenCentresTheHeaderAgain() {
+    /// And a list emptied while the screen is open - Reset Data, or an iCloud reset - shows the
+    /// same empty list a first visit does.
+    func testEmptyingTheRunsWhileTheScreenIsOpenLeavesTheEmptyList() {
         let screen = screen(runs: [120], in: shapes[0].1)
         XCTAssertNotNil(screen.runHistoryTable)
         screen.totalStatsArray[0].endlessModeHeight = []
@@ -428,8 +426,9 @@ final class EndlessModeScreenWithNoRunsTests: XCTestCase {
             screen.view.layoutIfNeeded()
         }
         let page = rect(screen.levelStatsView, in: screen)
-        XCTAssertEqual(header(screen).midY, page.midY, accuracy: 1)
-        XCTAssertEqual(screen.runHistoryTable?.isHidden, true)
+        XCTAssertLessThan(header(screen).midY, page.midY - 100)
+        XCTAssertEqual(screen.runHistoryTable?.isHidden, false)
+        XCTAssertEqual(screen.runHistoryTable?.numberOfRows(inSection: 0), 0)
         XCTAssertEqual(screen.runHistoryTable?.isScrollEnabled, false)
     }
 }

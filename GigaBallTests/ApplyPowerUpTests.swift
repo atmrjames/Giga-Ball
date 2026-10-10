@@ -863,6 +863,24 @@ final class InfillSpeaksTests: XCTestCase {
         XCTAssertNotNil(scene.mayhemSoundLastPlayed["infill"])
     }
 
+    /// James, round 384: "When playing on the Mac, and the ball hit a power up brick, the
+    /// brick expanded to a huge size as it animated out." The node the power-up is handed over
+    /// on was built at its picture's natural size and only made transparent - and the
+    /// collection animation fades its node up before it scales it.
+    func testAPowerUpBricksHandOverIsNeverDrawnAtThePicturesOwnSize() throws {
+        let scene = mayhem()
+        scene.brickWidth = 36
+        let index = try XCTUnwrap(LevelPackSetup().powerUpNameArray.firstIndex(of: "Brick Infill"))
+        let fromABrick = scene.endlessIIBrickPowerUpCarrier(index, at: .zero, shown: false)
+        XCTAssertTrue(fromABrick.isHidden, "the brick's own burst shows it; this is never seen")
+        XCTAssertEqual(fromABrick.size.width, 36*0.85, accuracy: 0.01,
+                       "and it is a falling power-up's size, not the picture's")
+
+        let atThePaddle = scene.endlessIIBrickPowerUpCarrier(index, at: .zero, shown: true)
+        XCTAssertFalse(atThePaddle.isHidden, "one released at the paddle is shown as a catch")
+        XCTAssertEqual(atThePaddle.size.width, 36*0.85, accuracy: 0.01)
+    }
+
     func testABrickThatHoldsInfillAsksForItToo() throws {
         let scene = mayhem()
         let index = try XCTUnwrap(LevelPackSetup().powerUpNameArray.firstIndex(of: "Brick Infill"))

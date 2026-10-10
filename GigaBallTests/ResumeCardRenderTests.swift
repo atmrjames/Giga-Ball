@@ -234,13 +234,20 @@ final class ResumeCardRenderTests: XCTestCase {
         let splash = laidOut(base())
         let button = try! XCTUnwrap(disc(splash))
 
+        if #available(iOS 26.0, *) {} else {
+            XCTAssertEqual(button.image(for: .normal),
+                           FlatRoundButton.image(symbol: "xmark", side: button.bounds.width),
+                           "below iOS 26 every close button is the one drawing (round 384)")
+        }
+        // The disc is in the drawing since round 384 rather than the button's background, so the
+        // colours are asked of the drawing's own two: the pale grey and the deep purple
         var white: CGFloat = 0, alpha: CGFloat = 0
-        XCTAssertTrue(button.backgroundColor?.getWhite(&white, alpha: &alpha) ?? false,
+        XCTAssertTrue(FlatRoundButton.disc.getWhite(&white, alpha: &alpha),
                       "the pale disc is a grey, as the other close buttons paint it")
         XCTAssertEqual(white, 0.92, accuracy: 0.01)
 
         var red: CGFloat = 0, green: CGFloat = 0, blue: CGFloat = 0, a: CGFloat = 0
-        button.tintColor.getRed(&red, green: &green, blue: &blue, alpha: &a)
+        FlatRoundButton.glyph.getRed(&red, green: &green, blue: &blue, alpha: &a)
         XCTAssertEqual(red, 0.16, accuracy: 0.01, "the app's deep purple")
         XCTAssertEqual(green, 0.0, accuracy: 0.01)
         XCTAssertEqual(blue, 0.24, accuracy: 0.01)

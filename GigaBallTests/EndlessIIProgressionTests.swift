@@ -1006,3 +1006,45 @@ final class EndlessIIDensityCouplingMeasurementTests: XCTestCase {
         XCTAssertGreaterThan(mean, 0, "on average a quicker run is at least a little fuller")
     }
 }
+
+/// Round 384, from James's iPad log: Mayhem rows hitching on an iPad Pro of 2018. A row asks the
+/// arrival of every power-up and of every style in a pool for each brick, and the run's table of
+/// arrivals now answers all of those from one walk of the queue. It has to give the answers the
+/// long way gives, for every element of every kind of run.
+final class EndlessIIArrivalTableTests: XCTestCase {
+
+    func testTheTableAgreesWithAskingOneAtATime() throws {
+        for _ in 0..<20 {
+            let progression = EndlessIIProgression.make()
+            let table = try XCTUnwrap(progression.arrivalTable())
+            let queue = try XCTUnwrap(progression.releaseOrder)
+            for element in Set(queue) {
+                XCTAssertEqual(progression.arrivalHeight(of: element, table: table),
+                               progression.arrivalHeight(of: element), "\(element)")
+            }
+            for index in 0..<LevelPackSetup().powerUpNameArray.count {
+                for height in [0, 50, 300, 1_200] {
+                    XCTAssertEqual(progression.powerUpWeightScale(for: index, at: height, table: table),
+                                   progression.powerUpWeightScale(for: index, at: height))
+                }
+            }
+            let pool: [EndlessIIStyle] = [.rounded, .flashing, .breathing, .gravity, .fixed]
+            for height in [0, 40, 400] {
+                for roll in [0, 7, 99, 250] {
+                    XCTAssertEqual(
+                        progression.pickStyle(from: pool, at: height, table: table, roll: { _ in roll }),
+                        progression.pickStyle(from: pool, at: height, roll: { _ in roll }))
+                }
+            }
+        }
+    }
+
+    func testEverythingAtOnceStillArrivesAtTheStart() throws {
+        var progression = EndlessIIProgression.make()
+        progression.everythingAtOnce = true
+        let table = progression.arrivalTable()
+        for element in progression.releaseOrder ?? [] {
+            XCTAssertEqual(progression.arrivalHeight(of: element, table: table), 0)
+        }
+    }
+}

@@ -464,6 +464,11 @@ The second hard constraint, inherited from the project's oldest rule:
 
 - **Campaign progress**: a Classic daily on a locked level unlocks nothing and records
   nothing to pack stats or level high scores. Daily stats are their own.
+- **Nor does the campaign gate the daily** (round 384, James: "players that haven't unlocked
+  all power-ups, themes or packs/levels, should have all the content available to them just in
+  the Daily Challenge"). The level and theme were always drawn from everything; since round 384
+  so are the power-ups, whatever the player has unlocked, so one day is one challenge for
+  everybody on its board.
 - **Endless bests**: a daily Endless run does not join `endlessModeHeight` /
   `endlessIIModeHeight`, does not post to the endless leaderboards, does not touch best
   height. It is a different game that happens to use the same field.
@@ -568,6 +573,13 @@ briefing screen (§6).
   leaderboard's own `list.number` because "the tick and 'on the board' were two ways of saying
   the same thing, and neither said the row could be pressed". The status header had it as
   outstanding, which it had not been for a long time.
+
+  **A table since round 384** (James: "layout the information in a similar table to the
+  leaderboard ... the current 1, 2, 3 icon doesn't represent the information very well"): each
+  fact is a line in the board's columns - the player's own mark (`person.fill`), "Posted Score",
+  the figure on the right - with Rank and Global Hi-Score under it where Game Center can say.
+  Signed out, the same container says "Sign into Game Center to post to and view the global
+  leaderboard", under "Your Score" once the day has been played.
 
   **Its last clause landed in round 269**: free play played after the post is listed in the same
   container, as a second and quieter line under the day's own number - the count of attempts

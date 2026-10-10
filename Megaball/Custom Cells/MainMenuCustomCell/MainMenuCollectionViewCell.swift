@@ -145,8 +145,20 @@ class MainMenuCollectionViewCell: UICollectionViewCell {
         guard isGlass == false else { return }
         iconImage.image = UIImage(named: named)
         guard let symbol = MainMenuCollectionViewCell.systemGlyph[base] else { return }
-        applyGlass(symbol: symbol, pointSize: pointSize, rimmed: rimmed)
+        if #available(iOS 26.0, *) {
+            applyGlass(symbol: symbol, pointSize: pointSize, rimmed: rimmed)
+        } else {
+            iconImage.image = FlatRoundButton.image(symbol: symbol, side: 210,
+                                                    pressed: named.contains("Highlighted"))
+            drawnFlat = true
+            // **Drawn rather than the artwork, below iOS 26** (round 384): the artwork's glyph
+            // is a hole in a pale disc, which is only purple where the screen behind it is.
+            // At the artwork's own 210 points, so the image view scales it exactly as it did
+        }
     }
+
+    /// Whether this cell's button is drawn by `FlatRoundButton` rather than from its artwork.
+    private(set) var drawnFlat = false
 
     func applyGlass(symbol: String, pointSize: CGFloat = 20, rimmed: Bool = false) {
         guard #available(iOS 26.0, *) else { return }
@@ -248,14 +260,17 @@ class MainMenuCollectionViewCell: UICollectionViewCell {
     /// would put the old opaque disc straight back on top of the glass for the length of the
     /// press. The 0.95 shrink every one of these already does is the feedback (round 64).
     func setPressedArtwork(_ image: UIImage?) {
-        guard isGlass == false else { return }
+        guard isGlass == false, drawnFlat == false else { return }
         iconImage.image = image
+        // A drawn button shows its press by the scale every caller animates with this, and
+        // does not trade its drawing for the artwork's pressed picture
     }
 
     override func prepareForReuse() {
         super.prepareForReuse()
         glassView?.removeFromSuperview()
         glassView = nil
+        drawnFlat = false
         // The glass goes with the reuse. These cells serve every round button on the screen
         // and only some of them are glass - a leftover disc behind a PNG would be a halo
         // round a button that never asked for one

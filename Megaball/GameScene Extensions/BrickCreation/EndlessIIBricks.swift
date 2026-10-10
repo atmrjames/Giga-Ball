@@ -336,8 +336,10 @@ extension GameScene {
             // and a twist about rarity must not put Classic's own drops into Mayhem
         }
 
+        let arrivals = endlessIIArrivalTable
         for index in powerUpProbArray.indices where powerUpProbArray[index] > 0 {
-            let scale = progression.powerUpWeightScale(for: index, at: endlessHeight)
+            let scale = progression.powerUpWeightScale(for: index, at: endlessHeight,
+                                                       table: arrivals)
             guard scale < 1 else { continue }
             powerUpProbArray[index] = max(1, Int((Double(powerUpProbArray[index])*scale).rounded()))
         }
@@ -355,19 +357,35 @@ extension GameScene {
     /// getting fuller around 500m, and carries on getting stranger for another 500 after
     /// that.
     func endlessIIBrickTexture() -> SKTexture {
-        let progression = endlessIIProgression
-        guard Double.random(in: 0..<1) < progression.density(at: endlessHeight,
-                                                             phase: endlessIIPhase) else {
+        guard Double.random(in: 0..<1) < endlessIIDensity() else {
             return brickNullTexture
         }
 
-        switch endlessIIPhaseBehaviour ?? progression.pickBehaviour(at: endlessHeight) {
+        switch endlessIIPhaseBehaviour ?? endlessIIProgression.pickBehaviour(at: endlessHeight) {
         case .multiHit: return endlessIIMultiHitTexture()
         case .indestructibleOnce: return brickIndestructible1Texture
         case .indestructibleAlways: return brickIndestructible2Texture
         case .invisible: return brickInvisibleTexture
         case .standard: return brickNormalTexture
         }
+    }
+
+    /// How full the field is to be at the height being built, worked out once per height.
+    ///
+    /// **Once per row, not once per brick** (round 384, from James's iPad log: `HITCH 72ms after:
+    /// brick hit, row built, row built, row built, row built` on an iPad Pro of 2018). Every
+    /// cell of a row asked the density afresh, and the answer walks the run's whole release
+    /// schedule to find where its steps land - the same answer eleven times a row, since the
+    /// height and the phase do not change while a row is built. Measured on the simulator, the
+    /// row loop came down from a millisecond and a quarter to a fraction of one.
+    func endlessIIDensity() -> Double {
+        if let cached = endlessIIDensityCache, cached.height == endlessHeight,
+           cached.phase == endlessIIPhase {
+            return cached.density
+        }
+        let density = endlessIIProgression.density(at: endlessHeight, phase: endlessIIPhase)
+        endlessIIDensityCache = (endlessHeight, endlessIIPhase, density)
+        return density
     }
 
     /// How often a designed pattern starts, when nothing else has the generator busy.
@@ -913,6 +931,11 @@ extension GameScene {
 
         let progression = endlessIIProgression
         let height = endlessHeight
+        let arrivals = endlessIIArrivalTable
+        let styleChance = dailyStyledChance(progression.styleChance(at: height))
+        let stackChance = progression.stackChance(at: height)
+        // Once for the row: they depend on the height, and every brick in a row is at the same
+        // one (round 384)
 
         for node in bricks {
             guard let brick = node as? SKSpriteNode else { continue }
@@ -921,9 +944,7 @@ extension GameScene {
             // Both are chances rather than gates, so a stack is possible from the first
             // metre and simply unlikely
             let alreadyStyled = endlessIIStyles(on: brick).isEmpty == false
-            var chance = alreadyStyled
-                ? progression.stackChance(at: height)
-                : dailyStyledChance(progression.styleChance(at: height))
+            var chance = alreadyStyled ? stackChance : styleChance
             // A Extra Mayhem day multiplies the *first* style's chance and leaves stacking
             // alone - the twist is more bricks doing something, not more bricks doing two
             // things at once
@@ -939,7 +960,7 @@ extension GameScene {
             // pair rather than each brick drawing its own
             guard offered.isEmpty == false else { continue }
 
-            guard let wanted = progression.pickStyle(from: offered, at: height),
+            guard let wanted = progression.pickStyle(from: offered, at: height, table: arrivals),
                   endlessIICanTake(wanted, brick) else { continue }
             applyEndlessIIStyle(wanted, to: brick)
         }

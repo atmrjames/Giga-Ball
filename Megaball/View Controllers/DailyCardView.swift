@@ -24,7 +24,8 @@ final class DailyCardView: UIView {
     private let levelImageView = UIImageView()
     private let levelLabel = UILabel()
     private let twistsStack = UIStackView()
-    private let resultLabel = UILabel()
+    /// The result container's lines - icon, what it is, the figure - one under another.
+    private let resultRows = UIStackView()
     /// Opens the day's board. Set by the screen that owns the pager.
     var postedScoreTapped: (() -> Void)?
     private let stack = UIStackView()
@@ -66,7 +67,7 @@ final class DailyCardView: UIView {
         // read and what you scored on it is another. They travel together because they
         // are both this day's, which is what makes them one page of the pager
 
-        for label in [modeLabel, levelLabel, resultLabel] {
+        for label in [modeLabel, levelLabel] {
             label.textAlignment = .center
             label.numberOfLines = 0
         }
@@ -112,8 +113,10 @@ final class DailyCardView: UIView {
         // Tighter at the top than it was: the mode's name, its picture and the level's
         // line belong together as a heading, and only the twists below them need air
 
-        resultLabel.translatesAutoresizingMaskIntoConstraints = false
-        resultCard.addSubview(resultLabel)
+        resultRows.axis = .vertical
+        resultRows.spacing = 8
+        resultRows.translatesAutoresizingMaskIntoConstraints = false
+        resultCard.addSubview(resultRows)
 
         boardTitle.text = "LEADERBOARD"
         boardTitle.font = .boldSystemFont(ofSize: 11)
@@ -132,6 +135,7 @@ final class DailyCardView: UIView {
         let atLeastAFew = boardScroll.heightAnchor.constraint(
             greaterThanOrEqualToConstant: DailyCardView.boardWindowFloor)
         atLeastAFew.priority = UILayoutPriority(800)
+        boardFloor = atLeastAFew
         let neverPastTheRows = boardScroll.heightAnchor.constraint(
             lessThanOrEqualTo: boardRows.heightAnchor)
         // **A floor of two places and a half** (round 382, found rendering the menu on an iPad Pro
@@ -227,10 +231,13 @@ final class DailyCardView: UIView {
             stack.bottomAnchor.constraint(equalTo: detailsCard.bottomAnchor,
                                           constant: -DailyCardView.twistsGap),
 
-            resultLabel.topAnchor.constraint(equalTo: resultCard.topAnchor, constant: 14),
-            resultLabel.leadingAnchor.constraint(equalTo: resultCard.leadingAnchor, constant: 16),
-            resultLabel.trailingAnchor.constraint(equalTo: resultCard.trailingAnchor, constant: -16),
-            resultLabel.bottomAnchor.constraint(equalTo: resultCard.bottomAnchor, constant: -14),
+            resultRows.topAnchor.constraint(equalTo: resultCard.topAnchor, constant: 14),
+            resultRows.leadingAnchor.constraint(equalTo: resultCard.leadingAnchor,
+                                                constant: 18 + DailyCardView.ownRowInset),
+            resultRows.trailingAnchor.constraint(equalTo: resultCard.trailingAnchor,
+                                                 constant: -18 - DailyCardView.ownRowInset),
+            resultRows.bottomAnchor.constraint(equalTo: resultCard.bottomAnchor, constant: -14),
+            // The board card's own insets, so a result line's columns sit where a board row's do
 
             levelImageView.heightAnchor.constraint(equalToConstant: 92),
             // Larger than the 72 it opened at (play-test round 85: "daily challenge level
@@ -278,7 +285,8 @@ final class DailyCardView: UIView {
     /// can be reused for any day the pager scrolls to.
     func show(key: String, isToday: Bool, record: DailyChallengeRecord?,
               standing: LeaderboardStanding?, boardBest: Int? = nil,
-              board: [DailyBoardRow] = [], own: DailyBoardRow? = nil, players: Int = 0) {
+              board: [DailyBoardRow] = [], own: DailyBoardRow? = nil, players: Int = 0,
+              signedIn: Bool = true) {
         let challenge = DailyChallengeGenerator.challenge(forKey: key)
 
         modeLabel.text = challenge.mode.name.uppercased()
@@ -332,13 +340,20 @@ final class DailyCardView: UIView {
         }
 
         showTwists(challenge)
-        showBoard(board, own: own, unit: challenge.mode == .classic ? "" : "m", players: players)
-        if board.isEmpty && own == nil {
+        showBoard(signedIn ? board : [], own: signedIn ? own : nil,
+                  unit: challenge.mode == .classic ? "" : "m", players: players)
+        if signedIn == false {
+            showSignedOut(record, mode: challenge.mode)
+        } else if board.isEmpty && own == nil {
             showResult(record, mode: challenge.mode, isToday: isToday, standing: standing,
                        boardBest: boardBest)
         } else {
             resultCard.isHidden = true
         }
+        // **Signed out, the leaderboard's place says so** (James, round 384: "move the note
+        // about not being signed into Game Center to below the daily challenge details
+        // container, into the position where the leaderboard would be ... Once a daily
+        // challenge has been played, show the user's score in the leaderboard container")
         // **The board or the posted score, never both** (James, round 357: "there's no need to
         // show the top scores section and the posted score section together. If the top score
         // section is available to show, hide the posted score section"). The board already
@@ -379,6 +394,7 @@ final class DailyCardView: UIView {
             // rather than the first of the list - it is the one row not in rank order
         }
 
+        boardFloor?.constant = DailyCardView.boardWindowFloor(rows: rows.count)
         for (position, row) in rows.enumerated() {
             boardRows.addArrangedSubview(DailyCardView.boardLine(for: row, unit: unit,
                                                                  leading: leading))
@@ -407,6 +423,24 @@ final class DailyCardView: UIView {
         }
         // The menus' affordance (`applyScrollAffordance`): an indicator shown once, and only
         // when there is more of the board than its window holds
+    }
+
+    /// The board window's floor, lowered to the rows themselves on a short board.
+    private var boardFloor: NSLayoutConstraint?
+
+    /// The least the board's window closes to for `rows` places: two and a half of them, or all
+    /// of them when there are fewer than that.
+    ///
+    /// **Never more than the rows** (James, round 384: "Daily challenge menu view leaderboard
+    /// container not resizing properly when content is less", with a board of one player and a
+    /// row's height of empty lime above it). The floor was a fixed two and a half places, and a
+    /// window is not allowed to be taller than its rows - so with one row the two could only
+    /// both hold by *stretching the row*, and a stretched row puts its text on its baseline at
+    /// the bottom, under an empty band. The floor is now whichever is less.
+    static func boardWindowFloor(rows: Int) -> CGFloat {
+        guard rows > 0 else { return 0 }
+        let all = CGFloat(rows)*boardRowHeight + CGFloat(rows - 1)*boardRowGap
+        return min(boardWindowFloor, all.rounded(.up))
     }
 
     /// The rows last put on the board, so the same board shown again keeps its place.
@@ -571,170 +605,159 @@ final class DailyCardView: UIView {
         twistsExplainerTapped?()
     }
 
-    /// The day's own result, with a badge saying whether it reached the live board.
+    /// The day's own result, as lines in the board's own columns.
     ///
-    /// Three states, because there are three: posted, played but not posted (free play, or
-    /// a scoring run that could not reach Game Center), and not played at all.
+    /// **A table, like the board** (James, round 384: "For the daily challenge menu view
+    /// leaderboard container without the Game Center leaderboard info (I.e. after more than 2
+    /// days after the daily challenge) layout the information in a similar table to the
+    /// leaderboard. So the icon on the left, the Posted Score in the middle and then score on the
+    /// right. Change the icon for the posted score to something more suitable, the current 1, 2,
+    /// 3 icon doesn't represent the information very well"). It was a centred sentence per fact,
+    /// with a numbered-list glyph for "Posted Score" that read as a ranking. Each fact is a line
+    /// now: its mark where the board puts the place, its name where the board puts the player,
+    /// its figure on the right where the board's scores line up. The posted score wears the
+    /// player's own mark, because that is what it is - yours - and the leader's line keeps the
+    /// trophy it has always had.
+    ///
+    /// Three states, because there are three: posted, played but not posted (free play, or a
+    /// scoring run that could not reach Game Center), and not played at all.
     private func showResult(_ record: DailyChallengeRecord?, mode: GameMode,
                             isToday: Bool, standing: LeaderboardStanding?,
-                            boardBest: Int? = nil, saysTheBest: Bool = true) {
+                            boardBest: Int? = nil) {
         let unit = mode == .classic ? "" : "m"
-        guard let record, record.posted else {
+        clearResultRows()
+        guard let record, record.posted || (record.isPending && isToday) else {
             dressTheResultCard(leading: false)
-            guard saysTheBest, let boardBest, boardBest > 0 else {
-                resultLabel.attributedText = nil
+            guard let boardBest, boardBest > 0 else {
                 resultCard.isHidden = true
                 return
             }
             resultCard.isHidden = false
-            resultLabel.attributedText = DailyCardView.hiScoreLine(boardBest, unit: unit,
-                                                                  onLime: false)
-            resultCard.isUserInteractionEnabled = true
-            if resultCard.gestureRecognizers?.isEmpty ?? true {
-                resultCard.addGestureRecognizer(
-                    UITapGestureRecognizer(target: self, action: #selector(resultWasTapped)))
-            }
+            resultRows.addArrangedSubview(DailyCardView.resultLine(
+                symbol: "trophy.fill", title: "Global Hi-Score", value: "\(boardBest)" + unit,
+                onLime: false))
+            makeTheResultCardADoor(true)
             return
             // **The day's leader before you have played** (James, round 350): the number to
             // beat, where Game Center can say - today and yesterday - and nothing otherwise
         }
+        // **Posted, or nothing** (James, round 306: "for a Daily Challenge where a score is set
+        // but not posted, just treat it as if no score was set") - except the one honest
+        // in-between, a post earned in the window and still on its way (§12.5)
         let leading = record.leads(rank: isToday ? standing?.rank : nil, boardBest: boardBest)
         dressTheResultCard(leading: leading)
-        // **Posted, or nothing** (James, round 306: "for a Daily Challenge where a score is set
-        // but not posted, just treat it as if no score was set").
-        //
-        // The card used to show any day that had been *attempted*, with a "Not posted" badge
-        // and the best figure of whatever was played. That is honest and it is not what the
-        // screen is for: this row is the leaderboard's own row, and a score that never reached
-        // a board has nothing to say on it. The "waiting to post" case goes with it - a
-        // pending post flips to `posted` the moment it lands, and until then there is nothing
-        // to show
         resultCard.isHidden = false
 
-        let score = record.posted
-            ? record.firstAttemptScore
-            : max(record.firstAttemptScore, record.bestPracticeScore)
-        // Once a score is on the board, the board's number is the day's number - a free
-        // play best beside it made no sense. Before then the best of whatever was played
-        // is the honest summary
-
-        // A posted score leads with the leaderboard's own mark and says what it is
-        // (play-test round 21). The tick and "on the board" were two ways of saying the
-        // same thing, and neither said the row could be pressed
-        let symbol: String
-        let title: String
-        let tint: UIColor
         if record.posted {
-            symbol = "list.number"
-            title = "Posted Score:"
-            tint = #colorLiteral(red: 0.8235294118, green: 1, blue: 0, alpha: 1)
-        } else if record.isPending && isToday {
-            symbol = "hourglass"
-            title = "Waiting to post"
-            tint = UIColor(white: 1, alpha: 0.6)
-            // Earned in the window, not yet landed (§12.5) - the retry loop is carrying it,
-            // and this flips to the posted look the moment it does
+            resultRows.addArrangedSubview(DailyCardView.resultLine(
+                symbol: DailyCardView.ownScoreSymbol, title: "Posted Score",
+                value: "\(record.firstAttemptScore)" + unit, onLime: leading))
+            // Once a score is on the board, the board's number is the day's number - a free
+            // play best beside it made no sense (round 306)
         } else {
-            symbol = "clock.badge.xmark"
-            title = "Not posted"
-            tint = UIColor(white: 1, alpha: 0.45)
+            resultRows.addArrangedSubview(DailyCardView.resultLine(
+                symbol: "hourglass", title: "Waiting to post",
+                value: "\(record.firstAttemptScore)" + unit, onLime: false, quiet: true))
+            // Earned in the window, not yet landed (§12.5) - the retry loop is carrying it, and
+            // this flips to the posted line the moment it does
         }
-
-        let line = NSMutableAttributedString()
-        let badge = NSTextAttachment()
-        badge.image = UIImage(systemName: symbol)?
-            .withTintColor(leading ? DailyCardView.onLime : tint, renderingMode: .alwaysOriginal)
-        // **Purple on the lime card too** (James, round 351, with a screenshot: "the posted
-        // score icon is the wrong colour"). An attachment is a picture with its colour baked
-        // in, so the recolouring of the whole line further down never reached it: the badge
-        // stayed lime on lime
-        badge.bounds = CGRect(x: 0, y: -3, width: 18, height: 16)
-        line.append(NSAttributedString(attachment: badge))
-        line.append(NSAttributedString(
-            string: "  \(title)  ",
-            attributes: [.font: UIFont.systemFont(ofSize: 14),
-                         .foregroundColor: tint]))
-
-        line.append(NSAttributedString(
-            string: "\(score)" + unit,
-            // **Ungrouped, like the Global Hi-Score line under it** (James, round 354: "posted
-            // score has no comma thousands separator, global hi score does", and round 356:
-            // "scores in the daily challenge screen still aren't consistent"). The two agree by
-            // following the game's rule - a score is never grouped (play-test round 126, see
-            // `PauseMenuViewController`) - which the hi-score line had broken in round 350, and
-            // which round 354 followed the wrong way
-            attributes: [.font: UIViewController.gameScoreFont(ofSize: 16),
-                         .foregroundColor: UIColor.white]))
-
         if record.posted, isToday, let standing {
-            line.append(NSAttributedString(
-                string: ", Rank: ",
-                attributes: [.font: UIFont.systemFont(ofSize: 14),
-                             .foregroundColor: tint]))
-            line.append(NSAttributedString(
-                string: standing.text,
-                attributes: [.font: UIFont.boldSystemFont(ofSize: 16),
-                             .foregroundColor: UIColor.white]))
-            // **The score first, then the rank** (James, round 306): "put the player's posted
-            // score between 'posted score' and the rank so it reads: Posted score: 115m,
-            // Rank: 1/100". The placing used to lead, from round 126, and reading it before
-            // the number it describes is what made the line hard to take in at a glance.
-            //
-            // Today only, and that is not a limitation to fix: the daily board is a
-            // *recurring* leaderboard, so it resets at each deadline and a past day's placing
-            // no longer exists to ask for (James, round 306, asking exactly this)
+            resultRows.addArrangedSubview(DailyCardView.resultLine(
+                symbol: "list.number", title: "Rank", value: standing.text, onLime: leading))
+            // Today only, and that is not a limitation to fix: the daily board is a *recurring*
+            // leaderboard, so a past day's placing no longer exists to ask for (round 306)
         }
+        if let boardBest, boardBest > 0 {
+            resultRows.addArrangedSubview(DailyCardView.resultLine(
+                symbol: "trophy.fill", title: "Global Hi-Score", value: "\(boardBest)" + unit,
+                onLime: leading))
+            // And the day's leader under it (round 350), so a posted score is read against the
+            // number at the top of the board
+        }
+        makeTheResultCardADoor(record.posted)
+        // The whole container opens the board, not a button on it - the score and the placing
+        // are the leaderboard's own figures, so the row that shows them is the door
+    }
 
-        // **No free-play detail here** (James, round 306: "there's no need to show the details
-        // of the free play game scores"). It was §8's posted-score container doing what §8
-        // asked - a quieter second line counting the runs played after the attempt was spent -
-        // and the card is better without it: the day's number is the one that counts, and a
-        // second score beside it invited exactly the comparison it then had to explain away.
-        // `freePlayLine` stays, tested, because the stats screens still have a use for it
-        // **Free play goes in the same container** (§8's posted-score container, the last
-        // clause of it: "free play attempts played after the post get listed in the same
-        // container"). A second line under the day's own number, quieter than it, because a
-        // free-play score is not on any board and must never read as though it might be
-        if saysTheBest, let boardBest, boardBest > 0 {
-            line.append(NSAttributedString(string: "\n"))
-            line.append(DailyCardView.hiScoreLine(boardBest, unit: unit, onLime: leading))
+    /// The same container for a player Game Center does not know: their own score once the day
+    /// has been played, and the line that says where the board went (round 384).
+    ///
+    /// "Your Score" rather than "Posted Score", because nothing was posted - the day's attempt
+    /// is held on this device and posts if they sign in before the day closes. The figure is
+    /// that attempt where there was one, and the best free play otherwise, so a past day played
+    /// for practice still shows what it scored.
+    private func showSignedOut(_ record: DailyChallengeRecord?, mode: GameMode) {
+        let unit = mode == .classic ? "" : "m"
+        clearResultRows()
+        dressTheResultCard(leading: false)
+        resultCard.isHidden = false
+        if let record, record.attemptCount > 0 {
+            let score = record.firstAttemptScore > 0
+                ? record.firstAttemptScore : record.bestPracticeScore
+            resultRows.addArrangedSubview(DailyCardView.resultLine(
+                symbol: DailyCardView.ownScoreSymbol, title: "Your Score",
+                value: "\(score)" + unit, onLime: false))
         }
-        // **And the day's leader under it** (round 350), so a posted score is read against the
-        // number at the top of the board as well as its place on it
-        if leading {
-            line.addAttribute(.foregroundColor, value: DailyCardView.onLime,
-                              range: NSRange(location: 0, length: line.length))
-        }
-        // Dark purple on lime throughout, the leaderboard badge included, so every word stays
-        // legible on the lime card
-        resultLabel.numberOfLines = 0
-        resultLabel.attributedText = line
+        let note = UILabel()
+        note.text = DailyCardView.signedOutNote
+        note.font = .systemFont(ofSize: 13)
+        note.textColor = UIColor(white: 1, alpha: 0.6)
+        note.textAlignment = .center
+        note.numberOfLines = 0
+        resultRows.addArrangedSubview(note)
+        makeTheResultCardADoor(false)
+    }
 
-        // The whole container opens the board, not a button on it - the score and the
-        // placing are the leaderboard's own figures, so the row that shows them is the door
-        resultCard.isUserInteractionEnabled = record.posted
-        if record.posted, resultCard.gestureRecognizers?.isEmpty ?? true {
+    /// The signed-out line, in the leaderboard's place (James, round 384).
+    static let signedOutNote = "Sign into Game Center to post to and view the global leaderboard"
+
+    /// The mark on the player's own line: theirs, not a place in a list (round 384).
+    static let ownScoreSymbol = "person.fill"
+
+    private func clearResultRows() {
+        resultRows.arrangedSubviews.forEach { $0.removeFromSuperview() }
+    }
+
+    private func makeTheResultCardADoor(_ opens: Bool) {
+        resultCard.isUserInteractionEnabled = opens
+        if opens, resultCard.gestureRecognizers?.isEmpty ?? true {
             resultCard.addGestureRecognizer(
                 UITapGestureRecognizer(target: self, action: #selector(resultWasTapped)))
         }
     }
 
-    /// "Global Hi-Score: 3,400", with the leaderboard's own mark in front (round 350).
-    static func hiScoreLine(_ best: Int, unit: String, onLime: Bool) -> NSAttributedString {
-        let tint = onLime ? DailyCardView.onLime : UIColor(white: 1, alpha: 0.6)
-        let line = NSMutableAttributedString()
-        let badge = NSTextAttachment()
-        badge.image = UIImage(systemName: "trophy.fill")?
-            .withTintColor(tint, renderingMode: .alwaysOriginal)
-        badge.bounds = CGRect(x: 0, y: -3, width: 17, height: 16)
-        line.append(NSAttributedString(attachment: badge))
-        line.append(NSAttributedString(string: "  Global Hi-Score:  ",
-                                       attributes: [.font: UIFont.systemFont(ofSize: 14),
-                                                    .foregroundColor: tint]))
-        line.append(NSAttributedString(
-            string: "\(best)" + unit,
-            attributes: [.font: UIViewController.gameScoreFont(ofSize: 16),
-                         .foregroundColor: onLime ? DailyCardView.onLime : UIColor.white]))
+    /// One fact on the result container, in the board's three columns: a mark where a board row
+    /// has its place, the fact's name where it has the player, and the figure on the right.
+    static func resultLine(symbol: String, title: String, value: String,
+                           onLime: Bool, quiet: Bool = false) -> UIStackView {
+        let ink = onLime ? DailyCardView.onLime : UIColor.white
+        let soft = onLime ? DailyCardView.onLime : UIColor(white: 1, alpha: quiet ? 0.5 : 0.75)
+        let mark = UIImageView(image: UIImage(systemName: symbol, withConfiguration:
+            UIImage.SymbolConfiguration(pointSize: 14, weight: .semibold)))
+        mark.tintColor = onLime ? DailyCardView.onLime : (quiet ? soft : DailyCardView.lime)
+        mark.contentMode = .left
+        mark.widthAnchor.constraint(equalToConstant: 30).isActive = true
+        // The board's rank column is thirty wide, so the names start in the same place
+        let name = UILabel()
+        name.text = title
+        name.font = .systemFont(ofSize: 15)
+        name.textColor = soft
+        name.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
+        let figure = UILabel()
+        figure.text = value
+        figure.font = UIViewController.gameScoreFont(ofSize: 16)
+        figure.textColor = quiet ? soft : ink
+        figure.textAlignment = .right
+        figure.setContentHuggingPriority(.required, for: .horizontal)
+        figure.setContentCompressionResistancePriority(.required, for: .horizontal)
+        // **Ungrouped** (James, round 354 and 356): a score is never grouped, on this card as
+        // everywhere else in the game
+        let line = UIStackView(arrangedSubviews: [mark, name, figure])
+        line.axis = .horizontal
+        line.spacing = 8
+        line.alignment = .center
+        line.isAccessibilityElement = true
+        line.accessibilityLabel = "\(title), \(value)"
         return line
     }
 
@@ -801,7 +824,15 @@ final class DailyCardView: UIView {
     /// What the result container is saying, for a test that would otherwise have to read a
     /// label through the view hierarchy.
     var resultTextForTesting: String {
-        resultCard.isHidden ? "" : (resultLabel.attributedText?.string ?? "")
+        guard resultCard.isHidden == false else { return "" }
+        return resultRows.arrangedSubviews.map { view -> String in
+            if let label = view as? UILabel { return label.text ?? "" }
+            let words = (view as? UIStackView)?.arrangedSubviews
+                .compactMap { ($0 as? UILabel)?.text } ?? []
+            return words.joined(separator: " ")
+        }.joined(separator: "\n")
+        // The words as drawn, name then figure - not the VoiceOver label, whose comma would read
+        // as a grouped score to `DailyScoresReadAlikeTests`
     }
 
     @objc private func resultWasTapped() {

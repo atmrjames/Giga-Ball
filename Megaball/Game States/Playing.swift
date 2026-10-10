@@ -132,7 +132,7 @@ class Playing: GKState {
         // assignment, worked out what it implied, and went looking for a scoring bug that is
         // not there. The next person should not have to.
         
-        scene.scoreLabel.text = String(scene.totalScore)
+        scene.showBankedScoreAtLevelStart()
         scene.scoreFactorString = String(format:"%.1f", scene.multiplier)
         scene.showMultiplier()
         scene.refreshLivesRow()

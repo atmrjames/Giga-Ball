@@ -296,7 +296,7 @@ enum AchievementCatalogue {
     /// next sign-in.
     static func reportRenamed(earned: [Bool], store: KeyValueStore,
                               report: @escaping ([GKAchievement], @escaping (Error?) -> Void) -> Void
-                                = { GKAchievement.report($0, withCompletionHandler: $1) }) {
+                                = { GameCenterHandler.reportAchievements($0, withCompletionHandler: $1) }) {
         let owed = owedAfterRename(earned: earned,
                                    alreadySent: store.object(forKey: renamedReportedKey) as? Bool
                                                     ?? false)
@@ -347,8 +347,8 @@ enum AchievementCatalogue {
             let achievement = GKAchievement(identifier: identifier)
             guard achievement.isCompleted == false else { continue }
             achievement.showsCompletionBanner = true
-            GKAchievement.report([achievement]) { error in
-                Log.gameCenter.error("\(error?.localizedDescription ?? "Error reporting \(identifier) achievement", privacy: .public)")
+            GameCenterHandler.reportAchievements([achievement]) { error in
+                if let error { Log.gameCenter.error("Error reporting \(identifier) achievement: \(error.localizedDescription, privacy: .public)") }
             }
         }
         return earned

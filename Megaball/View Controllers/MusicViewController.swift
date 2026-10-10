@@ -155,7 +155,7 @@ final class MusicViewController: UIViewController, UITableViewDelegate, UITableV
         close.addTarget(self, action: #selector(closeTapped), for: .touchUpInside)
         view.addSubview(close)
         applyRoundGlass(to: close, radius: MainMenuCollectionViewCell.smallButtonSize/2,
-                        symbol: "xmark", pointSize: 18, rimmed: false)
+                        symbol: "xmark", pointSize: 20, rimmed: false)
 
         NSLayoutConstraint.activate([
             title.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor,

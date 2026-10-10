@@ -710,7 +710,9 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
         }
         if packNameLabel?.fitFixedHeightToItsText() == true { containterView.setNeedsLayout() }
         firmUpTheLabels(in: containterView)
+        keepTheRulesUnderTheRightLine()
         showTheScrollWhenThereIsMore()
+        holdTheEndsStill()
         // **The day on its own line, with room for it** (James, round 341: "the date for the
         // daily challenge on the pause screen is truncated"). After the sizing above, because
         // that scales the storyboard's one-line box and this is what grows it to two
@@ -1146,14 +1148,23 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
         // which the rules were then hung below. So the twists sat a blank line lower on exactly
         // the days that have no level name to sit under. Classic days are unaffected: their
         // level name is the last thing above the rules, as it was.
+        let clearOfTheName = dailySummaryLabel.topAnchor.constraint(
+            greaterThanOrEqualTo: levelNameLabel.bottomAnchor,
+            constant: PauseMenuViewController.rulesClearance)
+        clearOfTheName.priority = .required - 1
         NSLayoutConstraint.activate([
             dailySummaryLabel.topAnchor.constraint(
                 greaterThanOrEqualTo: levelNumberLabel.bottomAnchor,
                 constant: PauseMenuViewController.rulesClearance),
-            dailySummaryLabel.topAnchor.constraint(
-                greaterThanOrEqualTo: levelNameLabel.bottomAnchor,
-                constant: PauseMenuViewController.rulesClearance),
+            clearOfTheName,
         ])
+        // **The name's minimum a point under required** (round 384, from all four of James's
+        // logs: "Unable to simultaneously satisfy constraints ... UILabel.height == 23.33"). On
+        // an endless day the name is blank and the rules hang from the number - but a blank
+        // label keeps the storyboard's fixed line of height, so "fourteen under the name" asked
+        // for twenty-nine under the number while the equality said fourteen, and UIKit broke
+        // one of them on every daily screen. An empty line has nothing to keep clear of; a
+        // name with words in it is kept clear by `keepTheRulesUnderTheRightLine`
         // **Below both, whichever of the two the equality above is hung on** (round 339, from
         // the audit at 320 by 568: 'Endless Mode' and the twists drawn on top of one another).
         // The pair below choose which line the rules sit under, and only one of them is ever
@@ -1344,7 +1355,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
     /// never signed in and never intends to should not read it on every screen - so it
     /// appears exactly where the score would otherwise have been posted.
     func updateSignedOutNote() {
-        signedOutLabel.isHidden = sender == "Pause" || GameCenterHandler.isAuthenticated
+        signedOutLabel.isHidden = sender == "Pause" || gameCenterIsSignedIn()
     }
 
     /// Explains a twist, tapped on the pause screen.
@@ -1408,6 +1419,17 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
     /// that appears empty and then fills reads as a glitch.
     func updateResultLine() {
         arrangeTheDailyEnding()
+        if isDailyChallenge, gameCenterIsSignedIn() == false {
+            resultLabel.isHidden = true
+            leaderboardTitle.isHidden = true
+            resultLabel.attributedText = nil
+            return
+        }
+        // **Nothing about Game Center to a player it does not know** (James, round 384: "hide
+        // the Game Center information and button. Right now it says Submitted to today's
+        // leaderboard even though that's not true"). The lines below are all the board's: what
+        // was submitted to it, its leader, its rows. Signed out there is no board, and the
+        // signed-out note under the score is the one thing worth saying
         if isDailyChallenge {
             let session = DailyChallengeSession.shared
             let unit = session.active?.mode.isEndless == true ? "m" : ""
@@ -1495,6 +1517,25 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
         // this run's mode actually posts to (play-test request, ninth round)
     }
 
+    /// Hangs the day's rules under the level's name where it has one, and under the line above
+    /// it where it does not.
+    ///
+    /// **Asked again on every layout pass** (round 384): which line says something is decided
+    /// by what the labels hold, and the name can be written after the rules were placed - so
+    /// a choice made once could leave the rules hanging from the number with a name drawn
+    /// straight through them.
+    func keepTheRulesUnderTheRightLine() {
+        guard isDailyChallenge, dailySummaryLabel.isHidden == false,
+              let underTheName = rulesUnderTheLevel, let underTheNumber = rulesUnderTheNumber
+        else { return }
+        let levelNameIsBlank = (levelNameLabel.text ?? "").isEmpty
+        let wanted = levelNameIsBlank ? underTheNumber : underTheName
+        let other = levelNameIsBlank ? underTheName : underTheNumber
+        if other.isActive { other.isActive = false }
+        if wanted.isActive == false { wanted.isActive = true }
+        // The one going stood down first, so the two are never both active for a moment
+    }
+
     /// The compact daily block: what kind of run this is, then each twist by icon and name.
     ///
     /// Two labels, not one (play-test round 126). The rules sit with the level info at the
@@ -1513,9 +1554,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
 
         levelNameLabelNormalConstraint.isActive = false
         levelTitleLowerConstraint.isActive = false
-        let levelNameIsBlank = (levelNameLabel.text ?? "").isEmpty
-        rulesUnderTheLevel.isActive = levelNameIsBlank == false
-        rulesUnderTheNumber.isActive = levelNameIsBlank
+        keepTheRulesUnderTheRightLine()
         titleUnderTheRules.isActive = true
         // An endless day leaves the level name empty and puts the mode in the line above it,
         // so the rules follow that line instead - see where these two are built (round 308)
@@ -1776,7 +1815,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
             return endlessGameOver ? "ButtonRestart" : "ButtonHome"
         default:
             if sender == "Pause" { return "ButtonSettings" }
-            return dailyGameOver || gameCentreIsOffered
+            return dailyBoardIsOffered || gameCentreIsOffered
                 ? "ButtonLeaderboard" : PauseMenuViewController.noButton
         }
     }
@@ -1810,7 +1849,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
             return endlessGameOver ? .restart : .home
         default:
             if sender == "Pause" { return .settings }
-            if dailyGameOver { return .dailyBoard }
+            if dailyGameOver { return dailyBoardIsOffered ? .dailyBoard : .none }
             return gameCentreIsOffered ? .modeBoard : .none
         }
     }
@@ -2289,8 +2328,21 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
     /// because a button that opens an authentication sheet at the end of a run is a door
     /// nobody asked to be shown.
     var gameCentreIsOffered: Bool {
-        sender != "Pause" && dailyGameOver == false && GKLocalPlayer.local.isAuthenticated
+        sender != "Pause" && dailyGameOver == false && gameCenterIsSignedIn()
     }
+
+    /// Whether a finished daily offers the day's board: only to a player Game Center knows.
+    ///
+    /// **James, round 384: "On the Game Over / Complete screen, hide the Game Center information
+    /// and button. Right now it says Submitted to today's leaderboard even though that's not
+    /// true."** A signed-out player's first run is still the day's attempt - it is kept pending
+    /// and posts if they sign in before the day closes - but nothing has reached a board, and
+    /// the button opened a Game Center that had nothing to show them.
+    var dailyBoardIsOffered: Bool { dailyGameOver && gameCenterIsSignedIn() }
+
+    /// Whether Game Center is signed in. A seam, so a test can draw the screen both ways - the
+    /// simulator a suite runs on is never signed in.
+    var gameCenterIsSignedIn: () -> Bool = { GameCenterHandler.isAuthenticated }
 
     private func setUpGameCentreButton() {
         containterView.viewWithTag(PauseMenuViewController.gameCentreButtonTag)?
@@ -2589,6 +2641,22 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
 
     /// The screen's scroll - see `putTheScreenInAScroll`.
     let pageScroll = UIScrollView()
+
+    /// The wordmark and Home at the top, and the button row at the bottom, held still while the
+    /// middle scrolls (round 384) - see `StickyScrollEnds`.
+    private(set) lazy var stickyEnds = StickyScrollEnds(scroll: pageScroll)
+
+    private func holdTheEndsStill() {
+        if stickyEnds.headerBackdrop.superview == nil, let logo = pauseLogoView,
+           containterView.superview === pageScroll {
+            stickyEnds.install(in: containterView, header: [logo, homeButton],
+                               footer: [buttonCollectionView],
+                               headerBottom: logo.bottomAnchor,
+                               footerTop: buttonCollectionView.topAnchor)
+            pageScroll.delegate = stickyEnds
+        }
+        stickyEnds.update()
+    }
 
     /// What the header sizes itself to: the window the screen is seen through, not the
     /// container, which can now be taller than it. Measured off the container, a screen that

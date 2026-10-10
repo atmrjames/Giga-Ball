@@ -601,7 +601,39 @@ class SplashViewController: UIViewController {
         // Nothing between the mode and its detail, which is how the pause screen sets its two,
         // and air either side of that pair: the heading is a heading and the score is the
         // number the player came back for
-        container.addSubview(stack)
+        let cardScroll = UIScrollView()
+        cardScroll.translatesAutoresizingMaskIntoConstraints = false
+        cardScroll.showsHorizontalScrollIndicator = false
+        cardScroll.alwaysBounceVertical = false
+        cardScroll.contentInsetAdjustmentBehavior = .never
+        cardScroll.indicatorStyle = .white
+        cardScroll.backgroundColor = .clear
+        cardScroll.addSubview(stack)
+        container.addSubview(cardScroll)
+        resumeScroll = cardScroll
+        let cardShownWhole = cardScroll.heightAnchor.constraint(equalTo: stack.heightAnchor)
+        cardShownWhole.priority = UILayoutPriority(700)
+        let cardAsWideAsAllowed = cardScroll.widthAnchor.constraint(
+            equalTo: container.widthAnchor, constant: -48)
+        cardAsWideAsAllowed.priority = .defaultHigh
+        NSLayoutConstraint.activate([
+            stack.topAnchor.constraint(equalTo: cardScroll.contentLayoutGuide.topAnchor),
+            stack.bottomAnchor.constraint(equalTo: cardScroll.contentLayoutGuide.bottomAnchor),
+            stack.leadingAnchor.constraint(equalTo: cardScroll.contentLayoutGuide.leadingAnchor),
+            stack.trailingAnchor.constraint(equalTo: cardScroll.contentLayoutGuide.trailingAnchor),
+            stack.widthAnchor.constraint(equalTo: cardScroll.frameLayoutGuide.widthAnchor),
+            cardShownWhole,
+            cardAsWideAsAllowed,
+            cardScroll.heightAnchor.constraint(lessThanOrEqualTo: stack.heightAnchor),
+        ])
+        // **The card scrolls between the wordmark and the button** (James, round 384, from an
+        // iPhone SE: "On the resume screen, the spare balls label is clipped", and "the middle
+        // section of the views should be scrollable but the sections at the top with the UI and
+        // logo, and at the bottom with UI should be fixed"). The card was held between the two
+        // by required constraints and had nowhere to go on a short screen but into itself: the
+        // stack was squeezed, and the line of balls at its foot was the label that gave. It is
+        // as tall as its contents wherever that fits, and below that the window it is seen
+        // through gets shorter instead and the card scrolls in it
 
         let size = MainMenuCollectionViewCell.largeButtonSize
         let cancel = UIButton(type: .system)
@@ -640,24 +672,24 @@ class SplashViewController: UIViewController {
         // whatever the wordmark's own pull towards the middle of the screen would prefer
 
         NSLayoutConstraint.activate([
-            stack.centerXAnchor.constraint(equalTo: container.centerXAnchor),
-            stack.leadingAnchor.constraint(greaterThanOrEqualTo: container.leadingAnchor,
-                                           constant: 24),
-            stack.trailingAnchor.constraint(lessThanOrEqualTo: container.trailingAnchor,
-                                            constant: -24),
-            stack.widthAnchor.constraint(
+            cardScroll.centerXAnchor.constraint(equalTo: container.centerXAnchor),
+            cardScroll.leadingAnchor.constraint(greaterThanOrEqualTo: container.leadingAnchor,
+                                                constant: 24),
+            cardScroll.trailingAnchor.constraint(lessThanOrEqualTo: container.trailingAnchor,
+                                                 constant: -24),
+            cardScroll.widthAnchor.constraint(
                 lessThanOrEqualToConstant: SplashViewController.resumeCardMaximumWidth),
-            cancel.topAnchor.constraint(equalTo: stack.bottomAnchor, constant: 26),
+            cancel.topAnchor.constraint(equalTo: cardScroll.bottomAnchor, constant: 26),
             cancel.centerXAnchor.constraint(equalTo: container.centerXAnchor),
             cancel.widthAnchor.constraint(equalToConstant: size),
             cancel.heightAnchor.constraint(equalToConstant: size),
             cancel.bottomAnchor.constraint(
                 lessThanOrEqualTo: container.safeAreaLayoutGuide.bottomAnchor, constant: -26),
             sitsAtTheBottom,
-            stack.topAnchor.constraint(
+            cardScroll.topAnchor.constraint(
                 greaterThanOrEqualTo: wordmarkClearance,
                 constant: UIViewController.inGameHeaderToResultGap),
-            stack.topAnchor.constraint(
+            cardScroll.topAnchor.constraint(
                 lessThanOrEqualTo: container.centerYAnchor,
                 constant: SplashViewController.resumeCardMaximumDrop),
         ])
@@ -955,6 +987,12 @@ class SplashViewController: UIViewController {
         sizeTheResumeHeader()
         resumeRack?.show(resumeBalls, on: view.bounds.size,
                          ball: BallRackView.chosenBall(in: defaults, daily: resumeDaily))
+        if let scroll = resumeScroll {
+            let more = scroll.contentSize.height > scroll.bounds.height + 0.5
+            if more, scroll.showsVerticalScrollIndicator == false { scroll.flashScrollIndicators() }
+            scroll.showsVerticalScrollIndicator = more
+        }
+        // The indicator only where there is more of the card than its window shows
     }
 
     /// How many balls the run being resumed has, for the rack above the line that says so.
@@ -997,6 +1035,8 @@ class SplashViewController: UIViewController {
 
     /// The card's stack, kept so the spacing can be adjusted once the words are known.
     private weak var resumeStack: UIStackView?
+    /// The window the resume card is seen through - see where it is built (round 384).
+    private(set) weak var resumeScroll: UIScrollView?
 
     /// The air between the card's four groups.
     ///

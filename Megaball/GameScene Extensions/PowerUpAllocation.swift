@@ -428,11 +428,8 @@ extension GameScene {
 //        powerUpProbFactor = 2
         // Testing
         
-        let unlocked = totalStatsArray[0].powerUpUnlockedArray
-        for i in powerUpProbArray.indices where i < unlocked.count {
-            if unlocked[i] == false {
-                powerUpProbArray[i] = 0
-            }
+        for i in powerUpProbArray.indices where powerUpIsUnlockedForThisRun(i) == false {
+            powerUpProbArray[i] = 0
         }
         // Check if power-ups have been unlocked, if not, set their probability to zero.
         // Iterates indices: this previously read `for i in powerUpProbArray`, which
@@ -498,5 +495,92 @@ extension GameScene {
         case 1: powerUpProbArray[index] = max(powerUpProbArray[index], 7*scale)
         default: powerUpProbArray[index] = 10*scale
         }
+    }
+}
+
+// MARK: - Mayhem's rate while the field is being cleared fast
+
+extension GameScene {
+
+    /// The most power-ups Mayhem lets fall at once.
+    ///
+    /// **Two, whatever is running** (James, round 384: "Can the number of falling power ups at
+    /// one time also be limited. I think this level of mayhem is good, but should be tamed just a
+    /// little bit"). Classic's Giga-Ball and Lasers raise the limit to four while they run, which
+    /// is right for a level with a fixed number of bricks: they break bricks faster, and the
+    /// player should not lose the drops those bricks would have given. Mayhem's field is
+    /// endless, so there is nothing to lose - and with power-up bricks as well as drops, and
+    /// four balls in play, four falling at once was what made the screenshot.
+    static let endlessIIFallingPowerUpLimit = 2
+
+    /// The limit `powerUpGenerator` checks: Classic's own in the old modes, and never more
+    /// than `endlessIIFallingPowerUpLimit` in Mayhem.
+    var fallingPowerUpLimit: Int {
+        gameMode == .endlessII
+            ? min(powerUpLimit, GameScene.endlessIIFallingPowerUpLimit)
+            : powerUpLimit
+    }
+
+    /// How many of the power-ups that break bricks several times faster than one ball can are
+    /// running now, in Mayhem. Nought in every other mode.
+    ///
+    /// Lasers, Giga-Ball, Wrecking Ball, Ball Aura and the extra balls of a Multi-Ball: each of
+    /// them multiplies the bricks broken per second, and a drop is rolled for every brick, so
+    /// each multiplies the drops per second with it. The one-off clearers - Cull, Laser Beam,
+    /// Clear And Retreat, a Cluster's burst - are over in a moment and are left alone.
+    var endlessIIFastClearersRunning: Int {
+        guard gameMode == .endlessII else { return 0 }
+        var running = 0
+        if laserPowerUpIsOn { running += 1 }
+        if ballDress == .giga { running += 1 }
+        if endlessIIWreckingBallClock.isRunning { running += 1 }
+        if endlessIIAuraClock.isRunning { running += 1 }
+        if endlessIIExtraBalls.isEmpty == false { running += 1 }
+        return running
+    }
+
+    /// The gap between drops - one in `gap` broken bricks drops one - while `fastClearers` of
+    /// them are running.
+    ///
+    /// **Half as long again for one, twice as long for two or more** (James, round 384: "when
+    /// lasers, giga-ball, other powers that significantly increase the speed of destroying
+    /// bricks are in play, can the power-up generation rate be reduced slightly"). Slightly is
+    /// the word: Lasers alone break bricks several times faster than the ball does, so a gap
+    /// half as long again still leaves more drops a second than without them. The rate a
+    /// player earns by having them stays higher, and stops compounding when three run at once.
+    static func endlessIIDropGap(_ gap: Int, fastClearers: Int) -> Int {
+        guard gap > 0, fastClearers > 0 else { return gap }
+        let stretch = 1 + 0.5*Double(min(fastClearers, 2))
+        return Int((Double(gap)*stretch).rounded())
+    }
+}
+
+// MARK: - Which power-ups a run may offer
+
+extension GameScene {
+
+    /// Whether this run may offer a power-up the player has not unlocked yet.
+    ///
+    /// **Only Classic and the original Endless keep the locks** (James, round 384: "For Daily
+    /// Challenges, players that haven't unlocked all power-ups, themes or packs/levels, should
+    /// have all the content available to them just in the Daily Challenge. They should remain
+    /// locked in Classic Mode and Endless Mode only. Endless Mayhem and Daily Challenge don't
+    /// have locked power-up limits"). The packs unlock power-ups as a campaign's rewards, and
+    /// those two modes are the campaign. A daily is the same challenge for everyone on the day -
+    /// a board where one player could be offered Lasers and the next could not is not one
+    /// challenge - and Mayhem is built round the whole catalogue. A day's level and theme were
+    /// already drawn from everything; the power-ups were the one part still asking.
+    var runIgnoresPowerUpLocks: Bool {
+        isDailyChallenge || gameMode == .endlessII
+    }
+
+    /// Whether a power-up may appear in this run: always, where the run ignores the locks, and
+    /// otherwise as the player's own unlocks say. An index past the end of the stored list is
+    /// treated as unlocked, which is what the allocation's own loop always did.
+    func powerUpIsUnlockedForThisRun(_ index: Int) -> Bool {
+        guard runIgnoresPowerUpLocks == false else { return true }
+        let unlocked = totalStatsArray.first?.powerUpUnlockedArray ?? []
+        guard unlocked.indices.contains(index) else { return true }
+        return unlocked[index]
     }
 }

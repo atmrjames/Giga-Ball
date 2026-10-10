@@ -1404,6 +1404,10 @@ enum DailyChallengePosting {
         stats.upsertDailyRecord(confirmed)
         save(stats)
         GameCenterHandler().submitDailyTotal(stats.dailyTotalPostedScore)
+        DispatchQueue.main.async {
+            NotificationCenter.default.post(name: .dailyScorePosted, object: dateKey)
+        }
+        // So a briefing screen on show asks its board again (round 384)
     }
 
     /// The closed day whose post can still be checked with Game Center, if there is one.
@@ -2018,4 +2022,9 @@ struct DailyResultReport: Equatable {
         }
         return "\(number)\(suffix)"
     }
+}
+
+extension Notification.Name {
+    /// A day's score has reached Game Center - the briefing screen asks its board again.
+    static let dailyScorePosted = Notification.Name("dailyScorePosted")
 }

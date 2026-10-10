@@ -173,8 +173,8 @@ class InbetweenLevels: GKState {
             let achievement = GKAchievement(identifier: "endBackstop")
             if achievement.isCompleted == false {
                 achievement.showsCompletionBanner = true
-                GKAchievement.report([achievement]) { (error) in
-                    Log.gameCenter.error("\(error?.localizedDescription ?? "Error reporting endBackstop achievement", privacy: .public)")
+                GameCenterHandler.reportAchievements([achievement]) { (error) in
+                    if let error { Log.gameCenter.error("Error reporting endBackstop achievement: \(error.localizedDescription, privacy: .public)") }
                 }
             }
         }
@@ -362,8 +362,8 @@ class InbetweenLevels: GKState {
                 let achievement = GKAchievement(identifier: "fiveKPointsLevel")
                 if achievement.isCompleted == false {
                     achievement.showsCompletionBanner = true
-                    GKAchievement.report([achievement]) { (error) in
-                        Log.gameCenter.error("\(error?.localizedDescription ?? "Error reporting fiveKPointsLevel achievement", privacy: .public)")
+                    GameCenterHandler.reportAchievements([achievement]) { (error) in
+                        if let error { Log.gameCenter.error("Error reporting fiveKPointsLevel achievement: \(error.localizedDescription, privacy: .public)") }
                     }
                 }
             }
@@ -373,8 +373,8 @@ class InbetweenLevels: GKState {
                 let achievement = GKAchievement(identifier: "tenKPointsLevel")
                 if achievement.isCompleted == false {
                     achievement.showsCompletionBanner = true
-                    GKAchievement.report([achievement]) { (error) in
-                        Log.gameCenter.error("\(error?.localizedDescription ?? "Error reporting tenKPointsLevel achievement", privacy: .public)")
+                    GameCenterHandler.reportAchievements([achievement]) { (error) in
+                        if let error { Log.gameCenter.error("Error reporting tenKPointsLevel achievement: \(error.localizedDescription, privacy: .public)") }
                     }
                 }
             }
@@ -394,8 +394,8 @@ class InbetweenLevels: GKState {
                 if achievement.isCompleted == false {
                     achievement.percentComplete = percentComplete
                     achievement.showsCompletionBanner = true
-                    GKAchievement.report([achievement]) { (error) in
-                        Log.gameCenter.error("\(error?.localizedDescription ?? "Error reporting hundredKTotalScore achievement", privacy: .public)")
+                    GameCenterHandler.reportAchievements([achievement]) { (error) in
+                        if let error { Log.gameCenter.error("Error reporting hundredKTotalScore achievement: \(error.localizedDescription, privacy: .public)") }
                     }
                 }
             }
@@ -413,8 +413,8 @@ class InbetweenLevels: GKState {
                 if achievement.isCompleted == false {
                     achievement.percentComplete = percentComplete
                     achievement.showsCompletionBanner = true
-                    GKAchievement.report([achievement]) { (error) in
-                        Log.gameCenter.error("\(error?.localizedDescription ?? "Error reporting fiveHundredKTotalScore achievement", privacy: .public)")
+                    GameCenterHandler.reportAchievements([achievement]) { (error) in
+                        if let error { Log.gameCenter.error("Error reporting fiveHundredKTotalScore achievement: \(error.localizedDescription, privacy: .public)") }
                     }
                 }
             }
@@ -432,8 +432,8 @@ class InbetweenLevels: GKState {
                 if achievement.isCompleted == false {
                     achievement.percentComplete = percentComplete
                     achievement.showsCompletionBanner = true
-                    GKAchievement.report([achievement]) { (error) in
-                        Log.gameCenter.error("\(error?.localizedDescription ?? "Error reporting millTotalScore achievement", privacy: .public)")
+                    GameCenterHandler.reportAchievements([achievement]) { (error) in
+                        if let error { Log.gameCenter.error("Error reporting millTotalScore achievement: \(error.localizedDescription, privacy: .public)") }
                     }
                 }
             }
@@ -448,8 +448,8 @@ class InbetweenLevels: GKState {
                 let achievement = GKAchievement(identifier: "noBallsLost")
                 if achievement.isCompleted == false {
                     achievement.showsCompletionBanner = true
-                    GKAchievement.report([achievement]) { (error) in
-                        Log.gameCenter.error("\(error?.localizedDescription ?? "Error reporting noBallsLost achievement", privacy: .public)")
+                    GameCenterHandler.reportAchievements([achievement]) { (error) in
+                        if let error { Log.gameCenter.error("Error reporting noBallsLost achievement: \(error.localizedDescription, privacy: .public)") }
                     }
                 }
             }
@@ -459,8 +459,8 @@ class InbetweenLevels: GKState {
                 let achievement = GKAchievement(identifier: "threeBallsLost")
                 if achievement.isCompleted == false {
                     achievement.showsCompletionBanner = true
-                    GKAchievement.report([achievement]) { (error) in
-                        Log.gameCenter.error("\(error?.localizedDescription ?? "Error reporting threeBallsLost achievement", privacy: .public)")
+                    GameCenterHandler.reportAchievements([achievement]) { (error) in
+                        if let error { Log.gameCenter.error("Error reporting threeBallsLost achievement: \(error.localizedDescription, privacy: .public)") }
                     }
                 }
             }
@@ -474,8 +474,8 @@ class InbetweenLevels: GKState {
                 let achievement = GKAchievement(identifier: "allLevelPowerUps")
                 if achievement.isCompleted == false {
                     achievement.showsCompletionBanner = true
-                    GKAchievement.report([achievement]) { (error) in
-                        Log.gameCenter.error("\(error?.localizedDescription ?? "Error reporting allLevelPowerUps achievement", privacy: .public)")
+                    GameCenterHandler.reportAchievements([achievement]) { (error) in
+                        if let error { Log.gameCenter.error("Error reporting allLevelPowerUps achievement: \(error.localizedDescription, privacy: .public)") }
                     }
                 }
             }
@@ -485,8 +485,8 @@ class InbetweenLevels: GKState {
                 let achievement = GKAchievement(identifier: "noLevelPowerUps")
                 if achievement.isCompleted == false {
                     achievement.showsCompletionBanner = true
-                    GKAchievement.report([achievement]) { (error) in
-                        Log.gameCenter.error("\(error?.localizedDescription ?? "Error reporting noLevelPowerUps achievement", privacy: .public)")
+                    GameCenterHandler.reportAchievements([achievement]) { (error) in
+                        if let error { Log.gameCenter.error("Error reporting noLevelPowerUps achievement: \(error.localizedDescription, privacy: .public)") }
                     }
                 }
             }
@@ -501,8 +501,8 @@ class InbetweenLevels: GKState {
                 let achievement = GKAchievement(identifier: "oneLevelsComplete")
                 if achievement.isCompleted == false {
                     achievement.showsCompletionBanner = true
-                    GKAchievement.report([achievement]) { (error) in
-                        Log.gameCenter.error("\(error?.localizedDescription ?? "Error reporting oneLevelsComplete achievement", privacy: .public)")
+                    GameCenterHandler.reportAchievements([achievement]) { (error) in
+                        if let error { Log.gameCenter.error("Error reporting oneLevelsComplete achievement: \(error.localizedDescription, privacy: .public)") }
                     }
                 }
             }
@@ -520,8 +520,8 @@ class InbetweenLevels: GKState {
                 if achievement.isCompleted == false {
                     achievement.percentComplete = percentComplete
                     achievement.showsCompletionBanner = true
-                    GKAchievement.report([achievement]) { (error) in
-                        Log.gameCenter.error("\(error?.localizedDescription ?? "Error reporting tenLevelsComplete achievement", privacy: .public)")
+                    GameCenterHandler.reportAchievements([achievement]) { (error) in
+                        if let error { Log.gameCenter.error("Error reporting tenLevelsComplete achievement: \(error.localizedDescription, privacy: .public)") }
                     }
                 }
             }
@@ -539,8 +539,8 @@ class InbetweenLevels: GKState {
                 if achievement.isCompleted == false {
                     achievement.percentComplete = percentComplete
                     achievement.showsCompletionBanner = true
-                    GKAchievement.report([achievement]) { (error) in
-                        Log.gameCenter.error("\(error?.localizedDescription ?? "Error reporting hunderdLevelsComplete achievement", privacy: .public)")
+                    GameCenterHandler.reportAchievements([achievement]) { (error) in
+                        if let error { Log.gameCenter.error("Error reporting hunderdLevelsComplete achievement: \(error.localizedDescription, privacy: .public)") }
                     }
                 }
             }
@@ -558,8 +558,8 @@ class InbetweenLevels: GKState {
                 if achievement.isCompleted == false {
                     achievement.percentComplete = percentComplete
                     achievement.showsCompletionBanner = true
-                    GKAchievement.report([achievement]) { (error) in
-                        Log.gameCenter.error("\(error?.localizedDescription ?? "Error reporting oneKLevelsComplete achievement", privacy: .public)")
+                    GameCenterHandler.reportAchievements([achievement]) { (error) in
+                        if let error { Log.gameCenter.error("Error reporting oneKLevelsComplete achievement: \(error.localizedDescription, privacy: .public)") }
                     }
                 }
             }
@@ -577,8 +577,8 @@ class InbetweenLevels: GKState {
                 if achievement.isCompleted == false {
                     achievement.percentComplete = percentComplete
                     achievement.showsCompletionBanner = true
-                    GKAchievement.report([achievement]) { (error) in
-                        Log.gameCenter.error("\(error?.localizedDescription ?? "Error reporting tenKLevelsComplete achievement", privacy: .public)")
+                    GameCenterHandler.reportAchievements([achievement]) { (error) in
+                        if let error { Log.gameCenter.error("Error reporting tenKLevelsComplete achievement: \(error.localizedDescription, privacy: .public)") }
                     }
                 }
             }
@@ -590,8 +590,8 @@ class InbetweenLevels: GKState {
                 let achievement = GKAchievement(identifier: "quickLevelComplete")
                 if achievement.isCompleted == false {
                     achievement.showsCompletionBanner = true
-                    GKAchievement.report([achievement]) { (error) in
-                        Log.gameCenter.error("\(error?.localizedDescription ?? "Error reporting quickLevelComplete achievement", privacy: .public)")
+                    GameCenterHandler.reportAchievements([achievement]) { (error) in
+                        if let error { Log.gameCenter.error("Error reporting quickLevelComplete achievement: \(error.localizedDescription, privacy: .public)") }
                     }
                 }
             }
@@ -606,8 +606,8 @@ class InbetweenLevels: GKState {
                 let achievement = GKAchievement(identifier: "tenKPointsPack")
                 if achievement.isCompleted == false {
                     achievement.showsCompletionBanner = true
-                    GKAchievement.report([achievement]) { (error) in
-                        Log.gameCenter.error("\(error?.localizedDescription ?? "Error reporting tenKPointsPack achievement", privacy: .public)")
+                    GameCenterHandler.reportAchievements([achievement]) { (error) in
+                        if let error { Log.gameCenter.error("Error reporting tenKPointsPack achievement: \(error.localizedDescription, privacy: .public)") }
                     }
                 }
             }
@@ -617,8 +617,8 @@ class InbetweenLevels: GKState {
                 let achievement = GKAchievement(identifier: "twoFiveKPointsPack")
                 if achievement.isCompleted == false {
                     achievement.showsCompletionBanner = true
-                    GKAchievement.report([achievement]) { (error) in
-                        Log.gameCenter.error("\(error?.localizedDescription ?? "Error reporting twoFiveKPointsPack achievement", privacy: .public)")
+                    GameCenterHandler.reportAchievements([achievement]) { (error) in
+                        if let error { Log.gameCenter.error("Error reporting twoFiveKPointsPack achievement: \(error.localizedDescription, privacy: .public)") }
                     }
                 }
             }
@@ -628,8 +628,8 @@ class InbetweenLevels: GKState {
                 let achievement = GKAchievement(identifier: "fiftyKPointsPack")
                 if achievement.isCompleted == false {
                     achievement.showsCompletionBanner = true
-                    GKAchievement.report([achievement]) { (error) in
-                        Log.gameCenter.error("\(error?.localizedDescription ?? "Error reporting fiftyKPointsPack achievement", privacy: .public)")
+                    GameCenterHandler.reportAchievements([achievement]) { (error) in
+                        if let error { Log.gameCenter.error("Error reporting fiftyKPointsPack achievement: \(error.localizedDescription, privacy: .public)") }
                     }
                 }
             }
@@ -653,8 +653,8 @@ class InbetweenLevels: GKState {
                 let achievementPack = GKAchievement(identifier: reward.achievementIdentifier)
                 if achievementPack.isCompleted == false {
                     achievementPack.showsCompletionBanner = true
-                    GKAchievement.report([achievementPack]) { (error) in
-                        Log.gameCenter.error("\(error?.localizedDescription ?? "Error reporting \(reward.achievementIdentifier) achievement", privacy: .public)")
+                    GameCenterHandler.reportAchievements([achievementPack]) { (error) in
+                        if let error { Log.gameCenter.error("Error reporting \(reward.achievementIdentifier) achievement: \(error.localizedDescription, privacy: .public)") }
                     }
                 }
             }
@@ -670,8 +670,8 @@ class InbetweenLevels: GKState {
                 let achievement = GKAchievement(identifier: "noBallsLostPack")
                 if achievement.isCompleted == false {
                     achievement.showsCompletionBanner = true
-                    GKAchievement.report([achievement]) { (error) in
-                        Log.gameCenter.error("\(error?.localizedDescription ?? "Error reporting noBallsLostPack achievement", privacy: .public)")
+                    GameCenterHandler.reportAchievements([achievement]) { (error) in
+                        if let error { Log.gameCenter.error("Error reporting noBallsLostPack achievement: \(error.localizedDescription, privacy: .public)") }
                     }
                 }
             }
@@ -681,8 +681,8 @@ class InbetweenLevels: GKState {
                 let achievement = GKAchievement(identifier: "tenBallsLostPack")
                 if achievement.isCompleted == false {
                     achievement.showsCompletionBanner = true
-                    GKAchievement.report([achievement]) { (error) in
-                        Log.gameCenter.error("\(error?.localizedDescription ?? "Error reporting tenBallsLostPack achievement", privacy: .public)")
+                    GameCenterHandler.reportAchievements([achievement]) { (error) in
+                        if let error { Log.gameCenter.error("Error reporting tenBallsLostPack achievement: \(error.localizedDescription, privacy: .public)") }
                     }
                 }
             }
@@ -694,8 +694,8 @@ class InbetweenLevels: GKState {
                 let achievement = GKAchievement(identifier: "allPackPowerUps")
                 if achievement.isCompleted == false {
                     achievement.showsCompletionBanner = true
-                    GKAchievement.report([achievement]) { (error) in
-                        Log.gameCenter.error("\(error?.localizedDescription ?? "Error reporting allPackPowerUps achievement", privacy: .public)")
+                    GameCenterHandler.reportAchievements([achievement]) { (error) in
+                        if let error { Log.gameCenter.error("Error reporting allPackPowerUps achievement: \(error.localizedDescription, privacy: .public)") }
                     }
                 }
             }
@@ -710,8 +710,8 @@ class InbetweenLevels: GKState {
                 let achievement = GKAchievement(identifier: "noPackPowerUps")
                 if achievement.isCompleted == false {
                     achievement.showsCompletionBanner = true
-                    GKAchievement.report([achievement]) { (error) in
-                        Log.gameCenter.error("\(error?.localizedDescription ?? "Error reporting noPackPowerUps achievement", privacy: .public)")
+                    GameCenterHandler.reportAchievements([achievement]) { (error) in
+                        if let error { Log.gameCenter.error("Error reporting noPackPowerUps achievement: \(error.localizedDescription, privacy: .public)") }
                     }
                 }
             }
@@ -723,8 +723,8 @@ class InbetweenLevels: GKState {
                 let achievement = GKAchievement(identifier: "quickPackComplete")
                 if achievement.isCompleted == false {
                     achievement.showsCompletionBanner = true
-                    GKAchievement.report([achievement]) { (error) in
-                        Log.gameCenter.error("\(error?.localizedDescription ?? "Error reporting quickPackComplete achievement", privacy: .public)")
+                    GameCenterHandler.reportAchievements([achievement]) { (error) in
+                        if let error { Log.gameCenter.error("Error reporting quickPackComplete achievement: \(error.localizedDescription, privacy: .public)") }
                     }
                 }
             }
@@ -740,8 +740,8 @@ class InbetweenLevels: GKState {
                 let achievement = GKAchievement(identifier: "onePacksComplete")
                 if achievement.isCompleted == false {
                     achievement.showsCompletionBanner = true
-                    GKAchievement.report([achievement]) { (error) in
-                        Log.gameCenter.error("\(error?.localizedDescription ?? "Error reporting onePacksComplete achievement", privacy: .public)")
+                    GameCenterHandler.reportAchievements([achievement]) { (error) in
+                        if let error { Log.gameCenter.error("Error reporting onePacksComplete achievement: \(error.localizedDescription, privacy: .public)") }
                     }
                 }
             }
@@ -759,8 +759,8 @@ class InbetweenLevels: GKState {
                 if achievement.isCompleted == false {
                     achievement.percentComplete = percentComplete
                     achievement.showsCompletionBanner = true
-                    GKAchievement.report([achievement]) { (error) in
-                        Log.gameCenter.error("\(error?.localizedDescription ?? "Error reporting tenPacksComplete achievement", privacy: .public)")
+                    GameCenterHandler.reportAchievements([achievement]) { (error) in
+                        if let error { Log.gameCenter.error("Error reporting tenPacksComplete achievement: \(error.localizedDescription, privacy: .public)") }
                     }
                 }
             }
@@ -778,8 +778,8 @@ class InbetweenLevels: GKState {
                 if achievement.isCompleted == false {
                     achievement.percentComplete = percentComplete
                     achievement.showsCompletionBanner = true
-                    GKAchievement.report([achievement]) { (error) in
-                        Log.gameCenter.error("\(error?.localizedDescription ?? "Error reporting hundredPacksComplete achievement", privacy: .public)")
+                    GameCenterHandler.reportAchievements([achievement]) { (error) in
+                        if let error { Log.gameCenter.error("Error reporting hundredPacksComplete achievement: \(error.localizedDescription, privacy: .public)") }
                     }
                 }
             }
@@ -797,8 +797,8 @@ class InbetweenLevels: GKState {
                 if achievement.isCompleted == false {
                     achievement.percentComplete = percentComplete
                     achievement.showsCompletionBanner = true
-                    GKAchievement.report([achievement]) { (error) in
-                        Log.gameCenter.error("\(error?.localizedDescription ?? "Error reporting thousandPacksComplete achievement", privacy: .public)")
+                    GameCenterHandler.reportAchievements([achievement]) { (error) in
+                        if let error { Log.gameCenter.error("Error reporting thousandPacksComplete achievement: \(error.localizedDescription, privacy: .public)") }
                     }
                 }
             }
@@ -829,8 +829,8 @@ class InbetweenLevels: GKState {
                 if achievement.isCompleted == false {
                     achievement.percentComplete = percentComplete
                     achievement.showsCompletionBanner = true
-                    GKAchievement.report([achievement]) { (error) in
-                        Log.gameCenter.error("\(error?.localizedDescription ?? "Error reporting achievementEndlessFiveK achievement", privacy: .public)")
+                    GameCenterHandler.reportAchievements([achievement]) { (error) in
+                        if let error { Log.gameCenter.error("Error reporting achievementEndlessFiveK achievement: \(error.localizedDescription, privacy: .public)") }
                     }
                 }
             }
@@ -848,8 +848,8 @@ class InbetweenLevels: GKState {
                 if achievement.isCompleted == false {
                     achievement.percentComplete = percentComplete
                     achievement.showsCompletionBanner = true
-                    GKAchievement.report([achievement]) { (error) in
-                        Log.gameCenter.error("\(error?.localizedDescription ?? "Error reporting achievementEndlessTenK achievement", privacy: .public)")
+                    GameCenterHandler.reportAchievements([achievement]) { (error) in
+                        if let error { Log.gameCenter.error("Error reporting achievementEndlessTenK achievement: \(error.localizedDescription, privacy: .public)") }
                     }
                 }
             }

@@ -2540,3 +2540,34 @@ final class SharedTablesTests: XCTestCase {
                           "sixty halo colours took longer than one table build")
     }
 }
+
+/// **A Mayhem row is cheap to build** (round 384, from James's iPad Pro of 2018: `HITCH 72ms
+/// after: brick hit, row built, row built, row built, row built`, and a dozen more like it in
+/// one run). Measured on the simulator a row took a median 4.7ms against the original Endless
+/// mode's 0.16, most of it asking the run's release schedule the same questions per brick and
+/// per power-up. The schedule is read once a run now and the per-row chances once a row.
+final class MayhemRowCostTests: XCTestCase {
+
+    func testAMayhemRowIsCheapToBuild() {
+        let scene = GameScene(size: CGSize(width: 402, height: 874))
+        scene.gameMode = .endlessII
+        scene.totalStatsArray = [TotalStats()]
+        scene.gameWidth = 402
+        scene.brickWidth = 402.0/11
+        scene.brickHeight = 402.0/22
+        scene.numberOfBrickColumns = 11
+        scene.yBrickOffsetEndless = 300
+        scene.prepEndlessMode(height: 0)
+        scene.buildNewEndlessRow()
+        var times: [Double] = []
+        for height in stride(from: 10, through: 600, by: 20) {
+            scene.endlessHeight = height
+            let started = CACurrentMediaTime()
+            scene.buildNewEndlessRow()
+            times.append((CACurrentMediaTime() - started)*1000)
+        }
+        times.sort()
+        let median = times[times.count/2]
+        XCTAssertLessThan(median, 2.5, "a Mayhem row took a median \(median)ms to build")
+    }
+}

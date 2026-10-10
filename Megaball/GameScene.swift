@@ -234,7 +234,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			return "contact"
 		}
 		var why: [String] = []
-		if sprite.isHidden && endlessHiddenBricksIsRunning == false { why.append("hidden") }
+		if sprite.isHidden && bricksAreHiddenOnPurpose == false { why.append("hidden") }
 		if sprite.alpha < 0.05 { why.append(String(format: "alpha %.2f", sprite.alpha)) }
 		if sprite.xScale < 0.05 || sprite.yScale < 0.05 {
 			why.append(String(format: "scale %.2f x %.2f", sprite.xScale, sprite.yScale))
@@ -1367,7 +1367,24 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	/// What it should be travelling at when it gets there - the heading it arrived with,
 	/// turned round only if carrying on would have taken it out of the field.
 	var endlessIIPortalExitVelocity: CGVector?
-	var endlessIIProgression = EndlessIIProgression.make()
+	var endlessIIProgression = EndlessIIProgression.make() {
+		didSet {
+			endlessIIDensityCache = nil
+			endlessIIArrivalCache = nil
+		}
+	}
+	/// The run's arrival heights, read off its queue once - see
+	/// `EndlessIIProgression.arrivalTable` (round 384).
+	var endlessIIArrivalTable: [EndlessIIElement: Int]? {
+		if let cached = endlessIIArrivalCache { return cached }
+		let table = endlessIIProgression.arrivalTable()
+		endlessIIArrivalCache = table
+		return table
+	}
+	private var endlessIIArrivalCache: [EndlessIIElement: Int]?
+	/// The field's density at the height and phase it was last asked for - see
+	/// `endlessIIDensity()`.
+	var endlessIIDensityCache: (height: Int, phase: EndlessIIPhase, density: Double)?
 	var endlessIIPhase: EndlessIIPhase = .standard
 	var endlessIIPhaseEndsAt = 0
 	var endlessIIBuildingIn = false
@@ -2338,6 +2355,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 
 		powerUpRings.iconSize = iconSize
 		powerUpRings.spacing = iconSize*0.4
+		powerUpRings.maximumWidth = gameWidth - labelSpacing*2
+		// The play zone's width, inset by the margin the pause button keeps from the edge -
+		// past it the rings shrink to fit rather than running off the screen (round 384)
 		let ringGapTop = pauseButton.position.y - pauseButton.size.height/2
 		let ringGapBottom = frame.size.height/2 - screenBlockTopHeight
 		powerUpRings.position = CGPoint(x: 0, y: (ringGapTop + ringGapBottom)/2)
@@ -2589,8 +2609,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			let achievement = GKAchievement(identifier: "endlessOneMins")
 			if achievement.isCompleted == false {
 				achievement.showsCompletionBanner = true
-				GKAchievement.report([achievement]) { (error) in
-					Log.gameCenter.error("\(error?.localizedDescription ?? "Error reporting endlessOneMins achievement", privacy: .public)")
+				GameCenterHandler.reportAchievements([achievement]) { (error) in
+					if let error { Log.gameCenter.error("Error reporting endlessOneMins achievement: \(error.localizedDescription, privacy: .public)") }
 				}
 			}
 		}
@@ -2600,8 +2620,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			let achievement = GKAchievement(identifier: "endlessFiveMins")
 			if achievement.isCompleted == false {
 				achievement.showsCompletionBanner = true
-				GKAchievement.report([achievement]) { (error) in
-					Log.gameCenter.error("\(error?.localizedDescription ?? "Error reporting endlessFiveMins achievement", privacy: .public)")
+				GameCenterHandler.reportAchievements([achievement]) { (error) in
+					if let error { Log.gameCenter.error("Error reporting endlessFiveMins achievement: \(error.localizedDescription, privacy: .public)") }
 				}
 			}
 		}
@@ -2611,8 +2631,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			let achievement = GKAchievement(identifier: "endlessTenMins")
 			if achievement.isCompleted == false {
 				achievement.showsCompletionBanner = true
-				GKAchievement.report([achievement]) { (error) in
-					Log.gameCenter.error("\(error?.localizedDescription ?? "Error reporting endlessTenMins achievement", privacy: .public)")
+				GameCenterHandler.reportAchievements([achievement]) { (error) in
+					if let error { Log.gameCenter.error("Error reporting endlessTenMins achievement: \(error.localizedDescription, privacy: .public)") }
 				}
 			}
 		}
@@ -2622,8 +2642,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			let achievement = GKAchievement(identifier: "endlessThirtyMins")
 			if achievement.isCompleted == false {
 				achievement.showsCompletionBanner = true
-				GKAchievement.report([achievement]) { (error) in
-					Log.gameCenter.error("\(error?.localizedDescription ?? "Error reporting endlessThirtyMins achievement", privacy: .public)")
+				GameCenterHandler.reportAchievements([achievement]) { (error) in
+					if let error { Log.gameCenter.error("Error reporting endlessThirtyMins achievement: \(error.localizedDescription, privacy: .public)") }
 				}
 			}
 		}
@@ -2633,8 +2653,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			let achievement = GKAchievement(identifier: "endlessSixtyMins")
 			if achievement.isCompleted == false {
 				achievement.showsCompletionBanner = true
-				GKAchievement.report([achievement]) { (error) in
-					Log.gameCenter.error("\(error?.localizedDescription ?? "Error reporting endlessSixtyMins achievement", privacy: .public)")
+				GameCenterHandler.reportAchievements([achievement]) { (error) in
+					if let error { Log.gameCenter.error("Error reporting endlessSixtyMins achievement: \(error.localizedDescription, privacy: .public)") }
 				}
 			}
 		}
@@ -2720,8 +2740,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				let achievement = GKAchievement(identifier: "paddleSpeed")
 				if achievement.isCompleted == false {
 					achievement.showsCompletionBanner = true
-					GKAchievement.report([achievement]) { (error) in
-						Log.gameCenter.error("\(error?.localizedDescription ?? "Error reporting paddleSpeed achievement", privacy: .public)")
+					GameCenterHandler.reportAchievements([achievement]) { (error) in
+						if let error { Log.gameCenter.error("Error reporting paddleSpeed achievement: \(error.localizedDescription, privacy: .public)") }
 					}
 				}
 			}
@@ -3086,6 +3106,18 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         let score = totalScore + levelScore
         write(String(score), into: scoreLabel)
         pulseMilestone(scoreLabel, value: score, step: 1000, passed: &lastScoreMilestone)
+    }
+
+    /// The banked score, written as a level starts and before anything has been scored in it.
+    ///
+    /// **Through `write`, like every other score** (James, round 384: "Score overlapping text
+    /// bug in classic mode. It looks like 2 scores are laid over one another"). This line set
+    /// the label's `text` directly - the one write left after round 122 routed the rest through
+    /// `write` - so a level that followed another drew the new total as the label's own text
+    /// *and* kept the old level's placed digits hanging off it, two numbers in one place until
+    /// the first brick of the new level rewrote the strip.
+    func showBankedScoreAtLevelStart() {
+        write(String(totalScore), into: scoreLabel)
     }
 
     /// The same for the endless modes' height, every hundred metres.
@@ -3678,6 +3710,18 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         hiddenBricksIconBar.isHidden == false
     }
 
+    /// Whether a hidden brick is hidden because the game meant it to be: Hide Bricks running, or
+    /// a Fog of War day.
+    ///
+    /// **The fog as well** (round 384, from James's log of a fogged Classic daily: `PHANTOM
+    /// BRICKS: 97 solid but unseeable - 5x hidden plain row 10; ...` once a second for four
+    /// minutes, counting down as the fog lifted brick by brick). Fog of War hides every brick
+    /// until it is struck - the twist doing exactly what the card says - and the watch read the
+    /// whole field as a fault, which buried anything real it might have caught that run.
+    var bricksAreHiddenOnPurpose: Bool {
+        endlessHiddenBricksIsRunning || dailyFogIsOn
+    }
+
     /// Says so in the log when a frame runs long, and what the game had just done (debug only).
     ///
     /// **James, round 371: "At the start of the game the first brick hit, first falling
@@ -3773,7 +3817,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             // beside it are answers to two different questions
 
             var why: [String] = []
-            if sprite.isHidden && self.endlessHiddenBricksIsRunning == false {
+            if sprite.isHidden && self.bricksAreHiddenOnPurpose == false {
                 why.append("hidden")
             }
             if sprite.alpha < 0.05 { why.append(String(format: "alpha %.2f", sprite.alpha)) }
@@ -3854,7 +3898,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             // which means an action on a brick is always a transient animation in progress.
             // The next animation to fade a brick in is covered without anyone remembering.
 
-            let hiddenOnPurpose = sprite.isHidden && self.endlessHiddenBricksIsRunning
+            let hiddenOnPurpose = sprite.isHidden && self.bricksAreHiddenOnPurpose
             let invisible = (sprite.isHidden && hiddenOnPurpose == false) || sprite.alpha < 0.05
                 || sprite.xScale < 0.05 || sprite.yScale < 0.05
             if invisible { found.append(sprite.position) }
@@ -4107,8 +4151,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         let achievement = GKAchievement(identifier: identifier)
         guard achievement.isCompleted == false else { return true }
         achievement.showsCompletionBanner = true
-        GKAchievement.report([achievement]) { error in
-            Log.gameCenter.error("\(error?.localizedDescription ?? "Error reporting \(identifier) achievement", privacy: .public)")
+        GameCenterHandler.reportAchievements([achievement]) { error in
+            if let error { Log.gameCenter.error("Error reporting \(identifier) achievement: \(error.localizedDescription, privacy: .public)") }
         }
         return true
     }
@@ -4144,8 +4188,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         guard achievement.isCompleted == false else { return }
         achievement.percentComplete = percent
         achievement.showsCompletionBanner = true
-        GKAchievement.report([achievement]) { error in
-            Log.gameCenter.error("\(error?.localizedDescription ?? "Error reporting \(identifier) achievement", privacy: .public)")
+        GameCenterHandler.reportAchievements([achievement]) { error in
+            if let error { Log.gameCenter.error("Error reporting \(identifier) achievement: \(error.localizedDescription, privacy: .public)") }
         }
     }
 
@@ -4172,7 +4216,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             progress.append(achievement)
         }
         guard progress.isEmpty == false else { return }
-        GKAchievement.report(progress) { error in
+        GameCenterHandler.reportAchievements(progress) { error in
             if let error {
                 Log.gameCenter.error("\(error.localizedDescription, privacy: .public)")
             }
@@ -4728,8 +4772,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 					if achievement.isCompleted == false {
 						achievement.percentComplete = percentComplete
 						achievement.showsCompletionBanner = true
-						GKAchievement.report([achievement]) { (error) in
-							Log.gameCenter.error("\(error?.localizedDescription ?? "Error reporting powerUpLeaverHundred achievement", privacy: .public)")
+						GameCenterHandler.reportAchievements([achievement]) { (error) in
+							if let error { Log.gameCenter.error("Error reporting powerUpLeaverHundred achievement: \(error.localizedDescription, privacy: .public)") }
 						}
 					}
 				}
@@ -4747,8 +4791,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 					if achievement.isCompleted == false {
 						achievement.percentComplete = percentComplete
 						achievement.showsCompletionBanner = true
-						GKAchievement.report([achievement]) { (error) in
-							Log.gameCenter.error("\(error?.localizedDescription ?? "Error reporting powerUpLeaverThousand achievement", privacy: .public)")
+						GameCenterHandler.reportAchievements([achievement]) { (error) in
+							if let error { Log.gameCenter.error("Error reporting powerUpLeaverThousand achievement: \(error.localizedDescription, privacy: .public)") }
 						}
 					}
 				}
@@ -5097,8 +5141,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		
 		if powerUpProximity == false {
 			var powerUpProb: Int = 0
-			if powerUpProbFactor > 0 {
-				powerUpProb = Int.random(in: 1...powerUpProbFactor)
+			let dropGap = GameScene.endlessIIDropGap(powerUpProbFactor,
+													 fastClearers: endlessIIFastClearersRunning)
+			// Longer while Mayhem's fast clearers run (round 384) - the same gap in every
+			// other mode, where the count is always nought
+			if dropGap > 0 {
+				powerUpProb = Int.random(in: 1...dropGap)
 			}
 			if powerUpProb == 1 && bricksLeft > 1 {
 				powerUpGeneratorCycles = 0
@@ -5183,8 +5231,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				let achievement = GKAchievement(identifier: "fivePaddleHits")
 				if achievement.isCompleted == false {
 					achievement.showsCompletionBanner = true
-					GKAchievement.report([achievement]) { (error) in
-						Log.gameCenter.error("\(error?.localizedDescription ?? "Error reporting fivePaddleHits achievement", privacy: .public)")
+					GameCenterHandler.reportAchievements([achievement]) { (error) in
+						if let error { Log.gameCenter.error("Error reporting fivePaddleHits achievement: \(error.localizedDescription, privacy: .public)") }
 					}
 				}
 			}
@@ -5194,8 +5242,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				let achievement = GKAchievement(identifier: "tenPaddleHits")
 				if achievement.isCompleted == false {
 					achievement.showsCompletionBanner = true
-					GKAchievement.report([achievement]) { (error) in
-						Log.gameCenter.error("\(error?.localizedDescription ?? "Error reporting tenPaddleHits achievement", privacy: .public)")
+					GameCenterHandler.reportAchievements([achievement]) { (error) in
+						if let error { Log.gameCenter.error("Error reporting tenPaddleHits achievement: \(error.localizedDescription, privacy: .public)") }
 					}
 				}
 			}
@@ -5331,8 +5379,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			let achievement = GKAchievement(identifier: "endlessCleared")
 			if achievement.isCompleted == false {
 				achievement.showsCompletionBanner = true
-				GKAchievement.report([achievement]) { (error) in
-					Log.gameCenter.error("\(error?.localizedDescription ?? "Error reporting endlessCleared achievement", privacy: .public)")
+				GameCenterHandler.reportAchievements([achievement]) { (error) in
+					if let error { Log.gameCenter.error("Error reporting endlessCleared achievement: \(error.localizedDescription, privacy: .public)") }
 				}
 			}
 		}
@@ -5486,8 +5534,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			let achievement = GKAchievement(identifier: "achievementEndlessTen")
 			if achievement.isCompleted == false {
 				achievement.showsCompletionBanner = true
-				GKAchievement.report([achievement]) { (error) in
-					Log.gameCenter.error("\(error?.localizedDescription ?? "Error reporting achievementEndlessTen achievement", privacy: .public)")
+				GameCenterHandler.reportAchievements([achievement]) { (error) in
+					if let error { Log.gameCenter.error("Error reporting achievementEndlessTen achievement: \(error.localizedDescription, privacy: .public)") }
 				}
 			}
 		}
@@ -5497,8 +5545,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			let achievement = GKAchievement(identifier: "achievementEndlessHundred")
 			if achievement.isCompleted == false {
 				achievement.showsCompletionBanner = true
-				GKAchievement.report([achievement]) { (error) in
-					Log.gameCenter.error("\(error?.localizedDescription ?? "Error reporting achievementEndlessHundred achievement", privacy: .public)")
+				GameCenterHandler.reportAchievements([achievement]) { (error) in
+					if let error { Log.gameCenter.error("Error reporting achievementEndlessHundred achievement: \(error.localizedDescription, privacy: .public)") }
 				}
 			}
 		}
@@ -5508,8 +5556,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			let achievement = GKAchievement(identifier: "achievementEndlessFiveHundred")
 			if achievement.isCompleted == false {
 				achievement.showsCompletionBanner = true
-				GKAchievement.report([achievement]) { (error) in
-					Log.gameCenter.error("\(error?.localizedDescription ?? "Error reporting achievementEndlessFiveHundred achievement", privacy: .public)")
+				GameCenterHandler.reportAchievements([achievement]) { (error) in
+					if let error { Log.gameCenter.error("Error reporting achievementEndlessFiveHundred achievement: \(error.localizedDescription, privacy: .public)") }
 				}
 			}
 		}
@@ -5519,8 +5567,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			let achievement = GKAchievement(identifier: "achievementEndlessOneK")
 			if achievement.isCompleted == false {
 				achievement.showsCompletionBanner = true
-				GKAchievement.report([achievement]) { (error) in
-					Log.gameCenter.error("\(error?.localizedDescription ?? "Error reporting achievementEndlessOneK achievement", privacy: .public)")
+				GameCenterHandler.reportAchievements([achievement]) { (error) in
+					if let error { Log.gameCenter.error("Error reporting achievementEndlessOneK achievement: \(error.localizedDescription, privacy: .public)") }
 				}
 			}
 		}
@@ -5956,8 +6004,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		enumerateChildNodes(withName: BrickCategoryName) { node, _ in
 			guard let sprite = node as? SKSpriteNode else { return }
 			guard self.brickHasReachedTheBottomZone(sprite),
-			      sprite.endlessIIIsAnchored == false else { return }
-			if sprite.isHidden { hidden += 1 } else { visible += 1 }
+			      sprite.endlessIIIsAnchored == false,
+			      self.brickCanBeDestroyed(sprite),
+			      sprite.texture != self.brickNullTexture else { return }
+			// **Breakable bricks only, on either side** (James, round 384: "no destructible
+			// bricks visible in the bottom row"). A wall in the row is not something to aim at,
+			// so it does not explain the stall and does not call the clue off
+			if sprite.isHidden { hidden += 1 } else if sprite.alpha > 0.01 { visible += 1 }
 		}
 		return hidden > 0 && visible == 0
 	}
@@ -5971,34 +6024,58 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			&& sprite.texture != brickIndestructible2Texture
 	}
 
-	func invisibleBrickFlash() {
-		var nonHiddenNodeFound = false
-		enumerateChildNodes(withName: BrickCategoryName) { (node, stop) in
-			let sprite = node as! SKSpriteNode
-			if node.isHidden == false && (sprite.texture == self.brickNormalTexture || sprite.texture == self.brickInvisibleTexture || sprite.texture == self.brickMultiHit1Texture || sprite.texture == self.brickMultiHit2Texture || sprite.texture == self.brickMultiHit3Texture || sprite.texture == self.brickMultiHit4Texture) {
-				nonHiddenNodeFound = true
-				stop.initialize(to: true)
+	/// Whether everything left in a Classic field that the player could still break is hidden.
+	///
+	/// **Any brick that can be broken, not a list of textures** (James, round 384: "Invisible
+	/// bricks should only flash when the ball hits the paddle when there are no destructible
+	/// bricks visible in classic mode"). The check this replaces asked about six textures by
+	/// name and called anything else - a brick a later round added, or one a twist had
+	/// re-dressed - not there at all, so a field with plenty still in view could read as empty
+	/// and flash on every paddle hit. A brick counts as in view while it is shown and not faded
+	/// out. Indestructibles are never what the player is being pointed at, and a Null cell is
+	/// nothing.
+	///
+	/// **Not on a Fog of War day**, for the reason the zone rule gives: every brick starts
+	/// hidden by design, so the field is all-hidden from the first paddle hit and the flash
+	/// would hand the fog back to the player who chose it.
+	var classicFieldIsAllHidden: Bool {
+		guard gameMode == .classic, dailyFogIsOn == false else { return false }
+		var hidden = false
+		var visible = false
+		enumerateChildNodes(withName: BrickCategoryName) { node, stop in
+			guard let sprite = node as? SKSpriteNode,
+				  self.brickCanBeDestroyed(sprite),
+				  sprite.texture != self.brickNullTexture else { return }
+			if sprite.isHidden {
+				hidden = true
+			} else if sprite.alpha > 0.01 {
+				visible = true
+				stop.pointee = true
 			}
 		}
-		// Check to see if there are any non-hidden destructible bricks left
-		
-		let classicRuleApplies = gameMode != .endlessII && nonHiddenNodeFound == false
-		if classicRuleApplies || endlessIIBottomZoneIsAllHidden {
-		// Only run if there are only hidden destructible bricks left - or, in Mayhem, if the
-		// bottom zone is held up by nothing the player can see, which is the same interaction
-		// answering a question only this mode asks (round 173).
+		return hidden && visible == false
+	}
+
+	func invisibleBrickFlash() {
+		if classicFieldIsAllHidden || endlessIIBottomZoneIsAllHidden {
+		// **One rule for each kind of mode** (James, round 384: "no destructible bricks visible
+		// in classic mode and no destructible bricks visible in the bottom row in endless mode
+		// and endless mayhem"). Classic asks the whole field, because there a hidden brick can
+		// be the last brick. Both endless modes ask the bottom row and only the bottom row: the
+		// original Endless used to ask Classic's question as well, so a hidden brick anywhere
+		// in a field whose only visible bricks were walls flashed it on every paddle hit -
+		// the very thing round 180 took out of Mayhem.
 		//
 		// **The Classic rule does not run in Mayhem at all** (James, round 180: "the bricks
 		// flash then disappearing on paddle bounce happened again. And it isn't linked to the
 		// descent power up"). Classic's question is "is everything you could still hit
 		// invisible" - the right question for a mode where a hidden brick can be the last
 		// brick. Mayhem always has more rows coming, and its Fixed bricks wear the
-		// Indestructible texture this check deliberately ignores - so a moment where the only
-		// *visible* bricks were Fixed walls read as an empty field, and every paddle hit
-		// flashed the mode's ordinary hidden bricks on and straight off again. In Mayhem a
-		// hidden brick only matters when it stalls the descent, and the zone rule above is
-		// exactly that question
-			let mayhemZoneOnly = gameMode == .endlessII
+		// Indestructible texture - so a moment where the only *visible* bricks were Fixed
+		// walls read as an empty field, and every paddle hit flashed the mode's ordinary
+		// hidden bricks on and straight off again. In an endless mode a hidden brick only
+		// matters when it stalls the descent, and the zone rule is exactly that question
+			let mayhemZoneOnly = gameMode != .classic
 			enumerateChildNodes(withName: BrickCategoryName) { (node, stop) in
 				let sprite = node as! SKSpriteNode
 				guard sprite.isHidden,
@@ -6053,7 +6130,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     
     func powerUpGenerator (sprite: SKSpriteNode) {
 		
-		if powerUpsOnScreen >= powerUpLimit {
+		if powerUpsOnScreen >= fallingPowerUpLimit {
 			return
 		}
 		// Limit number of power-ups available at once
@@ -6157,7 +6234,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			if powerUpProb > powerUpProbSum-powerUpProbArray[lowerRange...].reduce(0, +) && powerUpProb <= powerUpProbSum-powerUpProbArray[upperRange...].reduce(0, +) {
 				powerUpSelection = lowerRange
 				selectionComplete = true
-				if totalStatsArray[0].powerUpUnlockedArray[powerUpSelection] == false {
+				if powerUpIsUnlockedForThisRun(powerUpSelection) == false {
 					removePowerUp(sprite: sprite, powerUp: powerUp, powerUpSelection: powerUpSelection)
 					return
 				}
@@ -6300,8 +6377,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			let achievementPowerUp = GKAchievement(identifier: "firstPowerUp")
 			if achievementPowerUp.isCompleted == false {
 				achievementPowerUp.showsCompletionBanner = true
-				GKAchievement.report([achievementPowerUp]) { (error) in
-					Log.gameCenter.error("\(error?.localizedDescription ?? "Error reporting firstPowerUp achievement", privacy: .public)")
+				GameCenterHandler.reportAchievements([achievementPowerUp]) { (error) in
+					if let error { Log.gameCenter.error("Error reporting firstPowerUp achievement: \(error.localizedDescription, privacy: .public)") }
 				}
 			}
 		}
@@ -6490,8 +6567,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 					let achievement = GKAchievement(identifier: "maxPaddleSize")
 					if achievement.isCompleted == false {
 						achievement.showsCompletionBanner = true
-						GKAchievement.report([achievement]) { (error) in
-							Log.gameCenter.error("\(error?.localizedDescription ?? "Error reporting maxPaddleSize achievement", privacy: .public)")
+						GameCenterHandler.reportAchievements([achievement]) { (error) in
+							if let error { Log.gameCenter.error("Error reporting maxPaddleSize achievement: \(error.localizedDescription, privacy: .public)") }
 						}
 					}
 				}
@@ -6563,8 +6640,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 					let achievement = GKAchievement(identifier: "minPaddleSize")
 					if achievement.isCompleted == false {
 						achievement.showsCompletionBanner = true
-						GKAchievement.report([achievement]) { (error) in
-							Log.gameCenter.error("\(error?.localizedDescription ?? "Error reporting minPaddleSize achievement", privacy: .public)")
+						GameCenterHandler.reportAchievements([achievement]) { (error) in
+							if let error { Log.gameCenter.error("Error reporting minPaddleSize achievement: \(error.localizedDescription, privacy: .public)") }
 						}
 					}
 				}
@@ -7061,8 +7138,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				let achievementMystery = GKAchievement(identifier: "mysteryPowerUp")
 				if achievementMystery.isCompleted == false {
 					achievementMystery.showsCompletionBanner = true
-					GKAchievement.report([achievementMystery]) { (error) in
-						Log.gameCenter.error("\(error?.localizedDescription ?? "Error reporting mysteryPowerUp achievement", privacy: .public)")
+					GameCenterHandler.reportAchievements([achievementMystery]) { (error) in
+						if let error { Log.gameCenter.error("Error reporting mysteryPowerUp achievement: \(error.localizedDescription, privacy: .public)") }
 					}
 				}
 			}
@@ -7122,8 +7199,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 					let achievement = GKAchievement(identifier: "maxBallSize")
 					if achievement.isCompleted == false {
 						achievement.showsCompletionBanner = true
-						GKAchievement.report([achievement]) { (error) in
-							Log.gameCenter.error("\(error?.localizedDescription ?? "Error reporting maxBallSize achievement", privacy: .public)")
+						GameCenterHandler.reportAchievements([achievement]) { (error) in
+							if let error { Log.gameCenter.error("Error reporting maxBallSize achievement: \(error.localizedDescription, privacy: .public)") }
 						}
 					}
 				}
@@ -7424,8 +7501,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 					let achievement = GKAchievement(identifier: "minBallSize")
 					if achievement.isCompleted == false {
 						achievement.showsCompletionBanner = true
-						GKAchievement.report([achievement]) { (error) in
-							Log.gameCenter.error("\(error?.localizedDescription ?? "Error reporting minBallSize achievement", privacy: .public)")
+						GameCenterHandler.reportAchievements([achievement]) { (error) in
+							if let error { Log.gameCenter.error("Error reporting minBallSize achievement: \(error.localizedDescription, privacy: .public)") }
 						}
 					}
 				}
@@ -7486,8 +7563,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			if achievement.isCompleted == false {
 				achievement.percentComplete = percentComplete
 				achievement.showsCompletionBanner = true
-				GKAchievement.report([achievement]) { (error) in
-					Log.gameCenter.error("\(error?.localizedDescription ?? "Error reporting favouritePowerUp achievement", privacy: .public)")
+				GameCenterHandler.reportAchievements([achievement]) { (error) in
+					if let error { Log.gameCenter.error("Error reporting favouritePowerUp achievement: \(error.localizedDescription, privacy: .public)") }
 				}
 			}
 		}
@@ -7507,8 +7584,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			if achievement.isCompleted == false {
 				achievement.percentComplete = percentComplete
 				achievement.showsCompletionBanner = true
-				GKAchievement.report([achievement]) { (error) in
-					Log.gameCenter.error("\(error?.localizedDescription ?? "Error reporting powerUpCollectorHundred achievement", privacy: .public)")
+				GameCenterHandler.reportAchievements([achievement]) { (error) in
+					if let error { Log.gameCenter.error("Error reporting powerUpCollectorHundred achievement: \(error.localizedDescription, privacy: .public)") }
 				}
 			}
 		}
@@ -7526,8 +7603,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			if achievement.isCompleted == false {
 				achievement.percentComplete = percentComplete
 				achievement.showsCompletionBanner = true
-				GKAchievement.report([achievement]) { (error) in
-					Log.gameCenter.error("\(error?.localizedDescription ?? "Error reporting powerUpCollectorThousand achievement", privacy: .public)")
+				GameCenterHandler.reportAchievements([achievement]) { (error) in
+					if let error { Log.gameCenter.error("Error reporting powerUpCollectorThousand achievement: \(error.localizedDescription, privacy: .public)") }
 				}
 			}
 		}
@@ -7705,7 +7782,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	
 	func powerUpIconReset(sender: String) {
 		// speed[2], paddle size[4], hide[16], sticky[6], gravity[7], giga[20], laser[22], size[26]
-		iconUnlockedBool = [totalStatsArray[0].powerUpUnlockedArray[2], totalStatsArray[0].powerUpUnlockedArray[4], totalStatsArray[0].powerUpUnlockedArray[16], totalStatsArray[0].powerUpUnlockedArray[6], totalStatsArray[0].powerUpUnlockedArray[7], totalStatsArray[0].powerUpUnlockedArray[20], totalStatsArray[0].powerUpUnlockedArray[22], totalStatsArray[0].powerUpUnlockedArray[26]]
+		iconUnlockedBool = [2, 4, 16, 6, 7, 20, 22, 26].map(powerUpIsUnlockedForThisRun)
+		// A daily's tray shows every slot open, as its drops are (round 384)
 		for index in iconArray.indices {
 			// **`indices` rather than `1...iconArray.count`** (round 319g). The tray is filled
 			// from the scene file during setup, so before that happens the array is empty and
@@ -8413,6 +8491,25 @@ laserTimer?.invalidate()
 		}
 	}
 
+	/// The HUD's type size: 16 points on a phone, as it always has been, and on an iPad or a
+	/// Mac the same share of the play zone a phone's is, up to the 24 points a full-screen
+	/// iPad has always had.
+	///
+	/// **It follows the play zone now, not the device** (James, round 384: "The score and hi
+	/// score labels in the top right of the game view, the font stays the same size, even if
+	/// the game view shrinks so it gets close to overlapping the power-up HUD. It's ok if the
+	/// font size gets smaller to maintain a gap"). A window's height sets the play zone, so a
+	/// landscape iPad or a short window draws a play zone a phone's width - and its HUD at an
+	/// iPad's 24 points, which put Mayhem's best-height line down beside the power-up bar.
+	/// Nine tenths of a layout unit is what 16 points is on a phone's play zone. A phone is
+	/// left exactly as it was: its play zone is already the one this was measured from, and
+	/// the smallest of them would otherwise shrink for no reason anyone has reported.
+	static func hudFontSize(layoutUnit: CGFloat, regularWidth: Bool, phone: Bool) -> CGFloat {
+		guard phone == false else { return 16 }
+		let largest: CGFloat = regularWidth ? 24 : 16
+		return min(largest, max(11, (layoutUnit*0.9).rounded()))
+	}
+
 	func computeLayoutMetrics() {
 		let insets = self.view?.safeAreaInsets ?? .zero
 		let hudUnits = gameMode == .endlessII ? GameScene.endlessIIHudUnits : GameScene.hudUnits
@@ -8449,8 +8546,9 @@ laserTimer?.invalidate()
 
 		if isRegularWidth {
 			pauseButtonSize = layoutUnit*1.5
-			fontSize = fontSize*1.5
 		}
+		fontSize = GameScene.hudFontSize(layoutUnit: layoutUnit, regularWidth: isRegularWidth,
+										 phone: UIDevice.current.userInterfaceIdiom == .phone)
 
 		labelSpacing = fontSize/1.5
 		minPaddleGap = brickHeight*4
@@ -9186,8 +9284,8 @@ laserTimer?.invalidate()
 					let achievement = GKAchievement(identifier: "gigaLasers")
 					if achievement.isCompleted == false {
 						achievement.showsCompletionBanner = true
-						GKAchievement.report([achievement]) { (error) in
-							Log.gameCenter.error("\(error?.localizedDescription ?? "Error reporting gigaLasers achievement", privacy: .public)")
+						GameCenterHandler.reportAchievements([achievement]) { (error) in
+							if let error { Log.gameCenter.error("Error reporting gigaLasers achievement: \(error.localizedDescription, privacy: .public)") }
 						}
 					}
 				}

@@ -3847,9 +3847,10 @@ final class DailyComparisonTests: XCTestCase {
     }
 
     func testTheCardsHiScoreLineReadsAsTheBoardsFigure() {
-        XCTAssertEqual(DailyCardView.hiScoreLine(3_400, unit: "", onLime: false).string
-                        .trimmingCharacters(in: .whitespaces).hasSuffix("Global Hi-Score:  3400"),
-                       true)
+        let card = DailyCardView()
+        card.show(key: "2026-09-20", isToday: false, record: nil, standing: nil, boardBest: 3_400)
+        let unit = DailyChallengeGenerator.challenge(forKey: "2026-09-20").mode == .classic ? "" : "m"
+        XCTAssertEqual(card.resultTextForTesting, "Global Hi-Score 3400" + unit)
     }
 }
 
@@ -4571,5 +4572,77 @@ final class DailyThemeBackgroundTests: XCTestCase {
             key = DailyChallengeGenerator.previousKey(of: key)!
         }
         XCTFail("no Theme day in sixty")
+    }
+}
+
+/// James, round 384, signed out of Game Center and on days past the board's reach.
+final class DailyCardTableAndSignedOutTests: XCTestCase {
+
+    private func record(_ key: String, score: Int, posted: Bool, practice: Int = 0,
+                        attempts: Int = 1) -> DailyChallengeRecord {
+        DailyChallengeRecord(dateKey: key, firstAttemptScore: score, posted: posted,
+                             bestPracticeScore: practice, attemptCount: attempts)
+    }
+
+    /// "layout the information in a similar table to the leaderboard. So the icon on the left,
+    /// the Posted Score in the middle and then score on the right. Change the icon for the
+    /// posted score to something more suitable, the current 1, 2, 3 icon doesn't represent the
+    /// information very well."
+    func testAnOldDaysResultIsLinesInTheBoardsColumns() throws {
+        let card = DailyCardView()
+        card.show(key: "2026-09-01", isToday: false,
+                  record: record("2026-09-01", score: 653, posted: true),
+                  standing: nil, boardBest: 900)
+        let unit = DailyChallengeGenerator.challenge(forKey: "2026-09-01").mode == .classic ? "" : "m"
+        XCTAssertEqual(card.resultTextForTesting,
+                       "Posted Score 653\(unit)\nGlobal Hi-Score 900\(unit)")
+        XCTAssertEqual(DailyCardView.ownScoreSymbol, "person.fill",
+                       "the player's own mark, not a numbered list")
+        let line = DailyCardView.resultLine(symbol: DailyCardView.ownScoreSymbol,
+                                            title: "Posted Score", value: "653", onLime: false)
+        XCTAssertEqual(line.arrangedSubviews.count, 3, "mark, name, figure")
+        XCTAssertEqual((line.arrangedSubviews.last as? UILabel)?.textAlignment, .right)
+    }
+
+    /// "move the note about not being signed into Game Center to below the daily challenge
+    /// details container, into the position where the leaderboard would be. Change the text to
+    /// 'Sign into Game Center to post to and view the global leaderboard'."
+    func testASignedOutPlayerSeesTheNoteWhereTheBoardWouldBe() {
+        let card = DailyCardView()
+        let key = DailyChallengeSession.shared.todayKey
+        card.show(key: key, isToday: true, record: nil, standing: nil,
+                  board: [DailyBoardRow(rank: 1, name: "Someone", score: 10, isLocalPlayer: false)],
+                  signedIn: false)
+        XCTAssertEqual(card.resultTextForTesting,
+                       "Sign into Game Center to post to and view the global leaderboard")
+        XCTAssertTrue(card.boardScroll.superview?.superview?.isHidden ?? true,
+                      "no board for a player who cannot see it")
+    }
+
+    /// "Once a daily challenge has been played, show the user's score in the leaderboard
+    /// container, right now it doesn't show the score when Game Center isn't connected."
+    func testASignedOutPlayersOwnScoreIsShownOnceTheyHavePlayed() {
+        let card = DailyCardView()
+        let key = DailyChallengeSession.shared.todayKey
+        card.show(key: key, isToday: true,
+                  record: record(key, score: 280, posted: false), standing: nil,
+                  signedIn: false)
+        XCTAssertTrue(card.resultTextForTesting.hasPrefix("Your Score 280"),
+                      card.resultTextForTesting)
+
+        card.show(key: "2026-09-01", isToday: false,
+                  record: record("2026-09-01", score: 0, posted: false, practice: 4234),
+                  standing: nil, signedIn: false)
+        XCTAssertTrue(card.resultTextForTesting.hasPrefix("Your Score 4234"),
+                      "a day played for practice shows what it scored")
+    }
+
+    /// "Daily challenge menu view leaderboard container not resizing properly when content is
+    /// less" - one player, and a row's height of empty lime above them.
+    func testABoardOfOneIsOneRowTall() {
+        XCTAssertEqual(DailyCardView.boardWindowFloor(rows: 1),
+                       DailyCardView.boardRowHeight.rounded(.up), accuracy: 0.5)
+        XCTAssertLessThan(DailyCardView.boardWindowFloor(rows: 2), DailyCardView.boardWindowFloor)
+        XCTAssertEqual(DailyCardView.boardWindowFloor(rows: 10), DailyCardView.boardWindowFloor)
     }
 }

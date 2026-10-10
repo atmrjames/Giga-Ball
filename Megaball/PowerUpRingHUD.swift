@@ -59,6 +59,9 @@ final class PowerUpRingHUD: SKNode {
     }
 
     private var slots: [String: Slot] = [:]
+    /// What the slots hang from, so the whole row can be shrunk at once when it runs out of
+    /// room - see `maximumWidth`.
+    private let row = SKNode()
     /// Collection order, oldest first. New arrivals go on the right, and a power-up
     /// collected again while it is running moves there too - so the rightmost is always
     /// the one that just happened.
@@ -94,6 +97,30 @@ final class PowerUpRingHUD: SKNode {
 
     var iconSize: CGFloat = 30
     var spacing: CGFloat = 12
+
+    /// The widest the capsule may be drawn, rings and padding included.
+    ///
+    /// **Past it the rings shrink rather than the capsule growing** (James, round 384: "I had
+    /// more power ups than could show on the power up HUD... Can the power up icons and progress
+    /// bars shrink slightly when the bar is full to accommodate more power ups"). Eleven running
+    /// at once ran the row off both edges of an iPhone. The scene sets this to the play zone's
+    /// width less a margin; the capsule stops there and the row inside it is scaled to fit,
+    /// icons, rings and gaps together, so nothing changes shape - only size.
+    var maximumWidth: CGFloat = .greatestFiniteMagnitude
+
+    /// How much the row has to shrink to fit `count` slots inside `maximumWidth`: one until
+    /// it is full, then less. The padding round the outside does not shrink - it is what keeps
+    /// the rings off the capsule's edge, and it is small.
+    static func fitScale(count: CGFloat, iconSize: CGFloat, spacing: CGFloat,
+                         maximumWidth: CGFloat) -> CGFloat {
+        let natural = max(0, count - 1)*(iconSize + spacing) + iconSize
+        let room = maximumWidth - padding*2
+        guard natural > 0, room > 0, natural > room else { return 1 }
+        return room/natural
+    }
+
+    /// The scale the row is drawn at now, for tests.
+    var rowScaleForTesting: CGFloat { row.xScale }
 
     /// The container never narrows past this, so an empty one still reads as the place
     /// power-ups appear rather than as nothing at all.
@@ -133,6 +160,7 @@ final class PowerUpRingHUD: SKNode {
         container.fillColor = UIColor(white: 1, alpha: 0.08)
         container.zPosition = -1
         addChild(container)
+        addChild(row)
     }
 
     required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
@@ -238,7 +266,7 @@ final class PowerUpRingHUD: SKNode {
             shape.path = ringPath(remaining: entry.remaining, segments: entry.segments)
         }
 
-        addChild(holder)
+        row.addChild(holder)
         slots[entry.id] = Slot(container: holder, icon: icon, ring: ring, halo: halo,
                                remaining: entry.remaining, segments: entry.segments)
         // Not yet `held`, whatever the entry says: the update that follows sees the
@@ -294,20 +322,28 @@ final class PowerUpRingHUD: SKNode {
         let t = min(1, CGFloat((now - containerStart)/PowerUpRingHUD.appearDuration))
         let eased = 1 - pow(1 - t, 3)
         let slots = containerFrom + (containerTarget - containerFrom)*eased
-        guard abs(slots - containerDrawn) > 0.001 else { return }
+        guard abs(slots - containerDrawn) > 0.001 || maximumWidth != widthDrawnFor else { return }
         containerDrawn = slots
         containerSlots = containerTarget
-        setContainerPath(slots: slots)
+        widthDrawnFor = maximumWidth
+        let scale = PowerUpRingHUD.fitScale(count: slots, iconSize: iconSize, spacing: spacing,
+                                            maximumWidth: maximumWidth)
+        row.setScale(scale)
+        // Follows the capsule as it grows, so the rings shrink in step with the capsule
+        // reaching its limit rather than jumping when the count changes
+        setContainerPath(slots: slots, scale: scale)
     }
+
+    private var widthDrawnFor: CGFloat = .greatestFiniteMagnitude
 
     private var containerTarget: CGFloat = 0
     private var containerFrom: CGFloat = 0
     private var containerDrawn: CGFloat = 0
     private var containerStart: CFTimeInterval = 0
 
-    private func setContainerPath(slots count: CGFloat) {
+    private func setContainerPath(slots count: CGFloat, scale: CGFloat) {
         let step = iconSize + spacing
-        let width = (count - 1)*step + iconSize + PowerUpRingHUD.padding*2
+        let width = ((count - 1)*step + iconSize)*scale + PowerUpRingHUD.padding*2
         let height = iconSize + PowerUpRingHUD.padding*2
         let rect = CGRect(x: -width/2, y: -height/2, width: width, height: height)
         // Rebuilt rather than scaled, or the rounded ends would stretch with it

@@ -811,6 +811,9 @@ final class DailyEndScreenLayoutTests: XCTestCase {
         pause.levelScore = 1200
         pause.score = 1500
         pause.totalStatsArray = [TotalStats()]
+        pause.gameCenterIsSignedIn = { true }
+        // A board to show is a signed-in player's: since round 384 a signed-out ending says
+        // nothing about Game Center, and the suite's simulator is never signed in
         InGameRecents.shared.runSummary = InGameRecents.RunSummary(
             height: 0, durationSeconds: 90, paddleHits: 40, bricksDestroyed: 60,
             ballsLost: 1, powerUpsSeen: 4, powerUpsCollected: 3,
@@ -1850,6 +1853,8 @@ final class SettingsRowTapTests: XCTestCase {
         screen.totalStatsStore = FileManager.default.temporaryDirectory
             .appendingPathComponent(suiteName + ".plist")
         screen.navigatedFrom = "MainMenu"
+        screen.gameCenterIsSignedIn = { true }
+        // The suite's simulator is never signed in; a test about the signed-out list says so
         screen.loadViewIfNeeded()
         return (screen, defaults)
     }
@@ -1969,6 +1974,14 @@ final class SettingsRowTapTests: XCTestCase {
     func testTheDailyResultSwitchIsNotOfferedInGame() throws {
         let (screen, _) = try settings()
         screen.navigatedFrom = "PauseMenu"
+        XCTAssertFalse(screen.settingRows.contains(.dailyResult))
+    }
+
+    /// James, round 384, signed out of Game Center: "Hide the Daily Result Pop Up setting, this
+    /// doesn't make any sense when Game Center isn't connected."
+    func testTheDailyResultSwitchIsNotOfferedToASignedOutPlayer() throws {
+        let (screen, _) = try settings()
+        screen.gameCenterIsSignedIn = { false }
         XCTAssertFalse(screen.settingRows.contains(.dailyResult))
     }
 

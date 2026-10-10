@@ -129,11 +129,32 @@ struct EndlessIIProgression: Codable, Equatable {
     /// the queue, at this run's own spacing, through the same quickening every schedule here
     /// has used since round 190 - the gaps shorten with depth, so a run that goes deep meets
     /// things faster rather than at a flat rate for ever.
-    func arrivalHeight(of element: EndlessIIElement) -> Int {
+    func arrivalHeight(of element: EndlessIIElement,
+                       table: [EndlessIIElement: Int]? = nil) -> Int {
         guard everythingAtOnce == false else { return 0 }
+        if let table { return table[element] ?? 0 }
         guard let releaseOrder, let place = releaseOrder.firstIndex(of: element) else { return 0 }
         return EndlessIIProgression.introductionDistance(steps: place + 1,
                                                          spacing: elementSpacing)
+    }
+
+    /// Every element's arrival height, in one walk of the queue, for a caller about to ask
+    /// about a great many of them.
+    ///
+    /// **Round 384, from the iPad's row-build hitches.** A row asks the arrival of every
+    /// power-up for the schedule and of every style in a pool for each of its bricks, and each
+    /// answer searched the queue and walked its spacing again - several thousand steps a row,
+    /// for answers that do not change all run. The scene keeps this and hands it back in;
+    /// every question still works without it, so nothing else has to know. Nil for a run
+    /// without one queue, whose arithmetic is already cheap.
+    func arrivalTable() -> [EndlessIIElement: Int]? {
+        guard let releaseOrder else { return nil }
+        var table: [EndlessIIElement: Int] = [:]
+        for (element, height) in zip(releaseOrder, releaseArrivals(releaseOrder))
+        where table[element] == nil {
+            table[element] = height
+        }
+        return table
     }
 
     /// The height this run first allows a *bad* power-up inside a power-up brick, and the
@@ -462,9 +483,10 @@ struct EndlessIIProgression: Codable, Equatable {
     /// types and power ups are always available"). Those are the ones the original game has,
     /// everything below `firstEndlessIIPowerUp` - the vocabulary a player already knows, and
     /// the floor a run is playable on before it has been taught anything.
-    func powerUpIntroductionHeight(of index: Int) -> Int {
+    func powerUpIntroductionHeight(of index: Int,
+                                   table: [EndlessIIElement: Int]? = nil) -> Int {
         guard index >= LevelPackSetup.firstEndlessIIPowerUp else { return 0 }
-        if releaseOrder != nil { return arrivalHeight(of: .powerUp(index)) }
+        if releaseOrder != nil { return arrivalHeight(of: .powerUp(index), table: table) }
         // One queue for every kind since round 258. The arithmetic below is what a run saved
         // before that was promised, and it keeps it
         guard let place = powerUpOrder.firstIndex(of: index) else { return 0 }
@@ -479,8 +501,9 @@ struct EndlessIIProgression: Codable, Equatable {
     /// common, it restores whatever weight it was given in the first place. Before that it
     /// keeps a fraction of it, so an early run can still turn one up as a surprise - the same
     /// rule the styles follow, for the same reason.
-    func powerUpWeightScale(for index: Int, at height: Int) -> Double {
-        let introduced = height >= powerUpIntroductionHeight(of: index)
+    func powerUpWeightScale(for index: Int, at height: Int,
+                            table: [EndlessIIElement: Int]? = nil) -> Double {
+        let introduced = height >= powerUpIntroductionHeight(of: index, table: table)
         let base = introduced ? 1 : EndlessIIProgression.powerUpEarlyScale
         guard flatRarity == false else { return base }
         // Level Pegging drops this run's own weighting, which is the part that makes one
@@ -505,8 +528,9 @@ struct EndlessIIProgression: Codable, Equatable {
     /// The first `openingStyles` are available immediately - a run that opened with nothing
     /// unusual for twelve metres would just be Endless - and how many that is varies per run,
     /// which is what makes two runs to the same height feel differently stocked.
-    func introductionHeight(of style: EndlessIIStyle) -> Int {
-        if releaseOrder != nil { return arrivalHeight(of: .style(style)) }
+    func introductionHeight(of style: EndlessIIStyle,
+                            table: [EndlessIIElement: Int]? = nil) -> Int {
+        if releaseOrder != nil { return arrivalHeight(of: .style(style), table: table) }
         guard let place = introductionOrder.firstIndex(of: style) else { return 0 }
         guard place >= openingStyles else { return 0 }
         return EndlessIIProgression.introductionDistance(steps: place - openingStyles + 1,
@@ -514,11 +538,12 @@ struct EndlessIIProgression: Codable, Equatable {
     }
 
     /// How strongly a style should be drawn at this height, relative to the others.
-    func weight(for style: EndlessIIStyle, at height: Int) -> Int {
+    func weight(for style: EndlessIIStyle, at height: Int,
+                table: [EndlessIIElement: Int]? = nil) -> Int {
         guard flatRarity == false else { return EndlessIIProgression.introducedWeight }
         // Level Pegging: everything as likely as everything else, which for the styles is
         // already what an introduced weight means - they differ only by *when* they arrive
-        let weight = height >= introductionHeight(of: style)
+        let weight = height >= introductionHeight(of: style, table: table)
             ? EndlessIIProgression.introducedWeight
             : EndlessIIProgression.earlyWeight
         guard style == .fixed else { return weight }
@@ -548,14 +573,17 @@ struct EndlessIIProgression: Codable, Equatable {
     /// Draws from everything every time rather than from what has been introduced, which is
     /// what keeps the early appearances possible. Returns nil only if given nothing.
     func pickStyle(from styles: [EndlessIIStyle], at height: Int,
+                   table: [EndlessIIElement: Int]? = nil,
                    roll: (Int) -> Int = { Int.random(in: 0..<$0) }) -> EndlessIIStyle? {
         guard styles.isEmpty == false else { return nil }
-        let total = styles.reduce(0) { $0 + weight(for: $1, at: height) }
+        let weights = styles.map { weight(for: $0, at: height, table: table) }
+        // Asked once each rather than once for the total and again for the draw
+        let total = weights.reduce(0, +)
         guard total > 0 else { return styles.first }
 
         var remaining = roll(total)
-        for style in styles {
-            remaining -= weight(for: style, at: height)
+        for (style, weight) in zip(styles, weights) {
+            remaining -= weight
             if remaining < 0 { return style }
         }
         return styles.last

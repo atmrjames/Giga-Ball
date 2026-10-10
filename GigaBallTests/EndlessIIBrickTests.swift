@@ -227,6 +227,57 @@ final class EndlessIIBrickTests: XCTestCase {
                        "everything hittable is invisible, which is Classic's whole trigger")
     }
 
+    // MARK: - Round 384
+
+    /// James, round 384: "Invisible bricks should only flash when the ball hits the paddle when
+    /// there are no destructible bricks visible in classic mode and no destructible bricks
+    /// visible in the bottom row in endless mode and endless mayhem."
+    func testTheOriginalEndlessAsksOnlyTheBottomRow() {
+        let scene = zoneScene()
+        scene.gameMode = .endless
+        let higherUp = zoneBrick(on: scene, y: 300, hidden: true)
+        let wall = zoneBrick(on: scene, y: 0, hidden: false)
+        wall.texture = scene.brickIndestructible1Texture
+        // Nothing breakable in view anywhere, which Classic's rule used to call an empty field
+
+        scene.invisibleBrickFlash()
+        XCTAssertTrue(higherUp.isHidden, "a hidden brick above the bottom row is not the clue")
+    }
+
+    func testAWallInTheBottomRowDoesNotCallOffItsClue() {
+        let scene = zoneScene()
+        _ = zoneBrick(on: scene, y: 0, hidden: true)
+        let wall = zoneBrick(on: scene, y: 0, hidden: false)
+        wall.texture = scene.brickIndestructible2Texture
+
+        XCTAssertTrue(scene.endlessIIBottomZoneIsAllHidden,
+                      "a wall is not a destructible brick, so the row is still unexplained")
+    }
+
+    func testAnyBreakableBrickInViewCallsOffClassicsFlash() {
+        let scene = zoneScene()
+        scene.gameMode = .classic
+        let hidden = zoneBrick(on: scene, y: 300, hidden: true)
+        let other = zoneBrick(on: scene, y: 100, hidden: false)
+        other.texture = SKTexture(imageNamed: "BrickNormalExplodingOverlay")
+        // A brick of some kind the old list of six textures did not name
+
+        scene.invisibleBrickFlash()
+        XCTAssertTrue(hidden.isHidden, "there is something to hit, so nothing to explain")
+    }
+
+    func testClassicDoesNotFlashAFoggedField() {
+        let scene = zoneScene()
+        scene.gameMode = .classic
+        DailyChallengeSession.shared.active = DailyChallenge(
+            dateKey: "t", mode: .classic, classicLevel: 1, twists: [.fogOfWar])
+        defer { DailyChallengeSession.shared.active = nil }
+        let fogged = zoneBrick(on: scene, y: 300, hidden: true)
+
+        scene.invisibleBrickFlash()
+        XCTAssertTrue(fogged.isHidden, "the fog is the twist, not a field to explain")
+    }
+
     func testTheZoneRuleStillFlashesItsLurker() {
         // Scoping Classic's rule out of Mayhem must not take the round-173 feature with it
         let scene = zoneScene()

@@ -128,10 +128,10 @@ extension GameScene {
         // after the thing it would have acted on ran out. The weight answers "may one be drawn
         // now"; this answers "is this one worth showing", which is the question a brick that is
         // about to be looked at for the next ten seconds asks
-        guard totalStatsArray.first?.powerUpUnlockedArray.indices.contains(index) == true,
-              totalStatsArray[0].powerUpUnlockedArray[index] else { return nil }
-        // A power-up the player has not unlocked yet is one they would not recognise, and
-        // setting one off would be showing them something the packs have not reached
+        guard powerUpIsUnlockedForThisRun(index) else { return nil }
+        // Always true in Mayhem since round 384 ("Endless Mayhem and Daily Challenge don't have
+        // locked power-up limits"), and kept as the one question, so that if the locks ever
+        // come back to this mode they come back here as well as to the drops
 
         let plan = EndlessIITallBrick(cell: CGSize(width: brickWidth, height: brickHeight))
 
@@ -236,10 +236,8 @@ extension GameScene {
     }
 
     /// Hands a power-up brick's power-up to `applyPowerUp`, the way a caught one arrives.
-    func endlessIIApplyBrickPowerUp(_ index: Int, at point: CGPoint) {
-        let carrier = SKSpriteNode(texture: endlessIIPowerUpTexture(index))
-        carrier.position = point
-        carrier.alpha = 0
+    func endlessIIApplyBrickPowerUp(_ index: Int, at point: CGPoint, shown: Bool = false) {
+        let carrier = endlessIIBrickPowerUpCarrier(index, at: point, shown: shown)
         addChild(carrier)
         powerUpsOnScreen += 1
         // In the scene, invisible, and counted. `applyPowerUp` runs the collection animation
@@ -253,13 +251,37 @@ extension GameScene {
         // icon and conflict rule is the one that already exists
     }
 
+    /// The node a power-up brick's power-up is handed over on.
+    ///
+    /// **A falling power-up's size, and hidden unless asked to be seen** (James, round 384:
+    /// "When playing on the Mac, and the ball hit a power up brick, the brick expanded to a
+    /// huge size as it animated out"). The carrier was built at its texture's natural size and
+    /// set to alpha nought on the understanding that it would never be seen - but
+    /// `applyPowerUp` starts every collection by fading its node *up* to three quarters and
+    /// scaling it by half again, so the invisible carrier appeared, at the full size of the
+    /// picture behind the icon, and grew. On the Mac that picture is large. The brick's own
+    /// burst (`endlessIIShowPowerUpBrickBurst`) is what shows the collection there, so the
+    /// carrier stays hidden; one handed over at the paddle after a lost ball has no burst, and
+    /// is shown as the catch it stands in for.
+    func endlessIIBrickPowerUpCarrier(_ index: Int, at point: CGPoint,
+                                      shown: Bool) -> SKSpriteNode {
+        let carrier = SKSpriteNode(texture: endlessIIPowerUpTexture(index))
+        carrier.size = CGSize(width: brickWidth*0.85, height: brickWidth*0.85)
+        // `powerUpGenerator`'s size for a falling one
+        carrier.position = point
+        carrier.isHidden = shown == false
+        // Hidden rather than transparent: an action can fade a node in, and nothing that
+        // `applyPowerUp` runs touches `isHidden`
+        return carrier
+    }
+
     /// Sets off whatever power-up bricks were broken while a ball was being lost, once it is
     /// back. Called every frame; nothing to do almost always.
     func releaseEndlessIIHeldBrickPowerUps() {
         guard endlessIIHeldBrickPowerUps.isEmpty == false, ballLostBool == false else { return }
         let held = endlessIIHeldBrickPowerUps
         endlessIIHeldBrickPowerUps.removeAll()
-        for index in held { endlessIIApplyBrickPowerUp(index, at: paddle.position) }
+        for index in held { endlessIIApplyBrickPowerUp(index, at: paddle.position, shown: true) }
     }
 
     /// The scene's own texture for a power-up.
