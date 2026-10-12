@@ -212,7 +212,12 @@ final class ResumeCardRenderTests: XCTestCase {
         XCTAssertEqual(frame.width, MainMenuCollectionViewCell.largeButtonSize,
                        "the same disc every menu's centre button wears")
         XCTAssertEqual(frame.height, frame.width, "round, so square before the radius")
-        XCTAssertEqual(button.layer.cornerRadius, frame.width/2, accuracy: 0.01)
+        if #available(iOS 26.0, *) {
+            XCTAssertEqual(button.layer.cornerRadius, frame.width/2, accuracy: 0.01)
+        } else {
+            XCTAssertEqual(button.image(for: .normal)?.size.width ?? 0, frame.width, accuracy: 0.01,
+                           "below iOS 26 the disc is the drawing, filling the button (round 385)")
+        }
         XCTAssertEqual(frame.midX, screen.midX, accuracy: 0.5, "centred")
         XCTAssertGreaterThan(frame.maxY, screen.height - 120,
                              "at the bottom, roughly where the Cancel capsule used to sit")

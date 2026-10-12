@@ -5468,25 +5468,17 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		let anchored = endlessIIAnchoredCells()
 
 		enumerateChildNodes(withName: BrickCategoryName) { (node, _) in
-			if let sprite = node as? SKSpriteNode, self.brickHasReachedTheBottomZone(sprite) {
+			switch self.descentFate(of: node, anchored: anchored) {
+			case .staysPut: return
+			case .leavesTheBottom:
 				node.removeFromParent()
 				return
-			}
-			// Anything already in the bottom zone leaves before the field steps - by the
-			// same rule the counting uses, so a Big brick goes at the same moment it
-			// would have started blocking
-
-			if self.endlessIIStaysPut(node) { return }
-			// An anchored brick is the one thing the field descends around
-
-			if self.endlessIICrushedByAnchor(node, anchored: anchored) {
+			case .crushed:
 				if let brick = node as? SKSpriteNode { self.endlessIIDestroy(brick) }
 				return
+			case .stepsDown:
+				self.moveBrickDownARow(node, by: moveBricksDown)
 			}
-			// Anything descending onto an anchored brick is destroyed by it, which is what
-			// carves a channel up through everything arriving above it
-
-			self.moveBrickDownARow(node, by: moveBricksDown)
 		}
 		// Move bricks down. By a row, not by each brick's own height - those were the same
 		// number while every brick was exactly one cell, but a brick that is any other size
@@ -5496,6 +5488,41 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			self.run(endlessRowDownSound)
 		}
 		
+		finishTheStep()
+	}
+
+	/// What a field step does to one brick.
+	enum DescentFate: Equatable { case staysPut, leavesTheBottom, crushed, stepsDown }
+
+	/// Decided for each brick as the field steps down a row - in this order, which is the point.
+	func descentFate(of node: SKNode, anchored: Set<EndlessIICell>) -> DescentFate {
+		if self.endlessIIStaysPut(node) { return .staysPut }
+		// An anchored brick is the one thing the field descends around - **and asked
+		// first, before the bottom zone clears** (James, round 385: "Fixed bricks that
+		// have been hit / activated but not destroyed on the bottom row are being treated
+		// as indestructible bricks and causing the rows to descend so they are removed.
+		// The bottom row should descend, but the fixed bricks should remain in place").
+		// `countBricks` has never let an anchored brick hold the field up, so the row
+		// stepped as it should; but the clearing below ran first and took the anchored
+		// brick with the rest of the row. It stays now until the player breaks it, and
+		// what descends onto it is crushed, as anywhere else in the field
+
+		if let sprite = node as? SKSpriteNode, self.brickHasReachedTheBottomZone(sprite) {
+			return .leavesTheBottom
+		}
+		// Anything already in the bottom zone leaves before the field steps - by the
+		// same rule the counting uses, so a Big brick goes at the same moment it
+		// would have started blocking
+
+		if self.endlessIICrushedByAnchor(node, anchored: anchored) { return .crushed }
+		// Anything descending onto an anchored brick is destroyed by it, which is what
+		// carves a channel up through everything arriving above it
+
+		return .stepsDown
+	}
+
+	/// The rest of a step, once the bricks have been moved: the new row, the metre, its rewards.
+	private func finishTheStep() {
 		if gameState.currentState is Playing {
 			buildNewEndlessRow()
 		}
@@ -5985,15 +6012,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		// Asked of `gameMode` rather than the `endlessMode` flag beside it: that flag is set
 		// during scene setup, so it is false on a scene that has not been presented and this
 		// rule would quietly answer no for the whole of a test run
-		guard dailyFogIsOn == false else { return false }
-		// **Not on a Fog of War day** (James, round 184: after resuming a fogged Mayhem run,
-		// "hidden bricks are flashing on every paddle bounce even though there are other
-		// visible bricks"). The whole rule exists to explain a brick the player has no way of
-		// knowing about - one that stalls the descent for no visible reason (round 173). On a
-		// fogged day *every* brick starts hidden, which is the twist doing exactly what it
-		// says on the briefing card, so the zone is nearly always all-hidden and the flash
-		// fires on every landing. Explaining the fog to a player who chose the fog is not an
-		// explanation, it is the twist being handed back
+		// **A fogged brick counts as there, on a Fog of War day** (James, round 385: "Invisible
+		// bricks should still flash on a foggy daily challenge"). Round 184 stood this rule down
+		// on a fogged day - "hidden bricks are flashing on every paddle bounce even though there
+		// are other visible bricks" - because every brick starts hidden and the row was nearly
+		// always all-hidden. Counted as in view instead, a fogged brick calls the clue off the
+		// way a visible one does, and an Invisible brick alone on the row still gets its flash
 		// **The row, not the field** (James, round 215: "if there's no other visible bricks on
 		// the same row"). Round 210 read his earlier note as being about the whole field and
 		// required nothing visible anywhere, which is far stricter than the thing being
@@ -6010,7 +6034,13 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			// **Breakable bricks only, on either side** (James, round 384: "no destructible
 			// bricks visible in the bottom row"). A wall in the row is not something to aim at,
 			// so it does not explain the stall and does not call the clue off
-			if sprite.isHidden { hidden += 1 } else if sprite.alpha > 0.01 { visible += 1 }
+			if self.brickIsOnlyFogged(sprite) {
+				visible += 1
+			} else if sprite.isHidden {
+				hidden += 1
+			} else if sprite.alpha > 0.01 {
+				visible += 1
+			}
 		}
 		return hidden > 0 && visible == 0
 	}
@@ -6035,18 +6065,25 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	/// out. Indestructibles are never what the player is being pointed at, and a Null cell is
 	/// nothing.
 	///
-	/// **Not on a Fog of War day**, for the reason the zone rule gives: every brick starts
-	/// hidden by design, so the field is all-hidden from the first paddle hit and the flash
-	/// would hand the fog back to the player who chose it.
+	/// **On a Fog of War day a fogged brick counts as there** (James, round 385: "Invisible
+	/// bricks should still flash on a foggy daily challenge"). Round 384 stood the rule down on
+	/// a fogged day, because every brick starts hidden and an all-hidden field would flash on
+	/// every paddle hit and hand the fog back. The fog is not what the flash is for, though -
+	/// the Invisible brick is, and it is no easier to find under fog than without it. So a
+	/// brick the fog is hiding counts as in view, and the flash comes when Invisible bricks
+	/// are all that is left, as on any other day, and shows only them.
 	var classicFieldIsAllHidden: Bool {
-		guard gameMode == .classic, dailyFogIsOn == false else { return false }
+		guard gameMode == .classic else { return false }
 		var hidden = false
 		var visible = false
 		enumerateChildNodes(withName: BrickCategoryName) { node, stop in
 			guard let sprite = node as? SKSpriteNode,
 				  self.brickCanBeDestroyed(sprite),
 				  sprite.texture != self.brickNullTexture else { return }
-			if sprite.isHidden {
+			if self.brickIsOnlyFogged(sprite) {
+				visible = true
+				stop.pointee = true
+			} else if sprite.isHidden {
 				hidden = true
 			} else if sprite.alpha > 0.01 {
 				visible = true
@@ -6054,6 +6091,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			}
 		}
 		return hidden && visible == false
+	}
+
+	/// Whether a brick is hidden by the day's fog and nothing else: hidden, on a fogged day,
+	/// and not an Invisible brick, which is hidden on any day.
+	func brickIsOnlyFogged(_ sprite: SKSpriteNode) -> Bool {
+		dailyFogIsOn && sprite.isHidden && sprite.texture !== brickInvisibleTexture
 	}
 
 	func invisibleBrickFlash() {
@@ -6080,7 +6123,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				let sprite = node as! SKSpriteNode
 				guard sprite.isHidden,
 				      sprite.texture == self.brickNormalTexture
-				        || sprite.texture == self.brickInvisibleTexture else { return }
+				        || sprite.texture == self.brickInvisibleTexture,
+				      self.brickIsOnlyFogged(sprite) == false else { return }
+				// Never a fogged brick: the fog is the day's, and the flash is for Invisible
+				// bricks (round 385)
 				if mayhemZoneOnly, self.brickHasReachedTheBottomZone(sprite) == false { return }
 				// **Only the brick on the bottom row** (James, round 210: "only the brick in
 				// the bottom row should flash in this instance"). The flash answers one

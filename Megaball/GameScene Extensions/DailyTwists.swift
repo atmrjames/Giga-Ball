@@ -269,7 +269,8 @@ extension GameScene {
         if let standing = dailyAlwaysOnPowerUp {
             powerUpProbArray[standing] = 0
             for other in GameScene.endlessIIExclusiveIndicesEnded(byCollecting: standing)
-                + GameScene.classicIndicesEnded(byCollecting: standing) {
+                + GameScene.classicIndicesEnded(byCollecting: standing)
+                + GameScene.endlessIIIndicesReplaced(byCollecting: standing) {
                 if powerUpProbArray.indices.contains(other) { powerUpProbArray[other] = 0 }
             }
             // **Both halves of the game** (James, round 340: an Always On day "shouldn't show

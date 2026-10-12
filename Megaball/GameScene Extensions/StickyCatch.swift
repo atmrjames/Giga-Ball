@@ -135,6 +135,14 @@ extension GameScene {
         performStickyCatch()
         // Moved to where it was going before it is stopped, so it sticks where it would have
         // landed rather than where it happened to be when the frame began
+        touchBeganWhilstPlaying = false
+        // **Only a tap launches it** (James, round 385: "For the safety paddle and mirror paddle
+        // with the sticky paddle enabled, the ball launches if the finger is released from the
+        // screen. It should release on a tap"). A finger already down when the ball lands is
+        // in the middle of something else - moving the paddle, usually - and its lift is the
+        // end of that, not a request to launch. Voided here, the lift does nothing and the next
+        // touch is the tap. Aimed Sticky has asked the same question since round 383
+        // (`endlessIIAimTouchPredatesHold`); the plain catches on all three surfaces ask it now
 
         if hapticsSetting {
             lightHaptic.impactOccurred()

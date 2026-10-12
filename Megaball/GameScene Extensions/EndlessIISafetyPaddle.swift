@@ -416,9 +416,18 @@ extension GameScene {
 
         let art = endlessIIPaddleTopTexture
         if strip.texture !== art { strip.texture = art }
-        strip.size = CGSize(width: bar.size.width, height: paddleSticky.size.height)
+        let xScale = bar.xScale == 0 ? 1 : abs(bar.xScale)
+        let yScale = bar.yScale == 0 ? 1 : abs(bar.yScale)
+        strip.size = CGSize(width: bar.size.width/xScale,
+                            height: paddleSticky.size.height/yScale)
         strip.centerRect = GameScene.paddleStickyCapRect
-        strip.position = CGPoint(x: 0, y: -bar.size.height/2)
+        strip.position = CGPoint(x: 0, y: -bar.size.height/2/yScale)
+        // **In the bar's own units** (James, round 385: "With sticky paddle, extended paddle and
+        // safety paddle, the sticky paddle texture on the safety paddle grew too large"). The
+        // bar copies the paddle's Expand as a scale, and a sprite's size already carries its
+        // scale (§8.6) - so the strip, sized from the bar's drawn width and then drawn inside the
+        // bar, was scaled a second time: half as wide again as the bar under an Expand. Divided
+        // back out, the bar's scale is applied once, by the bar
         // Measured in the bar's own coordinates, and off its underside for the reason the
         // paddle's strip is: the two pictures are drawn to meet at that line, and both stand
         // on it rather than being centred across it
@@ -613,6 +622,8 @@ extension GameScene {
         }
 
         endlessIIRefreshStickyPaddleLook()
+        touchBeganWhilstPlaying = false
+        // Only a tap launches it, as on the paddle - see `catchStickyBallBeforeStep` (round 385)
         if soundsSetting { run(stickyPaddleHitSound) }
         if hapticsSetting { lightHaptic.impactOccurred() }
         return true

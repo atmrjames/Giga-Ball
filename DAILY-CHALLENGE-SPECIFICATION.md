@@ -581,6 +581,12 @@ briefing screen (§6).
   Signed out, the same container says "Sign into Game Center to post to and view the global
   leaderboard", under "Your Score" once the day has been played.
 
+  **Free play is back, on its own line** (round 385, James: "show the users posted score and free
+  play hi score if they have played free play of the challenge"): a "Free Play Best" line under
+  the board or in the result table, only once free play has been played. An Always On day also
+  leaves out the standing power-up's one-slot rivals (another paddle face, the other Drift), and
+  a Mayhem day's field carries no best-height or rival lines.
+
   **Its last clause landed in round 269**: free play played after the post is listed in the same
   container, as a second and quieter line under the day's own number - the count of attempts
   beyond the first, and the best of them. Shown even when it beats the posted score, because

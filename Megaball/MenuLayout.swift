@@ -1363,10 +1363,16 @@ final class StickyScrollEnds: NSObject, UIScrollViewDelegate {
     /// after every layout pass, since a pass can change how much there is to scroll.
     func update() {
         let overflow = self.overflow
-        let offset = min(max(scroll.contentOffset.y, 0), overflow)
-        // Clamped, so a bounce past either end moves the ends with the page as it always has
-        let down = CGAffineTransform(translationX: 0, y: offset)
-        let up = CGAffineTransform(translationX: 0, y: offset - overflow)
+        let raw = overflow > 0 ? scroll.contentOffset.y : 0
+        let offset = min(max(raw, 0), overflow)
+        let down = CGAffineTransform(translationX: 0, y: raw)
+        let up = CGAffineTransform(translationX: 0, y: raw - overflow)
+        // **The raw offset, bounce and all** (James, round 385, from an iPhone SE: "the top and
+        // bottom sections are also 'elastic banding' when the scroll reaches the limit - they
+        // should remain fixed"). Round 384 clamped it to the scroll's range, so past either end
+        // the ends were left where the range ran out and travelled with the stretch. Followed
+        // all the way, they stay put while the middle springs. The bands' fade still reads the
+        // clamped figure: how much has passed under them does not grow with a bounce
         for view in header + [headerBackdrop] where view.transform != down { view.transform = down }
         for view in footer + [footerBackdrop] where view.transform != up { view.transform = up }
         headerBackdrop.alpha = min(1, offset/ScrollEdgeBackdrop.fade)

@@ -420,6 +420,31 @@ final class SceneTouchTests: XCTestCase {
         XCTAssertTrue(scene.ballIsOnPaddle)
     }
 
+    /// James, round 385: "For the safety paddle and mirror paddle with the sticky paddle enabled,
+    /// the ball launches if the finger is released from the screen. It should release on a tap."
+    func testABallCaughtOnTheSafetyBarWaitsForATapNotALift() throws {
+        let scene = try playing(.endlessII)
+        scene.releaseBall()
+        scene.endlessIICollectSafetyPaddle()
+        scene.tickEndlessIISafetyPaddle()
+        scene.stickyPaddleCatches = 3
+        let bar = try XCTUnwrap(scene.childNode(withName: GameScene.endlessIISafetyPaddleName)
+                                    as? SKSpriteNode)
+        let finger = CGPoint(x: scene.paddle.position.x, y: scene.paddle.position.y - 30)
+        scene.touchesBegan([PlacedTouch(at: finger)], with: nil)
+        scene.ball.position = CGPoint(x: bar.position.x, y: bar.position.y + 10)
+        XCTAssertTrue(scene.endlessIISafetyPaddleCaught(scene.ball))
+
+        scene.touchesEnded([PlacedTouch(at: finger)], with: nil)
+        XCTAssertTrue(scene.endlessIIHeldBalls.contains { $0 === scene.ball },
+                      "the lift of a finger that was already down launches nothing")
+
+        scene.touchesBegan([PlacedTouch(at: finger)], with: nil)
+        scene.touchesEnded([PlacedTouch(at: finger)], with: nil)
+        XCTAssertFalse(scene.endlessIIHeldBalls.contains { $0 === scene.ball },
+                       "a tap launches it")
+    }
+
     /// Touching the pause button pauses.
     func testThePauseButtonPauses() throws {
         let scene = try playing()

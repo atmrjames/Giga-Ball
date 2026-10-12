@@ -270,6 +270,19 @@ final class ScenePlaneTests: XCTestCase {
                                     "and never too small to read")
     }
 
+    /// James, round 385: "Wavy paddle is active but convex paddle power up icon is showing in
+    /// the HUD." The shape is one slot whatever shape it is, and the slot kept its first picture.
+    func testASlotWhosePictureChangesShowsTheNewOne() {
+        let hud = PowerUpRingHUD()
+        let convex = SKTexture(image: UIImage(systemName: "circle")!)
+        let wavy = SKTexture(image: UIImage(systemName: "square")!)
+        hud.update(with: [PowerUpRingHUD.Entry(id: "endlessIIPaddleSurface", texture: convex,
+                                               remaining: 0.5)])
+        hud.update(with: [PowerUpRingHUD.Entry(id: "endlessIIPaddleSurface", texture: wavy,
+                                               remaining: 1)])
+        XCTAssertEqual(hud.iconTexturesForTesting, [wavy])
+    }
+
     /// And the bar is drawn *behind* the node that owns it, which is exactly why round 207's
     /// raise buried it under the mask. The constant the planes leave room for has to keep
     /// matching the real child, or the headroom is arithmetic about nothing.

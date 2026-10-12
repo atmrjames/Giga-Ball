@@ -49,6 +49,8 @@ final class DailyCardView: UIView {
     let boardScroll = UIScrollView()
     /// The player's own place, pinned above the leading places (round 376).
     let ownRow = UIStackView()
+    /// The player's own two figures under the board, once they have played free play (round 385).
+    let boardExtras = UIStackView()
     private let lowerStack = UIStackView()
 
     private func build() {
@@ -173,10 +175,17 @@ final class DailyCardView: UIView {
             bottom: 4, trailing: DailyCardView.ownRowInset)
         ownRow.layer.cornerRadius = 8
         ownRow.isHidden = true
-        let boardStack = UIStackView(arrangedSubviews: [boardTitle, ownRow, boardScroll])
+        boardExtras.axis = .vertical
+        boardExtras.spacing = 6
+        boardExtras.isLayoutMarginsRelativeArrangement = true
+        boardExtras.directionalLayoutMargins = NSDirectionalEdgeInsets(
+            top: 0, leading: DailyCardView.ownRowInset, bottom: 0, trailing: DailyCardView.ownRowInset)
+        boardExtras.isHidden = true
+        let boardStack = UIStackView(arrangedSubviews: [boardTitle, ownRow, boardScroll, boardExtras])
         boardStack.axis = .vertical
         boardStack.spacing = 6
         boardStack.setCustomSpacing(DailyCardView.ownRowGap, after: ownRow)
+        boardStack.setCustomSpacing(DailyCardView.ownRowGap, after: boardScroll)
         boardStack.translatesAutoresizingMaskIntoConstraints = false
         boardCard.addSubview(boardStack)
         boardCard.isHidden = true
@@ -350,6 +359,8 @@ final class DailyCardView: UIView {
         } else {
             resultCard.isHidden = true
         }
+        showBoardExtras(signedIn ? record : nil, mode: challenge.mode,
+                        leading: own?.rank == 1 || board.first?.isLocalPlayer == true)
         // **Signed out, the leaderboard's place says so** (James, round 384: "move the note
         // about not being signed into Game Center to below the daily challenge details
         // container, into the position where the leaderboard would be ... Once a daily
@@ -661,6 +672,12 @@ final class DailyCardView: UIView {
             // Earned in the window, not yet landed (§12.5) - the retry loop is carrying it, and
             // this flips to the posted line the moment it does
         }
+        if let practice = DailyCardView.freePlayBest(of: record) {
+            resultRows.addArrangedSubview(DailyCardView.resultLine(
+                symbol: DailyCardView.freePlaySymbol, title: "Free Play Best",
+                value: "\(practice)" + unit, onLime: leading))
+            // Round 385, under the score it is not
+        }
         if record.posted, isToday, let standing {
             resultRows.addArrangedSubview(DailyCardView.resultLine(
                 symbol: "list.number", title: "Rank", value: standing.text, onLime: leading))
@@ -692,11 +709,20 @@ final class DailyCardView: UIView {
         dressTheResultCard(leading: false)
         resultCard.isHidden = false
         if let record, record.attemptCount > 0 {
-            let score = record.firstAttemptScore > 0
-                ? record.firstAttemptScore : record.bestPracticeScore
-            resultRows.addArrangedSubview(DailyCardView.resultLine(
-                symbol: DailyCardView.ownScoreSymbol, title: "Your Score",
-                value: "\(score)" + unit, onLime: false))
+            if record.firstAttemptScore > 0 || record.bestPracticeScore == 0 {
+                resultRows.addArrangedSubview(DailyCardView.resultLine(
+                    symbol: DailyCardView.ownScoreSymbol, title: "Your Score",
+                    value: "\(record.firstAttemptScore)" + unit, onLime: false))
+            }
+            if let practice = DailyCardView.freePlayBest(of: record)
+                ?? (record.firstAttemptScore == 0 && record.bestPracticeScore > 0
+                    ? record.bestPracticeScore : nil) {
+                resultRows.addArrangedSubview(DailyCardView.resultLine(
+                    symbol: DailyCardView.freePlaySymbol, title: "Free Play Best",
+                    value: "\(practice)" + unit, onLime: false))
+            }
+            // The attempt as "Your Score", and free play on its own line, as on the board (round
+            // 385). A past day played only for practice has no attempt, so its best is its line
         }
         let note = UILabel()
         note.text = DailyCardView.signedOutNote
@@ -706,6 +732,52 @@ final class DailyCardView: UIView {
         note.numberOfLines = 0
         resultRows.addArrangedSubview(note)
         makeTheResultCardADoor(false)
+    }
+
+    /// The best of a day's free play, when there was any beyond the attempt.
+    ///
+    /// **Shown again, and on its own line** (James, round 385: "For the daily challenge in the
+    /// leaderboard container, show the users posted score and free play hi score if they have
+    /// played free play of the challenge"). Round 306 took free play off the card, when it was
+    /// a quieter second line under the posted score inviting a comparison it then had to
+    /// explain away. It is a line of the table now, named for what it is, and only there once
+    /// free play has been played - a day played once has nothing to add.
+    static func freePlayBest(of record: DailyChallengeRecord?) -> Int? {
+        guard let record, record.attemptCount > 1, record.bestPracticeScore > 0 else { return nil }
+        return record.bestPracticeScore
+    }
+
+    /// The mark on the free-play line: the replay button's own arrow.
+    static let freePlaySymbol = "arrow.clockwise"
+
+    /// Under the board: the player's posted score and their free-play best, once there is a
+    /// free-play best to show beside it.
+    private func showBoardExtras(_ record: DailyChallengeRecord?, mode: GameMode, leading: Bool) {
+        boardExtras.arrangedSubviews.forEach { $0.removeFromSuperview() }
+        let unit = mode == .classic ? "" : "m"
+        guard boardCard.isHidden == false, let record,
+              let practice = DailyCardView.freePlayBest(of: record) else {
+            boardExtras.isHidden = true
+            return
+        }
+        if record.posted {
+            boardExtras.addArrangedSubview(DailyCardView.resultLine(
+                symbol: DailyCardView.ownScoreSymbol, title: "Posted Score",
+                value: "\(record.firstAttemptScore)" + unit, onLime: leading))
+        }
+        boardExtras.addArrangedSubview(DailyCardView.resultLine(
+            symbol: DailyCardView.freePlaySymbol, title: "Free Play Best",
+            value: "\(practice)" + unit, onLime: leading))
+        boardExtras.isHidden = false
+    }
+
+    /// What the lines under the board say, for tests.
+    var boardExtrasTextForTesting: String {
+        guard boardExtras.isHidden == false else { return "" }
+        return boardExtras.arrangedSubviews.map { view -> String in
+            ((view as? UIStackView)?.arrangedSubviews.compactMap { ($0 as? UILabel)?.text } ?? [])
+                .joined(separator: " ")
+        }.joined(separator: "\n")
     }
 
     /// The signed-out line, in the leaderboard's place (James, round 384).

@@ -37,6 +37,8 @@ enum EndlessIIExclusive: CaseIterable {
     case ballSpin
     case portalPaddle
     case ballControl
+    case quicksand
+    case retreat
 }
 
 enum EndlessIIExclusions {
@@ -73,6 +75,12 @@ enum EndlessIIExclusions {
         // should not run together"). Round 354 took them off this list on a report of the
         // paddle bouncing with both apparently running, and he confirmed the matrix instead:
         // collecting one ends the other, and the bounce he saw was the Portal ending
+
+        (.retreat, .quicksand),
+        // **Opposites, so one ends the other** (James, round 385: "Retreat and quicksand power
+        // ups should cancel each other out. They shouldn't both be active at once"). Each moves
+        // the field the same rows, one up and one down, so with both running the field sat
+        // where it started under two rings that each claimed to be moving it
     ]
 
     /// What collecting this power-up ends.
@@ -125,6 +133,8 @@ extension EndlessIIExclusive {
         case .ballSpin: return "Ball Spin"
         case .portalPaddle: return "Portal"
         case .ballControl: return "Ball Control"
+        case .quicksand: return "Quicksand"
+        case .retreat: return "Retreat"
         }
     }
 

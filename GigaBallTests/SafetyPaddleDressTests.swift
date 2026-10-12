@@ -70,6 +70,24 @@ final class SafetyPaddleDressTests: XCTestCase {
                        "which is what the paddle's own sticky strip does")
     }
 
+    /// James, round 385: "With sticky paddle, extended paddle and safety paddle, the sticky
+    /// paddle texture on the safety paddle grew too large." The bar is scaled with the paddle's
+    /// Expand, and its face, a child, was sized from the bar's drawn width and scaled again.
+    func testTheFaceIsTheBarsWidthOnScreenUnderAnExpand() throws {
+        let scene = self.scene()
+        scene.endlessIICollectSafetyPaddle()
+        scene.stickyPaddleCatches = 3
+        scene.paddle.xScale = 1.5
+        let bar = try XCTUnwrap(self.bar(scene))
+        scene.tickEndlessIISafetyPaddle()
+        scene.tickEndlessIISafetyPaddle()
+
+        let strip = try XCTUnwrap(face(of: bar))
+        let drawn = strip.calculateAccumulatedFrame().width * abs(bar.xScale)
+        XCTAssertEqual(drawn, bar.size.width, accuracy: 0.5,
+                       "as wide on screen as the bar it sits on, not half as wide again")
+    }
+
     /// And it goes away again when the catches are spent.
     func testTheFaceComesOffWhenNothingWantsIt() throws {
         let scene = self.scene()

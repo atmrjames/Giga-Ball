@@ -47,10 +47,18 @@ extension GameScene {
         let arriving = endlessHeight + GameScene.endlessIIMarkerLead
         guard arriving > 0 else { return }
 
-        let best = totalStatsArray.first?.endlessIIHeights.max() ?? 0
+        let theModesOwn = isDailyChallenge == false
+        // **Not on a daily** (James, round 385: "For endless mode and endless mayhem daily
+        // challenges don't show the high score lines for specific game modes as they don't
+        // really make sense as the daily challenges involve twists"). The best line and the
+        // rivals' lines are Mayhem's own records and Mayhem's own board; a daily is played under
+        // its twists and measured against its own board. The hundred-metre lines stay - they
+        // are distance, not a record
+        let best = theModesOwn ? (totalStatsArray.first?.endlessIIHeights.max() ?? 0) : 0
         let isBest = best > 0 && arriving == best
         let isHundred = arriving % GameScene.endlessIIMarkerSpacing == 0
-        let rival = isBest ? nil : endlessIIRivalLines.first { $0.height == arriving }
+        let rival = isBest || theModesOwn == false
+            ? nil : endlessIIRivalLines.first { $0.height == arriving }
         guard isBest || isHundred || rival != nil else { return }
         // A rival never displaces the player's own best: the two are only ever on the same row
         // if somebody's board score matches it exactly, and of the two the personal best is
@@ -748,6 +756,8 @@ extension GameScene {
     /// are tested. This is the wire.
     func loadEndlessIIRivalLines() {
         endlessIIRivalLines = []
+        guard isDailyChallenge == false else { return }
+        // Mayhem's board is not a daily's (round 385), so a daily does not ask it
         let best = totalStatsArray.first?.endlessIIHeights.max() ?? 0
         GameCenterHandler.helper.loadEndlessIIRivals { [weak self] rivals in
             guard let self else { return }

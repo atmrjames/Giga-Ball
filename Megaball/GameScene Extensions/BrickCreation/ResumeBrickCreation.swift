@@ -130,6 +130,8 @@ extension GameScene {
             brick.endlessIIPortalIsBlue = record.portalBlue
             brick.endlessIIPowerUpIndex = record.powerUpIndex
             addChild(brick)
+            if let index = record.powerUpIndex { endlessIIDressPowerUpBrick(brick, index: index) }
+            // Its badge and icon, which are child nodes and so not in the save (round 385)
 
             if let raw = record.vulnerableSide, let side = EndlessIISide(rawValue: raw) {
                 brick.endlessIIVulnerableSide = side

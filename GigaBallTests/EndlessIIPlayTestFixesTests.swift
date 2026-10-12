@@ -189,6 +189,25 @@ final class EndlessIIStickyPaddleQueueTests: XCTestCase {
         }
     }
 
+    /// James, round 385: "With sticky paddle, portal paddle and multi ball - one of the balls
+    /// when launched from the paddle didn't go through the portal as it should." The first
+    /// ball's sticky launch went through; every other held ball's did not.
+    func testAHeldExtraBallLaunchesThroughAPortalPaddle() {
+        let scene = stickyScene()
+        scene.size = CGSize(width: 400, height: 800)
+        scene.ballSpeedLimit = 300
+        let extra = extraBall(in: scene, x: 0)
+        scene.endlessIICatchExtraBall(extra)
+        scene.endlessIICollectPortalPaddle()
+        XCTAssertTrue(scene.endlessIIAimLaunchesThroughThePaddle)
+        let before = extra.position.y
+
+        scene.endlessIILaunchHeldBall()
+        XCTAssertGreaterThan(extra.position.y, before, "out at the top, not off the paddle")
+        XCTAssertLessThan(extra.physicsBody?.velocity.dy ?? 1, 0,
+                          "and travelling down into the field, as a portalled ball does")
+    }
+
     func testLaunchingAHeldBallSpendsACatch() {
         let scene = stickyScene()
         let extra = extraBall(in: scene, x: 0)

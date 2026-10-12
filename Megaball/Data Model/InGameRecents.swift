@@ -450,4 +450,22 @@ extension GameScene {
         else { return [] }
         return family.filter { $0 != index }
     }
+
+    /// Mayhem's power-ups that are one effect in several forms, so that collecting one replaces
+    /// whichever is running: Drift either way (54, 63), and the paddle's five faces (55, 56, 57,
+    /// 64, 65 - Jagged, 58, is retired).
+    ///
+    /// **Round 385**, for the Always On day (James: "don't show power ups that negate the always
+    /// on power up"). These were never in `EndlessIIExclusions`, because nothing has to *end*
+    /// the other - there is one drift and one paddle face, so the newcomer simply takes the
+    /// place. On a day standing on one of them, that is exactly the drop that takes the day's
+    /// twist away.
+    static let endlessIIOneSlotGroups: [[Int]] = [[54, 63], [55, 56, 57, 64, 65]]
+
+    /// What catching `index` would replace among Mayhem's one-slot groups.
+    static func endlessIIIndicesReplaced(byCollecting index: Int) -> [Int] {
+        guard let group = endlessIIOneSlotGroups.first(where: { $0.contains(index) })
+        else { return [] }
+        return group.filter { $0 != index }
+    }
 }

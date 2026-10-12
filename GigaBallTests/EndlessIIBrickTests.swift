@@ -87,21 +87,32 @@ final class EndlessIIBrickTests: XCTestCase {
 
     /// James, round 184: after force-quitting and resuming a Mayhem run with Fog of War
     /// active, "hidden bricks are flashing on every paddle bounce even though there are other
-    /// visible bricks."
-    ///
-    /// The zone rule exists to explain a brick the player cannot know about. On a fogged day
-    /// every brick starts hidden by design, so the zone is nearly always all-hidden - and
-    /// explaining the fog to the player who chose the fog is the twist being handed back.
-    func testAFoggedDayAsksForNoFlashAtAll() {
+    /// visible bricks." And round 385: "Invisible bricks should still flash on a foggy daily
+    /// challenge." A fogged brick counts as there, so it calls the clue off and is never shown
+    /// by it; an Invisible brick alone on the row still gets its flash.
+    func testAFoggedBrickIsThereButAnInvisibleOneStillFlashes() {
         let scene = zoneScene()
         DailyChallengeSession.shared.active = DailyChallenge(
             dateKey: "t", mode: .endlessII, classicLevel: nil, twists: [.fogOfWar])
         defer { DailyChallengeSession.shared.active = nil }
-
-        _ = zoneBrick(on: scene, y: 0, hidden: true)
         XCTAssertTrue(scene.dailyFogIsOn, "the day this is about")
+
+        let fogged = zoneBrick(on: scene, y: 0, hidden: true)
         XCTAssertFalse(scene.endlessIIBottomZoneIsAllHidden,
-                       "the fog is the reason, and the player was told it")
+                       "a fogged brick is the fog, which the player chose")
+
+        let invisible = zoneBrick(on: scene, y: 0, hidden: true)
+        invisible.texture = scene.brickInvisibleTexture
+        XCTAssertFalse(scene.endlessIIBottomZoneIsAllHidden,
+                       "and with a fogged brick on the row there is still something there")
+
+        fogged.removeFromParent()
+        XCTAssertTrue(scene.endlessIIBottomZoneIsAllHidden, "the Invisible brick alone asks")
+        let fogAbove = zoneBrick(on: scene, y: 0, hidden: true)
+        fogAbove.position.y = 200
+        scene.invisibleBrickFlash()
+        XCTAssertFalse(invisible.isHidden, "and is shown")
+        XCTAssertTrue(fogAbove.isHidden, "the fog is not")
     }
 
     func testAVisibleBrickInTheZoneExplainsItself() {
@@ -266,16 +277,42 @@ final class EndlessIIBrickTests: XCTestCase {
         XCTAssertTrue(hidden.isHidden, "there is something to hit, so nothing to explain")
     }
 
-    func testClassicDoesNotFlashAFoggedField() {
+    func testClassicFlashesItsInvisibleBricksUnderFogButNotTheFog() {
         let scene = zoneScene()
         scene.gameMode = .classic
         DailyChallengeSession.shared.active = DailyChallenge(
             dateKey: "t", mode: .classic, classicLevel: 1, twists: [.fogOfWar])
         defer { DailyChallengeSession.shared.active = nil }
         let fogged = zoneBrick(on: scene, y: 300, hidden: true)
+        let invisible = zoneBrick(on: scene, y: 200, hidden: true)
+        invisible.texture = scene.brickInvisibleTexture
 
         scene.invisibleBrickFlash()
-        XCTAssertTrue(fogged.isHidden, "the fog is the twist, not a field to explain")
+        XCTAssertTrue(invisible.isHidden, "a fogged brick is still there to hit, so no clue yet")
+
+        fogged.removeFromParent()
+        scene.invisibleBrickFlash()
+        XCTAssertFalse(invisible.isHidden, "Invisible bricks are all that is left: they flash")
+    }
+
+    /// James, round 385: "In endless mayhem, Fixed bricks that have been hit / activated but not
+    /// destroyed on the bottom row are being treated as indestructible bricks and causing the
+    /// rows to descend so they are removed. The bottom row should descend, but the fixed bricks
+    /// should remain in place."
+    func testAnAnchoredFixedBrickOnTheBottomRowStaysWhenTheRowSteps() {
+        let scene = zoneScene()
+        let fixed = zoneBrick(on: scene, y: 0, hidden: false)
+        fixed.endlessIIRole = .fixed
+        fixed.endlessIIIsAnchored = true
+        let wall = zoneBrick(on: scene, y: 0, hidden: false)
+        wall.texture = scene.brickIndestructible2Texture
+        let above = zoneBrick(on: scene, y: 200, hidden: false)
+
+        XCTAssertEqual(scene.descentFate(of: fixed, anchored: []), .staysPut,
+                       "the anchored brick holds its place on the bottom row")
+        XCTAssertEqual(scene.descentFate(of: wall, anchored: []), .leavesTheBottom,
+                       "the rest of the bottom row still clears")
+        XCTAssertEqual(scene.descentFate(of: above, anchored: []), .stepsDown)
     }
 
     func testTheZoneRuleStillFlashesItsLurker() {
@@ -556,4 +593,40 @@ final class EndlessIIBrickTests: XCTestCase {
                       "a Fixed brick left the field, so the field can take another")
     }
 
+}
+
+/// James, round 385: "For endless mode and endless mayhem daily challenges don't show the high
+/// score lines for specific game modes as they don't really make sense as the daily challenges
+/// involve twists."
+final class DailyFieldLinesTests: XCTestCase {
+
+    override func tearDown() {
+        DailyChallengeSession.shared.active = nil
+        super.tearDown()
+    }
+
+    private func markers(daily: Bool) -> [String] {
+        DailyChallengeSession.shared.active = daily ? DailyChallenge(
+            dateKey: "t", mode: .endlessII, classicLevel: nil, twists: []) : nil
+        let scene = GameScene()
+        scene.gameMode = .endlessII
+        let stats = TotalStats()
+        stats.endlessIIModeHeight = [150]
+        scene.totalStatsArray = [stats]
+        scene.brickHeight = 20
+        scene.gameWidth = 400
+        scene.endlessHeight = 150 - GameScene.endlessIIMarkerLead
+        scene.addEndlessIIMarkerIfDue()
+        var texts: [String] = []
+        scene.enumerateChildNodes(withName: "//*") { node, _ in
+            if let label = node as? SKLabelNode, let text = label.text { texts.append(text) }
+        }
+        return texts
+    }
+
+    func testTheBestLineIsTheModesOwnAndNotADailys() {
+        XCTAssertTrue(markers(daily: false).contains("HI-SCORE 150m"))
+        XCTAssertFalse(markers(daily: true).contains { $0.contains("HI-SCORE") },
+                       "a daily is measured against its own board")
+    }
 }

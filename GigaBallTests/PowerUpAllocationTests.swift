@@ -586,3 +586,46 @@ final class PowerUpLocksByModeTests: XCTestCase {
                        + "to both alike")
     }
 }
+
+/// James, round 385: "for always on power-up twists, dont show power ups that negate the always
+/// on power up. for example if sticky paddle is always on, dont show power ups that would cancel
+/// out that power up."
+final class AlwaysOnLeavesOutItsRivalsTests: XCTestCase {
+
+    override func tearDown() {
+        DailyChallengeSession.shared.active = nil
+        super.tearDown()
+    }
+
+    func testAPaddleFaceOrADriftLeavesOutTheOthers() {
+        XCTAssertEqual(GameScene.endlessIIIndicesReplaced(byCollecting: 57), [55, 56, 64, 65],
+                       "Wavy replaces any other face, and every other face replaces it")
+        XCTAssertEqual(GameScene.endlessIIIndicesReplaced(byCollecting: 54), [63])
+        XCTAssertEqual(GameScene.endlessIIIndicesReplaced(byCollecting: 6), [])
+    }
+
+    func testAMayhemDayStandingOnAFaceDropsNoOtherFace() throws {
+        let faces: Set<Int> = [55, 56, 57, 64, 65]
+        var key: String?
+        var day = "2031-12-31"
+        for _ in 0..<2000 {
+            if let index = DailyTwist.alwaysOnPowerUp(forKey: day, mode: .endlessII),
+               faces.contains(index) { key = day; break }
+            day = DailyDay.dayBefore(day) ?? day
+        }
+        let found = try XCTUnwrap(key, "some day stands on a paddle face")
+        let standing = try XCTUnwrap(DailyTwist.alwaysOnPowerUp(forKey: found, mode: .endlessII))
+        DailyChallengeSession.shared.active = DailyChallenge(
+            dateKey: found, mode: .endlessII, classicLevel: nil, twists: [.alwaysOn])
+
+        let scene = GameScene(size: CGSize(width: 402, height: 874))
+        scene.gameMode = .endlessII
+        scene.totalStatsArray = [TotalStats()]
+        for index in faces { scene.powerUpProbArray[index] = 5 }
+        _ = scene.applyDailyEconomyTwists()
+        for index in faces {
+            XCTAssertEqual(scene.powerUpProbArray[index], 0,
+                           "standing on \(standing), \(index) is never dropped")
+        }
+    }
+}

@@ -293,7 +293,9 @@ extension UIViewController {
             // is being asked to react to (round 64)
             effect.tintColor = rimmed
                 ? SettingsTableViewCell.prominentTint
-                : UIColor(red: 0.16, green: 0, blue: 0.24, alpha: 0.15)
+                : MainMenuCollectionViewCell.smallGlassTint
+            // The menu cells' tint since round 385, so a close here and a close in a menu are
+            // the same button
             // The big play is the screen's positive action, so it takes the app's lime in
             // clear glass like the pop-ups' confirm button - the small buttons beside it stay
             // purple, which is what makes the play the one your eye goes to (round 90)
@@ -371,8 +373,17 @@ extension UIViewController {
             // drew a thin 18-point glyph, where the menus' artwork draws a heavy one twice that
             // size. `FlatRoundButton` draws them all, from the symbols the glass path uses
             button.tintColor = UIColor(red: 0.16, green: 0, blue: 0.24, alpha: 1)
-            button.layer.cornerRadius = radius
-            button.clipsToBounds = true
+            button.contentHorizontalAlignment = .fill
+            button.contentVerticalAlignment = .fill
+            button.imageView?.contentMode = .scaleAspectFit
+            button.layer.cornerRadius = 0
+            button.clipsToBounds = false
+            // **The drawing fills the button, and nothing clips it** (James, round 385, from an
+            // iPhone SE: "In-game pause view home button doesn't look round"). The disc was
+            // drawn `radius` across and the button clipped to that radius - but the storyboard's
+            // Home is 42 points, not the 50 its caller's radius describes, so a 50-point disc
+            // was cut by a 25-point corner on a 42-point square: a circle with flats. The disc
+            // is the drawing now, scaled to whatever the button is
             // The old pair, unchanged: a pale disc needs a dark glyph, and inverting only the
             // glass path means an iOS 15 phone is not handed white-on-white
             //
@@ -411,8 +422,20 @@ enum FlatRoundButton {
     static let pressedDisc = UIColor(white: 0.78, alpha: 1)
     static let glyph = UIColor(red: 0.16, green: 0, blue: 0.24, alpha: 1)
 
-    /// How big the glyph is drawn against the disc.
-    static let glyphShare: CGFloat = 0.36
+    /// How far each glyph reaches across the disc, as a share of its width: its longer side.
+    ///
+    /// **Measured off the artwork each one replaces** (James, round 385, from an iPhone SE: "Main
+    /// menu and in-game pause view icons look small"). Round 384 drew every symbol at one point
+    /// size, a third of the disc, and SF Symbols are not all one size at a point size - the
+    /// information glyph came out at under half the artwork's height. These are the artwork's
+    /// own glyphs' extents, read off `ButtonClose` and its siblings by pixel and then measured
+    /// again on the drawn button until the two agreed, so the drawn button is the size the
+    /// picture was. They read larger than the artwork's own figures because a symbol's image
+    /// carries a margin round the glyph, and this is the size of the image, margin and all.
+    static let glyphExtent: [String: CGFloat] = [
+        "xmark": 0.58, "house.fill": 0.71, "info": 0.80, "trophy.fill": 0.61,
+        "play.fill": 0.62, "arrow.clockwise": 0.68, "gearshape.fill": 0.78,
+    ]
 
     static func image(symbol: String, side: CGFloat, pressed: Bool = false) -> UIImage {
         let key = "\(symbol)|\(side)|\(pressed)"
@@ -431,9 +454,12 @@ enum FlatRoundButton {
             (pressed ? pressedDisc : disc).setFill()
             UIBezierPath(ovalIn: CGRect(origin: .zero, size: size)).fill()
             guard let mark = UIImage(systemName: symbol, withConfiguration:
-                    UIImage.SymbolConfiguration(pointSize: side*glyphShare, weight: .heavy))?
+                    UIImage.SymbolConfiguration(pointSize: side*0.4, weight: .heavy))?
                 .withTintColor(glyph, renderingMode: .alwaysOriginal) else { return }
-            let drawn = mark.size
+            let natural = mark.size
+            let extent = (glyphExtent[symbol] ?? 0.5)*side
+            let scale = extent/max(natural.width, natural.height, 1)
+            let drawn = CGSize(width: natural.width*scale, height: natural.height*scale)
             mark.draw(in: CGRect(x: (side - drawn.width)/2, y: (side - drawn.height)/2,
                                  width: drawn.width, height: drawn.height))
         }.withRenderingMode(.alwaysOriginal)

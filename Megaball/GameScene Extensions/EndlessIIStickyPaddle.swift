@@ -207,8 +207,18 @@ extension GameScene {
         // paddle's ball "goes up, like it would from the paddle"). All that changes is whose
         // width the landing spot is a fraction of - the angle rule itself is the one written
         // once below, so the two surfaces cannot drift apart
-        extra.physicsBody?.velocity = CGVector(dx: cos(angle)*Double(ballSpeedLimit),
-                                               dy: sin(angle)*Double(ballSpeedLimit))
+        if endlessIIAimLaunchesThroughThePaddle, endlessIIIsHeldOnSafetyBar(extra) == false {
+            endlessIIPortalTheAimedLaunch(extra, angle: angle)
+        } else {
+            extra.physicsBody?.velocity = CGVector(dx: cos(angle)*Double(ballSpeedLimit),
+                                                   dy: sin(angle)*Double(ballSpeedLimit))
+        }
+        // **Through the portal, as the first ball goes** (James, round 385: "With sticky paddle,
+        // portal paddle and multi ball - one of the balls when launched from the paddle didn't
+        // go through the portal as it should"). `releaseBall` has sent a sticky launch through
+        // a Portal Paddle since play-test round 150, and this - the launch every *other* held
+        // ball takes - set its velocity straight off the paddle. The mirror portals as the
+        // paddle does; the safety bar is not the paddle and has no portal of its own
         endlessIIReleasedFromPaddle(extra)
         spendStickyPaddleCatch()
         endlessIIAimTheStickyLaunch(extra)

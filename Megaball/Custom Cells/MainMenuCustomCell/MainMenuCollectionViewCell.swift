@@ -132,6 +132,9 @@ class MainMenuCollectionViewCell: UICollectionViewCell {
     /// nothing else to do with how big their own button should be.
     static let largeButtonSize: CGFloat = 75
 
+    /// The purple a small glass button's material is tinted, wherever it is built.
+    static let smallGlassTint = UIColor(red: 0.16, green: 0, blue: 0.24, alpha: 0.24)
+
     func setButton(_ named: String, pointSize: CGFloat = 20, rimmed: Bool = false) {
         let base = named.replacingOccurrences(of: ".png", with: "")
                         .replacingOccurrences(of: "Highlighted", with: "")
@@ -171,7 +174,12 @@ class MainMenuCollectionViewCell: UICollectionViewCell {
         // the touch and leaves a white smear behind (round 64)
         effect.tintColor = rimmed
             ? SettingsTableViewCell.prominentTint
-            : UIColor(red: 0.16, green: 0, blue: 0.24, alpha: 0.24)
+            : MainMenuCollectionViewCell.smallGlassTint
+        // **One weight and one tint for every small round button** (James, round 385: "The close
+        // 'x' icons around the app still differ in certain places"). These cells drew their
+        // glyph at Bold under a 24% purple, and `applyRoundGlass` - the close on the daily, the
+        // paddle speed, music and statistics screens - at Black under 15%, so the same X was a
+        // lighter stroke on a darker disc depending on which screen built it. Both read these now
         // `rimmed` is only ever the big play, so it is also the flag for "this is the
         // positive action" - lime in clear glass, where the small buttons stay purple
 
@@ -207,7 +215,7 @@ class MainMenuCollectionViewCell: UICollectionViewCell {
         iconImage.image = UIImage(systemName: symbol,
                                   withConfiguration: UIImage.SymbolConfiguration(
                                       pointSize: pointSize,
-                                      weight: rimmed ? .black : .bold))?
+                                      weight: .black))?
             .withTintColor(rimmed ? UIColor(red: 0.16, green: 0, blue: 0.24, alpha: 1)
                                   : UIColor(white: 0.92, alpha: 1),
                            renderingMode: .alwaysOriginal)
@@ -235,10 +243,11 @@ class MainMenuCollectionViewCell: UICollectionViewCell {
         // the point size above is finally the dial it looks like - and 15pt, which is what
         // the run before this asked for, turned out to be too *small* once it was honoured.
         //
-        // `.black` on the big buttons, `.bold` on the small ones. The point size matched the
-        // return-to-game play all along and the glyph still read smaller, because that one is
-        // drawn at `.black` - a heavier play.fill is visibly wider as well as thicker, and
-        // weight was the difference the point size could not explain (round 69)
+        // `.black` on every button since round 385. Round 69 found the big play reading smaller
+        // than the return-to-game one at the same point size, because that one was `.black` -
+        // a heavier glyph is wider as well as thicker - and moved only the big buttons over.
+        // The small ones kept `.bold` and went on reading lighter than `applyRoundGlass`'s,
+        // which is the close button James saw differ from screen to screen
         //
         // Off-white rather than pure white, matching the discs the other round buttons wear:
         // white was right when the glyph had to fight a tinted material for attention, and

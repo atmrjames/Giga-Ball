@@ -186,32 +186,61 @@ extension GameScene {
     /// copying anchor, scale, size and height straight off `paddleLaser` makes it the same strip
     /// in a second place, which is what the wrap ghost's strips are for the same reason.
     func dressEndlessIIMirrorTurrets(_ mirror: SKSpriteNode) {
-        let existing = childNode(withName: GameScene.endlessIIMirrorLaserStripName) as? SKSpriteNode
-        let showing = paddleLaser.isHidden == false && paddleLaser.parent != nil
-        guard showing, let art = paddleLaser.texture else {
+        for (index, source) in endlessIIMirroredOverlays.enumerated() {
+            dressEndlessIIMirrorOverlay(copying: source.node, named: source.name,
+                                        tinted: source.tinted, on: mirror, layer: index)
+        }
+    }
+
+    /// Everything the paddle can wear over itself that the mirror wears too.
+    ///
+    /// **The Sticky band as well as the turrets, and Retro's own of each** (James, round 385:
+    /// "Mirror paddle doesn't get sticky paddle or lasers - it should"). Round 321 copied
+    /// `paddleLaser` and nothing else, so a sticky paddle's twin caught balls with no band to
+    /// say it would, and under the Retro theme - whose laser and sticky pictures are separate
+    /// nodes, with `paddleLaser` hidden - the twin had neither. The turrets wear the mirror's
+    /// lime, as they have since round 321; the sticky bands keep their own colour, because
+    /// that colour is what says "sticky", and lime on a lime paddle would say nothing.
+    var endlessIIMirroredOverlays: [(node: SKSpriteNode, name: String, tinted: Bool)] {
+        [(paddleLaser, GameScene.endlessIIMirrorLaserStripName, true),
+         (paddleRetroLaserTexture, GameScene.endlessIIMirrorLaserStripName + "Retro", true),
+         (paddleSticky, GameScene.endlessIIMirrorStickyStripName, false),
+         (paddleRetroStickyTexture, GameScene.endlessIIMirrorStickyStripName + "Retro", false)]
+    }
+
+    static let endlessIIMirrorStickyStripName = "endlessIIMirrorStickyStrip"
+
+    /// The names every overlay copy goes by, so the mirror's leaving takes them all.
+    var endlessIIMirrorOverlayNames: [String] { endlessIIMirroredOverlays.map(\.name) }
+
+    private func dressEndlessIIMirrorOverlay(copying source: SKSpriteNode, named name: String,
+                                             tinted: Bool, on mirror: SKSpriteNode,
+                                             layer: Int) {
+        let existing = childNode(withName: name) as? SKSpriteNode
+        let showing = source.isHidden == false && source.parent != nil && source.alpha > 0.01
+        guard showing, let art = source.texture else {
             existing?.removeFromParent()
             return
         }
         let strip = existing ?? {
             let made = SKSpriteNode()
-            made.name = GameScene.endlessIIMirrorLaserStripName
+            made.name = name
             addChild(made)
             return made
         }()
         if strip.texture !== art { strip.texture = art }
-        strip.anchorPoint = paddleLaser.anchorPoint
-        strip.xScale = paddleLaser.xScale
-        strip.yScale = paddleLaser.yScale
-        strip.size = paddleLaser.size
-        strip.centerRect = paddleLaser.centerRect
-        strip.zPosition = mirror.zPosition + 0.05
-        strip.color = GameScene.endlessIIMirrorPaddleColour
-        strip.colorBlendFactor = mirror.colorBlendFactor
+        strip.anchorPoint = source.anchorPoint
+        strip.xScale = source.xScale
+        strip.yScale = source.yScale
+        strip.size = source.size
+        strip.centerRect = source.centerRect
+        strip.zPosition = mirror.zPosition + 0.05 + CGFloat(layer)*0.001
+        strip.color = tinted ? GameScene.endlessIIMirrorPaddleColour : source.color
+        strip.colorBlendFactor = tinted ? mirror.colorBlendFactor : source.colorBlendFactor
         strip.alpha = mirror.alpha
-        strip.position = CGPoint(x: mirror.position.x,
-                                 y: paddleLaser.position.y - paddle.position.y + mirror.position.y)
-        // Lime like the mirror it sits on, and faded with it, so the pair still reads as the
-        // twin rather than as the paddle's turrets left behind on the far side
+        strip.position = CGPoint(x: mirror.position.x + (source.position.x - paddle.position.x),
+                                 y: source.position.y - paddle.position.y + mirror.position.y)
+        // Wherever the paddle wears it relative to itself, the twin wears it relative to itself
     }
 
     static let endlessIIPaddleShadowName = "mirrorPaddleShadow"
@@ -451,7 +480,7 @@ extension GameScene {
             // second removal on the same node
             mirror.physicsBody = nil
             mirror.run(.sequence([.fadeOut(withDuration: 0.2), .removeFromParent()]))
-            childNode(withName: GameScene.endlessIIMirrorLaserStripName)?.removeFromParent()
+            for name in endlessIIMirrorOverlayNames { childNode(withName: name)?.removeFromParent() }
             childNode(withName: GameScene.endlessIIMirrorWrapGhostName)?.removeFromParent()
             removeEndlessIIPaddleShadow()
             // The shadow is the mirror's costume on the real paddle, and it leaves with it
@@ -677,6 +706,8 @@ extension GameScene {
             // queue, so a ball on the twin is aimed from where it sits on the twin
         }
 
+        touchBeganWhilstPlaying = false
+        // Only a tap launches it, as on the paddle - see `catchStickyBallBeforeStep` (round 385)
         if soundsSetting { run(stickyPaddleHitSound) }
         if hapticsSetting { lightHaptic.impactOccurred() }
         return true

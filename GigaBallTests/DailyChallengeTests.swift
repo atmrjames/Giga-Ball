@@ -4633,8 +4633,8 @@ final class DailyCardTableAndSignedOutTests: XCTestCase {
         card.show(key: "2026-09-01", isToday: false,
                   record: record("2026-09-01", score: 0, posted: false, practice: 4234),
                   standing: nil, signedIn: false)
-        XCTAssertTrue(card.resultTextForTesting.hasPrefix("Your Score 4234"),
-                      "a day played for practice shows what it scored")
+        XCTAssertTrue(card.resultTextForTesting.hasPrefix("Free Play Best 4234"),
+                      "a day played for practice shows what it scored, as free play")
     }
 
     /// "Daily challenge menu view leaderboard container not resizing properly when content is
@@ -4644,5 +4644,29 @@ final class DailyCardTableAndSignedOutTests: XCTestCase {
                        DailyCardView.boardRowHeight.rounded(.up), accuracy: 0.5)
         XCTAssertLessThan(DailyCardView.boardWindowFloor(rows: 2), DailyCardView.boardWindowFloor)
         XCTAssertEqual(DailyCardView.boardWindowFloor(rows: 10), DailyCardView.boardWindowFloor)
+    }
+}
+
+
+/// James, round 385: "For the daily challenge in the leaderboard container, show the users posted
+/// score and free play hi score if they have played free play of the challenge."
+final class DailyCardFreePlayTests: XCTestCase {
+
+    func testTheBoardCarriesThePostedScoreAndTheFreePlayBestOnceThereIsFreePlay() {
+        let card = DailyCardView()
+        let key = DailyChallengeSession.shared.todayKey
+        let unit = DailyChallengeGenerator.challenge(forKey: key).mode == .classic ? "" : "m"
+        let board = [DailyBoardRow(rank: 1, name: "Me", score: 280, isLocalPlayer: true)]
+
+        let once = DailyChallengeRecord(dateKey: key, firstAttemptScore: 280, posted: true,
+                                        bestPracticeScore: 0, attemptCount: 1)
+        card.show(key: key, isToday: true, record: once, standing: nil, board: board)
+        XCTAssertEqual(card.boardExtrasTextForTesting, "", "played once: the board says it all")
+
+        let again = DailyChallengeRecord(dateKey: key, firstAttemptScore: 280, posted: true,
+                                         bestPracticeScore: 341, attemptCount: 3)
+        card.show(key: key, isToday: true, record: again, standing: nil, board: board)
+        XCTAssertEqual(card.boardExtrasTextForTesting,
+                       "Posted Score 280\(unit)\nFree Play Best 341\(unit)")
     }
 }

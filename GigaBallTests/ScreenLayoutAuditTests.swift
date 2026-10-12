@@ -1970,6 +1970,47 @@ final class RoundButtonsAreOneDrawingTests: XCTestCase {
         }
     }
 
+    /// James, round 385, from an iPhone SE: "Main menu and in-game pause view icons look
+    /// small." Each drawn glyph reaches as far across its disc as the artwork's glyph did, to
+    /// within a tenth.
+    func testEveryDrawnGlyphIsTheArtworksSize() throws {
+        let side = 210
+        func extent(_ image: UIImage, glyph: (UInt8, UInt8, UInt8, UInt8) -> Bool) -> CGFloat {
+            var data = [UInt8](repeating: 0, count: side*side*4)
+            let context = try! XCTUnwrap(CGContext(
+                data: &data, width: side, height: side, bitsPerComponent: 8, bytesPerRow: side*4,
+                space: CGColorSpaceCreateDeviceRGB(),
+                bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue))
+            UIGraphicsPushContext(context)
+            context.translateBy(x: 0, y: CGFloat(side))
+            context.scaleBy(x: 1, y: -1)
+            image.draw(in: CGRect(x: 0, y: 0, width: side, height: side))
+            UIGraphicsPopContext()
+            var low = side, high = 0, top = side, bottom = 0
+            let centre = Double(side)/2
+            for y in 0..<side { for x in 0..<side {
+                let dx = Double(x) - centre, dy = Double(y) - centre
+                guard dx*dx + dy*dy < (centre*0.85)*(centre*0.85) else { continue }
+                let i = (y*side + x)*4
+                if glyph(data[i], data[i + 1], data[i + 2], data[i + 3]) {
+                    low = min(low, x); high = max(high, x); top = min(top, y); bottom = max(bottom, y)
+                }
+            }}
+            return CGFloat(max(high - low, bottom - top))/CGFloat(side)
+            // The longer side of the glyph, inside the disc's rim
+        }
+        for (name, symbol) in MainMenuCollectionViewCell.systemGlyph {
+            let art = try XCTUnwrap(UIImage(named: name))
+            let artwork = extent(art) { _, _, _, alpha in alpha < 100 }
+            // The artwork's glyph is a hole in its disc
+            let drawn = extent(FlatRoundButton.image(symbol: symbol, side: CGFloat(side))) {
+                red, _, _, alpha in alpha > 200 && red < 120
+            }
+            // The drawing's glyph is the purple on the pale disc
+            XCTAssertEqual(drawn/artwork, 1, accuracy: 0.1, "\(name)")
+        }
+    }
+
     func testTheFlatDiscIsTheSizeItIsAskedFor() {
         let disc = FlatRoundButton.image(symbol: "xmark", side: 50)
         XCTAssertEqual(disc.size, CGSize(width: 50, height: 50))

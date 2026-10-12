@@ -119,6 +119,11 @@ final class PowerUpRingHUD: SKNode {
         return room/natural
     }
 
+    /// The pictures the slots are wearing, in order, for tests.
+    var iconTexturesForTesting: [SKTexture] {
+        order.compactMap { slots[$0]?.icon.texture }
+    }
+
     /// The scale the row is drawn at now, for tests.
     var rowScaleForTesting: CGFloat { row.xScale }
 
@@ -193,6 +198,15 @@ final class PowerUpRingHUD: SKNode {
             }
             slots[entry.id]?.remaining = entry.remaining
             slots[entry.id]?.segments = entry.segments
+            if let slot = slots[entry.id], slot.icon.texture !== entry.texture {
+                slot.icon.texture = entry.texture
+            }
+            // **The picture follows the entry** (James, round 385: "Wavy paddle is active but
+            // convex paddle power up icon is showing in the HUD"). The paddle's shape is one
+            // slot whatever shape it is, so collecting Wavy over a running Convex kept the slot
+            // and, with it, the picture the slot was made with. Drift's direction is the other
+            // entry whose picture changes under the same id. Compared by identity, since each
+            // picture is built once and kept
             if let slot = slots[entry.id], slot.held != entry.held {
                 let colour = PowerUpRingHUD.ringColour(held: entry.held)
                 slot.ring.strokeColor = colour

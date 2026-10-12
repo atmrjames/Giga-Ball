@@ -6285,6 +6285,43 @@ final class MirrorPaddleTurretTests: XCTestCase {
         XCTAssertNil(scene.childNode(withName: GameScene.endlessIIMirrorLaserStripName),
                      "no lasers, no turrets")
     }
+
+    /// James, round 385: "Mirror paddle doesn't get sticky paddle or lasers - it should." The
+    /// twin caught balls on a sticky paddle with no band to say so, and under Retro, whose
+    /// overlays are their own nodes, it wore neither.
+    func testTheMirrorWearsTheStickyBandAndRetrosOverlaysToo() {
+        let scene = GameScene()
+        scene.gameMode = .endlessII
+        scene.totalStatsArray = [TotalStats()]
+        scene.paddle.texture = SKTexture(imageNamed: "regularPaddle")
+        scene.paddle.size = CGSize(width: 100, height: 12)
+        scene.paddle.position = CGPoint(x: -60, y: -300)
+        scene.addChild(scene.paddle)
+        for (node, height) in [(scene.paddleSticky, CGFloat(6)), (scene.paddleRetroLaserTexture, 12)] {
+            node.texture = SKTexture(imageNamed: "regularPaddle")
+            node.size = CGSize(width: 100, height: height)
+            node.position = CGPoint(x: -60, y: -306)
+            node.isHidden = false
+            scene.addChild(node)
+        }
+        scene.endlessIIMirrorPaddleClock.collect(turns: 5)
+        scene.showEndlessIIMirrorPaddle()
+        scene.tickEndlessIIMirrorPaddle()
+
+        let mirror = scene.childNode(withName: GameScene.endlessIIMirrorPaddleName) as? SKSpriteNode
+        let band = scene.childNode(withName: GameScene.endlessIIMirrorStickyStripName) as? SKSpriteNode
+        XCTAssertNotNil(band, "the sticky band, on the twin")
+        XCTAssertEqual(band?.position.x ?? 0, mirror?.position.x ?? 1, accuracy: 0.001)
+        XCTAssertEqual(band?.colorBlendFactor, scene.paddleSticky.colorBlendFactor,
+                       "in its own colour, not the mirror's lime")
+        XCTAssertNotNil(scene.childNode(withName: GameScene.endlessIIMirrorLaserStripName + "Retro"),
+                        "and Retro's turrets")
+
+        scene.endlessIIMirrorPaddleClock = EndlessIIClock()
+        scene.tickEndlessIIMirrorPaddle()
+        XCTAssertNil(scene.childNode(withName: GameScene.endlessIIMirrorStickyStripName),
+                     "and they leave with the mirror")
+    }
 }
 
 

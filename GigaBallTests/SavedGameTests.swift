@@ -941,6 +941,31 @@ final class SavedMayhemFieldTests: XCTestCase {
                        "the same face open, not a freshly rolled one")
     }
 
+    /// James, round 385: "On returning to an endless mayhem session after the app was quit, on
+    /// resume a power up brick was shown with a stretched indestructible brick graphic instead
+    /// of the power up graphic."
+    func testAPowerUpBrickComesBackWearingItsPowerUp() {
+        let scene = mayhem()
+        let node = brick(in: scene, x: 0, y: 40)
+        node.endlessIIPowerUpIndex = 33
+        let record = scene.savedBrick(for: node, texture: 0, colour: 100, restingY: 40)
+
+        let resumed = mayhem()
+        resumed.powerUpTextureArray = resumed.powerUpTexturesInOrder
+        var save = emptySave()
+        save.endlessIIBricks = [record]
+        resumed.savedGame = save
+        XCTAssertTrue(resumed.resumeEndlessIIBricks())
+
+        var found: [SKSpriteNode] = []
+        resumed.enumerateChildNodes(withName: BrickCategoryName) { node, _ in
+            if let sprite = node as? SKSpriteNode { found.append(sprite) }
+        }
+        let icon = found.first?.childNode(withName: GameScene.powerUpBrickName) as? SKSpriteNode
+        XCTAssertNotNil(icon, "the power-up's own picture over the brick")
+        XCTAssertTrue(icon?.texture === resumed.endlessIIPowerUpTexture(33))
+    }
+
     func testASaveWithoutASideStillRestoresADirectionalBrick() {
         // Optional, so saves written before round 174 restore as they did - with a rolled side
         let scene = mayhem()

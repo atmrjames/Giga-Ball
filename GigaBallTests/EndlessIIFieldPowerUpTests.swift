@@ -1276,6 +1276,25 @@ final class RandomisedBounceTests: XCTestCase {
     /// shallow climb was then re-aimed with a random jitter frame after frame. That is the
     /// vibrating James reported in round 185, and it survived two rounds of narrowing the
     /// spread because **every test written for it passed an upward angle**.
+    /// James, round 385: "Random bounce power up doesn't seem to be doing much when active." At
+    /// its widest a 45-degree bounce is thrown by twenty degrees or more, and a steep one can
+    /// leave the other way, while nothing is thrown past the minimum.
+    func testTheThrowIsBigEnoughToSee() {
+        let wide = GameScene.endlessIIRandomisedBounceSpread
+        XCTAssertGreaterThanOrEqual(
+            GameScene.randomisedBounceAngle(from: 45, minimumDeg: 10, share: wide) - 45, 20)
+        XCTAssertGreaterThan(GameScene.randomisedBounceAngle(from: 75, minimumDeg: 10, share: wide),
+                             90, "a steep bounce can cross the vertical")
+        for arriving in stride(from: -170.0, through: 170.0, by: 5.0) where abs(arriving) >= 10 {
+            for share in [-wide, wide] {
+                let thrown = GameScene.randomisedBounceAngle(from: arriving, minimumDeg: 10,
+                                                             share: share)
+                XCTAssertGreaterThanOrEqual(abs(thrown), 10)
+                XCTAssertLessThanOrEqual(abs(thrown), 170)
+            }
+        }
+    }
+
     func testADescendingBallIsStillDescendingAfterwards() {
         for arriving in [-15.0, -45.0, -90.0, -135.0, -168.0] {
             for share in stride(from: -0.10, through: 0.10, by: 0.02) {
@@ -2527,12 +2546,12 @@ final class EndlessIIQuicksandTests: XCTestCase {
         XCTAssertEqual(scene.endlessIIFieldShift, 0, accuracy: 0.01)
     }
 
-    /// A Retreat and a Quicksand together leave the field where it was.
-    ///
-    /// The matrix's own answer for that pair, and it costs nothing: the two are one number
-    /// counted in opposite directions rather than two effects that have to know about each
-    /// other.
-    func testARetreatAndAQuicksandCancel() {
+    /// "Retreat and quicksand power ups should cancel each other out. They shouldn't both be
+    /// active at once" (round 385). Until then the two were one number counted in opposite
+    /// directions, so the field stayed put while both icons sat in the HUD. Now they are a
+    /// pair in the exclusions matrix like every other opposed pair: the one caught second
+    /// ends the first, and the field shows only the second's shift.
+    func testAQuicksandCaughtOverARetreatIsTheOnlyShift() {
         let scene = mayhem()
         let node = brick(scene, y: 100)
 
@@ -2540,7 +2559,9 @@ final class EndlessIIQuicksandTests: XCTestCase {
         scene.endlessIICollectQuicksand()
         for _ in 0..<200 { scene.tickEndlessIIFieldShift(1/60) }
 
-        XCTAssertEqual(node.position.y, 100, accuracy: 0.01, "the two did not cancel")
+        let step = CGFloat(GameScene.endlessIIRetreatRows)*scene.brickHeight
+        XCTAssertEqual(node.position.y, 100 - step, accuracy: 0.01,
+                       "the Retreat was still pulling the other way")
     }
 
     /// The field is held while it runs, the way it is held for a Retreat.
@@ -2654,6 +2675,8 @@ final class EndlessIIExclusionTests: XCTestCase {
             (.autoAim, .inertPaddle), (.autoAim, .flippedAngle), (.ballSpin, .stickyPaddle),
             (.ballSpin, .aimedSticky), (.ballSpin, .ballControl), (.ballSpin, .inertPaddle),
             (.ballSpin, .autoAim),
+            (.retreat, .quicksand),
+            // James, round 385: "Retreat and quicksand power ups should cancel each other out"
         ]
         XCTAssertEqual(EndlessIIExclusions.pairs.count, expected.count)
         for (a, b) in expected {
@@ -2691,6 +2714,20 @@ final class EndlessIIExclusionTests: XCTestCase {
         XCTAssertFalse(scene.endlessIIAimedStickyClock.isRunning)
         XCTAssertFalse(scene.endlessIIPortalPaddleClock.isRunning)
         XCTAssertTrue(scene.endlessIIAutoAimClock.isRunning)
+    }
+
+    /// James, round 385: "Retreat and quicksand power ups should cancel each other out. They
+    /// shouldn't both be active at once."
+    func testRetreatAndQuicksandEndEachOther() {
+        let scene = mayhem()
+        scene.endlessIICollectQuicksand()
+        scene.endlessIICollectClearAndRetreat()
+        XCTAssertFalse(scene.endlessIIQuicksandClock.isRunning)
+        XCTAssertTrue(scene.endlessIIClearAndRetreatClock.isRunning)
+
+        scene.endlessIICollectQuicksand()
+        XCTAssertFalse(scene.endlessIIClearAndRetreatClock.isRunning)
+        XCTAssertTrue(scene.endlessIIQuicksandClock.isRunning)
     }
 
     /// And the other way round, which is what "most recent" means.

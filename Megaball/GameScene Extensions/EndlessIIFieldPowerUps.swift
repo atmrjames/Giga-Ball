@@ -99,6 +99,7 @@ extension GameScene {
     /// buying nothing while taking bricks - and their score - off the player.
     func endlessIICollectClearAndRetreat() {
         guard gameMode == .endlessII else { return }
+        endlessIIDisplace(byCollecting: .retreat)
 
         endlessIIClearAndRetreatClock.collect(GameScene.endlessIIClearAndRetreatDuration)
         // **Nothing is cleared** (James, round 215: "the bottom 2 rows of bricks should remain
@@ -219,6 +220,7 @@ extension GameScene {
     /// -up that only cost the player a few seconds of the descent it was going to make itself.
     func endlessIICollectQuicksand() {
         guard gameMode == .endlessII else { return }
+        endlessIIDisplace(byCollecting: .quicksand)
         endlessIIQuicksandClock.collect(GameScene.endlessIIPaddlePowerUpDuration)
         if hapticsSetting { heavyHaptic.impactOccurred() }
         if soundsSetting { run(endlessRowDownSound) }
@@ -859,6 +861,10 @@ extension GameScene {
             // The owed turn goes with it, for the Wipe's reason: a debt is part of the
             // power-up, and the power-up has been taken away rather than run out
         case .ballControl: endlessIIBallSteeringClock.reset()
+        case .quicksand: endlessIIQuicksandClock.reset()
+        case .retreat: endlessIIClearAndRetreatClock.reset()
+        // The field shift follows the clocks (`endlessIIFieldShiftWanted`), so the field
+        // walks back to where the survivor wants it on its own
         }
     }
 
@@ -1378,8 +1384,16 @@ extension GameScene {
     /// player already gets from hitting the paddle nearer one end. A third moves them by 12 and
     /// 21, which is a bounce you cannot predict - and it is still proportional to the room, so
     /// it still cannot throw a shallow bounce below the minimum into the escape hatch's arms.
+    ///
+    /// **Doubled again in round 385** (James: "Random bounce power up doesn't seem to be doing
+    /// much when active"). A third of the room moved a 45-degree bounce by up to 12 degrees,
+    /// and the throw is drawn evenly across the range, so most bounces moved by half that - a
+    /// wobble a player reads as their own aim. Seven tenths moves the same bounce by up to 24
+    /// and a steep one far enough to cross the vertical and leave the other way, which is a
+    /// bounce nobody could have called. Still a share of the room, so still never into the
+    /// escape hatch's arms.
     static let endlessIIRandomisedBounceDuration = GameScene.endlessIIPaddlePowerUpDuration
-    static let endlessIIRandomisedBounceSpread: Double = 0.35
+    static let endlessIIRandomisedBounceSpread: Double = 0.7
 
     /// Starts or extends Randomised Bounce (§5.4: timed, extends its own duration).
     func endlessIICollectRandomisedBounce() {

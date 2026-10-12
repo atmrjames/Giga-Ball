@@ -184,3 +184,34 @@ final class EndlessIIVisionTests: XCTestCase {
         XCTAssertEqual(bounds.paddleLine, scene.paddle.position.y)
     }
 }
+
+/// James, round 385: "With ball trajectory and sticky paddle enabled, dont show the trajectory
+/// of the ball beyond bouncing off the paddle as it will get stuck to the paddle."
+final class TrajectoryStopsAtAHoldingPaddleTests: XCTestCase {
+
+    private func scene() -> GameScene {
+        let scene = GameScene()
+        scene.gameMode = .endlessII
+        scene.totalStatsArray = [TotalStats()]
+        scene.paddle.size = CGSize(width: 100, height: 12)
+        scene.paddle.position = CGPoint(x: 0, y: -300)
+        return scene
+    }
+
+    func testStickyHoldsWhatLandsInItsBandAndNothingElse() {
+        let scene = scene()
+        XCTAssertFalse(scene.endlessIIPaddleWillHold(landingX: 0, ballWidth: 12),
+                       "no sticky, a bounce")
+        scene.stickyPaddleCatches = 3
+        XCTAssertTrue(scene.endlessIIPaddleWillHold(landingX: 0, ballWidth: 12),
+                      "in the band, held - so the line stops at the paddle")
+        XCTAssertFalse(scene.endlessIIPaddleWillHold(landingX: 49, ballWidth: 12),
+                       "at the very end, outside the band, it still bounces")
+    }
+
+    func testAimedStickyHoldsAnywhereUnlessThePaddleIsInert() {
+        let scene = scene()
+        scene.endlessIICollectAimedSticky()
+        XCTAssertTrue(scene.endlessIIPaddleWillHold(landingX: 49, ballWidth: 12))
+    }
+}

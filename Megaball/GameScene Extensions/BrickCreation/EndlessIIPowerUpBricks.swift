@@ -152,10 +152,26 @@ extension GameScene {
                                                     center: plan.bodyCentre))
         addChild(brick)
         hidePowerUpBrickSprite(brick, plan: plan)
+        endlessIIDressPowerUpBrick(brick, index: index)
+        return brick
+    }
+
+    /// The picture a power-up brick wears over the sprite it is built on: the badge, and the
+    /// power-up's own icon across the whole brick.
+    ///
+    /// **Its own step, so a resumed run can take it too** (James, round 385: "On returning to an
+    /// endless mayhem session after the app was quit, on resume a power up brick was shown with
+    /// a stretched indestructible brick graphic instead of the power up graphic"). The save
+    /// brings back the sprite - its Indestructible texture, its shrunk size, its anchor - and
+    /// the index of the power-up it holds, and the icon is a child node, which a save does not
+    /// carry. So the resumed brick was the hidden sprite underneath, uncovered.
+    func endlessIIDressPowerUpBrick(_ brick: SKSpriteNode, index: Int) {
+        let plan = EndlessIITallBrick(cell: CGSize(width: brickWidth, height: brickHeight))
         refreshEndlessIIBrickArt(brick)
         // The badge the brick is drawn as, laid over the Indestructible texture it is built
         // on - which stays the brick's own texture, because that is what says what a hit does
 
+        brick.childNode(withName: GameScene.powerUpBrickName)?.removeFromParent()
         let icon = SKSpriteNode(texture: endlessIIPowerUpTexture(index))
         icon.size = plan.size
         icon.position = CGPoint(x: 0, y: -plan.cell.height/2)
@@ -167,8 +183,6 @@ extension GameScene {
         // showing as a yellow frame round a smaller badge: two rounded squares saying the same
         // thing, one inside the other. At full size it *is* the brick, which is what "power-up
         // bricks only come in this shape and style" describes. Square, because the brick is
-
-        return brick
     }
 
     /// Tucks a power-up brick's sprite behind the badge drawn over it.

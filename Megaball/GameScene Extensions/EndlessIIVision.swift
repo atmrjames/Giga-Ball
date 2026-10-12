@@ -31,6 +31,25 @@ extension GameScene {
 
     // MARK: - Collection
 
+    /// Whether a ball landing at `landingX` will be held by the paddle rather than bounced.
+    ///
+    /// **The line ends at the paddle when it will** (James, round 385: "With ball trajectory and
+    /// sticky paddle enabled, dont show the trajectory of the ball beyond bouncing off the paddle
+    /// as it will get stuck to the paddle"). Sticky holds a ball that lands in its band - the
+    /// band `catchStickyBallBeforeStep` judges by, a third of a ball in from each end - and
+    /// Aimed Sticky holds one anywhere on the top face unless the paddle is inert. Past the
+    /// paddle the line was drawing a bounce that would not happen.
+    func endlessIIPaddleWillHold(landingX: CGFloat, ballWidth: CGFloat) -> Bool {
+        if endlessIIAimedStickyClock.isRunning || endlessIIAimedStickyOwedTurn {
+            return endlessIIInertPaddleClock.isRunning == false
+        }
+        guard stickyPaddleCatches != 0 else { return false }
+        let paddleX = gameMode == .endlessII
+            ? endlessIIPaddleXNearest(to: landingX) : paddle.position.x
+        return landingX > paddleX - paddle.size.width/2 + ballWidth/3
+            && landingX < paddleX + paddle.size.width/2 - ballWidth/3
+    }
+
     /// Starts or extends the Ball Trajectory - in paddle hits, like the Landing Marker.
     ///
     /// **Both vision power-ups count hits** (round 218's workbook). They answer the same
@@ -124,7 +143,8 @@ extension GameScene {
 
             if endlessIITrajectoryRemaining > 0, path.points.count > 1 {
                 var points = path.points
-                if let landing = path.landing, points.count >= 2 {
+                if let landing = path.landing, points.count >= 2,
+                   endlessIIPaddleWillHold(landingX: landing.x, ballWidth: subject.size.width) == false {
                     let last = points[points.count - 1]
                     let previous = points[points.count - 2]
                     let incoming = CGVector(dx: last.x - previous.x, dy: last.y - previous.y)
