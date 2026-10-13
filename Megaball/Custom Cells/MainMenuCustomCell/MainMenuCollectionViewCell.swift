@@ -133,6 +133,15 @@ class MainMenuCollectionViewCell: UICollectionViewCell {
     static let largeButtonSize: CGFloat = 75
 
     /// The purple a small glass button's material is tinted, wherever it is built.
+    /// The glyph's weight on glass: Bold on the small purple buttons, Black on the big lime
+    /// play. One answer for every screen, so a close here and a close there are the same mark
+    /// (round 385), and Bold rather than the Black round 385 first unified them on, because
+    /// James found the info and settings glyphs "much bolder than before" and preferred the
+    /// look they had (round 385b).
+    static func glassGlyphWeight(rimmed: Bool) -> UIImage.SymbolWeight {
+        rimmed ? .black : .bold
+    }
+
     static let smallGlassTint = UIColor(red: 0.16, green: 0, blue: 0.24, alpha: 0.24)
 
     func setButton(_ named: String, pointSize: CGFloat = 20, rimmed: Bool = false) {
@@ -167,34 +176,30 @@ class MainMenuCollectionViewCell: UICollectionViewCell {
         guard #available(iOS 26.0, *) else { return }
         guard glassView == nil else { return }
 
-        let effect = UIGlassEffect(style: rimmed ? .clear : .regular)
-        effect.isInteractive = false
-        // See `SettingsTableViewCell.applyGlass` for why: this view cannot receive touches,
-        // and an interactive material that is pressed through something else stretches toward
-        // the touch and leaves a white smear behind (round 64)
-        effect.tintColor = rimmed
-            ? SettingsTableViewCell.prominentTint
-            : MainMenuCollectionViewCell.smallGlassTint
-        // **One weight and one tint for every small round button** (James, round 385: "The close
-        // 'x' icons around the app still differ in certain places"). These cells drew their
-        // glyph at Bold under a 24% purple, and `applyRoundGlass` - the close on the daily, the
-        // paddle speed, music and statistics screens - at Black under 15%, so the same X was a
-        // lighter stroke on a darker disc depending on which screen built it. Both read these now
-        // `rimmed` is only ever the big play, so it is also the flag for "this is the
-        // positive action" - lime in clear glass, where the small buttons stay purple
-
-        let glass = UIVisualEffectView(effect: effect)
+        let glass: UIView
+        if rimmed {
+            glass = SettingsTableViewCell.limeGlassView()
+            // `rimmed` is only ever the big play, so it is also the flag for "this is the
+            // positive action" - lime, in whichever treatment James is trying (round 385b),
+            // where the small buttons stay purple
+        } else {
+            let effect = UIGlassEffect(style: .regular)
+            effect.isInteractive = false
+            // See `SettingsTableViewCell.applyGlass` for why: this view cannot receive
+            // touches, and an interactive material that is pressed through something else
+            // stretches toward the touch and leaves a white smear behind (round 64)
+            effect.tintColor = MainMenuCollectionViewCell.smallGlassTint
+            // **One weight and one tint for every small round button** (James, round 385: "The
+            // close 'x' icons around the app still differ in certain places"). These cells drew
+            // their glyph under a 24% purple, and `applyRoundGlass` - the close on the daily,
+            // the paddle speed, music and statistics screens - under 15%, so the same X sat on
+            // a darker disc depending on which screen built it. Both read this now
+            let small = UIVisualEffectView(effect: effect)
+            small.cornerConfiguration = .capsule()
+            glass = small
+        }
         glass.isUserInteractionEnabled = false
         glass.translatesAutoresizingMaskIntoConstraints = false
-        glass.cornerConfiguration = .capsule()
-        if rimmed {
-            glass.layer.cornerRadius = 37.5
-            glass.layer.borderWidth = 2.5
-            glass.layer.borderColor = UIColor(white: 1, alpha: 0.20).cgColor
-        }
-        // The explicit rim the big return-to-game play wears, and only at that size: a 75pt
-        // disc has proportionally little edge for the material's own highlight to show on,
-        // where a 40pt one has plenty (rounds 60-61 are the argument, this is the reuse)
         view.insertSubview(glass, at: 0)
         glassView = glass
 
@@ -215,7 +220,7 @@ class MainMenuCollectionViewCell: UICollectionViewCell {
         iconImage.image = UIImage(systemName: symbol,
                                   withConfiguration: UIImage.SymbolConfiguration(
                                       pointSize: pointSize,
-                                      weight: .black))?
+                                      weight: MainMenuCollectionViewCell.glassGlyphWeight(rimmed: rimmed)))?
             .withTintColor(rimmed ? UIColor(red: 0.16, green: 0, blue: 0.24, alpha: 1)
                                   : UIColor(white: 0.92, alpha: 1),
                            renderingMode: .alwaysOriginal)
@@ -257,7 +262,7 @@ class MainMenuCollectionViewCell: UICollectionViewCell {
         // it. The shadow `awakeFromNib` already puts on every icon does the rest
     }
 
-    private var glassView: UIVisualEffectView?
+    private var glassView: UIView?
 
     /// Whether this button is wearing glass, which the pressed-state artwork has to know.
     var isGlass: Bool { glassView != nil }

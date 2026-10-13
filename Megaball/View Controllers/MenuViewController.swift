@@ -72,6 +72,9 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         super.viewDidLoad()
         installMenuNavigationSwipes()
         // Back from the left edge, forward from the right - see MenuNavigation
+        #if DEBUG
+        installLimeGlassTrialPress()
+        #endif
         
 //        SKPaymentQueue.default().add(self)
                 
@@ -1326,3 +1329,28 @@ extension MenuViewController: GKGameCenterControllerDelegate {
         gameCenterViewController.dismiss(animated: true)
     }
 }
+
+#if DEBUG
+extension MenuViewController {
+
+    /// A long press on the logo turns the lime buttons between James's two finalists, A2 and
+    /// B1 (round 385b), in a debug build only. **Temporary**, with `SettingsTableViewCell.limeGlass`:
+    /// both go once one is chosen. The pop-up that answers wears the new look itself, so the
+    /// press shows what it changed straight away.
+    func installLimeGlassTrialPress() {
+        logoImage.isUserInteractionEnabled = true
+        logoImage.addGestureRecognizer(
+            UILongPressGestureRecognizer(target: self, action: #selector(limeGlassTrialPressed)))
+    }
+
+    @objc private func limeGlassTrialPressed(_ press: UILongPressGestureRecognizer) {
+        guard press.state == .began else { return }
+        let next: SettingsTableViewCell.LimeGlass =
+            SettingsTableViewCell.limeGlass == .frosted ? .prominent : .frosted
+        UserDefaults.standard.set(next.rawValue, forKey: SettingsTableViewCell.limeGlassKey)
+        let name = next == .frosted ? "frosted glass" : "system prominent glass"
+        GigaBallAlert.show(on: self, title: "Lime buttons: \(next.rawValue)",
+                           message: "The lime buttons now wear \(name). Screens pick it up the next time they open.")
+    }
+}
+#endif

@@ -255,7 +255,8 @@ extension UIViewController {
 
             let glyph = UIImage(systemName: symbol,
                                 withConfiguration: UIImage.SymbolConfiguration(
-                                    pointSize: pointSize, weight: .black))?
+                                    pointSize: pointSize,
+                                    weight: MainMenuCollectionViewCell.glassGlyphWeight(rimmed: rimmed)))?
                 .withTintColor(rimmed ? UIColor(red: 0.16, green: 0, blue: 0.24, alpha: 1)
                                       : UIColor(white: 0.92, alpha: 1),
                                renderingMode: .alwaysOriginal)
@@ -316,15 +317,19 @@ extension UIViewController {
             // dim" or "a touch too bold", and the only one - reaching for the material again
             // would change the softness as well, which is not what is being asked for
 
-            let glass = UIVisualEffectView(effect: effect)
+            let glass: UIView
+            if rimmed {
+                glass = SettingsTableViewCell.limeGlassView()
+                // The lime play, in whichever of James's two finalists is current (round
+                // 385b). The drawn rim below belonged to the clear lime it replaces: frosted
+                // glass and the system's prominent glass both light their own edge
+            } else {
+                let small = UIVisualEffectView(effect: effect)
+                small.cornerConfiguration = .capsule()
+                glass = small
+            }
             glass.isUserInteractionEnabled = false
             glass.translatesAutoresizingMaskIntoConstraints = false
-            glass.cornerConfiguration = .capsule()
-            if rimmed {
-                glass.layer.cornerRadius = radius
-                glass.layer.borderWidth = 2.5
-                glass.layer.borderColor = UIColor(white: 1, alpha: 0.20).cgColor
-            }
             // Wider and dimmer (round 61). The two are independent now, which is the point of
             // a real border rather than a tint: width for *bigger*, alpha for *bolder*, and
             // this asks for more of the first and less of the second
@@ -408,14 +413,19 @@ extension UIViewController {
 }
 
 
-/// A round button as it is drawn below iOS 26: the pale disc, with the glyph in the app's dark
-/// purple (round 384).
+/// A round button as it is drawn below iOS 26: James's artwork, with its glyph filled in the
+/// app's dark purple.
 ///
 /// The PNG buttons are a pale disc with the glyph cut out, so the glyph is whatever is behind
 /// the button - dark purple over the menus, and white over anything pale, which is how the Home
-/// button came to be drawn white on white. Drawn from the same SF Symbols the glass buttons use,
-/// the mark is the same everywhere and always purple. The glyph's share of the disc is the
-/// artwork's, measured off `ButtonClose`: the cross spans a little over a third of it.
+/// button came to be drawn white on white (round 384). Round 384 answered that by drawing the
+/// glass buttons' SF Symbols instead, and round 385 sized them to the artwork - and then James,
+/// on an iPhone SE: "Info and settings icons seem to be much bolder than before. I think I
+/// prefer their previous look" (round 385b). It was never only the weight: the artwork's
+/// information mark is a slim italic i and its gear an open ring, where the symbols are a
+/// slab-serif i and a solid cog, and no weight turns one into the other. So the drawing *is*
+/// the artwork now: a purple disc behind it, showing through the hole, so the glyph is the
+/// purple whatever the button stands on and the shape is exactly the one he drew.
 enum FlatRoundButton {
 
     static let disc = UIColor(white: 0.92, alpha: 1)
@@ -423,6 +433,7 @@ enum FlatRoundButton {
     static let glyph = UIColor(red: 0.16, green: 0, blue: 0.24, alpha: 1)
 
     /// How far each glyph reaches across the disc, as a share of its width: its longer side.
+    /// Only the fallback reads it since round 385b, for a symbol with no artwork behind it.
     ///
     /// **Measured off the artwork each one replaces** (James, round 385, from an iPhone SE: "Main
     /// menu and in-game pause view icons look small"). Round 384 drew every symbol at one point
@@ -450,12 +461,34 @@ enum FlatRoundButton {
 
     private static func draw(symbol: String, side: CGFloat, pressed: Bool) -> UIImage {
         let size = CGSize(width: side, height: side)
-        return UIGraphicsImageRenderer(size: size).image { _ in
+        let whole = CGRect(origin: .zero, size: size)
+        let artwork = MainMenuCollectionViewCell.systemGlyph
+            .first(where: { $0.value == symbol }).flatMap { UIImage(named: $0.key) }
+        return UIGraphicsImageRenderer(size: size).image { context in
+            if let artwork {
+                glyph.setFill()
+                UIBezierPath(ovalIn: whole.insetBy(dx: side*0.03, dy: side*0.03)).fill()
+                // Inset a little, so the artwork's own soft rim is drawn over the page and not
+                // over a ring of purple
+                artwork.draw(in: whole)
+                if pressed {
+                    context.cgContext.setBlendMode(.sourceAtop)
+                    var plain: CGFloat = 1, held: CGFloat = 1
+                    disc.getWhite(&plain, alpha: nil)
+                    pressedDisc.getWhite(&held, alpha: nil)
+                    UIColor(white: 0, alpha: 1 - held/plain).setFill()
+                    // The same step down the flat disc takes when held
+                    context.fill(whole)
+                }
+                return
+            }
             (pressed ? pressedDisc : disc).setFill()
-            UIBezierPath(ovalIn: CGRect(origin: .zero, size: size)).fill()
+            UIBezierPath(ovalIn: whole).fill()
             guard let mark = UIImage(systemName: symbol, withConfiguration:
                     UIImage.SymbolConfiguration(pointSize: side*0.4, weight: .heavy))?
                 .withTintColor(glyph, renderingMode: .alwaysOriginal) else { return }
+            // A symbol with no artwork behind it, which none has today, is still drawn rather
+            // than left blank
             let natural = mark.size
             let extent = (glyphExtent[symbol] ?? 0.5)*side
             let scale = extent/max(natural.width, natural.height, 1)

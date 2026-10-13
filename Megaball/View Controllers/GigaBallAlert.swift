@@ -418,9 +418,7 @@ final class GigaBallAlertViewController: UIViewController {
         button.backgroundColor = UIColor(white: 0.92, alpha: 1)
         button.layer.cornerRadius = 22
         if confirmTitle == nil {
-            SettingsTableViewCell.addColouredGlass(
-                behind: button, cornerRadius: 22,
-                tint: SettingsTableViewCell.prominentTint)
+            SettingsTableViewCell.addLimeGlass(behind: button)
             button.setTitleColor(UIColor(red: 0.16, green: 0, blue: 0.24, alpha: 1),
                                  for: .normal)
         }
@@ -479,9 +477,7 @@ final class GigaBallAlertViewController: UIViewController {
                                         for: .normal)
             confirmButton.backgroundColor = #colorLiteral(red: 0.8235294118, green: 1, blue: 0, alpha: 1)
             confirmButton.layer.cornerRadius = 22
-            SettingsTableViewCell.addColouredGlass(
-                behind: confirmButton, cornerRadius: 22,
-                tint: SettingsTableViewCell.prominentTint)
+            SettingsTableViewCell.addLimeGlass(behind: confirmButton)
             // Coloured glass rather than flat lime (round 89, James's request after seeing the
             // same idea in another app's picker). The green button is the one that does the
             // thing, so it is the right first place to try a material that is meant to be
@@ -489,7 +485,7 @@ final class GigaBallAlertViewController: UIViewController {
             // pair a choice rather than two shouts. Below iOS 26 both keep the flat colours
             // they have always had
             if celebrating {
-                confirmButton.subviews.filter { $0 is UIVisualEffectView }
+                confirmButton.subviews.filter { $0.tag == SettingsTableViewCell.limeGlassTag }
                     .forEach { $0.removeFromSuperview() }
                 confirmButton.backgroundColor = DailyCardView.onLime
                 confirmButton.setTitleColor(SettingsTableViewCell.prominentTint, for: .normal)

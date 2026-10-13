@@ -24,6 +24,7 @@
 //
 
 import XCTest
+import SpriteKit
 @testable import Giga_Ball
 
 final class PowerUpArrayTests: XCTestCase {
@@ -168,6 +169,27 @@ final class PowerUpArrayTests: XCTestCase {
         // Asked at the moment a drop is built, and a crash there is worse than a green halo
         XCTAssertEqual(GameScene.powerUpGlowColour(forIndex: count + 5),
                        PowerUpIcon.beneficial)
+    }
+
+    /// "The power-up glow - make the change" (James, round 385b). A drop's halo was a shape
+    /// with a `glowWidth`, an offscreen pass per drop per frame for a glow that never showed.
+    /// It is a sprite of one shared picture now, the size the old disc was, and a reused drop
+    /// still wears only one.
+    func testADropsHaloIsOneSpriteTheOldDiscsSize() {
+        let scene = GameScene(size: CGSize(width: 400, height: 800))
+        let drop = SKSpriteNode(color: .white, size: CGSize(width: 40, height: 40))
+        scene.addPowerUpGlow(to: drop, index: 0)
+        scene.addPowerUpGlow(to: drop, index: 0)
+
+        let halos = drop.children.filter { $0.name == GameScene.powerUpGlowName }
+        XCTAssertEqual(halos.count, 1, "a reused drop wore two halos")
+        let halo = halos.first as? SKSpriteNode
+        XCTAssertNotNil(halo, "the halo is a shape again")
+        XCTAssertEqual(halo?.frame.width ?? 0, 40*0.42*2, accuracy: 0.5,
+                       "the disc was 0.42 of the drop's width in radius")
+        XCTAssertTrue(GameScene.powerUpGlowTexture(for: PowerUpIcon.harmful)
+                        === GameScene.powerUpGlowTexture(for: PowerUpIcon.harmful),
+                      "each drop drew its own picture")
     }
 
     func testEveryPowerUpHasAHalo() {

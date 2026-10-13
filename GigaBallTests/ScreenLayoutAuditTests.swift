@@ -2011,6 +2011,62 @@ final class RoundButtonsAreOneDrawingTests: XCTestCase {
         }
     }
 
+    /// "Info and settings icons seem to be much bolder than before. I think I prefer their
+    /// previous look" (James, round 385b, on an iPhone SE). The drawn button is his artwork now,
+    /// with the hole filled purple, so every glyph is the shape he drew - the slim italic i and
+    /// the open gear, not the symbols' slab-serif i and solid cog. Pixel for pixel inside the
+    /// rim, the drawn glyph is where the artwork's hole is.
+    func testEveryDrawnGlyphIsTheArtworksShape() throws {
+        let side = 120
+        func mask(_ image: UIImage, glyph: (UInt8, UInt8, UInt8, UInt8) -> Bool) -> [Bool] {
+            var data = [UInt8](repeating: 0, count: side*side*4)
+            let context = try! XCTUnwrap(CGContext(
+                data: &data, width: side, height: side, bitsPerComponent: 8, bytesPerRow: side*4,
+                space: CGColorSpaceCreateDeviceRGB(),
+                bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue))
+            UIGraphicsPushContext(context)
+            image.draw(in: CGRect(x: 0, y: 0, width: side, height: side))
+            UIGraphicsPopContext()
+            var out = [Bool]()
+            let centre = Double(side)/2
+            for y in 0..<side { for x in 0..<side {
+                let dx = Double(x) - centre, dy = Double(y) - centre
+                guard dx*dx + dy*dy < (centre*0.85)*(centre*0.85) else { continue }
+                let i = (y*side + x)*4
+                out.append(glyph(data[i], data[i + 1], data[i + 2], data[i + 3]))
+            }}
+            return out
+        }
+        for (name, symbol) in MainMenuCollectionViewCell.systemGlyph {
+            let art = mask(try XCTUnwrap(UIImage(named: name))) { _, _, _, alpha in alpha < 128 }
+            let drawn = mask(FlatRoundButton.image(symbol: symbol, side: CGFloat(side))) {
+                red, _, _, alpha in alpha > 200 && red < 128
+            }
+            let differing = zip(art, drawn).filter { $0 != $1 }.count
+            XCTAssertLessThan(Double(differing)/Double(art.count), 0.02, "\(name)")
+        }
+    }
+
+    /// "A2 and B1 on device please" (James, round 385b). Either way the lime is a backdrop the
+    /// button draws over: not in the way of a touch, findable by its tag, and behind the glyph
+    /// by depth - a button puts its image view back at the bottom of its subviews whenever it
+    /// lays out, and the first render of both finalists was a blank lime disc.
+    func testTheLimeGlassSitsBehindTheGlyphInBothFinalists() {
+        for look in [SettingsTableViewCell.LimeGlass.frosted, .prominent] {
+            let button = UIButton(type: .system)
+            button.setImage(UIImage(systemName: "play.fill"), for: .normal)
+            let glass = SettingsTableViewCell.addLimeGlass(behind: button, look: look)
+            if #available(iOS 26.0, *) {
+                let backdrop = try? XCTUnwrap(glass)
+                XCTAssertEqual(backdrop?.tag, SettingsTableViewCell.limeGlassTag, look.rawValue)
+                XCTAssertEqual(backdrop?.isUserInteractionEnabled, false, look.rawValue)
+                XCTAssertLessThan(backdrop?.layer.zPosition ?? 0, 0, look.rawValue)
+            } else {
+                XCTAssertNil(glass, "below iOS 26 the flat lime stays, as it always has")
+            }
+        }
+    }
+
     func testTheFlatDiscIsTheSizeItIsAskedFor() {
         let disc = FlatRoundButton.image(symbol: "xmark", side: 50)
         XCTAssertEqual(disc.size, CGSize(width: 50, height: 50))

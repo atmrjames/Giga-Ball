@@ -313,6 +313,10 @@ scene. The ones that bite widest:
 - **The PNG round buttons' glyph is a hole in the disc**, so it is whatever colour is behind the
   button. Below iOS 26 they are drawn by `FlatRoundButton` instead, from the glass buttons' SF
   Symbols (round 384); the artwork on a pale background drew white on white.
+- **A `UIButton` puts its image view back at the bottom of its subviews** whenever it lays
+  out, under anything inserted at index 0. A backdrop you can see through hides nothing, so it
+  goes unnoticed until the backdrop is opaque: the lime finalists drew a blank disc (round
+  385b). Put a backdrop behind by `layer.zPosition`, not by subview order.
 - **Setting `GKLocalPlayer.local.authenticateHandler` starts a sign-in.** Only the main menu
   sets it. `GameCenterHandler()` set it in its initialiser until round 384, so every score
   submission re-authenticated and replaced the menu's handler.

@@ -239,8 +239,7 @@ class SettingsTableViewCell: UITableViewCell {
     ///
     /// Far stronger than `glassTint`, and deliberately: that one is for surfaces that must
     /// stay quiet under a page of content, where this is for the one control that does the
-    /// thing. `.clear` rather than `.regular` for the same reason - a clear material carries
-    /// a colour where a frosted one mutes it.
+    /// thing. Worn through `addLimeGlass`, in whichever of James's two finalists is current.
     static let prominentTint = UIColor(red: 0.8235294118, green: 1, blue: 0, alpha: 1)
     // **Full strength** (round 91). At 0.82 the material still mixed the dark behind it into
     // the colour and the lime read grey-green; a tint is a colour the glass is *asked* to
@@ -248,20 +247,45 @@ class SettingsTableViewCell: UITableViewCell {
     // The material still lights and refracts - it is glass with the app's green in it rather
     // than a flat green button
 
-    /// Glass in the app's own colour, for a button that should be seen.
+    /// The two treatments James is choosing between for the lime buttons (round 385b, from a
+    /// sheet of seven rendered on iOS 26: "A2 and B1 on device please").
+    ///
+    /// Until then the lime was `.clear` glass tinted lime, which over these dark menus reads
+    /// olive rather than lime - the dark behind it comes through. **A2** frosts it instead,
+    /// which brightens it and keeps it glass; **B1** is the system's own prominent glass
+    /// button, `UIButton.Configuration.prominentGlass()`, the solid-colour look the Phone
+    /// app's keypad wears. Both carry the dark purple glyphs every button already uses.
+    enum LimeGlass: String {
+        case frosted = "A2"
+        case prominent = "B1"
+    }
+
+    /// Which treatment the lime buttons wear. Frosted until James picks; in a debug build a
+    /// long press on the main menu's logo turns it over, so the two can be compared on his own
+    /// phone. Read when a button is built, so a screen already showing keeps its look until it
+    /// is next opened. **Temporary**: once one is chosen, this and the press go.
+    static var limeGlass: LimeGlass {
+        #if DEBUG
+        return UserDefaults.standard.string(forKey: limeGlassKey).flatMap(LimeGlass.init) ?? .frosted
+        #else
+        return .frosted
+        #endif
+    }
+
+    static let limeGlassKey = "limeGlassTrial"
+
+    /// Tags the lime backdrop, which is a button in one treatment and an effect view in the
+    /// other, so whoever has to take it away again can find it either way.
+    static let limeGlassTag = 385_002
+
+    /// The lime glass behind a button that should be seen, in whichever treatment is current.
+    /// Not interactive either way: the host is the control, and this is only how it looks.
     @discardableResult
-    static func addColouredGlass(behind host: UIView, cornerRadius: CGFloat,
-                                 tint: UIColor) -> UIVisualEffectView? {
+    static func addLimeGlass(behind host: UIView, look: LimeGlass = limeGlass) -> UIView? {
         guard #available(iOS 26.0, *) else { return nil }
 
-        let effect = UIGlassEffect(style: .clear)
-        effect.isInteractive = false
-        effect.tintColor = tint
-
-        let glass = UIVisualEffectView(effect: effect)
-        glass.isUserInteractionEnabled = false
+        let glass = limeGlassView(look: look)
         glass.translatesAutoresizingMaskIntoConstraints = false
-        glass.cornerConfiguration = .corners(radius: .fixed(cornerRadius))
         host.insertSubview(glass, at: 0)
         host.backgroundColor = .clear
 
@@ -271,6 +295,37 @@ class SettingsTableViewCell: UITableViewCell {
             glass.topAnchor.constraint(equalTo: host.topAnchor),
             glass.bottomAnchor.constraint(equalTo: host.bottomAnchor),
         ])
+        return glass
+    }
+
+    /// The lime glass itself, not yet placed: a capsule, which on a square host is a circle.
+    @available(iOS 26.0, *)
+    static func limeGlassView(look: LimeGlass = limeGlass) -> UIView {
+        let glass: UIView
+        switch look {
+        case .frosted:
+            let effect = UIGlassEffect(style: .regular)
+            effect.isInteractive = false
+            effect.tintColor = prominentTint
+            let view = UIVisualEffectView(effect: effect)
+            view.cornerConfiguration = .capsule()
+            glass = view
+        case .prominent:
+            var configuration = UIButton.Configuration.prominentGlass()
+            configuration.cornerStyle = .capsule
+            let button = UIButton(configuration: configuration)
+            button.tintColor = prominentTint
+            glass = button
+        }
+        glass.tag = limeGlassTag
+        glass.isUserInteractionEnabled = false
+        glass.layer.zPosition = -1
+        // **Behind the glyph by depth, not by order.** A button puts its image view back at
+        // the bottom of its subviews whenever it lays out, under anything inserted at index
+        // 0. The clear lime never showed it, because the glyph was seen *through* the glass;
+        // frosted and prominent glass are opaque enough to hide it, and the big play came out
+        // a blank lime disc on the first render. A negative depth draws the glass under the
+        // button's own content whatever order its subviews are in
         return glass
     }
 
