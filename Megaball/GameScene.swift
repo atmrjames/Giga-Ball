@@ -1159,6 +1159,17 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	// Power-up icon bar textures
 
     var touchBeganWhilstPlaying: Bool = false
+
+    /// How long a ball has been held by the sticky paddle, for the auto-release - see
+    /// `tickStickyAutoRelease`. Counted in frames of play, so a pause does not run it down.
+    var stickyHoldClock: TimeInterval = 0
+    /// How many balls were held last frame, so a launch by tap restarts the count.
+    var stickyHeldLastSeen = 0
+    /// Whether the first ball on the paddle is there because Sticky caught it, rather than
+    /// because a life is starting - the one ball the queue does not track outside Mayhem.
+    var stickyCaughtTheFirstBall = false
+    /// Whether READY or GO! is up for an auto-release, so only this clears them.
+    var stickyCountdownShowing = false
     var paddleMoved: Bool = false
     var paddleMovedDistance: CGFloat = 0
 	var ballRelativePositionOnPaddle: CGFloat = 0
@@ -1181,7 +1192,28 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	/// Long enough to register as a beat rather than a flicker - losing a ball should land.
 	/// A tap cuts it short for anyone who would rather get on with it.
 	static let ballReturnPause: TimeInterval = 0.65
-	var powerUpsOnScreen: Int = 0
+	/// The drops actually falling, counted off the field rather than kept as a tally.
+	///
+	/// **A tally drifted, and a drifted tally stopped the drops for good** (James, round 385b: "I
+	/// had lasers and the lock active together along with a lot of other power-ups and no more
+	/// power-ups would fall ... There should be no scenario where no power-ups fall"). This was a
+	/// number raised as a drop appeared and lowered on each way one could leave, in eight places
+	/// - and a way that did not lower it was enough. A power-up caught while a ball was being
+	/// lost returned from `applyPowerUp` before its decrement, so the count kept a drop that was
+	/// long gone; two of those and Mayhem's cap of two read the field as full for the rest of the
+	/// run, with nothing on it. A drop is falling exactly while it carries its fall, so that is
+	/// what is counted: a caught one has its actions taken away, and a missed one is renamed as
+	/// it starts to fade.
+	var powerUpsOnScreen: Int {
+		var falling = 0
+		enumerateChildNodes(withName: PowerUpCategoryName) { node, _ in
+			if node.action(forKey: GameScene.powerUpDropKey) != nil { falling += 1 }
+		}
+		return falling
+	}
+
+	static let powerUpDropKey = "PowerUpDrop"
+	static let powerUpLeavingName = "powerUpLeaving"
 	var powerUpLimit: Int = 0
 	
 	var brickBounceCounter: Int = 0 {
@@ -3293,6 +3325,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		
 		brickBounceCounter = 0
 		ballIsOnPaddle = false
+		stickyCaughtTheFirstBall = false
 		ballLostBool = false
         // Resets ball on paddle status
 
@@ -3984,6 +4017,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		// `paddleHit`. Wrapping addition, because the number's only use is comparing this
 		// frame with the last one
 		tickDailyTimeTrial(frameDelta)
+		tickStickyAutoRelease(frameDelta)
 		tickDeferredBallPowerUpEnds()
 		releaseEndlessIIHeldBrickPowerUps()
 		// The paddle's wall clamp is not here - it is in `didEvaluateActions`, because
@@ -4250,6 +4284,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         ball.position.y = ballStartingPositionY
         ball.physicsBody!.velocity = CGVector(dx: 0, dy: 0)
         ballIsOnPaddle = true
+        stickyCaughtTheFirstBall = false
+        // A serve, not a catch: the auto-release is for a ball Sticky caught
         paddleMoved = true
 		ballLostBool = true
 		endlessMoveInProgress = false
@@ -4735,9 +4771,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		
 			if firstBody.categoryBitMask == CollisionTypes.powerUpCategory.rawValue && secondBody.categoryBitMask == CollisionTypes.bottomScreenBlockCategory.rawValue {
 				
-				powerUpsOnScreen-=1
 				let powerUpNode = firstBody.node
 				let powerUpSprite = powerUpNode as! SKSpriteNode
+				powerUpNode?.name = GameScene.powerUpLeavingName
+				// No longer a drop that is falling: it fades where it lands, and nothing that
+				// asks for the drops in play - the cap, the save, the spacing - should find it
 				
 				powerUpNode?.zPosition = 1
 				
@@ -5683,6 +5721,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		// show retro sticky paddle
 
 		ballIsOnPaddle = true
+		stickyCaughtTheFirstBall = true
 		ball.physicsBody!.velocity = CGVector(dx: 0, dy: 0)
 		paddleMoved = true
 		ball.position.y = ballStartingPositionY
@@ -6325,8 +6364,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		addPowerUpGlow(to: powerUp, index: powerUpSelection)
 
 		let move = SKAction.moveBy(x: 0, y: -frame.height, duration: 5)
-		powerUp.run(move, withKey: "PowerUpDrop")
-		powerUpsOnScreen+=1
+		powerUp.run(move, withKey: GameScene.powerUpDropKey)
 		noteForHitchWatch("power-up dropped \(powerUpSelection)")
 		totalStatsArray[0].powerupsGenerated[powerUpSelection]+=1
         powerUpsGeneratedPerLevel+=1
@@ -6349,6 +6387,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		noteForHitchWatch("power-up caught")
 
 		if ballLostBool && (standing == false || ballIsOnPaddle == false) {
+			if silently == false { letARefusedDropGo(sprite) }
 			return
 		}
 		// Don't apply the power up if the ball has been lost - **unless it is the day's own,
@@ -6379,11 +6418,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		// Power-up applied sound - unless this one says something of its own as it lands
 		// (James, round 334: "don't play normal power-up sound for power-ups that have other
 		// sounds when activated"), which is asked below
-		
-		if silently == false {
-			powerUpsOnScreen-=1
-		}
-		// Remove the power up from the power-up on screen tracker
 		
 		let scaleUp = SKAction.scale(to: 1.5, duration: 0.01)
 		let startingFade = SKAction.fadeAlpha(to: 0.75, duration: 0.01)
@@ -7679,6 +7713,23 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		// that can see the set the moment it grows
     }
 	
+	/// A drop caught while a ball was being lost, faded away rather than left where it was.
+	///
+	/// `collectPowerUpDrop` takes the drop's fall away before `applyPowerUp` decides, and the
+	/// refusal used to return with nothing else done - so the drop stayed frozen on the field
+	/// for the rest of the run, and was counted as on screen for the rest of it too, which is
+	/// half of how the drops stopped coming in round 385b. It leaves the way a missed one does.
+	func letARefusedDropGo(_ drop: SKSpriteNode) {
+		drop.name = GameScene.powerUpLeavingName
+		drop.physicsBody = nil
+		drop.removeAllActions()
+		drop.run(SKAction.sequence([
+			SKAction.group([SKAction.scale(to: 0.25, duration: 0.5),
+							SKAction.fadeOut(withDuration: 0.5)]),
+			SKAction.removeFromParent()
+		]))
+	}
+
 	func removePowerUp(sprite: SKSpriteNode, powerUp: SKSpriteNode, powerUpSelection: Int) {
 		powerUp.removeFromParent()
 		self.powerUpGenerator (sprite: sprite)
@@ -7884,7 +7935,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             }
         }
         bricksLeft = 0
-        powerUpsOnScreen = 0
     }
 
     /// Lifts the pause so a restart can actually start something.
@@ -7926,7 +7976,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		endlessIIResetWrapAround()
 		// Endless 2.0's own power-ups keep their own clocks, so the removeAllActions above
 		// does not reach them
-		powerUpsOnScreen = 0
 		multiplier = Scoring.multiplierBase
 		setMultiplierColour(#colorLiteral(red: 1, green: 1, blue: 1, alpha: 1))
         
@@ -10778,8 +10827,7 @@ laserTimer?.invalidate()
 					
 					powerUp.texture = powerUpTextureArray[savedGame.fallingPowerUps[i]]
 					let move = SKAction.moveBy(x: 0, y: -frame.height, duration: 5)
-					powerUp.run(move, withKey: "PowerUpDrop")
-					powerUpsOnScreen+=1
+					powerUp.run(move, withKey: GameScene.powerUpDropKey)
 				}
 			// Load power-up position and texture if it has been saved
 			}
@@ -11205,7 +11253,7 @@ laserTimer?.invalidate()
             node.isPaused = true
         }
         enumerateChildNodes(withName: PowerUpCategoryName) { (node, _) in
-			node.removeAction(forKey: "PowerUpDrop")
+			node.removeAction(forKey: GameScene.powerUpDropKey)
         }
         enumerateChildNodes(withName: LaserCategoryName) { (node, _) in
             node.isPaused = true
@@ -11325,7 +11373,7 @@ laserTimer?.invalidate()
 		}
 		enumerateChildNodes(withName: PowerUpCategoryName) { (node, _) in
 			let move = SKAction.moveBy(x: 0, y: -self.frame.height, duration: 7.5)
-			node.run(move, withKey: "PowerUpDrop")
+			node.run(move, withKey: GameScene.powerUpDropKey)
 		}
 		countBricks()
 		// **The descent has to be asked again after a pause** (James, round 215: "pausing when

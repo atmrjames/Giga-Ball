@@ -1461,6 +1461,47 @@ final class RandomisedBounceTests: XCTestCase {
         XCTAssertEqual(brick.position.y, 40, "sideways only - a brick's y is its row (§8.6)")
     }
 
+    /// "Fixed brick has some how become between 2 columns during the drift power-up" (James,
+    /// round 385b, with a screenshot). A Fixed brick anchors when struck, and one struck while
+    /// the field was half way through a step stopped half a column over. It is put back on its
+    /// column, and the rest of the field goes on sliding round it.
+    func testAFixedBrickAnchoredMidSlideStaysOnAColumn() {
+        let scene = driftScene()
+        let left = -scene.gameWidth/2 + scene.brickWidth/2
+        let fixed = brick(in: scene, x: left + scene.brickWidth*2.5, y: 40)
+        fixed.endlessIIRole = .fixed
+        fixed.endlessIIIsAnchored = true
+        let other = brick(in: scene, x: left + scene.brickWidth*5, y: 40)
+        scene.endlessIICollectDrift(direction: 1)
+
+        scene.tickEndlessIIDrift(1.0/60)
+        XCTAssertEqual(fixed.position.x, scene.endlessIIColumnCentre(nearest: fixed.position.x),
+                       accuracy: 0.001, "the anchored brick is between two columns")
+        XCTAssertNotEqual(other.position.x, left + scene.brickWidth*5, accuracy: 0.001,
+                          "the rest of the field stopped sliding")
+    }
+
+    /// "There should be no scenario where no power-ups fall" (James, round 385b, with Drift
+    /// in the HUD). A drop the drift carries out past the wall never reaches the bottom of the
+    /// screen, which was the only place a missed drop was let go of, so it stayed counted and
+    /// two of them filled Mayhem's cap for the rest of the run. It goes once it is out of the
+    /// field, and one half over the edge can still be chased.
+    func testADropCarriedOutOfTheFieldIsGone() {
+        let scene = driftScene()
+        let drop = SKSpriteNode(color: .white, size: CGSize(width: scene.brickWidth*0.85,
+                                                             height: scene.brickWidth*0.85))
+        drop.name = PowerUpCategoryName
+        drop.position = CGPoint(x: scene.gameWidth/2 + drop.size.width/2 - 1, y: 100)
+        scene.addChild(drop)
+        drop.run(SKAction.moveBy(x: 0, y: -800, duration: 5), withKey: GameScene.powerUpDropKey)
+        XCTAssertEqual(scene.powerUpsOnScreen, 1)
+        scene.endlessIICollectDrift(direction: 1)
+
+        driftFor(0.5, in: scene)
+        XCTAssertNil(drop.parent, "a drop outside the field is still in the scene")
+        XCTAssertEqual(scene.powerUpsOnScreen, 0, "and still counted as falling")
+    }
+
     /// Round 201: two Drifts, one per direction, sharing a clock.
     ///
     /// Driven in frame-sized ticks rather than one long one, because round 209 made the field
@@ -1572,14 +1613,17 @@ final class RandomisedBounceTests: XCTestCase {
     }
 
     func testAnAnchoredBrickIsLeftWhereItWasStruck() {
-        // The rule the descent uses. A Fixed brick's whole meaning is that it stopped there
+        // The rule the descent uses. A Fixed brick's whole meaning is that it stopped there.
+        // On a column, as every brick is: x = 0 here is the line *between* two columns, and
+        // since round 385b an anchored brick found off its column is put back on one
         let scene = driftScene()
-        let brick = brick(in: scene, x: 0, y: 40)
+        let column = scene.endlessIIColumnCentre(nearest: scene.brickWidth/2)
+        let brick = brick(in: scene, x: column, y: 40)
         brick.endlessIIIsAnchored = true
         scene.endlessIICollectDrift(direction: 1)
         scene.tickEndlessIIDrift(0.5)
 
-        XCTAssertEqual(brick.position.x, 0, accuracy: 0.0001)
+        XCTAssertEqual(brick.position.x, column, accuracy: 0.0001)
     }
 
     func testEverythingLandsBackOnAColumnCentreWhenItEnds() {

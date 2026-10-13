@@ -320,9 +320,8 @@ extension UIViewController {
             let glass: UIView
             if rimmed {
                 glass = SettingsTableViewCell.limeGlassView()
-                // The lime play, in whichever of James's two finalists is current (round
-                // 385b). The drawn rim below belonged to the clear lime it replaces: frosted
-                // glass and the system's prominent glass both light their own edge
+                // The lime play, frosted (round 385b). The drawn rim below belonged to the
+                // clear lime it replaces: frosted glass lights its own edge
             } else {
                 let small = UIVisualEffectView(effect: effect)
                 small.cornerConfiguration = .capsule()

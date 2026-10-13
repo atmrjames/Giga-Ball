@@ -253,10 +253,9 @@ extension GameScene {
     func endlessIIApplyBrickPowerUp(_ index: Int, at point: CGPoint, shown: Bool = false) {
         let carrier = endlessIIBrickPowerUpCarrier(index, at: point, shown: shown)
         addChild(carrier)
-        powerUpsOnScreen += 1
-        // In the scene, invisible, and counted. `applyPowerUp` runs the collection animation
-        // on the node and decrements the on-screen count - both of which need a node that is
-        // actually in the scene and a count that was incremented when it appeared. A carrier
+        // In the scene and invisible. `applyPowerUp` runs the collection animation on the
+        // node, which needs a node that is actually in the scene. (It was counted as on screen
+        // too until round 385b, when the count became the drops actually falling.) A carrier
         // held outside the scene ran no actions, so the completion that clears the mystery
         // power-up never fired
 

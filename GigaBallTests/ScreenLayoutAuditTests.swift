@@ -2047,23 +2047,20 @@ final class RoundButtonsAreOneDrawingTests: XCTestCase {
         }
     }
 
-    /// "A2 and B1 on device please" (James, round 385b). Either way the lime is a backdrop the
-    /// button draws over: not in the way of a touch, findable by its tag, and behind the glyph
-    /// by depth - a button puts its image view back at the bottom of its subviews whenever it
-    /// lays out, and the first render of both finalists was a blank lime disc.
-    func testTheLimeGlassSitsBehindTheGlyphInBothFinalists() {
-        for look in [SettingsTableViewCell.LimeGlass.frosted, .prominent] {
-            let button = UIButton(type: .system)
-            button.setImage(UIImage(systemName: "play.fill"), for: .normal)
-            let glass = SettingsTableViewCell.addLimeGlass(behind: button, look: look)
-            if #available(iOS 26.0, *) {
-                let backdrop = try? XCTUnwrap(glass)
-                XCTAssertEqual(backdrop?.tag, SettingsTableViewCell.limeGlassTag, look.rawValue)
-                XCTAssertEqual(backdrop?.isUserInteractionEnabled, false, look.rawValue)
-                XCTAssertLessThan(backdrop?.layer.zPosition ?? 0, 0, look.rawValue)
-            } else {
-                XCTAssertNil(glass, "below iOS 26 the flat lime stays, as it always has")
-            }
+    /// The lime is a backdrop the button draws over (round 385b): not in the way of a touch,
+    /// findable by its tag, and behind the glyph by depth - a button puts its image view back
+    /// at the bottom of its subviews whenever it lays out, and the first render of the frosted
+    /// lime was a blank disc.
+    func testTheLimeGlassSitsBehindTheGlyph() {
+        let button = UIButton(type: .system)
+        button.setImage(UIImage(systemName: "play.fill"), for: .normal)
+        let glass = SettingsTableViewCell.addLimeGlass(behind: button)
+        if #available(iOS 26.0, *) {
+            XCTAssertEqual(glass?.tag, SettingsTableViewCell.limeGlassTag)
+            XCTAssertEqual(glass?.isUserInteractionEnabled, false)
+            XCTAssertLessThan(glass?.layer.zPosition ?? 0, 0)
+        } else {
+            XCTAssertNil(glass, "below iOS 26 the flat lime stays, as it always has")
         }
     }
 

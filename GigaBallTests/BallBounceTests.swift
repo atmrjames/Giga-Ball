@@ -1104,17 +1104,54 @@ final class MissedPowerUpTests: XCTestCase {
         scene.totalStatsArray = [TotalStats()]
         scene.totalStatsArray[0].powerupsGenerated[2] = generated
         scene.totalStatsArray[0].powerupsCollected[2] = collected
-        scene.powerUpsOnScreen = 1
         let powerUp = SKSpriteNode(texture: scene.powerUpTexturesInOrder[2])
+        powerUp.name = PowerUpCategoryName
         powerUp.physicsBody = SKPhysicsBody(circleOfRadius: 8)
         powerUp.physicsBody!.categoryBitMask = CollisionTypes.powerUpCategory.rawValue
         scene.addChild(powerUp)
+        powerUp.run(SKAction.moveBy(x: 0, y: -800, duration: 5), withKey: GameScene.powerUpDropKey)
+        XCTAssertEqual(scene.powerUpsOnScreen, 1, "falling, so counted")
         let floor = SKSpriteNode(color: .clear, size: CGSize(width: 400, height: 20))
         floor.physicsBody = SKPhysicsBody(rectangleOf: floor.size)
         floor.physicsBody!.categoryBitMask = CollisionTypes.bottomScreenBlockCategory.rawValue
         scene.addChild(floor)
         scene.handleContact(between: powerUp.physicsBody!, and: floor.physicsBody!)
         return (scene, powerUp)
+    }
+
+    /// "I had lasers and the lock active together along with a lot of other power-ups and no
+    /// more power-ups would fall ... There should be no scenario where no power-ups fall"
+    /// (James, round 385b). The count of drops on screen was a tally, and a power-up caught while
+    /// a ball was being lost left it one too high for the rest of the run - two of those and
+    /// Mayhem's cap of two read an empty field as full. It is the drops actually falling now, so
+    /// a caught one, a missed one and one refused at the paddle all stop counting the moment
+    /// they stop falling, and the cap can only ever be reached by drops you can see.
+    func testTheCountIsTheDropsActuallyFalling() {
+        let scene = GameScene()
+        scene.gameMode = .endlessII
+        scene.totalStatsArray = [TotalStats()]
+        func drop(_ index: Int) -> SKSpriteNode {
+            let node = SKSpriteNode(texture: scene.powerUpTexturesInOrder[index])
+            node.name = PowerUpCategoryName
+            node.zPosition = 2
+            node.physicsBody = SKPhysicsBody(circleOfRadius: 8)
+            scene.addChild(node)
+            node.run(SKAction.moveBy(x: 0, y: -800, duration: 5), withKey: GameScene.powerUpDropKey)
+            return node
+        }
+        let caught = drop(2), refused = drop(3)
+        XCTAssertEqual(scene.powerUpsOnScreen, 2)
+
+        scene.collectPowerUpDrop(caught)
+        XCTAssertEqual(scene.powerUpsOnScreen, 1, "a caught drop still counted")
+
+        scene.ballLostBool = true
+        scene.collectPowerUpDrop(refused)
+        // The early return the tally leaked through, and which left the drop frozen where it
+        // was caught: it fades away now, out of the count and out of the drops in play
+        XCTAssertEqual(scene.powerUpsOnScreen, 0, "nothing falling, and the field reads full")
+        XCTAssertNotEqual(refused.name, PowerUpCategoryName, "still a drop in play")
+        XCTAssertTrue(refused.hasActions(), "left frozen on the field")
     }
 
     func testAMissedPowerUpLeavesTheScreenAndTheCount() {

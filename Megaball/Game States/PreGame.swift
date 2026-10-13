@@ -56,6 +56,7 @@ class PreGame: GKState {
         scene.endlessGameIcon.isHidden = true
         scene.setLivesRowHidden(true)
         scene.ballIsOnPaddle = true
+        scene.stickyCaughtTheFirstBall = false
         // Hide labels
         
         scene.powerUpIconReset(sender: "")

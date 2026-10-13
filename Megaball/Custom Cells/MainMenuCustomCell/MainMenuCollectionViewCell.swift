@@ -180,8 +180,8 @@ class MainMenuCollectionViewCell: UICollectionViewCell {
         if rimmed {
             glass = SettingsTableViewCell.limeGlassView()
             // `rimmed` is only ever the big play, so it is also the flag for "this is the
-            // positive action" - lime, in whichever treatment James is trying (round 385b),
-            // where the small buttons stay purple
+            // positive action" - frosted lime (round 385b), where the small buttons stay
+            // purple
         } else {
             let effect = UIGlassEffect(style: .regular)
             effect.isInteractive = false

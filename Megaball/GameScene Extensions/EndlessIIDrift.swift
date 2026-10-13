@@ -132,9 +132,18 @@ extension GameScene {
         let step = CGFloat(endlessIIDriftDirection)*travelled
 
         enumerateChildNodes(withName: BrickCategoryName) { node, _ in
-            guard self.endlessIIStaysPut(node) == false else { return }
+            guard self.endlessIIStaysPut(node) == false else {
+                node.position.x = self.endlessIIColumnCentre(nearest: node.position.x)
+                return
+            }
             // The rule the descent uses: an anchored brick is the one thing the field moves
-            // around
+            // around. **On its column, though** (James, round 385b, with a screenshot: "Fixed
+            // brick has some how become between 2 columns during the drift power-up"). A step
+            // slides the field a whole column over a twentieth of a second, and a Fixed brick
+            // anchors the moment it is struck - so one struck mid-slide stopped wherever the
+            // slide had got to, half a column over, and stayed there until the drift ended and
+            // snapped the field. The nearest column is where it was going or where it came
+            // from, and either is a cell the rest of the field means
 
             var x = node.position.x + step
             let half = (node as? SKSpriteNode)?.size.width ?? self.brickWidth
@@ -147,13 +156,25 @@ extension GameScene {
             node.position.x = x
         }
 
+        var driftedAway: [SKNode] = []
         enumerateChildNodes(withName: PowerUpCategoryName) { node, _ in
             node.position.x += step
+            let half = (node as? SKSpriteNode)?.size.width ?? self.brickWidth
+            if abs(node.position.x) - half/2 > self.gameWidth/2 { driftedAway.append(node) }
         }
         // The drops drift too, which is most of what makes the power-up feel like weather
         // rather than like the bricks misbehaving. They are not wrapped: a power-up that
         // vanished off one side and reappeared at the other is a drop the player has already
         // decided whether to chase
+        for drop in driftedAway {
+            drop.name = GameScene.powerUpLeavingName
+            drop.removeFromParent()
+        }
+        // **And one that has gone is gone** (round 385b). A drop carried out past the wall
+        // never reaches the bottom of the screen, which was the only place a missed drop was
+        // let go of - so it was still counted as on screen, and James's run with Drift, Lasers
+        // and a Lock found the field "full" at Mayhem's cap of two with nothing falling.
+        // Wholly outside the field, so a drop half off the edge can still be chased
     }
 
     /// Puts every brick back on a column centre and forgets the direction.

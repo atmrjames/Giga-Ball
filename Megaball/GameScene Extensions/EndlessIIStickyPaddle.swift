@@ -93,6 +93,13 @@ extension GameScene {
         endlessIIHeldBalls.append(extra)
         endlessIIHeldOffsets.append(endlessIIHeldShare(of: extra))
         setEndlessIIHeldBallRestsOnPaddle(true, for: extra)
+        touchBeganWhilstPlaying = false
+        // **A catch voids the touch already down** (James, round 385b: "With multi ball and
+        // sticky paddle, one of the ball is still launched from the paddle on a touch release
+        // rather than a tap gesture"). Round 385 did this for the first ball, the safety bar
+        // and the mirror, and missed this one: an extra caught while the finger was steering
+        // the paddle was launched by that finger's lift. It takes a tap that starts after the
+        // catch, as every other held ball does
         // Where on the paddle it landed, kept as an offset so it rides the paddle rather than
         // sitting still while the paddle moves out from under it - and so it launches at the
         // angle its own landing spot earns, exactly as the first ball does

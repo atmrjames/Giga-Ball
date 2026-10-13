@@ -445,6 +445,94 @@ final class SceneTouchTests: XCTestCase {
                        "a tap launches it")
     }
 
+    /// James, round 385b: "With multi ball and sticky paddle, one of the ball is still launched
+    /// from the paddle on a touch release rather than a tap gesture." The extra ball's catch
+    /// was the one round 385 missed.
+    func testAnExtraBallCaughtWhileSteeringWaitsForATapNotALift() throws {
+        let scene = try playing(.endlessII)
+        scene.releaseBall()
+        XCTAssertTrue(scene.endlessIIAddBall())
+        let extra = try XCTUnwrap(scene.endlessIIExtraBalls.last)
+        scene.stickyPaddleCatches = 3
+        let finger = CGPoint(x: scene.paddle.position.x, y: scene.paddle.position.y - 30)
+        scene.touchesBegan([PlacedTouch(at: finger)], with: nil)
+        XCTAssertTrue(scene.endlessIICatchExtraBall(extra))
+
+        scene.touchesEnded([PlacedTouch(at: finger)], with: nil)
+        XCTAssertTrue(scene.endlessIIHeldBalls.contains { $0 === extra },
+                      "the lift of a finger that was already down launches nothing")
+
+        scene.touchesBegan([PlacedTouch(at: finger)], with: nil)
+        scene.touchesEnded([PlacedTouch(at: finger)], with: nil)
+        XCTAssertFalse(scene.endlessIIHeldBalls.contains { $0 === extra }, "a tap launches it")
+    }
+
+    /// James, round 385b: "If a ball is held on a sticky paddle for 10s it should release itself
+    /// following a READY-GO release animation like the resume from pause animation."
+    func testABallHeldTenSecondsIsLetGoAfterReadyAndGo() throws {
+        let scene = try playing()
+        scene.releaseBall()
+        scene.stickyPaddleCatches = 3
+        scene.performStickyCatch()
+        let frame = 1.0/60
+
+        func hold(for seconds: TimeInterval) {
+            for _ in 0..<Int((seconds/frame).rounded()) { scene.tickStickyAutoRelease(frame) }
+        }
+        hold(for: 8.5)
+        XCTAssertTrue(scene.ballIsOnPaddle)
+        XCTAssertTrue(scene.readyCountdown.isHidden, "READY before its time")
+        hold(for: 0.5)
+        XCTAssertFalse(scene.readyCountdown.isHidden, "no READY a second before the release")
+        hold(for: 0.85)
+        XCTAssertTrue(scene.ballIsOnPaddle, "let go before ten seconds")
+        XCTAssertFalse(scene.goCountdown.isHidden, "no GO! as it goes")
+        hold(for: 0.2)
+        XCTAssertFalse(scene.ballIsOnPaddle, "still held after ten seconds")
+    }
+
+    /// A ball waiting at the start of a life is the player's to serve - only a catch is let go.
+    func testAServeIsNeverLetGoByItself() throws {
+        let scene = try playing()
+        XCTAssertTrue(scene.ballIsOnPaddle)
+        for _ in 0..<(12*60) { scene.tickStickyAutoRelease(1.0/60) }
+        XCTAssertTrue(scene.ballIsOnPaddle)
+    }
+
+    /// The ten seconds are of play: a pause is not time the ball was held.
+    func testAPauseDoesNotRunTheHoldDown() throws {
+        let scene = try playing()
+        scene.releaseBall()
+        scene.stickyPaddleCatches = 3
+        scene.performStickyCatch()
+        scene.tickStickyAutoRelease(5)
+        scene.gameState.enter(Paused.self)
+        scene.tickStickyAutoRelease(20)
+        XCTAssertEqual(scene.stickyHoldClock, 5, accuracy: 0.001)
+    }
+
+    /// In Mayhem a tap that launches one held ball starts the next one's ten seconds afresh,
+    /// and the queue is let go one ball at a time, oldest first, as taps would.
+    func testEachHeldBallGetsItsOwnTenSeconds() throws {
+        let scene = try playing(.endlessII)
+        scene.releaseBall()
+        XCTAssertTrue(scene.endlessIIAddBall())
+        let extra = try XCTUnwrap(scene.endlessIIExtraBalls.last)
+        scene.stickyPaddleCatches = 5
+        XCTAssertTrue(scene.endlessIICatchExtraBall(extra))
+        scene.performStickyCatch()
+        XCTAssertEqual(scene.stickyHeldBallCount, 2)
+
+        for _ in 0..<(6*60) { scene.tickStickyAutoRelease(1.0/60) }
+        scene.launchStickyHeldBall()
+        // A tap at six seconds sends the extra, which was caught first
+        XCTAssertFalse(scene.endlessIIHeldBalls.contains { $0 === extra })
+        for _ in 0..<(9*60) { scene.tickStickyAutoRelease(1.0/60) }
+        XCTAssertTrue(scene.ballIsOnPaddle, "the first ball was let go on the extra's clock")
+        for _ in 0..<(2*60) { scene.tickStickyAutoRelease(1.0/60) }
+        XCTAssertFalse(scene.ballIsOnPaddle, "held more than ten seconds after the tap")
+    }
+
     /// Touching the pause button pauses.
     func testThePauseButtonPauses() throws {
         let scene = try playing()

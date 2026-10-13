@@ -208,6 +208,7 @@ class InbetweenLevels: GKState {
             guard let self else { return }
             self.scene.removeAllActions()
             self.scene.ballIsOnPaddle = true
+            self.scene.stickyCaughtTheFirstBall = false
             self.scene.ballRelativePositionOnPaddle = 0
             // With it the offset the level ended on, so nothing carries into the next one
         })

@@ -155,3 +155,122 @@ extension GameScene {
         // is the other half of what round 39 reported
     }
 }
+
+// MARK: - The auto-release
+
+extension GameScene {
+
+    /// How long Sticky holds a ball before letting it go itself.
+    ///
+    /// James, round 385b: "If a ball is held on a sticky paddle for 10s it should release
+    /// itself following a READY-GO release animation like the resume from pause animation."
+    /// A held ball stops the run without pausing it - the clocks, the descent and the drops all
+    /// go on - and nothing but the player's tap ever ended that, so a ball could sit there for
+    /// as long as anyone cared to leave it. Ten seconds is long enough to line up any shot.
+    static let stickyHoldLimit: TimeInterval = 10
+
+    /// When READY and GO! appear, counted back from the release so the ball leaves at ten
+    /// seconds exactly: READY for a second, as the resume shows it, and GO! a quarter of a
+    /// second before the launch, which is when the resume's GO! starts play.
+    static let stickyReadyLead: TimeInterval = 1.25
+    static let stickyGoLead: TimeInterval = 0.25
+
+    /// How many balls Sticky is holding. Mayhem keeps a queue of every caught ball; elsewhere
+    /// there is only the first ball, held when Sticky caught it rather than at a life's start.
+    /// Aimed Sticky is not counted: its hold is the player lining up a shot, and the aim is
+    /// what ends it.
+    var stickyHeldBallCount: Int {
+        if endlessIIAimedStickyClock.isRunning || endlessIIAimedStickyOwedTurn || endlessIIAimHold {
+            return 0
+        }
+        if gameMode == .endlessII { return endlessIIHeldBalls.count }
+        return ballIsOnPaddle && stickyCaughtTheFirstBall ? 1 : 0
+    }
+
+    /// Counts the hold, shows READY and GO!, and launches the ball at ten seconds as a tap
+    /// would. Once a frame, and only in play: a pause, the resume's own countdown and the
+    /// screens between levels are not time the ball was held.
+    func tickStickyAutoRelease(_ delta: TimeInterval) {
+        guard gameState.currentState is Playing, isPaused == false else { return }
+
+        let held = stickyHeldBallCount
+        defer { stickyHeldLastSeen = held }
+        guard held > 0 else {
+            stickyHoldClock = 0
+            hideStickyCountdown()
+            return
+        }
+        if held < stickyHeldLastSeen {
+            stickyHoldClock = 0
+            hideStickyCountdown()
+        }
+        // A ball has just left by a tap: the next in the queue starts its own ten seconds,
+        // and a countdown that was for the one that left is taken down
+
+        let before = stickyHoldClock
+        stickyHoldClock += delta
+        let limit = GameScene.stickyHoldLimit
+        if before < limit - GameScene.stickyReadyLead,
+           stickyHoldClock >= limit - GameScene.stickyReadyLead {
+            showStickyCountdown(readyCountdown, sound: "countdownTick", hold: 0.5)
+        }
+        if before < limit - GameScene.stickyGoLead,
+           stickyHoldClock >= limit - GameScene.stickyGoLead {
+            readyCountdown.removeAllActions()
+            readyCountdown.isHidden = true
+            showStickyCountdown(goCountdown, sound: "countdownGo", hold: 0)
+        }
+        if stickyHoldClock >= limit {
+            stickyHoldClock = 0
+            launchStickyHeldBall()
+            stickyCountdownShowing = false
+            // GO! finishes its own way out, as the resume's does after play starts, rather
+            // than being taken down by the next frame's empty paddle
+        }
+    }
+
+    /// Launches the next held ball exactly as a tap would have.
+    func launchStickyHeldBall() {
+        if endlessIITapLaunchesHeldBall {
+            endlessIILaunchHeldBall()
+        } else if ballIsOnPaddle {
+            releaseBall()
+        }
+        touchBeganWhilstPlaying = false
+        // A finger already down is not the launch's to finish - its lift should do nothing
+    }
+
+    /// READY or GO!, drawn the way the resume draws them: in from double size, a hold, out
+    /// to half, with the same beep and the same tap. Driven by the hold's own clock rather than
+    /// chained in completions, so the launch happens on the frame the clock says and a test can
+    /// see it.
+    private func showStickyCountdown(_ word: SKSpriteNode, sound: String, hold: TimeInterval) {
+        stickyCountdownShowing = true
+        word.removeAllActions()
+        word.setScale(2)
+        word.alpha = 0
+        word.isHidden = false
+        playMayhemSound(sound)
+        if hapticsSetting { (sound == "countdownGo" ? heavyHaptic : mediumHaptic).impactOccurred() }
+        word.run(SKAction.sequence([
+            SKAction.group([SKAction.scale(to: 1, duration: 0.25),
+                            SKAction.fadeIn(withDuration: 0.25)]),
+            SKAction.wait(forDuration: hold),
+            SKAction.group([SKAction.scale(to: 0.5, duration: 0.25),
+                            SKAction.fadeOut(withDuration: 0.25)]),
+            SKAction.hide()
+        ]))
+    }
+
+    /// Takes READY and GO! down if the auto-release put them up, and only then - the resume's
+    /// countdown uses the same two words and is none of this function's business.
+    func hideStickyCountdown() {
+        guard stickyCountdownShowing else { return }
+        stickyCountdownShowing = false
+        for word in [readyCountdown, goCountdown] {
+            word.removeAllActions()
+            word.isHidden = true
+        }
+    }
+}
+
