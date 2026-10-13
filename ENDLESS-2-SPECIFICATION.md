@@ -2964,6 +2964,34 @@ testers:
   falling power-up's position by `brickWidth`, so a bare `GameScene()` with a power-up on
   screen traps converting NaN to Int. A real scene is always laid out before play.
 
+**Round 385d: the glow chosen, drops that wrap, Aimed Sticky on the clock, and the daily's free play.**
+
+James, after round 385c, with two screenshots of a Classic daily played for practice.
+
+- **The power-up glow is "Glow"** ("Power-up glows look great. Let's go with Glow"): a falloff
+  bright under the drop and easing out, five of the old disc's radii across, at 0.45
+  (`powerUpGlowFalloff`, `powerUpGlowSize`, `powerUpGlowAlpha`). The picture is drawn at 256
+  pixels, since it is now over twice the drop's width.
+- **Drops wrap round the side during Drift** ("I think falling power-ups should wrap around like
+  the bricks do, not be removed from the field"), by the bricks' own rule and whole-field shift.
+  Round 385c's first answer took them away; wrapped, they stay in play and still reach the
+  bottom, which is what lets the count of falling drops come down.
+- **Aimed Sticky is on the ten-second clock too** ("it releases at whatever angle is selected
+  at 10s"). Its held balls were always in the one queue; `stickyHeldBallCount` no longer leaves
+  them out, and `launchStickyHeldBall` goes through `endlessIIAimLaunch` when the arrow is up.
+- **No "0 atmrjames 0" at the end of a practice run** ("it showed the Game Center leaderboard
+  with me in position 0 with a score of 0"). Game Center answers with a rank-0, score-0 entry
+  for a player who has not posted. Round 361 taught the menu to look past it; the end screen
+  built its rows without saying whether the player had posted, and `DailyBoardRow.shown`'s
+  default is yes. It asks `DailyChallengeSession.localHasPostedToday` now, and
+  `loadDailyBoardTop` and `loadRank` drop a rank-0 entry where the answer is made.
+- **Free Play Hi Score**, renamed from Free Play Best, and **shown with nothing posted**: the card
+  for a day whose attempt never posted and was then played for practice said nothing at all.
+- **The Lock's border sits inside the capsule** ("the glow could sit a bit closer to the
+  power-up HUD icons"): its own node, four points in from the capsule's edge, so its glow
+  reaches that much less far into the height and hi-score labels while the capsule keeps its
+  size.
+
 **Round 385c: drops that never stopped, a Fixed brick back on its column, and ten seconds on the paddle.**
 
 James, play-testing round 385b, with four screenshots of a run with Drift, Lasers and a Lock.

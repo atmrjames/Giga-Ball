@@ -221,7 +221,7 @@ final class DailyFreePlayLineTests: XCTestCase {
                                           posted: true, bestPracticeScore: 15900,
                                           attemptCount: 4)
         card.show(key: posted.dateKey, isToday: true, record: posted, standing: nil)
-        XCTAssertTrue(card.resultTextForTesting.contains("Free Play Best 15900"),
+        XCTAssertTrue(card.resultTextForTesting.contains("Free Play Hi Score 15900"),
                       "a posted day lists its free-play best on a line of its own: round 306 "
                       + "took it off the card, and James asked for it back in round 385 - \"show "
                       + "the users posted score and free play hi score if they have played free "

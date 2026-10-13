@@ -1481,25 +1481,27 @@ final class RandomisedBounceTests: XCTestCase {
                           "the rest of the field stopped sliding")
     }
 
-    /// "There should be no scenario where no power-ups fall" (James, round 385b, with Drift
-    /// in the HUD). A drop the drift carries out past the wall never reaches the bottom of the
-    /// screen, which was the only place a missed drop was let go of, so it stayed counted and
-    /// two of them filled Mayhem's cap for the rest of the run. It goes once it is out of the
-    /// field, and one half over the edge can still be chased.
-    func testADropCarriedOutOfTheFieldIsGone() {
+    /// "During drift, I think falling power-ups should wrap around like the bricks do, not be
+    /// removed from the field" (James, round 385c). A drop carried out past the wall used to
+    /// fall off the side of the field, never reach the bottom, and stay counted as falling for
+    /// the rest of the run - two of them stopped the drops for good. It goes round the side as a
+    /// brick does, and is still a drop on its way down.
+    func testADropCarriedPastTheWallComesInAtTheOtherSide() {
         let scene = driftScene()
         let drop = SKSpriteNode(color: .white, size: CGSize(width: scene.brickWidth*0.85,
                                                              height: scene.brickWidth*0.85))
         drop.name = PowerUpCategoryName
-        drop.position = CGPoint(x: scene.gameWidth/2 + drop.size.width/2 - 1, y: 100)
+        drop.position = CGPoint(x: scene.gameWidth/2 - drop.size.width/2, y: 100)
         scene.addChild(drop)
         drop.run(SKAction.moveBy(x: 0, y: -800, duration: 5), withKey: GameScene.powerUpDropKey)
-        XCTAssertEqual(scene.powerUpsOnScreen, 1)
         scene.endlessIICollectDrift(direction: 1)
 
         driftFor(0.5, in: scene)
-        XCTAssertNil(drop.parent, "a drop outside the field is still in the scene")
-        XCTAssertEqual(scene.powerUpsOnScreen, 0, "and still counted as falling")
+        XCTAssertNotNil(drop.parent, "taken off the field rather than wrapped")
+        XCTAssertLessThan(drop.position.x, 0, "never came in at the far side")
+        XCTAssertGreaterThan(drop.position.x + drop.size.width/2, -scene.gameWidth/2,
+                             "wrapped to somewhere outside the field")
+        XCTAssertEqual(scene.powerUpsOnScreen, 1, "still falling, so still counted")
     }
 
     /// Round 201: two Drifts, one per direction, sharing a clock.

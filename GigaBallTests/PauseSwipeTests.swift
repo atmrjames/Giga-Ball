@@ -499,6 +499,25 @@ final class SceneTouchTests: XCTestCase {
         XCTAssertTrue(scene.ballIsOnPaddle)
     }
 
+    /// James, round 385c: "Aimed sticky should count and have a 10 second auto release too, it
+    /// releases at whatever angle is selected at 10s."
+    func testAnAimedHoldIsLetGoAlongTheArrow() throws {
+        let scene = try playing(.endlessII)
+        scene.releaseBall()
+        scene.endlessIICollectAimedSticky()
+        scene.ball.physicsBody?.velocity = CGVector(dx: 100, dy: -300)
+        XCTAssertTrue(scene.endlessIIAimedCatch(scene.ball, isExtra: false))
+        let arrow = scene.endlessIIAimAngle(for: scene.ball)
+
+        for _ in 0..<Int(9.9*60) { scene.tickStickyAutoRelease(1.0/60) }
+        XCTAssertTrue(scene.ballIsOnPaddle, "let go before ten seconds")
+        for _ in 0..<12 { scene.tickStickyAutoRelease(1.0/60) }
+        XCTAssertFalse(scene.ballIsOnPaddle, "still held after ten seconds")
+        let velocity = try XCTUnwrap(scene.ball.physicsBody?.velocity)
+        XCTAssertEqual(atan2(Double(velocity.dy), Double(velocity.dx)), arrow, accuracy: 0.01,
+                       "not where the arrow pointed")
+    }
+
     /// The ten seconds are of play: a pause is not time the ball was held.
     func testAPauseDoesNotRunTheHoldDown() throws {
         let scene = try playing()

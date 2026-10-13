@@ -4633,7 +4633,7 @@ final class DailyCardTableAndSignedOutTests: XCTestCase {
         card.show(key: "2026-09-01", isToday: false,
                   record: record("2026-09-01", score: 0, posted: false, practice: 4234),
                   standing: nil, signedIn: false)
-        XCTAssertTrue(card.resultTextForTesting.hasPrefix("Free Play Best 4234"),
+        XCTAssertTrue(card.resultTextForTesting.hasPrefix("Free Play Hi Score 4234"),
                       "a day played for practice shows what it scored, as free play")
     }
 
@@ -4667,6 +4667,22 @@ final class DailyCardFreePlayTests: XCTestCase {
                                          bestPracticeScore: 341, attemptCount: 3)
         card.show(key: key, isToday: true, record: again, standing: nil, board: board)
         XCTAssertEqual(card.boardExtrasTextForTesting,
-                       "Posted Score 280\(unit)\nFree Play Best 341\(unit)")
+                       "Posted Score 280\(unit)\nFree Play Hi Score 341\(unit)")
+    }
+
+    /// James, round 385c: "When I played a free play of a daily challenge with no posted score
+    /// ... Back in the Daily Challenge menu view, it also didn't show my free play hi-score
+    /// info", and "Show Free Play Hi Score even if there is no posted score". A day whose attempt
+    /// never posted, played again for practice, on a board nobody has posted to yet: the card
+    /// was hidden, because only a posted score or the day's leader could open it.
+    func testFreePlayShowsWithNothingPosted() {
+        let card = DailyCardView()
+        let key = DailyChallengeSession.shared.todayKey
+        let unit = DailyChallengeGenerator.challenge(forKey: key).mode == .classic ? "" : "m"
+        let practised = DailyChallengeRecord(dateKey: key, firstAttemptScore: 900, posted: false,
+                                             bestPracticeScore: 1685, attemptCount: 2)
+        card.show(key: key, isToday: true, record: practised, standing: nil, board: [])
+        XCTAssertEqual(card.resultTextForTesting, "Free Play Hi Score 1685\(unit)",
+                       "the unposted attempt stays unshown (round 306); free play is its own line")
     }
 }

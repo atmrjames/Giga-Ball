@@ -156,25 +156,22 @@ extension GameScene {
             node.position.x = x
         }
 
-        var driftedAway: [SKNode] = []
         enumerateChildNodes(withName: PowerUpCategoryName) { node, _ in
-            node.position.x += step
+            var x = node.position.x + step
             let half = (node as? SKSpriteNode)?.size.width ?? self.brickWidth
-            if abs(node.position.x) - half/2 > self.gameWidth/2 { driftedAway.append(node) }
+            if x - half/2 > self.gameWidth/2 { x -= self.gameWidth }
+            if x + half/2 < -self.gameWidth/2 { x += self.gameWidth }
+            node.position.x = x
         }
-        // The drops drift too, which is most of what makes the power-up feel like weather
-        // rather than like the bricks misbehaving. They are not wrapped: a power-up that
-        // vanished off one side and reappeared at the other is a drop the player has already
-        // decided whether to chase
-        for drop in driftedAway {
-            drop.name = GameScene.powerUpLeavingName
-            drop.removeFromParent()
-        }
-        // **And one that has gone is gone** (round 385b). A drop carried out past the wall
-        // never reaches the bottom of the screen, which was the only place a missed drop was
-        // let go of - so it was still counted as on screen, and James's run with Drift, Lasers
-        // and a Lock found the field "full" at Mayhem's cap of two with nothing falling.
-        // Wholly outside the field, so a drop half off the edge can still be chased
+        // **The drops drift and wrap as the bricks do** (James, round 385c: "During drift, I
+        // think falling power-ups should wrap around like the bricks do, not be removed from
+        // the field"). They drift because that is most of what makes the power-up feel like
+        // weather rather than like the bricks misbehaving. They did not wrap, and a drop
+        // carried out past the wall never reached the bottom of the screen - the one place a
+        // missed drop was let go of - so it was counted as falling for the rest of the run, and
+        // two of them stopped the drops altogether (round 385c). Round 385c's first answer
+        // took such a drop away; going round the side, the same rule and the same whole-field
+        // shift as a brick, keeps it in play and still on its way to the bottom
     }
 
     /// Puts every brick back on a column centre and forgets the direction.

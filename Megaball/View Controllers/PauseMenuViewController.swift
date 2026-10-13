@@ -845,8 +845,9 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
         let shown = dailyBoardRowsWanted
         GameCenterHandler().loadDailyBoardTop(forKey: key, count: shown) { [weak self] answer in
             guard let self, let answer else { return }
-            self.dailyBoard = DailyBoardRow.shown(leaders: answer.leaders, local: answer.local,
-                                                  limit: shown)
+            self.dailyBoard = DailyBoardRow.shown(
+                leaders: answer.leaders, local: answer.local, limit: shown,
+                localHasPosted: DailyChallengeSession.shared.localHasPostedToday)
             self.dailyBoardPlayers = answer.players
             self.updateResultLine()
         }

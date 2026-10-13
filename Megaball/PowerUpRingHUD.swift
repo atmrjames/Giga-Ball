@@ -84,11 +84,28 @@ final class PowerUpRingHUD: SKNode {
     var locked = false {
         didSet {
             guard locked != oldValue else { return }
-            container.strokeColor = locked ? PowerUpRingHUD.ringColour : .clear
-            container.lineWidth = locked ? PowerUpRingHUD.ringWidth : 0
-            container.glowWidth = locked ? PowerUpRingHUD.ringGlow : 0
+            lockBorder.strokeColor = locked ? PowerUpRingHUD.ringColour : .clear
+            lockBorder.lineWidth = locked ? PowerUpRingHUD.ringWidth : 0
+            lockBorder.glowWidth = locked ? PowerUpRingHUD.ringGlow : 0
         }
     }
+
+    /// The Lock's border, drawn inside the capsule's edge rather than on it.
+    ///
+    /// **Closer to the icons** (James, round 385c: "The lock glow around the power-up HUD
+    /// overlaps the score labels a little bit - the glow could sit a bit closer to the
+    /// power-up HUD icons so it's outside area is smaller and overlaps less with the labels").
+    /// It was the capsule's own stroke, at the capsule's edge eight points out from the icons,
+    /// and the glow blooms outward from wherever the line is - past the capsule and into the
+    /// height and hi-score labels beside it. A node of its own lets the line come in without
+    /// the capsule changing size for everybody who is not locked.
+    private let lockBorder = SKShapeNode()
+
+    /// How far inside the capsule's edge the Lock's border is drawn - half its padding.
+    static let lockBorderInset: CGFloat = 4
+
+    /// The Lock's border, for tests.
+    var lockBorderForTesting: SKShapeNode { lockBorder }
 
     /// The colour a ring is drawn in: lime while it counts, white while a Lock holds it.
     static func ringColour(held: Bool) -> UIColor {
@@ -165,6 +182,10 @@ final class PowerUpRingHUD: SKNode {
         container.fillColor = UIColor(white: 1, alpha: 0.08)
         container.zPosition = -1
         addChild(container)
+        lockBorder.strokeColor = .clear
+        lockBorder.fillColor = .clear
+        lockBorder.zPosition = -1
+        addChild(lockBorder)
         addChild(row)
     }
 
@@ -364,6 +385,11 @@ final class PowerUpRingHUD: SKNode {
         container.path = CGPath(roundedRect: rect,
                                 cornerWidth: height/2, cornerHeight: height/2,
                                 transform: nil)
+        let inset = PowerUpRingHUD.lockBorderInset
+        let border = rect.insetBy(dx: inset, dy: inset)
+        lockBorder.path = CGPath(roundedRect: border,
+                                 cornerWidth: border.height/2, cornerHeight: border.height/2,
+                                 transform: nil)
     }
 
     // MARK: - Rings

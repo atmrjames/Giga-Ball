@@ -38,7 +38,7 @@ extension GameScene {
         powerUp.addChild(glow)
     }
 
-    /// **A picture of the disc, not a shape that glows** (James, round 385b: "The power-up glow -
+    /// **A picture of a glow, not a shape that glows** (James, round 385b: "The power-up glow -
     /// make the change"). Until then each drop carried an `SKShapeNode` with a `glowWidth`,
     /// which SpriteKit draws through an offscreen pass of its own on every frame, one per drop
     /// in the air - a Power Shower or a Multi-Ball rush paid it several times over. The disc
@@ -50,12 +50,12 @@ extension GameScene {
     /// halo at all: `SKShapeNode` draws its glow in the *stroke* colour, and the stroke was
     /// clear. So the drops have worn a translucent disc since round 13, and this keeps exactly
     /// that - the look James has played with - while dropping the offscreen pass that drew an
-    /// invisible glow every frame. A soft halo is a one-line change to the falloff below if
-    /// it is ever wanted.
+    /// invisible glow every frame. Round 385c then gave the picture an actual glow - see the
+    /// falloff below.
     static func powerUpGlowTexture(for colour: UIColor) -> SKTexture {
         let key = colour.description
         if let made = powerUpGlowTextures[key] { return made }
-        let side: CGFloat = 128
+        let side: CGFloat = 256
         let image = UIGraphicsImageRenderer(size: CGSize(width: side, height: side)).image { context in
             var red: CGFloat = 0, green: CGFloat = 0, blue: CGFloat = 0, alpha: CGFloat = 0
             colour.getRed(&red, green: &green, blue: &blue, alpha: &alpha)
@@ -74,17 +74,25 @@ extension GameScene {
         return made
     }
 
-    /// Where the disc's strength falls, as (share of its radius, strength): solid to the
-    /// edge, with a pixel or two of softening so it is not drawn more sharply than the
-    /// anti-aliased shape was.
-    static let powerUpGlowFalloff: [(CGFloat, CGFloat)] = [(0, 1), (0.97, 1), (1, 0)]
+    /// Where the glow's strength falls, as (share of its radius, strength): bright under the
+    /// drop and easing out well past its edges, so it lights the field round the icon rather
+    /// than hiding behind it.
+    ///
+    /// **James's pick, round 385c** ("Power-up glows look great. Let's go with Glow"), from four
+    /// rendered side by side with real drops: the flat disc the drops had worn since round 13,
+    /// a soft halo, this, and a stronger one. The disc showed nothing at all - it was smaller
+    /// than the icon and hid behind it.
+    static let powerUpGlowFalloff: [(CGFloat, CGFloat)] = [
+        (0, 1), (0.3, 0.85), (0.5, 0.5), (0.7, 0.2), (0.85, 0.06), (1, 0)
+    ]
 
-    /// The disc's size round a drop: 0.42 of the drop's width in radius, the old shape's.
+    /// The glow's size round a drop: five of the old disc's radii across, 0.42 of the drop's
+    /// width each - a little over twice the drop.
     static func powerUpGlowSize(forDropWidth width: CGFloat) -> CGSize {
-        CGSize(width: width*0.42*2, height: width*0.42*2)
+        CGSize(width: width*0.42*5, height: width*0.42*5)
     }
 
-    static let powerUpGlowAlpha: CGFloat = 0.30
+    static let powerUpGlowAlpha: CGFloat = 0.45
 
     /// One picture per colour, of which there are three. Main-thread only, like the scene.
     private static var powerUpGlowTextures: [String: SKTexture] = [:]

@@ -1652,6 +1652,19 @@ final class DailyChallengeSession {
     /// never has to re-derive what the scene already decided.
     var lastRunPosted = false
 
+    /// Whether the player is on the day's board by their own record: this run posted, or an
+    /// earlier one had. The end screen's board leaves them off it otherwise.
+    ///
+    /// **James, round 385c**: "When I played a free play of a daily challenge with no posted
+    /// score, at the end it showed the Game Center leaderboard with me in position 0 with a
+    /// score of 0." Round 361 fixed exactly this on the daily menu - Game Center hands back an
+    /// entry for the local player on a board they have never posted to, rank 0 and score 0 -
+    /// by telling `DailyBoardRow.menuBoard` whether the player had posted. The end screen built
+    /// its rows through `DailyBoardRow.shown` without saying, and that argument's default is
+    /// yes. A free-play run after a first attempt that was never posted is the one way to reach
+    /// that screen without a score on the board.
+    var localHasPostedToday: Bool { lastRunPosted || comparisonPosted != nil }
+
     /// Whether the run in play was resumed after its scoring window had closed.
     ///
     /// The run carries on - an interrupted daily is not a lost one - but it cannot post,

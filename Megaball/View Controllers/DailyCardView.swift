@@ -639,15 +639,29 @@ final class DailyCardView: UIView {
         clearResultRows()
         guard let record, record.posted || (record.isPending && isToday) else {
             dressTheResultCard(leading: false)
-            guard let boardBest, boardBest > 0 else {
+            let practice = DailyCardView.freePlayBest(of: record)
+            let leader = boardBest.flatMap { $0 > 0 ? $0 : nil }
+            guard practice != nil || leader != nil else {
                 resultCard.isHidden = true
                 return
             }
             resultCard.isHidden = false
-            resultRows.addArrangedSubview(DailyCardView.resultLine(
-                symbol: "trophy.fill", title: "Global Hi-Score", value: "\(boardBest)" + unit,
-                onLime: false))
-            makeTheResultCardADoor(true)
+            if let practice {
+                resultRows.addArrangedSubview(DailyCardView.resultLine(
+                    symbol: DailyCardView.freePlaySymbol, title: DailyCardView.freePlayTitle,
+                    value: "\(practice)" + unit, onLime: false))
+            }
+            // **Free play with nothing posted still shows** (James, round 385c: "Show Free
+            // Play Hi Score even if there is no posted score", from a day whose attempt was
+            // never posted and then played for practice - the card said nothing at all). An
+            // attempt that did not post is still treated as no score (round 306); free play is
+            // its own line and never claimed to be posted
+            if let leader {
+                resultRows.addArrangedSubview(DailyCardView.resultLine(
+                    symbol: "trophy.fill", title: "Global Hi-Score", value: "\(leader)" + unit,
+                    onLime: false))
+            }
+            makeTheResultCardADoor(leader != nil)
             return
             // **The day's leader before you have played** (James, round 350): the number to
             // beat, where Game Center can say - today and yesterday - and nothing otherwise
@@ -674,7 +688,7 @@ final class DailyCardView: UIView {
         }
         if let practice = DailyCardView.freePlayBest(of: record) {
             resultRows.addArrangedSubview(DailyCardView.resultLine(
-                symbol: DailyCardView.freePlaySymbol, title: "Free Play Best",
+                symbol: DailyCardView.freePlaySymbol, title: DailyCardView.freePlayTitle,
                 value: "\(practice)" + unit, onLime: leading))
             // Round 385, under the score it is not
         }
@@ -718,7 +732,7 @@ final class DailyCardView: UIView {
                 ?? (record.firstAttemptScore == 0 && record.bestPracticeScore > 0
                     ? record.bestPracticeScore : nil) {
                 resultRows.addArrangedSubview(DailyCardView.resultLine(
-                    symbol: DailyCardView.freePlaySymbol, title: "Free Play Best",
+                    symbol: DailyCardView.freePlaySymbol, title: DailyCardView.freePlayTitle,
                     value: "\(practice)" + unit, onLime: false))
             }
             // The attempt as "Your Score", and free play on its own line, as on the board (round
@@ -747,6 +761,10 @@ final class DailyCardView: UIView {
         return record.bestPracticeScore
     }
 
+    /// The free-play line's name (James, round 385c: "Change Free Play Best to Free Play Hi
+    /// Score"), one spelling for the card, the signed-out card and the lines under the board.
+    static let freePlayTitle = "Free Play Hi Score"
+
     /// The mark on the free-play line: the replay button's own arrow.
     static let freePlaySymbol = "arrow.clockwise"
 
@@ -766,7 +784,7 @@ final class DailyCardView: UIView {
                 value: "\(record.firstAttemptScore)" + unit, onLime: leading))
         }
         boardExtras.addArrangedSubview(DailyCardView.resultLine(
-            symbol: DailyCardView.freePlaySymbol, title: "Free Play Best",
+            symbol: DailyCardView.freePlaySymbol, title: DailyCardView.freePlayTitle,
             value: "\(practice)" + unit, onLime: leading))
         boardExtras.isHidden = false
     }

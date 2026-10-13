@@ -243,9 +243,15 @@ final class GameCenterHandler: NSObject {
                               range: NSRange(location: 1, length: max(1, count))) {
                 localEntry, entries, players, error in
                 let answer = error == nil || entries != nil
-                    ? (leaders: (entries ?? []).map(row), local: localEntry.map(row),
+                    ? (leaders: (entries ?? []).filter { $0.rank > 0 }.map(row),
+                       local: localEntry.flatMap { $0.rank > 0 ? row($0) : nil },
                        players: players)
                     : nil
+                // **Rank nought is not a place** (round 385c). Game Center answers with an
+                // entry for the local player on a board they have never posted to, ranked 0
+                // with a score of 0, and every screen that read it showed "0 atmrjames 0" -
+                // the menu since round 361 had been told to look past it, the end screen had
+                // not. Taken out here, where the answer is made, so no screen has to know
                 DispatchQueue.main.async { completion(answer) }
             }
         }
@@ -335,7 +341,9 @@ final class GameCenterHandler: NSObject {
                               range: NSRange(location: 1, length: 1)) {
                 localEntry, entries, players, _ in
                 DispatchQueue.main.async {
-                    guard let rank = localEntry?.rank else { completion(nil); return }
+                    guard let rank = localEntry?.rank, rank > 0 else { completion(nil); return }
+                    // Rank nought is an entry for a player with no score on the board, the
+                    // same answer the daily board has to look past (round 385c) - "0th"
                     completion((rank: rank, players: max(players, rank),
                                 best: entries?.first?.score))
                     // Never fewer players than there are places: a count that has not

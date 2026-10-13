@@ -175,14 +175,15 @@ extension GameScene {
     static let stickyReadyLead: TimeInterval = 1.25
     static let stickyGoLead: TimeInterval = 0.25
 
-    /// How many balls Sticky is holding. Mayhem keeps a queue of every caught ball; elsewhere
-    /// there is only the first ball, held when Sticky caught it rather than at a life's start.
-    /// Aimed Sticky is not counted: its hold is the player lining up a shot, and the aim is
-    /// what ends it.
+    /// How many balls Sticky is holding. Mayhem keeps a queue of every caught ball, Aimed
+    /// Sticky's included; elsewhere there is only the first ball, held when Sticky caught it
+    /// rather than at a life's start.
+    ///
+    /// **Aimed Sticky counts too** (James, round 385c: "Aimed sticky should count and have a 10
+    /// second auto release too, it releases at whatever angle is selected at 10s"). Round 385c
+    /// first left it out, on the reading that its hold is the aim and the aim is what ends it;
+    /// a held ball is a held ball, and the arrow says where it goes when the time is up.
     var stickyHeldBallCount: Int {
-        if endlessIIAimedStickyClock.isRunning || endlessIIAimedStickyOwedTurn || endlessIIAimHold {
-            return 0
-        }
         if gameMode == .endlessII { return endlessIIHeldBalls.count }
         return ballIsOnPaddle && stickyCaughtTheFirstBall ? 1 : 0
     }
@@ -229,8 +230,13 @@ extension GameScene {
         }
     }
 
-    /// Launches the next held ball exactly as a tap would have.
+    /// Launches the next held ball exactly as a tap would have - along the arrow, when Aimed
+    /// Sticky is holding it.
     func launchStickyHeldBall() {
+        if endlessIIAimTarget != nil, endlessIIAimLaunch() {
+            touchBeganWhilstPlaying = false
+            return
+        }
         if endlessIITapLaunchesHeldBall {
             endlessIILaunchHeldBall()
         } else if ballIsOnPaddle {

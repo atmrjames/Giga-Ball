@@ -731,15 +731,32 @@ final class EndlessIILockHoldsEverythingTests: XCTestCase {
         // Compared by alpha and green: SpriteKit hands the colour back in another colour space,
         // so the same lime is not `==` to the one it was given
         let hud = PowerUpRingHUD()
-        XCTAssertEqual(hud.containerForTesting.strokeColor.cgColor.alpha, 0)
+        let border = hud.lockBorderForTesting
+        XCTAssertEqual(border.strokeColor.cgColor.alpha, 0)
         hud.locked = true
         var green: CGFloat = 0, alpha: CGFloat = 0
-        hud.containerForTesting.strokeColor.getRed(nil, green: &green, blue: nil, alpha: &alpha)
+        border.strokeColor.getRed(nil, green: &green, blue: nil, alpha: &alpha)
         XCTAssertEqual(alpha, 1)
         XCTAssertEqual(green, 1, accuracy: 0.01)
-        XCTAssertGreaterThan(hud.containerForTesting.glowWidth, 0)
+        XCTAssertGreaterThan(border.glowWidth, 0)
         hud.locked = false
-        XCTAssertEqual(hud.containerForTesting.strokeColor.cgColor.alpha, 0)
+        XCTAssertEqual(border.strokeColor.cgColor.alpha, 0)
+    }
+
+    /// James, round 385c: "The lock glow around the power-up HUD overlaps the score labels a
+    /// little bit - the glow could sit a bit closer to the power-up HUD icons." The border is
+    /// drawn inside the capsule's edge now, so its glow reaches that much less far out, and the
+    /// capsule itself is the size it always was.
+    func testTheLockBorderSitsInsideTheCapsule() {
+        let hud = PowerUpRingHUD()
+        hud.update(with: [])
+        hud.locked = true
+        let capsule = try? XCTUnwrap(hud.containerForTesting.path?.boundingBox)
+        let border = try? XCTUnwrap(hud.lockBorderForTesting.path?.boundingBox)
+        XCTAssertEqual((capsule?.height ?? 0) - (border?.height ?? 0),
+                       PowerUpRingHUD.lockBorderInset*2, accuracy: 0.01)
+        XCTAssertEqual((capsule?.width ?? 0) - (border?.width ?? 0),
+                       PowerUpRingHUD.lockBorderInset*2, accuracy: 0.01)
     }
 
     // MARK: - The way out

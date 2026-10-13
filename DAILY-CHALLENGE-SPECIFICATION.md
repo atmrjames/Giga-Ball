@@ -582,8 +582,13 @@ briefing screen (§6).
   leaderboard", under "Your Score" once the day has been played.
 
   **Free play is back, on its own line** (round 385, James: "show the users posted score and free
-  play hi score if they have played free play of the challenge"): a "Free Play Best" line under
-  the board or in the result table, only once free play has been played. An Always On day also
+  play hi score if they have played free play of the challenge"): a "Free Play Hi Score" line
+  (renamed from "Free Play Best" in round 385c) under the board or in the result table, only
+  once free play has been played - **and with nothing posted too** (round 385c: "Show Free Play
+  Hi Score even if there is no posted score"). An attempt that did not post is still no score
+  (round 306); the free-play line never claims to be one. The end screen's board leaves a player
+  off it until they have posted (`localHasPostedToday`), as the menu has since round 361 - Game
+  Center's rank-0 entry for an unposted player had shown "0 atmrjames 0". An Always On day also
   leaves out the standing power-up's one-slot rivals (another paddle face, the other Drift), and
   a Mayhem day's field carries no best-height or rival lines.
 
