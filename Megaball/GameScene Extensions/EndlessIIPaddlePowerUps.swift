@@ -414,6 +414,25 @@ extension GameScene {
         // This one was already measured off the underside and stays as it was
     }
 
+    /// Sizes the Retro sticky band to the picture it is wearing, at the flat band's width.
+    ///
+    /// **The shaped bands were drawn squashed** (James, round 386, with a screenshot: "Retro
+    /// paddle wedge shape sticky graphic is wrong"). The flat band is 273 by 72 and the band's
+    /// node is sized for it once, at setup (width over 3.8). The five shaped bands are 273 by 87,
+    /// because a band that follows a wedge's slope needs the extra height - and they were drawn
+    /// into the flat one's 72, so every one of them came out shorter than it was drawn and stood
+    /// over the tube instead of above it. Measured off the pictures: bottom-aligned at their own
+    /// height, as the flat band is, every shaped band clears its tube by 3 to 10 pixels, where the
+    /// flat one clears by 8. So the picture's own proportions are the whole fix, and the
+    /// underside stays where `positionRetroPaddleLayers` puts it.
+    func fitTheRetroStickyBandToItsPicture() {
+        guard let natural = paddleRetroStickyTexture.texture?.size(),
+              natural.width > 0, paddleRetroStickyTexture.size.width > 0 else { return }
+        paddleRetroStickyTexture.size.height =
+            paddleRetroStickyTexture.size.width*natural.height/natural.width
+        positionRetroPaddleLayers()
+    }
+
     func refreshEndlessIIRetroShapeDressing(_ suffix: String?) {
         guard paddleTexture == retroPaddle else { return }
 
@@ -422,6 +441,7 @@ extension GameScene {
         if endlessIIWearsGrip == false {
             paddleRetroStickyTexture.texture = SKTexture(imageNamed:
                 suffix.map { "retroSticky\($0)" } ?? "retroSticky")
+            fitTheRetroStickyBandToItsPicture()
             // No Portal variant for the sticky band, and none wanted: the band is the
             // *power-up's* own colour, and a Sticky Paddle running alongside a Portal Paddle
             // is still a sticky paddle
@@ -465,6 +485,47 @@ extension GameScene {
     /// height - a convex face is half as tall again - so the sprite grows and the node rises
     /// by half the growth, which leaves the underside exactly on the line it was on. The body
     /// is centred on the node, so it moves with the art rather than away from it.
+    /// Reads the five shaped paddles' outlines before any of them is collected.
+    ///
+    /// **James, round 386: "The game frame rate suffers when a shaped paddle power up is
+    /// activated and when the ball hits the shaped paddle for the first time."** Measured on the
+    /// simulator: collecting a shape cost nothing itself, but the next frame - the one that puts
+    /// the shape on - ran 40 to 46 milliseconds, and the first paddle hit on each new shape cost
+    /// 10 to 15 where the second cost 0.2. Both are `PaddleOutline` reading the picture pixel by
+    /// pixel: the body's twenty polygons as the shape goes on, and the surface's height profile
+    /// the first time a ball needs a resting height or a launch angle off it. Both are kept once
+    /// read, which is why only the first of each was slow.
+    ///
+    /// So they are read before they are wanted: as a Mayhem run starts, on a background queue,
+    /// for each shape in the player's theme at the paddle's own width and the height that shape
+    /// grows it to - the same sizes `refreshEndlessIIPaddleShapeArt` will ask for. The pixel work
+    /// is pure and runs off the main thread; only the keeping comes back to it. The pictures
+    /// themselves are preloaded too, so the first frame that draws one does not decode it.
+    /// An Expand or Shrink is a size of its own and is still read when first needed, as before.
+    func warmTheShapedPaddleOutlines() {
+        guard gameMode == .endlessII, paddleWidth > 1, paddleHeight > 0 else { return }
+        let base = max(1, paddleTexture.size().height)
+        let width = paddleWidth
+        // The standard width, not the sprite's: a run starts with the paddle still scaling in,
+        // and the first version of this read that half-drawn width and warmed a size the game
+        // never asked for
+        let wanted: [(name: String, size: CGSize)] = PaddleBounce.Surface.allCases.compactMap {
+            guard let name = endlessIIPaddleShapeTextureName($0) else { return nil }
+            let height = paddleHeight*(SKTexture(imageNamed: name).size().height/base)
+            return (name, CGSize(width: width, height: height))
+        }
+        let unique = Dictionary(wanted.map { ($0.name, $0.size) }, uniquingKeysWith: { a, _ in a })
+        SKTexture.preload(unique.keys.map { SKTexture(imageNamed: $0) }) {}
+        DispatchQueue.global(qos: .utility).async {
+            for (name, size) in unique {
+                guard let prepared = PaddleOutline.prepare(named: name, size: size) else { continue }
+                DispatchQueue.main.async {
+                    PaddleOutline.store(prepared, for: SKTexture(imageNamed: name), size: size)
+                }
+            }
+        }
+    }
+
     func refreshEndlessIIPaddleShapeArt() {
         let running = endlessIIPaddleSurfaceClock.isRunning
         let wanted = running ? endlessIIPaddleSurface.flatMap {

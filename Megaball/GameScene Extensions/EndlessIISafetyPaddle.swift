@@ -266,6 +266,20 @@ extension GameScene {
             refreshEndlessIISafetyPaddleSplit(bar)
             // Last, because it owns whether the bar draws itself or its pieces do - and the
             // face above is put on whichever of those is showing
+            let split = bar.children.contains { $0.name == GameScene.endlessIISafetyPaddleSegmentName }
+            if split {
+                bar.childNode(withName: GameScene.endlessIIRetroTwinDressName)?.removeFromParent()
+            } else if endlessIIDressRetroTwin(bar, colour: GameScene.endlessIIHaloColour) == false,
+                      bar.texture == nil {
+                bar.texture = endlessIISafetyPaddleDress
+                bar.color = GameScene.endlessIIHaloColour
+                bar.colorBlendFactor = 1
+                bar.centerRect = endlessIIPaddleDressCenterRect
+            }
+            // **The Retro picture at Retro's proportions** (James, round 386: "The retro mirror
+            // paddle and safety paddle look totally wrong") - see `endlessIIDressRetroTwin`. And
+            // the bar's own picture back if the theme has stopped being Retro, since the dress
+            // left the bar drawing nothing
             return
         }
         bar.name = nil
@@ -382,8 +396,16 @@ extension GameScene {
     /// `endlessIIPaddleTopKind` is the one place that decides between the two pictures, so the
     /// bar cannot end up wearing the sticky face while the paddle wears the grip.
     func refreshEndlessIISafetyPaddleTop(_ bar: SKSpriteNode) {
-        let wanted = endlessIIWearsGrip
-            || endlessIIAimedStickyClock.isRunning || stickyPaddleCatches != 0
+        let retroBand = endlessIIRetroHidesPaddleTop
+        let wanted = retroBand
+            ? (endlessIIAimedStickyClock.isRunning || stickyPaddleCatches != 0)
+                && endlessIIABallIsHeldOnTheSafetyBar
+            : endlessIIWearsGrip || endlessIIAimedStickyClock.isRunning || stickyPaddleCatches != 0
+        // **In Retro, only while the bar is holding a ball** (James, round 386: "Retro safety
+        // paddle is showing the retro sticky graphic when the ball isn't caught on it"). Retro's
+        // band is not a face that says "this catches" - it is the glow of a ball being held, and
+        // the paddle shows it only then (`performStickyCatch`). The bar wore it for as long as
+        // the power-up ran, in the plain sticky face's place and at the plain face's height
         // The three states that put a face on the paddle: Ball Spin's grip, Aimed Sticky, and
         // a plain Sticky Paddle with catches left
 
@@ -414,13 +436,23 @@ extension GameScene {
             // is ten points tall and its sticky strip eleven, both bottom-anchored.
         }
 
-        let art = endlessIIPaddleTopTexture
+        let art = retroBand ? (paddleRetroStickyTexture.texture ?? endlessIIPaddleTopTexture)
+                            : endlessIIPaddleTopTexture
         if strip.texture !== art { strip.texture = art }
         let xScale = bar.xScale == 0 ? 1 : abs(bar.xScale)
         let yScale = bar.yScale == 0 ? 1 : abs(bar.yScale)
-        strip.size = CGSize(width: bar.size.width/xScale,
-                            height: paddleSticky.size.height/yScale)
-        strip.centerRect = GameScene.paddleStickyCapRect
+        if retroBand, paddle.size.width > 0 {
+            let share = paddleRetroStickyTexture.size.width/paddle.size.width
+            strip.size = CGSize(width: bar.size.width*share/xScale,
+                                height: paddleRetroStickyTexture.size.height/yScale)
+            strip.centerRect = CGRect(x: 0, y: 0, width: 1, height: 1)
+            // The band at the paddle's own band's proportions, standing on the bar's underside
+            // as that one stands on the paddle's
+        } else {
+            strip.size = CGSize(width: bar.size.width/xScale,
+                                height: paddleSticky.size.height/yScale)
+            strip.centerRect = GameScene.paddleStickyCapRect
+        }
         strip.position = CGPoint(x: 0, y: -bar.size.height/2/yScale)
         // **In the bar's own units** (James, round 385: "With sticky paddle, extended paddle and
         // safety paddle, the sticky paddle texture on the safety paddle grew too large"). The
@@ -607,11 +639,6 @@ extension GameScene {
                 endlessIIAimedStickyOwedTurn = false
                 endlessIIAimOwedHold = true
             }
-            endlessIIAimDefaultAngles[ObjectIdentifier(subject)] =
-                endlessIIWouldHaveBouncedAngle(subject, offSurfaceAt: bar.position.x,
-                                               width: bar.size.width)
-            // Off the *bar's* width, which is the only thing that changes between the two
-            // surfaces - the angle rule itself is written once
             endlessIIBeginAimHold()
             // The same three things the paddle's aimed catch does, in the same order: the last
             // catch of an expired clock still catches, the arrow needs somewhere to point

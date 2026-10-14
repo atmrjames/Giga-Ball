@@ -770,7 +770,11 @@ final class EndlessIIPaddleSceneTests: XCTestCase {
 
     // MARK: Aimed Sticky in the scene
 
-    func testACaughtBallIsHeldAndAimedAtItsOwnBounce() {
+    /// Held, and aimed where a Sticky launch from that spot would go - since round 386 (James:
+    /// "the default launch angle and aiming arrow angle should be determined by where the ball is
+    /// on the paddle not by its approach angle"). Round 312's default was the bounce it would
+    /// have taken, which the arrival angle steered.
+    func testACaughtBallIsHeldAndAimedFromWhereItSits() {
         let scene = paddleScene()
         scene.addChild(scene.ball)
         scene.ball.physicsBody = SKPhysicsBody(circleOfRadius: 5)
@@ -782,8 +786,9 @@ final class EndlessIIPaddleSceneTests: XCTestCase {
         XCTAssertTrue(scene.ballIsOnPaddle)
 
         guard let target = scene.endlessIIAimTarget else { return XCTFail("nothing aimed") }
-        XCTAssertEqual(scene.endlessIIAimAngle(for: target), .pi/4, accuracy: 0.01,
-                       "the default is the bounce it would have taken")
+        XCTAssertEqual(scene.endlessIIAimAngle(for: target),
+                       scene.endlessIIStickyLaunchAngle(for: target), accuracy: 0.0001,
+                       "the default is Sticky's launch from where the ball sits")
     }
 
     func testMovingTheFingerSwingsTheAimToWhereItSits() {
@@ -4744,6 +4749,21 @@ final class BallControlHasInertiaTests: XCTestCase {
                           + "following immediately - it moves a quarter as far at most")
     }
 
+    /// James, round 386: "For the ball control power up, the ball should have a little more
+    /// 'weight' to it, so it doesn't move horizontally with the paddle / tether as responsively.
+    /// It should still move horizontally with the paddle / tether but have more inertia under
+    /// its own movement."
+    func testTheBallCarriesMoreWeightThanRound293sTether() {
+        let path = flight()
+        XCTAssertLessThan(path[5], 20,
+                          "a tenth of a second in, round 293's tether had it a quarter of the way "
+                          + "across - the ball answers the paddle more slowly now")
+        XCTAssertGreaterThan(path.max() ?? 0, 100, "and still follows it, past and back")
+        XCTAssertGreaterThan(pow(EndlessIIPaddleEffects.steeringVelocityDamping(delta: 1.0/60), 5),
+                             0.5, "and keeps more than half of its own sideways speed for five "
+                             + "frames, where it kept a third")
+    }
+
     /// A ball already on the paddle's column and moving is not stopped dead by it.
     func testAMovingBallKeepsItsOwnMomentumThroughThePaddlesColumn() {
         let stepped = EndlessIIPaddleEffects.steeringStep(x: 0, velocity: 200, towards: 0,
@@ -7087,5 +7107,235 @@ final class BallSteeringTickTests: XCTestCase {
         scene.gameMode = .endless
         frames(scene, 30)
         XCTAssertEqual(scene.ball.position.x, -150)
+    }
+}
+
+/// James, round 386: "The retro mirror paddle and safety paddle look totally wrong", "Retro safety
+/// paddle is showing the retro sticky graphic when the ball isn't caught on it", and "Retro
+/// paddle wedge shape sticky graphic is wrong".
+final class RetroTwinDressTests: XCTestCase {
+
+    private func retroMayhem() -> GameScene {
+        let scene = GameScene()
+        scene.gameMode = .endlessII
+        scene.totalStatsArray = [TotalStats()]
+        scene.paddleHeight = 18
+        scene.addChild(scene.paddle)
+        scene.paddle.size = CGSize(width: 92, height: 18)
+        scene.paddleTexture = scene.retroPaddle
+        scene.paddleRetroTexture.texture = SKTexture(imageNamed: "retroPaddleTexture")
+        scene.paddleRetroTexture.size = CGSize(width: 112, height: 32)
+        scene.addChild(scene.paddleRetroTexture)
+        scene.addChild(scene.paddleRetroStickyTexture)
+        scene.paddleRetroStickyTexture.size = CGSize(width: 112, height: 112/3.8)
+        return scene
+    }
+
+    /// The twins were drawn at the paddle sprite's size, which in Retro is a strip far shorter
+    /// than the picture the player sees - crushed and tinted, it read as an orange line.
+    func testATwinWearsTheRetroPictureAtTheRetroLayersProportions() throws {
+        let scene = retroMayhem()
+        let bar = SKSpriteNode(texture: scene.paddleRetroTexture.texture, size: scene.paddle.size)
+        scene.addChild(bar)
+
+        XCTAssertTrue(scene.endlessIIDressRetroTwin(bar, colour: .orange))
+        let dress = try XCTUnwrap(bar.childNode(withName: GameScene.endlessIIRetroTwinDressName)
+                                    as? SKSpriteNode)
+        XCTAssertEqual(dress.size.height, scene.paddleRetroTexture.size.height, accuracy: 0.01,
+                       "the Retro layer's own height, not the paddle sprite's")
+        XCTAssertEqual(dress.size.width, 112, accuracy: 0.01,
+                       "and its own share wider than the paddle")
+        XCTAssertNil(bar.texture, "the twin's own sprite draws nothing under the dress")
+        XCTAssertEqual(bar.size, scene.paddle.size, "and keeps the size that is its geometry")
+    }
+
+    func testOutsideRetroTheDressComesOff() {
+        let scene = retroMayhem()
+        let bar = SKSpriteNode(texture: scene.paddleRetroTexture.texture, size: scene.paddle.size)
+        scene.addChild(bar)
+        scene.endlessIIDressRetroTwin(bar, colour: .orange)
+        scene.paddleTexture = SKTexture(imageNamed: "regularPaddle")
+
+        XCTAssertFalse(scene.endlessIIDressRetroTwin(bar, colour: .orange))
+        XCTAssertNil(bar.childNode(withName: GameScene.endlessIIRetroTwinDressName))
+    }
+
+    /// Every shaped band is drawn 273 by 87 and the flat one 273 by 72; drawn into the flat
+    /// one's height, the shaped bands stood over the tube instead of above it.
+    func testAShapedStickyBandIsDrawnAtItsOwnProportions() {
+        let scene = retroMayhem()
+        scene.paddleRetroStickyTexture.texture = SKTexture(imageNamed: "retroStickyWedgeRight")
+        scene.fitTheRetroStickyBandToItsPicture()
+
+        let natural = SKTexture(imageNamed: "retroStickyWedgeRight").size()
+        XCTAssertEqual(scene.paddleRetroStickyTexture.size.height,
+                       112*natural.height/natural.width, accuracy: 0.01)
+        XCTAssertEqual(scene.paddleRetroStickyTexture.position.y,
+                       scene.paddle.position.y - scene.paddle.size.height/2
+                       + scene.paddleRetroStickyTexture.size.height/2, accuracy: 0.01,
+                       "still standing on the paddle's underside")
+    }
+}
+
+/// James, round 386: "When split paddle is active, the bounce angle of the ball should be
+/// determined based on where it hits the paddle as if they are individual paddles, not one
+/// long paddle."
+final class SplitPaddleEdgeTests: XCTestCase {
+
+    private func split() -> GameScene {
+        let scene = GameScene()
+        scene.gameMode = .endlessII
+        scene.totalStatsArray = [TotalStats()]
+        scene.ballSize = 16
+        scene.paddleWidth = 120
+        scene.paddle.size = CGSize(width: 120, height: 12)
+        scene.paddle.physicsBody = SKPhysicsBody(rectangleOf: scene.paddle.size)
+        scene.addChild(scene.paddle)
+        scene.endlessIICollectDoublePaddle()
+        return scene
+    }
+
+    /// A ball clipping a piece's inner edge with its centre over the gap was answered by the
+    /// whole span, where an inner edge reads as the middle of the paddle.
+    func testABallClippingAPiecesEdgeSteersByThatPiece() throws {
+        let scene = split()
+        let layout = GameScene.endlessIIDoublePaddleLayout(span: 120, standardWidth: 120,
+                                                           ballSize: 16)
+        let leftCentre = try XCTUnwrap(scene.endlessIISplitSegmentCentres.first)
+        let innerEdge = leftCentre + layout.segment/2
+        let share = try XCTUnwrap(scene.endlessIISplitCollision(ballX: innerEdge + 4,
+                                                                ballRadius: 8),
+                                  "a ball touching the piece is a ball on the piece")
+        XCTAssertEqual(share, 1, accuracy: 0.001,
+                       "the piece's own edge - its steepest throw - not the paddle's middle")
+        XCTAssertNil(scene.endlessIISplitCollision(ballX: 0, ballRadius: 8),
+                     "the middle of the gap still meets nothing")
+    }
+
+    func testTheTrajectorysPaddleIsThePieceTheBallWouldStrike() throws {
+        let scene = split()
+        let leftCentre = try XCTUnwrap(scene.endlessIISplitSegmentCentres.first)
+        let face = try XCTUnwrap(scene.endlessIIPaddleFaceMet(landingX: leftCentre,
+                                                              ballRadius: 8))
+        XCTAssertEqual(face.centre, leftCentre, accuracy: 0.001)
+        XCTAssertNil(scene.endlessIIPaddleFaceMet(landingX: 0, ballRadius: 8),
+                     "a gap is not a paddle, and the line goes straight through it")
+    }
+}
+
+/// James, round 386: "The ball trajectory is showing as if it's bouncing off the paddle even if
+/// it's not headed for the paddle ... It should only show the trajectory of a paddle bounce when
+/// the ball is on a path to collide with the paddle."
+final class TrajectoryPaddleBounceTests: XCTestCase {
+
+    func testAPaddleThatIsNotThereIsNotMet() {
+        let scene = GameScene()
+        scene.gameMode = .endlessII
+        scene.addChild(scene.paddle)
+        scene.paddle.size = CGSize(width: 120, height: 12)
+        scene.paddle.position = CGPoint(x: -100, y: -300)
+
+        XCTAssertNotNil(scene.endlessIIPaddleFaceMet(landingX: -100, ballRadius: 8))
+        XCTAssertNotNil(scene.endlessIIPaddleFaceMet(landingX: -100 + 60 + 6, ballRadius: 8),
+                        "an edge clipped by the ball is still met")
+        XCTAssertNil(scene.endlessIIPaddleFaceMet(landingX: 100, ballRadius: 8),
+                     "two hundred points away there is nothing to bounce off")
+    }
+}
+
+/// James, round 386: "For aimed sticky, the default launch angle and aiming arrow angle should
+/// be determined by where the ball is on the paddle not by its approach angle to the paddle."
+final class AimedStickyArrowTests: XCTestCase {
+
+    func testTheArrowStartsWhereAStickyLaunchWouldGo() {
+        let scene = GameScene()
+        scene.gameMode = .endlessII
+        scene.totalStatsArray = [TotalStats()]
+        scene.addChild(scene.paddle)
+        scene.paddle.size = CGSize(width: 120, height: 12)
+        scene.addChild(scene.ball)
+        scene.ball.physicsBody = SKPhysicsBody(circleOfRadius: 5)
+
+        scene.ball.position = CGPoint(x: 30, y: 0)
+        let fromTheRight = scene.endlessIIAimAngle(for: scene.ball)
+        XCTAssertEqual(fromTheRight, scene.endlessIIStickyLaunchAngle(for: scene.ball),
+                       accuracy: 0.0001)
+        XCTAssertLessThan(fromTheRight, Double.pi/2, "a ball right of centre points right")
+
+        scene.ball.physicsBody?.velocity = CGVector(dx: -400, dy: -100)
+        XCTAssertEqual(scene.endlessIIAimAngle(for: scene.ball), fromTheRight, accuracy: 0.0001,
+                       "the way it arrived has nothing to say about where it points")
+
+        scene.ball.position = CGPoint(x: -30, y: 0)
+        XCTAssertGreaterThan(scene.endlessIIAimAngle(for: scene.ball), Double.pi/2,
+                             "and it follows the ball as the ball rides the paddle")
+    }
+}
+
+/// James, round 386: "At the end of a game, if the paddle isn't the regular paddle, it
+/// immediately swaps back to the regular paddle before animating out."
+final class PaddleExitStandInTests: XCTestCase {
+
+    func testTheExitTakesAwayACopyOfThePaddleAsItWas() {
+        let scene = GameScene()
+        scene.addChild(scene.paddle)
+        let shaped = SKTexture(imageNamed: "regularPaddleConvex")
+        scene.paddle.texture = shaped
+        scene.paddle.physicsBody = SKPhysicsBody(rectangleOf: CGSize(width: 90, height: 12))
+
+        scene.freezeThePaddleForItsExit()
+        let copies = scene.children.filter { $0.name == GameScene.paddleStandInName }
+        XCTAssertEqual(copies.count, 1)
+        XCTAssertTrue((copies.first as? SKSpriteNode)?.texture === shaped,
+                      "wearing the shape it finished in")
+        XCTAssertNil(copies.first?.physicsBody, "and nothing for a ball to hit")
+        XCTAssertTrue(scene.paddle.isHidden, "the real one is reset out of sight")
+
+        scene.paddle.texture = scene.paddleTexture
+        scene.freezeThePaddleForItsExit()
+        XCTAssertEqual(scene.children.filter { $0.name == GameScene.paddleStandInName }.count, 1,
+                       "frozen once: the run's end and the exit do not make two")
+    }
+}
+
+/// James, round 386: "The ball landing marker can be a bit jittery and flashy."
+final class LandingMarkerSteadinessTests: XCTestCase {
+
+    func testAFarAnswerForOneFrameDoesNotMoveTheMarker() {
+        let scene = GameScene()
+        scene.brickWidth = 40
+        scene.ballSize = 16
+        let marker = SKSpriteNode()
+        marker.userData = ["placed": true]
+        marker.position.x = 0
+        let frame = 1.0/60
+
+        XCTAssertEqual(scene.endlessIISettledLandingX(150, for: marker, delta: frame), 0,
+                       "a prediction flickering to the far side is not followed")
+        marker.position.x = scene.endlessIISettledLandingX(2, for: marker, delta: frame)
+        XCTAssertEqual(marker.position.x, 0.24, accuracy: 0.05,
+                       "and the marker carries on easing where it was")
+
+        marker.position.x = 0
+        for _ in 0..<12 {
+            marker.position.x = scene.endlessIISettledLandingX(150, for: marker, delta: frame)
+        }
+        XCTAssertEqual(marker.position.x, 150, "a change of course that stands is taken")
+    }
+}
+
+/// James, round 386: "The game frame rate suffers when a shaped paddle power up is activated and
+/// when the ball hits the shaped paddle for the first time."
+final class ShapedPaddleWarmTests: XCTestCase {
+
+    func testAnOutlineReadAheadIsTheOneTheGameWillAskFor() throws {
+        let size = CGSize(width: 91.8, height: 18.4)
+        let name = "regularPaddleWedgeRight"
+        let prepared = try XCTUnwrap(PaddleOutline.prepare(named: name, size: size))
+        PaddleOutline.store(prepared, for: SKTexture(imageNamed: name), size: size)
+
+        XCTAssertTrue(PaddleOutline.isKept(SKTexture(imageNamed: name), size: size),
+                      "kept under the name and size the shape will be put on at")
+        XCTAssertNotNil(PaddleOutline.profile(for: SKTexture(imageNamed: name), size: size))
     }
 }

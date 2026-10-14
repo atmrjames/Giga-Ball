@@ -266,7 +266,17 @@ enum EndlessIIPaddleEffects {
     /// crossed the paddle's column at the tenth-of-a-second mark, which is no more lag than
     /// there had ever been; the overshoot was there and the inertia was not. Both halves of
     /// James's note have to be true at once, and this is the same trade taken one step further.
-    static let steeringNaturalFrequency: CGFloat = 8
+    ///
+    /// **Six since round 386** (James: "For the ball control power up, the ball should have a
+    /// little more 'weight' to it, so it doesn't move horizontally with the paddle / tether as
+    /// responsively. It should still move horizontally with the paddle / tether but have more
+    /// inertia under its own movement"). The third time of asking, and the same trade a notch
+    /// further: at 6 the first frame of a chase moves the ball 0.6% of the gap where 8 moved it
+    /// 1.1%, it is 15% of the way across at a tenth of a second where 8 was 25%, and it reaches
+    /// the paddle's column at 0.37 seconds where 8 took 0.27 - with the same one-fifth overshoot,
+    /// because the damping ratio is unchanged, and still within a point and a half a second in.
+    /// The second half of his note is `steeringVelocityDampingPerSixtieth`.
+    static let steeringNaturalFrequency: CGFloat = 6
 
     /// How heavily that spring is damped, as a fraction of critical.
     ///
@@ -318,7 +328,11 @@ enum EndlessIIPaddleEffects {
     /// frame, which is what would otherwise make a steered ball jitter. What is taken out
     /// sideways is put back vertically by `steeredVelocity`, so the ball keeps its pace -
     /// a steered ball is not a slower ball.
-    static let steeringVelocityDampingPerSixtieth: CGFloat = 0.82
+    ///
+    /// **0.9 since round 386** ("more inertia under its own movement"): at 0.82 a ball kept
+    /// a third of its own sideways speed after five frames, and at 0.9 it keeps three fifths, so
+    /// the line it arrived on carries on for a moment before the tether takes it over.
+    static let steeringVelocityDampingPerSixtieth: CGFloat = 0.9
 
     /// How much of that sideways speed survives a frame of this length.
     ///

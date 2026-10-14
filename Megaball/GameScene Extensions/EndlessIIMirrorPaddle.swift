@@ -171,6 +171,10 @@ extension GameScene {
         ghost.position = CGPoint(x: mirror.position.x > 0 ? mirror.position.x - gameWidth
                                                           : mirror.position.x + gameWidth,
                                  y: mirror.position.y)
+        endlessIIDressRetroTwin(ghost, colour: GameScene.endlessIIMirrorPaddleColour,
+                                reflected: true)
+        // The ghost copies the mirror's own picture, which in Retro is none - so it wears the
+        // same Retro dress the mirror does (round 386)
     }
 
     /// The laser turrets, on the mirror, while the paddle wears them.
@@ -187,9 +191,23 @@ extension GameScene {
     /// in a second place, which is what the wrap ghost's strips are for the same reason.
     func dressEndlessIIMirrorTurrets(_ mirror: SKSpriteNode) {
         for (index, source) in endlessIIMirroredOverlays.enumerated() {
+            let ownBand = source.node === paddleRetroStickyTexture
+            let reflectedBand = ownBand && endlessIIShapeOwnsTheBounce
+                ? endlessIIMirrorPaddleSurface.flatMap { endlessIIPaddleShapeSuffix($0) }
+                    .flatMap { GameScene.catalogueTexture("retroSticky" + $0) }
+                : nil
             dressEndlessIIMirrorOverlay(copying: source.node, named: source.name,
-                                        tinted: source.tinted, on: mirror, layer: index)
+                                        tinted: source.tinted, on: mirror, layer: index,
+                                        showing: ownBand
+                                            ? endlessIIRetroHidesPaddleTop
+                                                && endlessIIABallIsHeldOnTheMirror
+                                            : nil,
+                                        art: reflectedBand)
         }
+        // **Retro's sticky band shows on the mirror while the mirror holds a ball** (round 386),
+        // as it shows on the paddle while the paddle does - not whenever the paddle's own band
+        // happens to be up. The plain themes' sticky face is different: it says "this catches",
+        // and shows for as long as the power-up runs, on the paddle and the twin alike
     }
 
     /// Everything the paddle can wear over itself that the mirror wears too.
@@ -215,10 +233,12 @@ extension GameScene {
 
     private func dressEndlessIIMirrorOverlay(copying source: SKSpriteNode, named name: String,
                                              tinted: Bool, on mirror: SKSpriteNode,
-                                             layer: Int) {
+                                             layer: Int, showing wanted: Bool? = nil,
+                                             art drawn: SKTexture? = nil) {
         let existing = childNode(withName: name) as? SKSpriteNode
-        let showing = source.isHidden == false && source.parent != nil && source.alpha > 0.01
-        guard showing, let art = source.texture else {
+        let showing = wanted
+            ?? (source.isHidden == false && source.parent != nil && source.alpha > 0.01)
+        guard showing, let art = drawn ?? source.texture else {
             existing?.removeFromParent()
             return
         }
@@ -529,10 +549,15 @@ extension GameScene {
         // Every frame: it follows the paddle's position and its drawn size, which is a
         // position and a size write rather than anything rebuilt
 
-        let drawn = endlessIIMirrorPaddleDrawnDress
-        if mirror.texture !== drawn { mirror.texture = drawn }
-        mirror.color = GameScene.endlessIIMirrorPaddleColour
-        mirror.colorBlendFactor = 1
+        if endlessIIDressRetroTwin(mirror, colour: GameScene.endlessIIMirrorPaddleColour,
+                                   reflected: true) == false {
+            let drawn = endlessIIMirrorPaddleDrawnDress
+            if mirror.texture !== drawn { mirror.texture = drawn }
+            mirror.color = GameScene.endlessIIMirrorPaddleColour
+            mirror.colorBlendFactor = 1
+        }
+        // In Retro the picture is a child at the Retro layer's own proportions (round 386); the
+        // mirror's own sprite keeps its size, which is its body and its reach
         // Re-tinted after the dress, every frame: the dress follows the paddle's own
         // texture, and a texture write resets nothing but still ships with whatever colour
         // the sprite carries - one missed frame here and the mirror flashes white
@@ -695,10 +720,6 @@ extension GameScene {
                 endlessIIAimedStickyOwedTurn = false
                 endlessIIAimOwedHold = true
             }
-            endlessIIAimDefaultAngles[ObjectIdentifier(subject)] =
-                endlessIIWouldHaveBouncedAngle(subject, offSurfaceAt: twinX,
-                                               width: mirror.size.width,
-                                               surface: endlessIIMirrorPaddleSurface)
             endlessIIBeginAimHold()
             // The paddle's aimed catch in the same order: the last catch of an expired clock
             // still catches, the arrow has a direction before the finger says anything, and the

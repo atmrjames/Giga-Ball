@@ -2964,6 +2964,80 @@ testers:
   falling power-up's position by `brickWidth`, so a bare `GameScene()` with a power-up on
   screen traps converting NaN to Int. A real scene is always laid out before play.
 
+**Round 386: Retro's twins redrawn, the paddle leaves as it was, the line knows where the paddle is, and the outlines read ahead.**
+
+James's play-test list after the round 385d TestFlight, with five screenshots.
+
+- **Retro's safety bar and mirror** ("look totally wrong"). In Retro the paddle the player sees
+  is `paddleRetroTexture`, a node over the paddle a little wider and well over half as tall
+  again; the twins drew that picture at the paddle *sprite's* size, crushed into an orange line.
+  `endlessIIDressRetroTwin` keeps each twin's own sprite at its size - its body, its top, its
+  catch - drawing nothing, and hangs the Retro picture on it as a child at the Retro layer's
+  proportions and placing, in the twin's tint. The mirror wears the reflected shape's own Retro
+  picture rather than the picture turned round with a negative scale, which lays a nine-slice
+  out wrong (the first render was a dome of two huge end caps). The mirror's wrap ghost wears
+  it too.
+- **Retro's sticky band on the safety bar only while it holds a ball** ("showing the retro
+  sticky graphic when the ball isn't caught on it"), as the paddle shows it - Retro's band is the
+  glow of a held ball, not a face that says "this catches". The mirror's likewise, and in the
+  reflected shape's band.
+- **The shaped Retro sticky bands** ("Retro paddle wedge shape sticky graphic is wrong"). The
+  five shaped bands are 273 by 87 and the flat one 273 by 72, and every band was drawn at the
+  flat one's height. Measured off the pictures: bottom-aligned at their own proportions, as the
+  flat one is, every shaped band clears its tube by 3 to 10 pixels where the flat one clears by 8
+  (`fitTheRetroStickyBandToItsPicture`).
+- **The paddle leaves the run as it finished it** ("if the paddle isn't the regular paddle, it
+  immediately swaps back to the regular paddle before animating out"). The ball has kept its
+  look through its exit since a 2020 request; the paddle is up to six nodes, and the last ball's
+  loss ended every power-up before the run was known to be over. `freezeThePaddleForItsExit`
+  copies each visible part, without physics, and the exit takes the copies away while the real
+  paddle is reset out of sight. Checked on the simulator with a Retro wedge.
+  **A trap met on the way:** a window's `drawHierarchy` of an SKView can return a stale frame -
+  the first capture showed an empty field while the copies were there - so a mid-animation
+  look is taken with `view.texture(from: scene)`.
+- **The trajectory bounces only off a paddle that is there** ("It should only show the
+  trajectory of a paddle bounce when the ball is on a path to collide with the paddle"):
+  `endlessIIPaddleFaceMet` asks whether the paddle, or the piece of a split one, is under the
+  crossing, edge reached by the ball's radius; where it is not, the line goes straight on.
+- **The line curves under Ball Spin** ("show the curved ball trajectory when the ball spin power
+  up is also active and the ball has been spun"). `BallPath.predict` takes a `Turning` - Ball
+  Spin's rate, its decay and the ball's speed - and walks a frame at a time while the ball
+  turns, by the scene's own rule, still stopping at whatever the straight walk would have.
+- **Split Paddle steers by the piece reached by the ball's edge** ("the bounce angle ... as if
+  they are individual paddles"). Round 305 measured per piece, but only when the ball's *centre*
+  was over one; a ball clipping a piece with its centre over the gap fell back to the whole
+  span, where an inner edge reads as the middle - almost straight up. The nearest piece within a
+  radius answers now, for the bounce, a held ball's launch and the trajectory alike.
+- **Aimed Sticky's arrow starts where a Sticky launch would go** ("determined by where the ball
+  is on the paddle not by its approach angle"). Round 312's would-have-bounced default and its
+  stored angles are gone; `endlessIIStickyLaunchAngle` is read live, so the arrow follows the
+  ball as it rides the paddle. Dead centre points right rather than at random, so it cannot
+  flicker.
+- **The landing marker holds steady** ("jittery and flashy"): a far-away answer has to stand
+  for an eighth of a second before the marker jumps to it, so a prediction flickering between
+  two paths no longer drags it across the field and back; a landing that drops out for a frame
+  keeps the marker for a fifth of a second rather than taking it away and drawing it again; and
+  the easing is a little softer.
+- **Ball Control has more weight** ("a little more 'weight' to it ... more inertia under its own
+  movement"), the third time of asking: the spring's natural frequency 8 to 6 (a tenth of a
+  second in, 15% of the way across where it was 25%; same one-fifth overshoot), and the ball keeps
+  three fifths of its own sideways speed over five frames where it kept a third.
+- **The shaped paddles' outlines are read ahead** ("The game frame rate suffers when a shaped
+  paddle power up is activated and when the ball hits the shaped paddle for the first time").
+  Measured: the frame that puts a shape on ran 40 to 46 ms, and the first hit 10 to 15 where
+  the second took 0.2 - `PaddleOutline` reading the picture pixel by pixel for the body and then
+  the height profile. `warmTheShapedPaddleOutlines` reads all five shapes in the player's theme
+  on a background queue as a Mayhem run starts, at the standard width (the paddle is still
+  scaling in then, and the first version warmed a size nothing asked for), and keeps them on the
+  main thread. Afterwards the shape went on in 0.3 to 3 ms. The first hit still measured 9 to 30
+  ms on a simulator that had just restarted and was timing its second hits at up to 7, so that
+  half wants a look on a device.
+- **A Gravity brick saved mid-fall is saved on the row it is falling to** - one way a brick
+  could come back between rows after a quit, found while chasing James's screenshot of two white
+  chevrons in the left column, each about four tenths of a row high, on a resumed Mayhem daily.
+  It is not shown to be his: a resumed Gravity brick falls on to a row of its own accord, so his
+  is queued in §12.0.
+
 **Round 385d: the glow chosen, drops that wrap, Aimed Sticky on the clock, and the daily's free play.**
 
 James, after round 385c, with two screenshots of a Classic daily played for practice.
@@ -4016,6 +4090,7 @@ James, after the round 358b push: three play-test notes.
 
 | Item | What is known |
 |---|---|
+| **Bricks half a row out after a quit and resume** (round 386) | James, with a screenshot of a resumed Mayhem daily: two white chevrons in the left column, each about four tenths of a row higher than the rows round them, every other brick on its row. Not reproduced. A Gravity brick saved mid-fall was one way to get there and is fixed (saved on its landing row), but a resumed Gravity brick falls on to a row of its own accord, so that is probably not it. Next: which twists the day had, and whether those two were wedges, diamonds or something spinning - a Spinning brick drawn round an off-centre anchor is the other candidate |
 | ~~The game view following an iPad or Mac window~~ | **Seen working, 2 October** - James on his iPad: "it's working perfectly" |
 | ~~The settings list keeping its place~~ | **Seen fixed, 2 October**, on his phone and his iPad |
 | ~~Descent's pace~~ | **Settled, round 360** - James: "The Descent pace seemed fine". Three seconds a row stays |

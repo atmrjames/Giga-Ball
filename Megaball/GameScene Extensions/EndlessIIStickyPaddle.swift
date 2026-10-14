@@ -396,6 +396,11 @@ extension GameScene {
         if endlessIIIsHeldOnMirror(held), let offset = endlessIIMirrorOffset(of: held) {
             return offset
         }
+        if let onSegment = endlessIISplitCollision(ballX: held.position.x,
+                                                   ballRadius: held.size.width/2) {
+            return Double(onSegment)
+        }
+        // Across its own piece on a split paddle (round 386), as a bounce from there would be
         return Double(endlessIIHeldShare(of: held))
     }
 }

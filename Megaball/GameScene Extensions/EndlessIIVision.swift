@@ -50,6 +50,24 @@ extension GameScene {
             && landingX < paddleX + paddle.size.width/2 - ballWidth/3
     }
 
+    /// The face of the paddle a ball landing here would strike, as a centre and a half-width -
+    /// the whole paddle, or the piece of a split one - or nil where the paddle is not there.
+    ///
+    /// Reached by the ball's edge, so a ball clipping the paddle's end is a ball that meets it.
+    /// The nearest copy of the paddle where Wrap-Around draws two.
+    func endlessIIPaddleFaceMet(landingX: CGFloat, ballRadius: CGFloat)
+        -> (centre: CGFloat, halfWidth: CGFloat)? {
+        let paddleX = gameMode == .endlessII
+            ? endlessIIPaddleXNearest(to: landingX) : paddle.position.x
+        let half = paddle.size.width/2
+        guard abs(landingX - paddleX) <= half + ballRadius else { return nil }
+        guard endlessIIPaddleIsSplit else { return (paddleX, half) }
+        let shift = paddleX - paddle.position.x
+        return endlessIISplitSegment(near: landingX - shift, ballRadius: ballRadius)
+            .map { (centre: $0.centre + shift, halfWidth: $0.halfWidth) }
+        // A split paddle's gaps meet nothing: the ball falls through, and so does the line
+    }
+
     /// Starts or extends the Ball Trajectory - in paddle hits, like the Landing Marker.
     ///
     /// **Both vision power-ups count hits** (round 218's workbook). They answer the same
@@ -139,7 +157,13 @@ extension GameScene {
                                         maximumLength: endlessIITrajectoryRemaining > 0 ? reach : 0,
                                         brickBounces: endlessIITrajectoryRemaining > 0
                                             ? GameScene.endlessIITrajectoryBrickBounces : 0,
-                                        absorbers: passesThrough ? [] : portals)
+                                        absorbers: passesThrough ? [] : portals,
+                                        turning: endlessIIBallSpinRates[ObjectIdentifier(subject)]
+                                            .map { BallPath.Turning(
+                                                rate: $0,
+                                                decayPerSecond: EndlessIIBallSpin.decayPerSecond,
+                                                speed: hypot(velocity.dx, velocity.dy)) })
+            // Curved while the ball is spun (round 386), by Ball Spin's own turn and decay
 
             if endlessIITrajectoryRemaining > 0, path.points.count > 1 {
                 var points = path.points
@@ -148,18 +172,33 @@ extension GameScene {
                     let last = points[points.count - 1]
                     let previous = points[points.count - 2]
                     let incoming = CGVector(dx: last.x - previous.x, dy: last.y - previous.y)
-                    let angle = EndlessIIPaddleEffects.paddleBounceAngle(
-                        arriving: incoming, landingX: landing.x,
-                        paddleX: paddle.position.x, paddleHalfWidth: paddle.size.width/2,
-                        adjustmentK: angleAdjustmentK, minimumDeg: minAngleDeg,
-                        influence: endlessIIPaddleAngleInfluence)
                     var travelled: CGFloat = 0
                     for (from, to) in zip(points, points.dropFirst()) {
                         travelled += hypot(to.x - from.x, to.y - from.y)
                     }
                     let afterBounce = max(ballSize*5, reach - travelled)
-                    points.append(CGPoint(x: landing.x + cos(angle)*afterBounce,
-                                          y: landing.y + sin(angle)*afterBounce))
+                    if let face = endlessIIPaddleFaceMet(landingX: landing.x,
+                                                         ballRadius: subject.size.width/2) {
+                        let angle = EndlessIIPaddleEffects.paddleBounceAngle(
+                            arriving: incoming, landingX: landing.x,
+                            paddleX: face.centre, paddleHalfWidth: face.halfWidth,
+                            adjustmentK: angleAdjustmentK, minimumDeg: minAngleDeg,
+                            influence: endlessIIPaddleAngleInfluence)
+                        points.append(CGPoint(x: landing.x + cos(angle)*afterBounce,
+                                              y: landing.y + sin(angle)*afterBounce))
+                    } else {
+                        let length = max(hypot(incoming.dx, incoming.dy), 0.0001)
+                        points.append(CGPoint(x: landing.x + incoming.dx/length*afterBounce,
+                                              y: landing.y + incoming.dy/length*afterBounce))
+                    }
+                    // **A bounce only off a paddle that is there** (James, round 386: "The ball
+                    // trajectory is showing as if it's bouncing off the paddle even if it's not
+                    // headed for the paddle ... It should only show the trajectory of a paddle
+                    // bounce when the ball is on a path to collide with the paddle"). The line
+                    // bounced wherever the ball crossed the paddle's *line*; where the paddle is
+                    // not under that spot it goes straight on past it now, the way the ball
+                    // will. Measured off the piece it would strike, on a split paddle, by the
+                    // same rule the bounce uses
                     // The bounce the paddle would give from where it stands now, drawn by
                     // the same rule paddleHit applies - the line keeps going off the paddle
                     // so the player can aim the shot after the catch, not just the catch.
@@ -177,11 +216,22 @@ extension GameScene {
             }
             if endlessIILandingRemaining > 0, let landing = path.landing {
                 let marker = endlessIIVisionMarker(at: markerIndex)
+                marker.userData?["missingFor"] = nil
                 let mark = CGPoint(x: endlessIISettledLandingX(landing.x, for: marker,
                                                                delta: delta),
                                    y: paddle.position.y + paddleHeight*1.2)
                 marker.position = endlessIILandingMarkerCentre(over: mark)
                 markerIndex += 1
+            } else if endlessIILandingRemaining > 0,
+                      endlessIILandingMarkers.indices.contains(markerIndex) {
+                let marker = endlessIILandingMarkers[markerIndex]
+                let missing = ((marker.userData?["missingFor"] as? TimeInterval) ?? 0) + delta
+                if missing < GameScene.endlessIILandingMarkerGrace {
+                    marker.userData?["missingFor"] = missing
+                    markerIndex += 1
+                }
+                // Kept where it was for a moment rather than taken away and drawn again
+                // (round 386), so a landing that drops out for a frame does not flash
                 // The *triangle* goes on the mark, not the picture: the picture is mostly
                 // glow and its shape sits a little below the middle of it
             }
@@ -382,7 +432,7 @@ extension GameScene {
     ///
     /// Low enough to swallow the shimmer, high enough that the marker is still telling the
     /// truth about where the ball is going rather than about where it was going.
-    static let endlessIILandingFollowPerSixtieth: CGFloat = 0.18
+    static let endlessIILandingFollowPerSixtieth: CGFloat = 0.12
 
     /// Beyond this, the prediction has genuinely changed course and the marker jumps.
     ///
@@ -417,12 +467,47 @@ extension GameScene {
             return wanted
         }
         guard abs(wanted - marker.position.x) < endlessIILandingSnapDistance else {
-            return wanted
+            let pending = marker.userData?["pendingX"] as? CGFloat
+            let waited = (marker.userData?["pendingFor"] as? TimeInterval) ?? 0
+            if let pending, abs(pending - wanted) < endlessIILandingSnapDistance/2 {
+                let held = waited + delta
+                if held >= GameScene.endlessIILandingSnapConfirmation {
+                    marker.userData?["pendingX"] = nil
+                    marker.userData?["pendingFor"] = nil
+                    return wanted
+                }
+                marker.userData?["pendingFor"] = held
+            } else {
+                marker.userData?["pendingX"] = wanted
+                marker.userData?["pendingFor"] = delta
+            }
+            return marker.position.x
+            // **A jump has to hold before it is taken** (James, round 386: "The ball landing
+            // marker can be a bit jittery and flashy. Perhaps its position calculation updates
+            // can be smoothed out, so it isn't continuously jumping around"). The easing below
+            // smooths the shimmer; what it could not touch was a prediction flipping between two
+            // far-apart answers - a ball skimming a brick's corner is predicted to hit it one
+            // frame and to pass it the next - and the marker snapped across the field and back
+            // with it. A real change of course persists, so a far answer is taken once it has
+            // stood for a moment, and one that comes and goes never moves the marker at all
         }
+        marker.userData?["pendingX"] = nil
+        marker.userData?["pendingFor"] = nil
         let share = 1 - pow(1 - GameScene.endlessIILandingFollowPerSixtieth,
                             CGFloat(delta)*60)
         return marker.position.x + (wanted - marker.position.x)*share
     }
+
+    /// How long a far-away landing has to stand before the marker jumps to it.
+    ///
+    /// Long enough to outlast a prediction flickering between two answers, short enough that a
+    /// ball which really has changed course is shown so within a few frames.
+    static let endlessIILandingSnapConfirmation: TimeInterval = 0.12
+
+    /// How long a marker stays where it was when the prediction briefly finds no landing,
+    /// before it is taken away - the "flashy" half of round 386's report. A path that stops at
+    /// a brick one frame and reaches the paddle the next took the marker away and drew it again.
+    static let endlessIILandingMarkerGrace: TimeInterval = 0.2
 
     /// The landing marker for the nth ball, made when first needed.
     ///

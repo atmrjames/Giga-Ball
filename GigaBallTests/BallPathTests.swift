@@ -560,6 +560,37 @@ final class BallPathTests: XCTestCase {
 
 /// "Ball trajectory should respect which power-ups are also running. For example with the
 /// Giga-Ball power up running it won't bounce off of bricks" (play-test round 122).
+/// James, round 386: "Is it possible to show the curved ball trajectory when the ball spin power
+/// up is also active and the ball has been spun?"
+final class CurvedTrajectoryTests: XCTestCase {
+
+    private let open = BallPath.Bounds(left: -1000, right: 1000, ceiling: 1000, paddleLine: -1000)
+
+    func testASpunBallsPathBends() throws {
+        let turning = BallPath.Turning(rate: 2, decayPerSecond: 0.15, speed: 400)
+        let path = BallPath.predict(from: .zero, velocity: CGVector(dx: 0, dy: 400), radius: 5,
+                                    bounds: open, bricks: [], maximumLength: 300,
+                                    turning: turning)
+        let end = try XCTUnwrap(path.points.last)
+        XCTAssertLessThan(end.x, -10, "a ball turning anticlockwise curls to the left")
+        XCTAssertGreaterThan(path.points.count, 10, "drawn as a curve, a frame at a time")
+        var length: CGFloat = 0
+        for (a, b) in zip(path.points, path.points.dropFirst()) { length += hypot(b.x - a.x, b.y - a.y) }
+        XCTAssertEqual(length, 300, accuracy: 0.5, "and no longer than the line is allowed to be")
+    }
+
+    func testAnUnspunBallIsPredictedExactlyAsBefore() {
+        let straight = BallPath.predict(from: .zero, velocity: CGVector(dx: 120, dy: 400),
+                                        radius: 5, bounds: open, bricks: [], maximumLength: 300)
+        let negligible = BallPath.predict(from: .zero, velocity: CGVector(dx: 120, dy: 400),
+                                          radius: 5, bounds: open, bricks: [], maximumLength: 300,
+                                          turning: BallPath.Turning(rate: 0, decayPerSecond: 0.15,
+                                                                    speed: 418))
+        XCTAssertEqual(straight, negligible)
+        XCTAssertEqual(straight.points.count, 2, "one straight segment")
+    }
+}
+
 final class TrajectoryRespectsPowerUpsTests: XCTestCase {
 
     private let bounds = BallPath.Bounds(left: -100, right: 100, ceiling: 300, paddleLine: -200)

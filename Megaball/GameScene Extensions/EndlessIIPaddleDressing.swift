@@ -533,3 +533,96 @@ extension GameScene {
     }
 
 }
+
+// MARK: - The Retro dress on the paddle's twins
+
+extension GameScene {
+
+    static let endlessIIRetroTwinDressName = "endlessIIRetroTwinDress"
+
+    /// Draws a twin of the paddle - the safety bar, the mirror, the mirror's wrap ghost - in the
+    /// Retro theme's own picture, at that picture's own proportions.
+    ///
+    /// **James, round 386: "The retro mirror paddle and safety paddle look totally wrong."** In
+    /// Retro the paddle the player sees is not the paddle sprite: it is `paddleRetroTexture`, a
+    /// node of its own a little wider than the paddle and well over half as tall again, centred
+    /// where the plain paddle would be. The twins took that picture and drew it at the *paddle
+    /// sprite's* size - so the tube and its purple ends were crushed into a strip a few points
+    /// tall, and tinted, they read as an orange line. Split Paddle solved the same thing in round
+    /// 166 by drawing its halves at the Retro height over a body at the paddle's own height.
+    ///
+    /// Here the twin's own sprite keeps its size, because its size is its geometry - the body,
+    /// the top a ball rests on, the catch, the reach - and simply stops drawing; this child draws
+    /// the Retro picture, in the twin's tint, sized by the paddle's own Retro layer and placed
+    /// as that layer is placed over the paddle. Outside Retro the child is taken away and the
+    /// twin's own refresh puts its picture back the next time it dresses itself.
+    /// - Parameter reflected: for the mirror and its ghost - the Retro picture of the *reflected*
+    ///   shape, which is what makes a wedge's twin the other wedge. Not the picture turned round
+    ///   with a negative scale: a nine-slice drawn at a negative scale lays its slices out wrong,
+    ///   and the first render of this came out as a dome of two huge end caps.
+    /// - Returns: whether the twin is wearing the Retro dress, so its own refresh can leave
+    ///   its picture alone.
+    @discardableResult
+    func endlessIIDressRetroTwin(_ surface: SKSpriteNode, colour: UIColor,
+                                 reflected: Bool = false) -> Bool {
+        let existing = surface.childNode(withName: GameScene.endlessIIRetroTwinDressName)
+            as? SKSpriteNode
+        let shape = endlessIIShapeOwnsTheBounce
+            ? (reflected ? endlessIIMirrorPaddleSurface : endlessIIPaddleSurface) : nil
+        let suffix = shape.flatMap { endlessIIPaddleShapeSuffix($0) }
+        let wanted = reflected && suffix != nil
+            ? GameScene.catalogueTexture("retroPaddleTexture" + (suffix ?? "")
+                                         + (endlessIIPortalPaddleClock.isRunning ? "Portal" : ""))
+                ?? GameScene.catalogueTexture("retroPaddleTexture" + (suffix ?? ""))
+            : paddleRetroTexture.texture
+        guard gameMode == .endlessII, paddleTexture == retroPaddle,
+              let art = wanted,
+              paddle.size.width > 0, surface.size.width != 0, surface.size.height != 0 else {
+            existing?.removeFromParent()
+            return false
+        }
+
+        surface.texture = nil
+        surface.color = .clear
+        surface.colorBlendFactor = 1
+        // Drawing nothing of its own: a sprite with no picture and a clear colour is invisible,
+        // the arrangement the split safety bar already uses for the bar its pieces stand in
+
+        let dress = existing ?? {
+            let made = SKSpriteNode()
+            made.name = GameScene.endlessIIRetroTwinDressName
+            made.zPosition = 0.05
+            surface.addChild(made)
+            return made
+        }()
+        if dress.texture !== art {
+            dress.texture = art
+            dress.centerRect = suffix == nil ? paddleCapRect(for: art)
+                                             : CGRect(x: 0, y: 0, width: 1, height: 1)
+            // A shaped picture is stretched whole, as the paddle's own shaped art is: the cap
+            // rects are written in the flat art's unit coordinates
+        }
+        let xScale = surface.xScale == 0 ? 1 : abs(surface.xScale)
+        let yScale = surface.yScale == 0 ? 1 : abs(surface.yScale)
+        let widthShare = paddleRetroTexture.size.width/paddle.size.width
+        dress.size = CGSize(width: abs(surface.size.width)*widthShare/xScale,
+                            height: paddleRetroTexture.size.height/yScale)
+        dress.position = CGPoint(x: 0, y: (-abs(surface.size.height)/2 + paddleHeight/2)/yScale)
+        // Centred where the plain paddle's middle would be, measured up from the twin's
+        // underside - exactly how `positionRetroPaddleLayers` places the paddle's own layer
+        dress.color = colour
+        dress.colorBlendFactor = 1
+        return true
+    }
+
+    /// Whether a ball is held on the safety bar, or on the mirror: the Retro sticky band shows
+    /// on a surface only while that surface is holding something, as it does on the paddle.
+    var endlessIIABallIsHeldOnTheSafetyBar: Bool {
+        endlessIIHeldBalls.contains { endlessIIIsHeldOnSafetyBar($0) }
+    }
+
+    var endlessIIABallIsHeldOnTheMirror: Bool {
+        endlessIIHeldBalls.contains { endlessIIIsHeldOnMirror($0) }
+    }
+}
+

@@ -252,6 +252,9 @@ its `PBXGroup`, and — the one that is easy to miss — the **right target's** 
   (`window.windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene`),
   `makeKeyAndVisible()`, let the run loop turn a few times, and then `drawHierarchy(in:
   afterScreenUpdates: true)` draws it exactly as the simulator shows it.
+  **But not a SpriteKit scene mid-animation** (round 386): `drawHierarchy` of a window holding an
+  SKView returned a stale frame - an empty field, while the nodes being looked for were there and
+  visible. For the scene itself, `view.texture(from: scene)` draws what is actually in it.
 
 - **Tests are written from play-test reports.** When a bug is described, the test says what
   was reported, in the comment, in the reporter's terms. That is what stops a fix regressing

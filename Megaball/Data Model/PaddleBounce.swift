@@ -504,6 +504,49 @@ extension PaddleOutline {
     }
 
     /// The body itself, or nil where the picture says nothing useful.
+    /// A picture's outline read ahead of time, off the main thread: the pixel walks that `body`
+    /// and `profile` would otherwise do on the frame they are first asked for.
+    struct Prepared {
+        let pieces: [CGPath]
+        let run: [(x: CGFloat, top: CGFloat)]
+    }
+
+    /// Reads a picture's outline at a size. Pure - pixels in, paths and heights out - so it is
+    /// safe on any thread; `store` is what puts the result where the game will look for it.
+    static func prepare(named name: String, size: CGSize) -> Prepared? {
+        guard size.width > 1, size.height > 1,
+              let image = UIImage(named: name)?.cgImage else { return nil }
+        return Prepared(pieces: pieces(of: image, size: size),
+                        run: boundaries(of: image, size: size).map { (x: $0.x, top: $0.top) })
+    }
+
+    /// Keeps a prepared outline, as `body` and `profile` would have kept their own. Main thread
+    /// only, like the caches themselves, and never over an answer already there.
+    static func store(_ prepared: Prepared, for texture: SKTexture, size: CGSize) {
+        let key = Key(texture: texture.cacheIdentity,
+                      width: Int((size.width*10).rounded()),
+                      height: Int((size.height*10).rounded()))
+        if profiles[key] == nil, prepared.run.count > 1 { profiles[key] = prepared.run }
+        guard cache[key] == nil, prepared.pieces.isEmpty == false else { return }
+        guard let body = SKPhysicsBody.compound(of: prepared.pieces.map { piece -> SKPhysicsBody? in
+            let box = piece.boundingBox
+            guard box.isNull == false, box.isInfinite == false,
+                  box.width > 0.5, box.height > 0.5 else { return nil }
+            let made: SKPhysicsBody? = SKPhysicsBody(polygonFrom: piece)
+            return made
+        }) else { return }
+        cache[key] = body
+        // Built exactly as `body` builds it, so a warmed answer and a cold one are the same
+    }
+
+    /// Whether an outline is already kept for this picture at this size, for tests.
+    static func isKept(_ texture: SKTexture, size: CGSize) -> Bool {
+        let key = Key(texture: texture.cacheIdentity,
+                      width: Int((size.width*10).rounded()),
+                      height: Int((size.height*10).rounded()))
+        return cache[key] != nil && profiles[key] != nil
+    }
+
     static func body(for texture: SKTexture, size: CGSize) -> SKPhysicsBody? {
         guard size.width > 1, size.height > 1 else { return nil }
         let key = Key(texture: texture.cacheIdentity,

@@ -176,7 +176,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	static let paddleTopPlane: CGFloat = 4.1
 	static let retroDressPlane: CGFloat = 4
 	var endlessIIBackdropScroll: CGFloat = 0
-	var endlessIIAimDefaultAngles: [ObjectIdentifier: Double] = [:]
 	/// Where the aiming finger is, and whether it has moved yet - the aim is the finger's
 	/// absolute position once it moves, the default bounce until then.
 	var endlessIIAimTouchX: CGFloat = 0
@@ -3359,6 +3358,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 
         ballPositionOnPaddle = Double((ball.position.x - paddle.position.x)/(paddle.size.width/2))
         // Define the relative position between the ball and paddle
+        if let onSegment = endlessIISplitCollision(ballX: ball.position.x,
+                                                   ballRadius: ball.size.width/2) {
+            ballPositionOnPaddle = Double(onSegment)
+        }
+        // Across its own piece, when the paddle is split (round 386), as the bounce measures it
 
 		if ballPositionOnPaddle < 0 {
             launchAngleMultiplier = 1
@@ -4330,6 +4334,11 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		}
 		// Reset bricks and re-hide invisible bricks
 
+		if GameScene.ballComesBack(livesLeft: numberOfLives, onTimeTrial: dailyTimeTrial) == false {
+			freezeThePaddleForItsExit()
+		}
+		// Before the reset below, which is what takes the shape, the theme's layers and the
+		// power-ups' strips off the paddle - see `freezeThePaddleForItsExit`
         powerUpsReset()
 		// Reset any gained power-ups
 		
@@ -4448,6 +4457,67 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		}
     }
     
+    static let paddleStandInName = "paddleStandIn"
+
+    /// Leaves a copy of the paddle as it looks now, for the exit animation to take away.
+    ///
+    /// **James, round 386: "At the end of a game, if the paddle isn't the regular paddle, it
+    /// immediately swaps back to the regular paddle before animating out. Is it possible to
+    /// animate the paddle in whatever form it is in at the end?"** The ball has had this since
+    /// it was asked for in 2020 (`resetGameScene` keeps its texture through its exit); the paddle
+    /// never did, because what it looks like is not one picture. It is the paddle sprite and up
+    /// to five siblings drawn over it - the Retro layer, the laser and sticky strips and Retro's
+    /// own two, the Portal's glow - and a shape, a split or an Expand changes several of them at
+    /// once. The last ball's loss ends every power-up before the run is known to be over, and
+    /// the end of a level ends them on the frame its exit starts, so the paddle was always put
+    /// back to plain first and taken away second.
+    ///
+    /// So the exit takes away a copy instead. Each visible part is copied where it stands, with
+    /// its children and without its physics, and the real paddle is hidden behind the copies -
+    /// free to be reset however the rest of the game likes, out of sight. Called again by the
+    /// exit itself, where it does nothing if the run's end has already frozen it.
+    func freezeThePaddleForItsExit() {
+        guard childNode(withName: GameScene.paddleStandInName) == nil else { return }
+        var parts: [SKNode] = [paddle, paddleRetroTexture, paddleLaser, paddleSticky,
+                               paddleRetroLaserTexture, paddleRetroStickyTexture]
+        if let glow = childNode(withName: GameScene.paddleGlowName) { parts.append(glow) }
+        for part in parts where part.parent === self && part.isHidden == false
+            && part.alpha > 0.01 {
+            guard let copy = part.copy() as? SKNode else { continue }
+            copy.removeAllActions()
+            GameScene.removePhysics(from: copy)
+            copy.name = GameScene.paddleStandInName
+            addChild(copy)
+            part.isHidden = true
+        }
+    }
+
+    /// Takes the frozen copies away the way the paddle has always gone: a beat, then squeezed
+    /// to nothing across its width.
+    func animateThePaddleStandInsAway() {
+        enumerateChildNodes(withName: GameScene.paddleStandInName) { copy, _ in
+            copy.run(.sequence([.wait(forDuration: 0.1), .scaleX(to: 0, duration: 0.2),
+                                .removeFromParent()]))
+        }
+    }
+
+    /// The real paddle's parts hidden behind the copies, again: ending a power-up can show a
+    /// layer it owns (a split ending puts the Retro layer back), and nothing should appear
+    /// beside the copy that is leaving.
+    func keepThePaddleHiddenBehindItsStandIns() {
+        guard childNode(withName: GameScene.paddleStandInName) != nil else { return }
+        for part in [paddle, paddleRetroTexture, paddleLaser, paddleSticky,
+                     paddleRetroLaserTexture, paddleRetroStickyTexture] {
+            part.isHidden = true
+        }
+        childNode(withName: GameScene.paddleGlowName)?.isHidden = true
+    }
+
+    private static func removePhysics(from node: SKNode) {
+        node.physicsBody = nil
+        node.children.forEach { removePhysics(from: $0) }
+    }
+
     func ballLostAnimation(_ lost: SKSpriteNode? = nil) {
 		if endlessIIBallWasLost(lost ?? ball) { return }
 		// In Endless 2.0 the run continues while any ball is still in play. Losing one of
@@ -5859,7 +5929,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		// Where on the paddle it landed, -1 to 1 - see PaddleBounce, which every screen that
 		// bounces a ball off a paddle now asks
 
-		if let onSegment = endlessIISplitCollision(ballX: ball.position.x) {
+		if let onSegment = endlessIISplitCollision(ballX: ball.position.x,
+												   ballRadius: ball.size.width/2) {
 			collisionPercentage = onSegment
 		}
 		// **Unless it is split, when each piece steers across its own width** (round 305). See
@@ -9953,7 +10024,16 @@ laserTimer?.invalidate()
 				// for two of the types and a Fog of War day fogs them all (§12.5)
 				
 				let restingY = self.endlessIIBuildInFinalY[ObjectIdentifier(sprite)]
-					?? sprite.descentRestingY ?? sprite.position.y
+					?? sprite.descentRestingY
+					?? self.endlessIIFallers[ObjectIdentifier(sprite)]
+						.flatMap { $0.crushes ? nil : $0.targetY }
+					?? sprite.position.y
+				// **Or the row a Gravity fall is carrying it to** (round 386, from James's report
+				// of bricks "not aligned with rows on return from resume screen after app quit").
+				// A falling brick is between rows for as long as it falls, and the save took it
+				// wherever it had got to - the third case of the rule below, after the build-in's
+				// and the descent's. One that will be crushed on landing has no row to go to and
+				// is saved where it is
 				// **Or the row a descent is carrying it to** (James, round 354: "Endless mayhem
 				// bricks coming back in the wrong place with some bricks on top of other bricks
 				// after app quit and resume"). The endless autosave runs from inside the row

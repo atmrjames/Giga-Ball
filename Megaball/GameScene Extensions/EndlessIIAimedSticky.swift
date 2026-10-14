@@ -65,10 +65,6 @@ extension GameScene {
         // Set only once the inert guard has let the catch happen, so a refused catch
         // cannot leave a stale hold behind
 
-        endlessIIAimDefaultAngles[ObjectIdentifier(subject)] =
-            endlessIIWouldHaveBouncedAngle(subject, offSurfaceAt: paddle.position.x,
-                                           width: paddle.size.width)
-
         if isExtra {
             subject.physicsBody?.velocity = .zero
             subject.position.y = restingBallY(
@@ -206,45 +202,35 @@ extension GameScene {
         return endlessIINextHeldBall
     }
 
-    /// The angle this ball would have left at, had the surface bounced it instead of catching
-    /// it - the arrow's starting point before the finger has said anything.
+    /// The arrow's starting angle: the angle a plain Sticky launch would give a ball sitting
+    /// where this one sits, read live as it rides the paddle.
     ///
-    /// **James, round 312: "have the aimed sticky arrow aim where the ball would've bounced off
-    /// the paddle as its starting angle."** It used `defaultLaunchAngle(arriving:)`, which is the
-    /// arriving direction with its vertical flipped - a mirror bounce off a flat plate. That is
-    /// not what this paddle does: a real bounce is steered by *where across the paddle* the ball
-    /// landed, and by the shape, the Inert clock, the Flipped Angle and the grip. So the arrow
-    /// started somewhere the ball would never have gone, and a player who released without
-    /// aiming got a shot they had not been shown.
+    /// **James, round 386: "For aimed sticky, the default launch angle and aiming arrow angle
+    /// should be determined by where the ball is on the paddle not by its approach angle to the
+    /// paddle. Similar to the launch angle of the regular sticky power up, it only takes into
+    /// consideration the ball's current position in the paddle."** Round 312 started the arrow
+    /// where the ball would have bounced had it not been caught, which is steered by the angle it
+    /// arrived at - so two balls caught at the same spot pointed different ways, and the arrow
+    /// stayed where the catch left it however the ball rode the paddle afterwards. Now the
+    /// arrow is the launch Sticky would make from this spot: the shape's launch where a shape
+    /// owns the paddle, the twin's own where the ball is on a twin, and across a split
+    /// paddle's own piece.
     ///
-    /// `PaddleBounce.angleDegrees` is the same call `paddleHit` makes, with the same collision
-    /// offset and the same influence, so the arrow's opening angle and an unaimed bounce cannot
-    /// give different answers.
-    func endlessIIWouldHaveBouncedAngle(_ subject: SKSpriteNode,
-                                        offSurfaceAt surfaceX: CGFloat,
-                                        width: CGFloat,
-                                        surface: PaddleBounce.Surface?? = nil) -> Double {
-        let arriving = ballStateBeforeStep[ObjectIdentifier(subject)]?.velocity
-            ?? subject.physicsBody?.velocity ?? .zero
-        guard width > 0 else {
-            return EndlessIIPaddleEffects.defaultLaunchAngle(arriving: arriving)
-        }
-        let collision = PaddleBounce.collision(ballX: subject.position.x,
-                                               paddleX: surfaceX, paddleWidth: width)
-        let degrees = PaddleBounce.angleDegrees(
-            arriving: arriving,
-            collision: PaddleBounce.shaped(min(max(collision, -1), 1),
-                                           by: surface ?? endlessIIPaddleSurface),
-            // The surface the ball met: the paddle's shape, or the Mirror Paddle's reflection
-            // of it (round 362)
-            adjustmentK: angleAdjustmentK,
-            influence: endlessIIPaddleAngleInfluence,
-            minimumDeg: minAngleDeg)
-        return degrees*Double.pi/180
+    /// The one difference from the launch: a ball dead in the middle, which Sticky sends off at
+    /// random to one side, points to the right here, because an arrow that chose again every
+    /// frame would flicker.
+    func endlessIIStickyLaunchAngle(for held: SKSpriteNode) -> Double {
+        let shaped = endlessIIIsHeldOnSafetyBar(held) ? nil
+            : endlessIIIsHeldOnMirror(held) ? endlessIIMirrorShapedLaunchAngle(for: held)
+            : endlessIIShapedLaunchAngle(for: held)
+        if let shaped { return shaped }
+        let offset = endlessIIHeldLaunchOffset(of: held)
+        guard offset != 0 else { return straightLaunchAngleRad - minLaunchAngleRad }
+        return endlessIILaunchAngle(atPaddleOffset: offset)
     }
 
     /// The angle the aim currently points at: the finger's absolute position across the
-    /// screen once it has moved, the default bounce until then.
+    /// screen once it has moved, Sticky's launch from where the ball sits until then.
     func endlessIIAimAngle(for target: SKSpriteNode) -> Double {
         if endlessIIAimTouched {
             return EndlessIIPaddleEffects.aimedAngle(
@@ -256,8 +242,7 @@ extension GameScene {
             // with no relationship to where the ball was - so aiming at a brick meant learning
             // the mapping rather than pointing at the brick
         }
-        let fallback = straightLaunchAngleRad + minLaunchAngleRad
-        return endlessIIAimDefaultAngles[ObjectIdentifier(target)] ?? fallback
+        return endlessIIStickyLaunchAngle(for: target)
     }
 
     // MARK: - The touches
@@ -288,7 +273,6 @@ extension GameScene {
             target.physicsBody?.velocity = CGVector(dx: cos(angle)*Double(ballSpeedLimit),
                                                     dy: sin(angle)*Double(ballSpeedLimit))
         }
-        endlessIIAimDefaultAngles[ObjectIdentifier(target)] = nil
         endlessIIAimTouched = false
         endlessIIAimOwedHold = false
         endlessIIReleasedFromPaddle(target)
@@ -473,7 +457,6 @@ extension GameScene {
     func endlessIIEndAim() {
         endlessIIAimTouched = false
         endlessIIAimOwedHold = false
-        endlessIIAimDefaultAngles.removeAll()
         endlessIIAimArrow?.removeFromParent()
         endlessIIAimArrow = nil
     }

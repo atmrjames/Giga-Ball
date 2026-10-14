@@ -66,6 +66,33 @@ enum BallPath {
     /// stops being a prediction and starts being a guess.
     static let maximumBounces = 8
 
+    /// How many steps a prediction may take, frames of a curve included - a ceiling on the
+    /// work a single line can ask for, well past any line the Trajectory draws.
+    static let maximumSteps = 400
+
+    /// A ball under Ball Spin: the rate its heading turns, in radians a second, and how fast
+    /// it is going, which is what a frame's travel is measured in.
+    ///
+    /// The turn and its decay are `EndlessIIBallSpin`'s own - `turned` rotates by rate times
+    /// time, `decayed` multiplies the rate by `decayPerSecond` raised to the time - restated here
+    /// as plain arithmetic so the predictor stays free of the scene.
+    struct Turning: Equatable {
+        var rate: CGFloat
+        var decayPerSecond: CGFloat
+        var speed: CGFloat
+
+        /// The step the scene turns a ball by: one frame at sixty.
+        static let frame: Double = 1.0/60
+        /// A turn too small to bend a line anyone could see, where the walk goes straight again.
+        static let negligible: CGFloat = 0.01
+
+        func decayed() -> Turning {
+            var next = self
+            next.rate = rate*pow(decayPerSecond, CGFloat(Turning.frame))
+            return next
+        }
+    }
+
     /// Walks the ball forward from where it is.
     ///
     /// - Parameters:
@@ -81,11 +108,13 @@ enum BallPath {
     ///     goes in - and where it comes out is chosen at the moment of entry, so a line that
     ///     bounced off a portal would draw a wall and a line that carried on through would
     ///     draw a hole. Ending at the mouth is the only honest one of the three.
+    ///   - turning: a ball under Ball Spin's turn, followed round its curve - see `Turning`.
     static func predict(from start: CGPoint, velocity: CGVector, radius: CGFloat,
                         bounds: Bounds, bricks: [CGRect],
                         maximumLength: CGFloat = 0,
                         brickBounces: Int = 0,
-                        absorbers: [CGRect] = []) -> Prediction {
+                        absorbers: [CGRect] = [],
+                        turning: Turning? = nil) -> Prediction {
         let speed = (velocity.dx*velocity.dx + velocity.dy*velocity.dy).squareRoot()
         guard speed > 0 else {
             return Prediction(points: [start], landing: nil, stoppedAtBrick: false)
@@ -98,8 +127,12 @@ enum BallPath {
         var landing: CGPoint?
         var stoppedAtBrick = false
         var bricksLeft = brickBounces
+        var bounces = 0
+        var steps = 0
+        var turn = turning
 
-        for _ in 0...maximumBounces {
+        while bounces <= maximumBounces, steps < maximumSteps {
+            steps += 1
             let toBrick = firstBrick(from: point, direction: direction,
                                      radius: radius, bricks: bricks)
             let toWall = sideWall(from: point, direction: direction, radius: radius,
@@ -109,9 +142,24 @@ enum BallPath {
             let toPaddle = paddleLine(from: point, direction: direction, radius: radius,
                                       bounds: bounds)
 
-            let nearest = [toBrick?.distance, toWall, toCeiling, toPaddle]
+            let nearestEvent = [toBrick?.distance, toWall, toCeiling, toPaddle]
                 .compactMap { $0 }.min() ?? 0
-            guard nearest > 0 else { break }
+            guard nearestEvent > 0 else { break }
+            var nearest = nearestEvent
+            var curving = false
+            if let current = turn, abs(current.rate) > Turning.negligible {
+                let frame = current.speed*CGFloat(Turning.frame)
+                if frame > 0, nearest > frame {
+                    nearest = frame
+                    curving = true
+                }
+            }
+            // **A frame at a time while the ball is turning** (James, round 386: "Is it possible
+            // to show the curved ball trajectory when the ball spin power up is also active and
+            // the ball has been spun?"). A spun ball's heading turns a little every frame, so its
+            // path is a curve; walked one frame's travel at a time, turning by the same rule the
+            // scene applies, the line bends where the ball will, and still stops at whatever the
+            // straight walk would have stopped at within that frame
 
             // Cut short rather than overshooting, and stop: a length limit is a limit on the
             // line, not on the number of bounces it is allowed to draw before reaching it
@@ -125,6 +173,16 @@ enum BallPath {
             point = CGPoint(x: point.x + direction.dx*nearest, y: point.y + direction.dy*nearest)
             points.append(point)
             travelled += nearest
+
+            if curving, let current = turn {
+                let angle = atan2(direction.dy, direction.dx) + current.rate*CGFloat(Turning.frame)
+                direction = CGVector(dx: cos(angle), dy: sin(angle))
+                turn = current.decayed()
+                continue
+            }
+            bounces += 1
+            // Every step that ends at something is a bounce or the end; only a frame of turning
+            // is neither
 
             if let brick = toBrick, nearest == brick.distance {
                 if absorbers.contains(where: { $0 == brick.rect }) {

@@ -53,6 +53,8 @@ class Playing: GKState {
         if previousState is PreGame || previousState is InbetweenLevels {
             reloadUI()
             loadNextLevel()
+            scene.warmTheShapedPaddleOutlines()
+            // Mayhem's shaped paddles read ahead, off the main thread (round 386)
         }
         
         if previousState is Paused {

@@ -140,6 +140,12 @@ class InbetweenLevels: GKState {
         
         scene.ball.physicsBody!.velocity = CGVector(dx: 0, dy: 0)
         // Stop ball
+
+        scene.freezeThePaddleForItsExit()
+        scene.animateThePaddleStandInsAway()
+        // **The paddle leaves looking as it finished** (James, round 386), the ball's 2020
+        // courtesy given to the paddle: a copy of everything it was wearing goes out, and the
+        // real one, hidden, runs the sequence below only for the state it leaves behind
         
         scene.ball.run(ballSequence, completion: { [weak self] in
             guard let self else { return }
@@ -183,6 +189,7 @@ class InbetweenLevels: GKState {
         let wearing = scene.ball.texture
         scene.clearTheFieldForANewRun()
         if let wearing { scene.ball.texture = wearing }
+        scene.keepThePaddleHiddenBehindItsStandIns()
         // **The ball leaves wearing what it finished the level in** (James's old task list,
         // carried since 2020 and asked again on 2 and 19 September 2026: "At end of level when
         // ball animated out, keep it as current ball texture rather than changing to regular

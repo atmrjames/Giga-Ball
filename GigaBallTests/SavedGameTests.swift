@@ -848,6 +848,26 @@ final class SavedMayhemFieldTests: XCTestCase {
         XCTAssertEqual(rows, [280, 300], "two bricks saved on one row come back on top of each other")
     }
 
+    /// James, round 386: a brick "not aligned with rows on return from resume screen after app
+    /// quit during daily challenge endless mayhem run". A Gravity brick is between rows for as long
+    /// as it falls, and the save took it wherever it had got to; it is saved on the row it is
+    /// falling to, as a descending brick is saved on the row it is stepping to.
+    func testABrickSavedMidFallIsSavedOnTheRowItIsFallingTo() {
+        let scene = mayhem()
+        scene.yBrickOffsetEndless = 300
+        scene.gameState.enter(Playing.self)
+        scene.ballLostBool = false
+        scene.ballIsOnPaddle = true
+
+        let falling = brick(in: scene, x: 0, y: 273)
+        scene.endlessIIFallers[ObjectIdentifier(falling)] =
+            EndlessIIFall(brick: falling, targetY: 260)
+
+        scene.saveCurrentGame()
+        let saved = try? XCTUnwrap(SavedGame.load(from: scene.defaults)?.endlessIIBricks)
+        XCTAssertEqual(saved?.first?.y, 260, "saved part-way down, between two rows")
+    }
+
     func testASecondStepBeforeTheFirstHasLandedCountsFromTheFirstsDestination() {
         // The step before this one is still in flight, so the brick is between rows: counting
         // from where it *is* would land the destination half a row out

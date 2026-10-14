@@ -294,19 +294,37 @@ extension GameScene {
     /// Nil when the paddle is not split, or when the ball is over a gap rather than a piece -
     /// a ball down a gap has struck nothing, and the caller keeps whatever the whole-span
     /// answer was rather than being handed a number about a segment it missed.
-    func endlessIISplitCollision(ballX: CGFloat) -> CGFloat? {
+    ///
+    /// **Reached by the ball's edge, not its centre** (James, round 386: "When split paddle is
+    /// active, the bounce angle of the ball should be determined based on where it hits the
+    /// paddle as if they are individual paddles, not one long paddle"). A piece answered only
+    /// when the ball's *centre* was over it, so a ball clipping a piece's edge with its centre
+    /// over the gap - which the body still bounces - fell back to the whole-span number, where an
+    /// inner edge reads as the middle of the paddle: almost straight up, from the steepest spot
+    /// on the piece. The nearest piece within a radius answers now, its edge as an edge.
+    /// Shared by the bounce, the launch of a held ball and the trajectory's paddle bounce, so a
+    /// split paddle steers the same way whichever of them is asking.
+    func endlessIISplitCollision(ballX: CGFloat, ballRadius: CGFloat = 0) -> CGFloat? {
+        guard let piece = endlessIISplitSegment(near: ballX, ballRadius: ballRadius) else {
+            return nil
+        }
+        return min(max((ballX - piece.centre)/piece.halfWidth, -1), 1)
+    }
+
+    /// The piece of a split paddle a ball at this x would strike: its centre and half-width.
+    func endlessIISplitSegment(near ballX: CGFloat, ballRadius: CGFloat = 0)
+        -> (centre: CGFloat, halfWidth: CGFloat)? {
         guard endlessIIPaddleIsSplit else { return nil }
         let layout = GameScene.endlessIIDoublePaddleLayout(span: paddle.size.width,
                                                            standardWidth: paddleWidth,
                                                            ballSize: ballSize)
         guard layout.segment > 0 else { return nil }
 
-        for centre in endlessIISplitSegmentCentres {
-            let offset = ballX - centre
-            guard abs(offset) <= layout.segment/2 else { continue }
-            return min(max(offset/(layout.segment/2), -1), 1)
-        }
-        return nil
+        let reach = layout.segment/2 + max(0, ballRadius)
+        return endlessIISplitSegmentCentres
+            .filter { abs(ballX - $0) <= reach }
+            .min { abs(ballX - $0) < abs(ballX - $1) }
+            .map { (centre: $0, halfWidth: layout.segment/2) }
     }
 
     /// Cuts one of the paddle's overlays into pieces that sit on the split, or puts it back.
