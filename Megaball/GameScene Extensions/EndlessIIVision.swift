@@ -522,10 +522,16 @@ extension GameScene {
     /// The old path was `ballSize*0.7` across the shoulders by the same down to the point,
     /// with its apex at -0.6 and its shoulders at +0.4 of that - so its box sat a tenth of the
     /// size *below* the node. Both of those are what is matched here.
+    /// **Under the ball** (James, round 387: "Draw the ball landing marker behind the ball").
+    /// It was at 5, over everything on the field, so a ball arriving at its own landing spot
+    /// passed under the mark that was predicting it. Just below the ball and the paddle, at 3,
+    /// and still over the aim line at 2.9, which it would otherwise be lost in.
+    static let endlessIILandingMarkerLayer: CGFloat = GameScene.ballLayer - 0.05
+
     private func endlessIIVisionMarker(at index: Int) -> SKSpriteNode {
         while endlessIILandingMarkers.count <= index {
             let marker = SKSpriteNode(texture: GameScene.endlessIILandingMarkerTexture)
-            marker.zPosition = 5
+            marker.zPosition = GameScene.endlessIILandingMarkerLayer
             marker.alpha = 0.9
             addChild(marker)
             endlessIILandingMarkers.append(marker)

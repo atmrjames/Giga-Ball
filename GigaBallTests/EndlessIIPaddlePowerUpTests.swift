@@ -4502,6 +4502,40 @@ final class AimedStickyStillOffersAnArrowTests: XCTestCase {
         return scene
     }
 
+    /// James, round 387: "Portal paddle, portal brick and ball trajectory all active, the
+    /// trajectory arrow and ball should appear on the portal brick not at the top portal."
+    func testThroughThePortalPaddleTheArrowIsWhereTheBallWillComeOut() throws {
+        let scene = scene()
+        scene.brickWidth = 40
+        scene.brickHeight = 20
+        let portal = SKSpriteNode(texture: scene.brickNormalTexture,
+                                  size: CGSize(width: 40, height: 20))
+        portal.name = BrickCategoryName
+        portal.position = CGPoint(x: -100, y: 200)
+        scene.addChild(portal)
+        scene.makePortal(portal)
+        scene.endlessIIAimedStickyClock.collect(turns: 5)
+        scene.endlessIICollectPortalPaddle()
+
+        scene.ballStateBeforeStep[ObjectIdentifier(scene.ball)] =
+            BallState(position: scene.ball.position, velocity: CGVector(dx: 60, dy: -300))
+        scene.paddleHit(scene.ball)
+        let target = try XCTUnwrap(scene.endlessIIAimTarget)
+        scene.tickEndlessIIAim()
+        let arrow = try XCTUnwrap(scene.endlessIIAimArrow)
+        let exit = scene.endlessIIPaddlePortalExit(at: portal, for: target)
+        XCTAssertEqual(arrow.position.x, exit.x, accuracy: 0.01, "over the Portal, not the paddle")
+        XCTAssertEqual(arrow.position.y, exit.y, accuracy: 0.01, "and just above it, not at the top")
+        let angle = scene.endlessIIAimAngle(for: target)
+        XCTAssertEqual(Double(arrow.zRotation), angle, accuracy: 0.0001,
+                       "pointing the way it was aimed, not mirrored down from the top")
+
+        scene.endlessIIPortalTheAimedLaunch(target, angle: angle)
+        XCTAssertEqual(target.position.x, exit.x, accuracy: 0.01, "and the ball comes out there")
+        XCTAssertEqual(target.position.y, exit.y, accuracy: 0.01)
+        XCTAssertGreaterThan(target.physicsBody?.velocity.dy ?? 0, 0, "going the way the arrow said")
+    }
+
     func testALandedBallIsSomethingToAim() {
         let scene = scene()
         scene.endlessIIAimedStickyClock.collect(turns: 5)
@@ -7419,8 +7453,112 @@ final class PaddleExitStandInTests: XCTestCase {
     }
 }
 
+/// James, round 387, with a device log: "I lost a ball and the game didn't end." Its last line
+/// was the play being handed to an extra ball at (-234, 73918), past the left wall and climbing:
+/// the walls are edges, which keep a ball out as firmly as in, so it climbed for the rest of the
+/// run and the run could not end.
+final class BallsStayInTheFieldTests: XCTestCase {
+
+    private func field() -> GameScene {
+        let scene = GameScene(size: CGSize(width: 402, height: 874))
+        scene.gameMode = .endlessII
+        scene.gameWidth = 396
+        scene.brickWidth = 36
+        scene.brickHeight = 18
+        scene.ballSize = 14
+        scene.addChild(scene.ball)
+        scene.ball.size = CGSize(width: 14, height: 14)
+        scene.ball.physicsBody = SKPhysicsBody(circleOfRadius: 7)
+        scene.ball.position = .zero
+        return scene
+    }
+
+    private func extra(in scene: GameScene, at point: CGPoint, heading: CGVector) -> SKSpriteNode {
+        let ball = SKSpriteNode(color: .white, size: CGSize(width: 14, height: 14))
+        ball.name = BallCategoryName
+        ball.physicsBody = SKPhysicsBody(circleOfRadius: 7)
+        ball.physicsBody?.velocity = heading
+        ball.position = point
+        scene.addChild(ball)
+        scene.endlessIIExtraBalls.append(ball)
+        return ball
+    }
+
+    func testAnExtraBallPastTheWallIsBroughtBackHeadingIn() {
+        let scene = field()
+        let lost = extra(in: scene, at: CGPoint(x: -234, y: 73918), heading: CGVector(dx: -40, dy: 400))
+        scene.returnEndlessIIBallsToTheField()
+        let playable = scene.endlessIIPlayableRect
+        XCTAssertTrue(playable.insetBy(dx: -0.01, dy: -0.01).contains(lost.position), "\(lost.position)")
+        XCTAssertGreaterThan(lost.physicsBody?.velocity.dx ?? 0, 0, "heading back into the field")
+        XCTAssertLessThan(lost.physicsBody?.velocity.dy ?? 0, 0, "and down, as the ceiling would have sent it")
+    }
+
+    func testTheHandoverThenFindsABallInTheField() {
+        let scene = field()
+        let lost = extra(in: scene, at: CGPoint(x: -234, y: 73918), heading: CGVector(dx: 0, dy: 400))
+        scene.returnEndlessIIBallsToTheField()
+        scene.endlessIIPendingHandover = lost
+        scene.applyEndlessIIBallHandover()
+        XCTAssertLessThan(abs(scene.ball.position.x), scene.gameWidth/2,
+                          "the ball play is handed to is one that can come back down")
+        XCTAssertLessThan(scene.ball.position.y, scene.frame.height/2)
+    }
+
+    func testABallInsideIsLeftAlone() {
+        let scene = field()
+        scene.ball.position = CGPoint(x: 150, y: 300)
+        scene.ball.physicsBody?.velocity = CGVector(dx: 100, dy: 300)
+        scene.returnEndlessIIBallsToTheField()
+        XCTAssertEqual(scene.ball.position, CGPoint(x: 150, y: 300))
+        XCTAssertEqual(scene.ball.physicsBody?.velocity, CGVector(dx: 100, dy: 300))
+    }
+
+    func testWhileTheWallsAreDoorwaysAnEscapedBallGoesRoundAndKeepsItsHeading() {
+        let scene = field()
+        scene.endlessIICollectWrapAround()
+        scene.ball.position = CGPoint(x: 205, y: 100)
+        scene.ball.physicsBody?.velocity = CGVector(dx: 120, dy: 200)
+        scene.returnEndlessIIBallsToTheField()
+        XCTAssertLessThan(scene.ball.position.x, 0, "out one side and in at the other")
+        XCTAssertEqual(scene.ball.physicsBody?.velocity, CGVector(dx: 120, dy: 200))
+    }
+
+    /// One of the ways out: a Portal drifting round the side, and the Portal Paddle's exit set
+    /// down at its node.
+    func testAPortalHalfPastTheWallStillLetsTheBallOutInsideIt() {
+        let scene = field()
+        let portal = SKSpriteNode(texture: scene.brickNormalTexture,
+                                  size: CGSize(width: 36, height: 18))
+        portal.name = BrickCategoryName
+        portal.position = CGPoint(x: -scene.gameWidth/2, y: 200)
+        scene.addChild(portal)
+        let exit = scene.endlessIIPaddlePortalExit(at: portal, for: scene.ball)
+        XCTAssertGreaterThanOrEqual(exit.x, -scene.gameWidth/2 + scene.ball.size.width/2)
+    }
+
+    /// The other: a new ball born on a paddle overhanging a wall while Wrap-Around runs.
+    func testANewBallIsBornInsideTheWalls() {
+        let scene = field()
+        scene.totalStatsArray = [TotalStats()]
+        scene.addChild(scene.paddle)
+        scene.paddle.position = CGPoint(x: scene.gameWidth/2, y: -300)
+        XCTAssertTrue(scene.endlessIIAddBall())
+        let born = scene.endlessIIExtraBalls.last
+        XCTAssertLessThanOrEqual(born?.position.x ?? .infinity,
+                                 scene.gameWidth/2 - scene.ballSize/2)
+    }
+}
+
 /// James, round 386: "The ball landing marker can be a bit jittery and flashy."
 final class LandingMarkerSteadinessTests: XCTestCase {
+
+    /// James, round 387: "Draw the ball landing marker behind the ball."
+    func testTheMarkerIsDrawnUnderTheBallAndOverTheAimLine() {
+        XCTAssertLessThan(GameScene.endlessIILandingMarkerLayer, GameScene.ballLayer)
+        XCTAssertGreaterThan(GameScene.endlessIILandingMarkerLayer, 2.9,
+                             "still over the aim line, which would otherwise hide it")
+    }
 
     func testAFarAnswerForOneFrameDoesNotMoveTheMarker() {
         let scene = GameScene()

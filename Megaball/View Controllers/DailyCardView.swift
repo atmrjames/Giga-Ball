@@ -360,7 +360,8 @@ final class DailyCardView: UIView {
             resultCard.isHidden = true
         }
         showBoardExtras(signedIn ? record : nil, mode: challenge.mode,
-                        leading: own?.rank == 1 || board.first?.isLocalPlayer == true)
+                        leading: own?.rank == 1 || board.first?.isLocalPlayer == true,
+                        onTheBoard: own != nil || board.contains { $0.isLocalPlayer })
         // **Signed out, the leaderboard's place says so** (James, round 384: "move the note
         // about not being signed into Game Center to below the daily challenge details
         // container, into the position where the leaderboard would be ... Once a daily
@@ -646,6 +647,14 @@ final class DailyCardView: UIView {
                 return
             }
             resultCard.isHidden = false
+            if let leader {
+                resultRows.addArrangedSubview(DailyCardView.resultLine(
+                    symbol: "trophy.fill", title: "Global Hi-Score", value: "\(leader)" + unit,
+                    onLime: false))
+            }
+            // **The day's leader first** (James, round 387: "Put the global hi score at the top
+            // of the list") - the number everything under it is measured against, where the
+            // board puts its first place
             if let practice {
                 resultRows.addArrangedSubview(DailyCardView.resultLine(
                     symbol: DailyCardView.freePlaySymbol, title: DailyCardView.freePlayTitle,
@@ -656,11 +665,6 @@ final class DailyCardView: UIView {
             // never posted and then played for practice - the card said nothing at all). An
             // attempt that did not post is still treated as no score (round 306); free play is
             // its own line and never claimed to be posted
-            if let leader {
-                resultRows.addArrangedSubview(DailyCardView.resultLine(
-                    symbol: "trophy.fill", title: "Global Hi-Score", value: "\(leader)" + unit,
-                    onLime: false))
-            }
             makeTheResultCardADoor(leader != nil)
             return
             // **The day's leader before you have played** (James, round 350): the number to
@@ -673,6 +677,14 @@ final class DailyCardView: UIView {
         dressTheResultCard(leading: leading)
         resultCard.isHidden = false
 
+        if let boardBest, boardBest > 0 {
+            resultRows.addArrangedSubview(DailyCardView.resultLine(
+                symbol: "trophy.fill", title: "Global Hi-Score", value: "\(boardBest)" + unit,
+                onLime: leading))
+            // The day's leader (round 350), and at the top since round 387 ("Put the global hi
+            // score at the top of the list"), as the board's first place is at the top of the
+            // board - so a posted score is read against the number above it
+        }
         if record.posted {
             resultRows.addArrangedSubview(DailyCardView.resultLine(
                 symbol: DailyCardView.ownScoreSymbol, title: "Posted Score",
@@ -697,13 +709,6 @@ final class DailyCardView: UIView {
                 symbol: "list.number", title: "Rank", value: standing.text, onLime: leading))
             // Today only, and that is not a limitation to fix: the daily board is a *recurring*
             // leaderboard, so a past day's placing no longer exists to ask for (round 306)
-        }
-        if let boardBest, boardBest > 0 {
-            resultRows.addArrangedSubview(DailyCardView.resultLine(
-                symbol: "trophy.fill", title: "Global Hi-Score", value: "\(boardBest)" + unit,
-                onLime: leading))
-            // And the day's leader under it (round 350), so a posted score is read against the
-            // number at the top of the board
         }
         makeTheResultCardADoor(record.posted)
         // The whole container opens the board, not a button on it - the score and the placing
@@ -770,7 +775,14 @@ final class DailyCardView: UIView {
 
     /// Under the board: the player's posted score and their free-play best, once there is a
     /// free-play best to show beside it.
-    private func showBoardExtras(_ record: DailyChallengeRecord?, mode: GameMode, leading: Bool) {
+    ///
+    /// **Not the posted score when the board already shows it** (James, round 387: "no need to
+    /// show the posted score if the player's score is also on the leaderboard"). The player's
+    /// row on the board is their posted score, with their place beside it, so a line under the
+    /// board saying "Posted Score" was the same figure twice. It stays for a board that has
+    /// not got the player on it.
+    private func showBoardExtras(_ record: DailyChallengeRecord?, mode: GameMode, leading: Bool,
+                                 onTheBoard: Bool) {
         boardExtras.arrangedSubviews.forEach { $0.removeFromSuperview() }
         let unit = mode == .classic ? "" : "m"
         guard boardCard.isHidden == false, let record,
@@ -778,7 +790,7 @@ final class DailyCardView: UIView {
             boardExtras.isHidden = true
             return
         }
-        if record.posted {
+        if record.posted, onTheBoard == false {
             boardExtras.addArrangedSubview(DailyCardView.resultLine(
                 symbol: DailyCardView.ownScoreSymbol, title: "Posted Score",
                 value: "\(record.firstAttemptScore)" + unit, onLime: leading))

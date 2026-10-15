@@ -4595,7 +4595,8 @@ final class DailyCardTableAndSignedOutTests: XCTestCase {
                   standing: nil, boardBest: 900)
         let unit = DailyChallengeGenerator.challenge(forKey: "2026-09-01").mode == .classic ? "" : "m"
         XCTAssertEqual(card.resultTextForTesting,
-                       "Posted Score 653\(unit)\nGlobal Hi-Score 900\(unit)")
+                       "Global Hi-Score 900\(unit)\nPosted Score 653\(unit)",
+                       "the leader first (round 387: \"Put the global hi score at the top of the list\")")
         XCTAssertEqual(DailyCardView.ownScoreSymbol, "person.fill",
                        "the player's own mark, not a numbered list")
         let line = DailyCardView.resultLine(symbol: DailyCardView.ownScoreSymbol,
@@ -4666,8 +4667,14 @@ final class DailyCardFreePlayTests: XCTestCase {
         let again = DailyChallengeRecord(dateKey: key, firstAttemptScore: 280, posted: true,
                                          bestPracticeScore: 341, attemptCount: 3)
         card.show(key: key, isToday: true, record: again, standing: nil, board: board)
+        XCTAssertEqual(card.boardExtrasTextForTesting, "Free Play Hi Score 341\(unit)",
+                       "round 387: \"no need to show the posted score if the player's score is also on the leaderboard\"")
+
+        let others = [DailyBoardRow(rank: 1, name: "Someone", score: 900, isLocalPlayer: false)]
+        card.show(key: key, isToday: true, record: again, standing: nil, board: others)
         XCTAssertEqual(card.boardExtrasTextForTesting,
-                       "Posted Score 280\(unit)\nFree Play Hi Score 341\(unit)")
+                       "Posted Score 280\(unit)\nFree Play Hi Score 341\(unit)",
+                       "a board without the player on it still needs the player's score")
     }
 
     /// James, round 385c: "When I played a free play of a daily challenge with no posted score

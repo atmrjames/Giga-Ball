@@ -1226,8 +1226,7 @@ extension GameScene {
 
             if subject === ball { crookedBallNote("paddle-portal") }
             if let portal = endlessIIPortals().randomElement() {
-                subject.position = CGPoint(x: portal.position.x,
-                                           y: portal.frame.maxY + subject.size.height)
+                subject.position = endlessIIPaddlePortalExit(at: portal, for: subject)
                 body.velocity = CGVector(dx: cos(angleRad)*speed, dy: sin(angleRad)*speed)
                 endlessIIShowPortalJump(from: paddle.position, to: endlessIIPortalCentre(portal))
                 // Paddle to the portal's centre, as every portal line now runs (round 360)
@@ -1267,6 +1266,23 @@ extension GameScene {
     /// Where a Portal Paddle puts the ball back in when there is no Portal brick to climb out
     /// of: just under the top strip. One place, because the exit and the Auto-Aim marker that
     /// promises where it goes next both need it.
+    /// Where a ball through the paddle comes out of a Portal brick: just above it, over its
+    /// middle, and inside the walls.
+    ///
+    /// **Inside the walls** (James, round 387: "I lost a ball and the game didn't end"). It was
+    /// the portal's node, which is two things a ball must not be put at. Drift carries bricks
+    /// round the side, so a Portal can stand half past a wall, and a ball set down past a wall is
+    /// outside the field for good (`returnEndlessIIBallsToTheField`). And the node is not the
+    /// middle of a Big portal (round 360), nor is its `frame` the top of a shaped one - that is
+    /// the little sprite hidden inside the face - so both are read off the cells it fills.
+    ///
+    /// One answer for the bounce through the paddle and the aimed shot, and for the arrow that
+    /// shows the aimed shot before it goes.
+    func endlessIIPaddlePortalExit(at portal: SKSpriteNode, for subject: SKSpriteNode) -> CGPoint {
+        let cells = endlessIIFieldRect(of: portal)
+        return endlessIIKeptInPlay(CGPoint(x: cells.midX, y: cells.maxY + subject.size.height))
+    }
+
     func endlessIIPaddlePortalTopExitY(ballHeight: CGFloat) -> CGFloat {
         frame.height/2 - topScreenBlock.size.height - ballHeight
     }

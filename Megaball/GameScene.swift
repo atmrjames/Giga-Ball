@@ -244,6 +244,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	}
 	#endif
 
+    /// The ball's layer. Named because the landing marker is drawn just under it (round 387).
+    static let ballLayer: CGFloat = 3
+
 	/// Records that something legitimate moved the main ball this frame. Free in Release
 	/// builds; every deliberate velocity or position writer outside the engine calls it,
 	/// so a tripwire log with no notes means a writer nobody knows about.
@@ -254,6 +257,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	}
 
 	var endlessIIAimArrow: SKShapeNode?
+	/// The Portal an aimed shot through the paddle will come out of, chosen while it is aimed so
+	/// the arrow can be drawn there (round 387) - see `endlessIIAimedPortal`.
+	weak var endlessIIAimPortal: SKSpriteNode?
 	/// Whether the world is frozen while an aim is chosen - see EndlessIIAimedSticky.
 	var endlessIIAimHold = false
 
@@ -2082,7 +2088,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         ball.name = BallCategoryName
         ball.physicsBody!.categoryBitMask = CollisionTypes.ballCategory.rawValue
         ballPhysicsBodySet()
-        ball.zPosition = 3
+        ball.zPosition = GameScene.ballLayer
 		ball.physicsBody!.usesPreciseCollisionDetection = true
 		ball.physicsBody?.linearDamping = ballLinearDampening
         ball.physicsBody!.angularDamping = 0
@@ -3689,6 +3695,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         applyEndlessIIPortalExit()
         resolveBrickSeamBounces()
         holdBallSpeeds()
+        returnEndlessIIBallsToTheField()
         sweepDyingBricks()
         phantomBrickWatch()
         crookedBallWatch()

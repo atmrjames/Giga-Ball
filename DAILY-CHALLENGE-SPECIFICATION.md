@@ -577,14 +577,18 @@ briefing screen (§6).
   **A table since round 384** (James: "layout the information in a similar table to the
   leaderboard ... the current 1, 2, 3 icon doesn't represent the information very well"): each
   fact is a line in the board's columns - the player's own mark (`person.fill`), "Posted Score",
-  the figure on the right - with Rank and Global Hi-Score under it where Game Center can say.
+  the figure on the right - with Rank under it and Global Hi-Score where Game Center can say.
+  **The leader's line leads** since round 387 (James: "Put the global hi score at the top of the
+  list"), as the board's first place is at its top.
   Signed out, the same container says "Sign into Game Center to post to and view the global
   leaderboard", under "Your Score" once the day has been played.
 
   **Free play is back, on its own line** (round 385, James: "show the users posted score and free
   play hi score if they have played free play of the challenge"): a "Free Play Hi Score" line
   (renamed from "Free Play Best" in round 385c) under the board or in the result table, only
-  once free play has been played - **and with nothing posted too** (round 385c: "Show Free Play
+  once free play has been played. Under the board it stands alone when the board already has
+  the player's own row (round 387: "no need to show the posted score if the player's score is
+  also on the leaderboard") - **and with nothing posted too** (round 385c: "Show Free Play
   Hi Score even if there is no posted score"). An attempt that did not post is still no score
   (round 306); the free-play line never claims to be one. The end screen's board leaves a player
   off it until they have posted (`localHasPostedToday`), as the menu has since round 361 - Game

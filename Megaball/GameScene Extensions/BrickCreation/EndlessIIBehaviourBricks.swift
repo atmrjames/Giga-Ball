@@ -1707,6 +1707,19 @@ extension GameScene {
                       width: max(0, gameWidth - inset*2), height: max(0, top - bottom))
     }
 
+    /// The nearest point to this one where a ball can be set down and still be in the game.
+    ///
+    /// Left alone until there is a field to keep it in: a scene that has not been laid out has
+    /// a playable rect of nothing, and everything would be pulled to one corner of it.
+    func endlessIIKeptInPlay(_ point: CGPoint) -> CGPoint {
+        let playable = endlessIIPlayableRect
+        guard gameWidth > 0, frame.height > 0, playable.width > 0, playable.height > 0 else {
+            return point
+        }
+        return CGPoint(x: min(max(point.x, playable.minX), playable.maxX),
+                       y: min(max(point.y, playable.minY), playable.maxY))
+    }
+
     /// Moves the ball to a portal's exit, once the physics step is out of the way.
     func applyEndlessIIPortalExit() {
         guard let exit = endlessIIPendingPortalExit else { return }

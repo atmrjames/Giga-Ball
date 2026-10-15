@@ -312,11 +312,12 @@ extension GameScene {
     func endlessIIPortalTheAimedLaunch(_ target: SKSpriteNode, angle: Double) {
         endlessIIPortalPaddleOwedTurn = false
         let speed = Double(ballSpeedLimit)
-        let portal = endlessIIPortals().randomElement()
+        let portal = endlessIIAimedPortal()
+        endlessIIAimPortal = nil
+        // The one the arrow was drawn at, and then forgotten, so the next shot chooses again
 
         if let portal {
-            target.position = CGPoint(x: portal.position.x,
-                                      y: portal.frame.maxY + target.size.height)
+            target.position = endlessIIPaddlePortalExit(at: portal, for: target)
             target.physicsBody?.velocity = CGVector(dx: cos(angle)*speed,
                                                     dy: sin(angle)*speed)
             portal.run(.sequence([.fadeAlpha(to: 0.35, duration: 0.08),
@@ -334,6 +335,23 @@ extension GameScene {
         // when there is no portal to go through (round 360)
         if hapticsSetting { mediumHaptic.impactOccurred() }
         playMayhemSound("paddlePortal", or: "portalJump")
+    }
+
+    /// The Portal an aimed shot through the paddle will come out of.
+    ///
+    /// **Chosen while it is aimed, not when it goes** (James, round 387: "Portal paddle, portal
+    /// brick and ball trajectory all active, the trajectory arrow and ball should appear on the
+    /// portal brick not at the top portal"). The launch picked a Portal at random on the frame
+    /// it fired, so the arrow could not know where the ball would be and was drawn at the top
+    /// of the field, pointing down - the exit taken only when there is no Portal at all. The
+    /// ball then came out of a brick somewhere else, going up. Choosing first lets the arrow be
+    /// drawn where the ball will appear, at the heading it will have there; kept until the shot
+    /// goes, unless that brick stops being a Portal, so the arrow does not hop between bricks.
+    func endlessIIAimedPortal() -> SKSpriteNode? {
+        let portals = endlessIIPortals()
+        if let kept = endlessIIAimPortal, portals.contains(where: { $0 === kept }) { return kept }
+        endlessIIAimPortal = portals.randomElement()
+        return endlessIIAimPortal
     }
 
     // MARK: - The arrow
@@ -437,7 +455,12 @@ extension GameScene {
         }()
 
         let angle = endlessIIAimAngle(for: target)
-        if endlessIIAimLaunchesThroughThePaddle {
+        if endlessIIAimLaunchesThroughThePaddle, let portal = endlessIIAimedPortal() {
+            arrow.position = endlessIIPaddlePortalExit(at: portal, for: target)
+            arrow.zRotation = CGFloat(angle)
+            // **At the Portal it will come out of, pointing the way it was aimed** (round 387):
+            // out of a brick the shot keeps its heading, as the launch below gives it
+        } else if endlessIIAimLaunchesThroughThePaddle {
             arrow.position = CGPoint(x: target.position.x,
                                      y: frame.height/2 - topScreenBlock.size.height
                                         - target.size.height)
@@ -455,6 +478,7 @@ extension GameScene {
 
     /// Removes the aim state entirely. For resets and the batch ending.
     func endlessIIEndAim() {
+        endlessIIAimPortal = nil
         endlessIIAimTouched = false
         endlessIIAimOwedHold = false
         endlessIIAimArrow?.removeFromParent()

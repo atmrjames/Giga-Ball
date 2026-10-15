@@ -63,8 +63,12 @@ extension GameScene {
         extra.size = parent.size
         extra.zPosition = parent.zPosition
         extra.name = BallCategoryName
-        extra.position = CGPoint(x: paddle.position.x, y: ballStartingPositionY)
+        extra.position = CGPoint(x: endlessIIKeptInPlay(paddle.position).x,
+                                 y: ballStartingPositionY)
         addChild(extra)
+        // **Inside the walls** (round 387). While Wrap-Around runs the paddle's centre can sit
+        // right on a wall, and a ball born on the wall line is one the physics may push either
+        // way - out of the field is one of them (`returnEndlessIIBallsToTheField`)
         // Out of the paddle, near vertical, like a launch - which is what it is. Appearing
         // beside the ball it came from read as a glitch in the middle of the field
 

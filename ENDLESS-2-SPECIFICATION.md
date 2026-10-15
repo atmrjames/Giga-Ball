@@ -2964,6 +2964,47 @@ testers:
   falling power-up's position by `brickWidth`, so a bare `GameScene()` with a power-up on
   screen traps converting NaN to Int. A real scene is always laid out before play.
 
+**Round 387: a ball that left the field, the arrow at the Portal it goes to, and the daily card's order.**
+
+James's list after the round 386e TestFlight, with three screenshots and a device log.
+
+- **"I lost a ball and the game didn't end."** The log's last line was the ball being handed
+  over to a survivor at (-234, 73918), heading 90.0 degrees. That extra ball was past the left
+  wall and climbing. The walls are edges, which keep a ball out as firmly as they keep one in,
+  and nothing above the field turns a ball round, so it climbed for the rest of the run - and
+  the handover takes the *highest* survivor, which an escaped ball always is. When the last
+  ball in the field went, play passed to one that could never come down.
+
+  The log could not say how it got out, because the crooked-ball watch follows only the first
+  ball, so three things changed. Two ways out are closed where they happen: Aimed Sticky's shot
+  through the Portal Paddle, and the Portal Paddle's own bounce, set the ball down at a Portal's
+  *node*, which Drift can carry half past a wall (and which is not the middle of a Big portal,
+  nor its `frame` the top of a shaped one); and a Multi-Ball ball was born at the paddle's x,
+  which Wrap-Around can put on the wall line. Both go through `endlessIIKeptInPlay` now, and the
+  portal exit is one function, `endlessIIPaddlePortalExit`. The heading of 90.0 degrees is Aimed
+  Sticky's default, and James had Aimed Sticky, Portal Paddle and a Portal all running, so the
+  first of those is the likeliest. And under all of it, `returnEndlessIIBallsToTheField` runs
+  every frame from `didSimulatePhysics`: a ball outside the walls or above the ceiling is put
+  back heading in (or carried round, while Wrap runs), and `BALL OUTSIDE THE FIELD` in the log
+  names which ball, where, and whether Wrap or Drift was running, so the next way out, if there
+  is one, names itself. `BallsStayInTheFieldTests`.
+- **"The trajectory arrow and ball should appear on the portal brick not at the top portal"**,
+  with Portal Paddle, a Portal brick and Aimed Sticky running. The shot picked a Portal at
+  random on the frame it fired, so the arrow could not know where the ball would appear and was
+  drawn at the top pointing down - the exit for a field with no Portal. The Portal is chosen
+  while aiming now (`endlessIIAimedPortal`), kept until the shot goes, and the arrow is drawn at
+  its exit pointing the way it was aimed. Looked at on the simulator: the arrow rises out of the
+  brick.
+- **"Draw the ball landing marker behind the ball."** It was at 5, over everything. It is just
+  under the ball now (`ballLayer` less a twentieth) and still over the aim line at 2.9.
+- **The daily card.** "No need to show the posted score if the player's score is also on the
+  leaderboard": the line under the board drops Posted Score when the board has the player's own
+  row, and keeps it for a board without them. "Put the global hi score at the top of the list":
+  Global Hi-Score leads the card's lines, posted or not.
+- **Queued:** a white patch under an Exploding Diamond, which a sweep of every Diamond
+  combination through hits and a resume could not reproduce. In §12.0's open table with what
+  was ruled out.
+
 **Round 386e: the shaped paddle's last two hitches, and the game-over crash.**
 
 James: "Game still hesitates when a shaped paddle power-up is applied and on the first ball hit
@@ -4158,6 +4199,7 @@ James, after the round 358b push: three play-test notes.
 
 | Item | What is known |
 |---|---|
+| **A white patch under an Exploding Diamond** (round 387) | James's screenshot: a red Exploding Diamond with a white bevelled rectangle showing below its lower edges, half a cell wide, centred, reaching the cell's floor. Its width is the Diamond's hiding rectangle's (`EndlessIIFaceGeometry.hidingRect`, half a cell), so it reads as the brick's own sprite drawing and sitting lower than it should - but the hiding rectangle is centred and inside the rhombus, and the sprite is meant to draw nothing at all once the face has art (round 332). Round 387 could not make it happen: every behaviour on a Diamond, applied before and after the face, on Normal, Multi-Hit and Indestructible bricks, through hits and a second of frames, and then saved and resumed in a laid-out scene - every hidden sprite inside its rectangle and drawing nothing. Not a Tiny quarter (those sit left or right of centre). Wanted: what had just happened to that brick - hit, resumed, drifted, a Breathing pulse - or a second sighting |
 | ~~**Bricks half a row out after a quit and resume**~~ | **Fixed, round 386d** - see that round. It was not the bricks but their faces: a shaped brick's drawing came back round the wrong centre |
 | ~~The game view following an iPad or Mac window~~ | **Seen working, 2 October** - James on his iPad: "it's working perfectly" |
 | ~~The settings list keeping its place~~ | **Seen fixed, 2 October**, on his phone and his iPad |
