@@ -655,8 +655,8 @@ notification name, not following a call stack.
   - `ITSAppUsesNonExemptEncryption` is `false`, so builds are not held for export compliance.
   - No ad SDK is linked (no Google Mobile Ads in the project, code or plists), which is what
     makes the manifest's "no data collected, no tracking" true. The App Privacy answers in App
-    Store Connect were recorded as stale from the AdMob days and are worth re-checking against
-    that before external testers.
+    Store Connect were recorded as stale from the AdMob days; **James updated them, 15 October
+    2026.**
   - The only required-reason API used is `UserDefaults`, declared with reason `CA92.1`; no
     file-timestamp, boot-time, disk-space or active-keyboard APIs appear in the code.
   - Everything behind `#if DEBUG` is diagnostics or the daily's test clock, which reads 0 in
@@ -675,7 +675,7 @@ notification name, not following a call stack.
     not. A public link can be turned on per group once approved.
   - **The App Privacy answers on the app's product page** are the one thing recorded as stale,
     from the AdMob days. The app collects nothing now, so they should read Data Not Collected -
-    and beta review can compare the two.
+    and beta review can compare the two. **Done by James, 15 October 2026.**
 - Xcode Cloud assigns its own build numbers; `CFBundleVersion` cannot be overridden from
   a pre-build script.
 - Signing is automatic, team `ZAGZPD36YG`.

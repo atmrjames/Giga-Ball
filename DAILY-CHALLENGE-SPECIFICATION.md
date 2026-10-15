@@ -1044,6 +1044,8 @@ must be *posted* inside the window, not merely earned in it. As shipped:
   bricks (they self-hide), and on the classic build-in (also queued, ENDLESS-2 §12.0)
   the fade waits for that animation's end hook, wherever it lands.
 
+- ~~**App Store in-app events**~~ **Not wanted** (James, 15 October 2026: "not required").
+  Nothing to build, and no deep link is needed for it. Kept below for if that changes.
 - **App Store in-app events** (§11.5): App Store Connect setup, James's side - answered in
   round 260, because "James's side" was not enough to act on.
 
