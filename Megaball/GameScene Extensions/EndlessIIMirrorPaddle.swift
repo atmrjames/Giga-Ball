@@ -171,8 +171,7 @@ extension GameScene {
         ghost.position = CGPoint(x: mirror.position.x > 0 ? mirror.position.x - gameWidth
                                                           : mirror.position.x + gameWidth,
                                  y: mirror.position.y)
-        endlessIIDressRetroTwin(ghost, colour: GameScene.endlessIIMirrorPaddleColour,
-                                reflected: true)
+        endlessIIDressRetroTwin(ghost, reflected: true)
         // The ghost copies the mirror's own picture, which in Retro is none - so it wears the
         // same Retro dress the mirror does (round 386)
     }
@@ -549,8 +548,7 @@ extension GameScene {
         // Every frame: it follows the paddle's position and its drawn size, which is a
         // position and a size write rather than anything rebuilt
 
-        if endlessIIDressRetroTwin(mirror, colour: GameScene.endlessIIMirrorPaddleColour,
-                                   reflected: true) == false {
+        if endlessIIDressRetroTwin(mirror, reflected: true) == false {
             let drawn = endlessIIMirrorPaddleDrawnDress
             if mirror.texture !== drawn { mirror.texture = drawn }
             mirror.color = GameScene.endlessIIMirrorPaddleColour

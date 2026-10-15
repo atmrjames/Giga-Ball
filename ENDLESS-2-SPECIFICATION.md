@@ -2977,6 +2977,14 @@ James's play-test list after the round 385d TestFlight, with five screenshots.
   picture rather than the picture turned round with a negative scale, which lays a nine-slice
   out wrong (the first render was a dome of two huge end caps). The mirror's wrap ghost wears
   it too.
+- **Round 386b: the tube in lime, not the picture tinted** (James: "rather than modifying the
+  colours for the retro paddle, can you make the central section that is normally magenta, the
+  giga-ball green/yellow colour for the mirror and safety paddles"). `retroTwinPicture` turns
+  every pixel in the magenta-to-pink hues to the lime's hue, keeping its own saturation and
+  brightness, so the tube's shading survives and the blue caps and purple ends are Retro's own;
+  the twins wear it untinted. Made at the original's scale, because a nine-slice draws its caps
+  at the picture's natural size and a picture made straight from pixels is three times its size
+  in points - the first render's ends were three times too wide.
 - **Retro's sticky band on the safety bar only while it holds a ball** ("showing the retro
   sticky graphic when the ball isn't caught on it"), as the paddle shows it - Retro's band is the
   glow of a held ball, not a face that says "this catches". The mirror's likewise, and in the

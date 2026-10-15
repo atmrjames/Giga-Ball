@@ -553,8 +553,9 @@ extension GameScene {
     ///
     /// Here the twin's own sprite keeps its size, because its size is its geometry - the body,
     /// the top a ball rests on, the catch, the reach - and simply stops drawing; this child draws
-    /// the Retro picture, in the twin's tint, sized by the paddle's own Retro layer and placed
-    /// as that layer is placed over the paddle. Outside Retro the child is taken away and the
+    /// the Retro picture, sized by the paddle's own Retro layer and placed as that layer is
+    /// placed over the paddle - with its magenta tube in the Giga-Ball lime rather than the
+    /// whole picture tinted (round 386b, see `retroTwinPicture`). Outside Retro the child is taken away and the
     /// twin's own refresh puts its picture back the next time it dresses itself.
     /// - Parameter reflected: for the mirror and its ghost - the Retro picture of the *reflected*
     ///   shape, which is what makes a wedge's twin the other wedge. Not the picture turned round
@@ -563,8 +564,7 @@ extension GameScene {
     /// - Returns: whether the twin is wearing the Retro dress, so its own refresh can leave
     ///   its picture alone.
     @discardableResult
-    func endlessIIDressRetroTwin(_ surface: SKSpriteNode, colour: UIColor,
-                                 reflected: Bool = false) -> Bool {
+    func endlessIIDressRetroTwin(_ surface: SKSpriteNode, reflected: Bool = false) -> Bool {
         let existing = surface.childNode(withName: GameScene.endlessIIRetroTwinDressName)
             as? SKSpriteNode
         let shape = endlessIIShapeOwnsTheBounce
@@ -595,8 +595,9 @@ extension GameScene {
             surface.addChild(made)
             return made
         }()
-        if dress.texture !== art {
-            dress.texture = art
+        let lime = GameScene.retroTwinPicture(of: art)
+        if dress.texture !== lime {
+            dress.texture = lime
             dress.centerRect = suffix == nil ? paddleCapRect(for: art)
                                              : CGRect(x: 0, y: 0, width: 1, height: 1)
             // A shaped picture is stretched whole, as the paddle's own shaped art is: the cap
@@ -610,9 +611,78 @@ extension GameScene {
         dress.position = CGPoint(x: 0, y: (-abs(surface.size.height)/2 + paddleHeight/2)/yScale)
         // Centred where the plain paddle's middle would be, measured up from the twin's
         // underside - exactly how `positionRetroPaddleLayers` places the paddle's own layer
-        dress.color = colour
-        dress.colorBlendFactor = 1
+        dress.colorBlendFactor = 0
+        // Untinted: the picture carries its own colours, the tube recoloured (round 386b)
         return true
+    }
+
+    /// The Retro paddle's picture with its magenta tube turned the Giga-Ball lime, for the twins.
+    ///
+    /// **James, round 386b: "rather than modifying the colours for the retro paddle, can you make
+    /// the central section that is normally magenta, the giga-ball green/yellow colour for the
+    /// mirror and safety paddles."** The twins were the whole picture tinted - the halo's orange
+    /// for the bar, the mirror's own for the mirror - which turned the blue caps and the purple
+    /// ends muddy along with the tube. Now only the tube changes: every pixel in the magenta and
+    /// pink band of hues takes the lime's hue and keeps its own saturation and brightness, so the
+    /// tube's light top and dark underside come out as light and dark lime, and the caps and ends
+    /// stay exactly as Retro draws them. Worked out once per picture - the flat paddle, the five
+    /// shapes and their Portal versions - and kept.
+    static func retroTwinPicture(of texture: SKTexture) -> SKTexture {
+        let key = texture.cacheIdentity
+        if let made = retroTwinPictures[key] { return made }
+        let original = texture.cgImage()
+        let points = texture.size().width
+        let scale = points > 0 ? CGFloat(original.width)/points : 1
+        let made = retroTwinRecoloured(original)
+            .map { SKTexture(image: UIImage(cgImage: $0, scale: scale, orientation: .up)) }
+            ?? texture
+        // At the original's scale, so the picture's natural size is in points as Retro's is. A
+        // nine-slice draws its caps at the picture's natural width (§8.6), and a picture made
+        // straight from pixels is three times its size in points: the first render had purple
+        // ends three times as wide as the paddle's
+        retroTwinPictures[key] = made
+        return made
+    }
+
+    private static var retroTwinPictures: [String: SKTexture] = [:]
+
+    /// The hues that are the tube's: magenta through pink, either side of red's wrap-round.
+    /// Retro's caps are blue (about 210 degrees) and its ends purple (about 280), well clear.
+    static func isRetroTubeHue(_ hue: CGFloat, saturation: CGFloat) -> Bool {
+        saturation > 0.2 && (hue >= 300.0/360 || hue <= 15.0/360)
+    }
+
+    static func retroTwinRecoloured(_ image: CGImage) -> CGImage? {
+        let width = image.width, height = image.height
+        guard width > 0, height > 0 else { return nil }
+        var pixels = [UInt8](repeating: 0, count: width*height*4)
+        guard let context = CGContext(data: &pixels, width: width, height: height,
+                                      bitsPerComponent: 8, bytesPerRow: width*4,
+                                      space: CGColorSpaceCreateDeviceRGB(),
+                                      bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)
+        else { return nil }
+        context.draw(image, in: CGRect(x: 0, y: 0, width: width, height: height))
+
+        var limeHue: CGFloat = 0
+        SettingsTableViewCell.prominentTint.getHue(&limeHue, saturation: nil, brightness: nil,
+                                                   alpha: nil)
+        for index in stride(from: 0, to: pixels.count, by: 4) {
+            let alpha = CGFloat(pixels[index + 3])/255
+            guard alpha > 0.01 else { continue }
+            let colour = UIColor(red: CGFloat(pixels[index])/255/alpha,
+                                 green: CGFloat(pixels[index + 1])/255/alpha,
+                                 blue: CGFloat(pixels[index + 2])/255/alpha, alpha: 1)
+            var hue: CGFloat = 0, saturation: CGFloat = 0, brightness: CGFloat = 0
+            colour.getHue(&hue, saturation: &saturation, brightness: &brightness, alpha: nil)
+            guard isRetroTubeHue(hue, saturation: saturation) else { continue }
+            var red: CGFloat = 0, green: CGFloat = 0, blue: CGFloat = 0
+            UIColor(hue: limeHue, saturation: saturation, brightness: brightness, alpha: 1)
+                .getRed(&red, green: &green, blue: &blue, alpha: nil)
+            pixels[index] = UInt8(min(255, max(0, red*alpha*255)))
+            pixels[index + 1] = UInt8(min(255, max(0, green*alpha*255)))
+            pixels[index + 2] = UInt8(min(255, max(0, blue*alpha*255)))
+        }
+        return context.makeImage()
     }
 
     /// Whether a ball is held on the safety bar, or on the mirror: the Retro sticky band shows

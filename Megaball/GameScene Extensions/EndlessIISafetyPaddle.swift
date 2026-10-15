@@ -269,7 +269,7 @@ extension GameScene {
             let split = bar.children.contains { $0.name == GameScene.endlessIISafetyPaddleSegmentName }
             if split {
                 bar.childNode(withName: GameScene.endlessIIRetroTwinDressName)?.removeFromParent()
-            } else if endlessIIDressRetroTwin(bar, colour: GameScene.endlessIIHaloColour) == false,
+            } else if endlessIIDressRetroTwin(bar) == false,
                       bar.texture == nil {
                 bar.texture = endlessIISafetyPaddleDress
                 bar.color = GameScene.endlessIIHaloColour

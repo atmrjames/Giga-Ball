@@ -7138,7 +7138,7 @@ final class RetroTwinDressTests: XCTestCase {
         let bar = SKSpriteNode(texture: scene.paddleRetroTexture.texture, size: scene.paddle.size)
         scene.addChild(bar)
 
-        XCTAssertTrue(scene.endlessIIDressRetroTwin(bar, colour: .orange))
+        XCTAssertTrue(scene.endlessIIDressRetroTwin(bar))
         let dress = try XCTUnwrap(bar.childNode(withName: GameScene.endlessIIRetroTwinDressName)
                                     as? SKSpriteNode)
         XCTAssertEqual(dress.size.height, scene.paddleRetroTexture.size.height, accuracy: 0.01,
@@ -7147,16 +7147,46 @@ final class RetroTwinDressTests: XCTestCase {
                        "and its own share wider than the paddle")
         XCTAssertNil(bar.texture, "the twin's own sprite draws nothing under the dress")
         XCTAssertEqual(bar.size, scene.paddle.size, "and keeps the size that is its geometry")
+        XCTAssertEqual(dress.colorBlendFactor, 0, "Retro's own colours, not a tint over them")
+    }
+
+    /// James, round 386b: "rather than modifying the colours for the retro paddle, can you make
+    /// the central section that is normally magenta, the giga-ball green/yellow colour for the
+    /// mirror and safety paddles."
+    func testOnlyTheMagentaTubeTurnsLime() throws {
+        let original = try XCTUnwrap(UIImage(named: "retroPaddleTexture")?.cgImage)
+        let recoloured = try XCTUnwrap(GameScene.retroTwinRecoloured(original))
+        func colour(_ image: CGImage, x: Int, y: Int) -> UIColor {
+            var pixel = [UInt8](repeating: 0, count: 4)
+            let context = CGContext(data: &pixel, width: 1, height: 1, bitsPerComponent: 8,
+                                    bytesPerRow: 4, space: CGColorSpaceCreateDeviceRGB(),
+                                    bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)!
+            context.draw(image, in: CGRect(x: -x, y: -(image.height - 1 - y),
+                                           width: image.width, height: image.height))
+            let a = max(CGFloat(pixel[3])/255, 0.001)
+            return UIColor(red: CGFloat(pixel[0])/255/a, green: CGFloat(pixel[1])/255/a,
+                           blue: CGFloat(pixel[2])/255/a, alpha: a)
+        }
+        var hue: CGFloat = 0, limeHue: CGFloat = 0
+        SettingsTableViewCell.prominentTint.getHue(&limeHue, saturation: nil, brightness: nil,
+                                                   alpha: nil)
+        colour(recoloured, x: 136, y: 38).getHue(&hue, saturation: nil, brightness: nil, alpha: nil)
+        XCTAssertEqual(hue, limeHue, accuracy: 0.02, "the tube is the lime")
+
+        var before: CGFloat = 0, after: CGFloat = 0
+        colour(original, x: 8, y: 70).getHue(&before, saturation: nil, brightness: nil, alpha: nil)
+        colour(recoloured, x: 8, y: 70).getHue(&after, saturation: nil, brightness: nil, alpha: nil)
+        XCTAssertEqual(after, before, accuracy: 0.01, "and the purple end is left alone")
     }
 
     func testOutsideRetroTheDressComesOff() {
         let scene = retroMayhem()
         let bar = SKSpriteNode(texture: scene.paddleRetroTexture.texture, size: scene.paddle.size)
         scene.addChild(bar)
-        scene.endlessIIDressRetroTwin(bar, colour: .orange)
+        scene.endlessIIDressRetroTwin(bar)
         scene.paddleTexture = SKTexture(imageNamed: "regularPaddle")
 
-        XCTAssertFalse(scene.endlessIIDressRetroTwin(bar, colour: .orange))
+        XCTAssertFalse(scene.endlessIIDressRetroTwin(bar))
         XCTAssertNil(bar.childNode(withName: GameScene.endlessIIRetroTwinDressName))
     }
 
