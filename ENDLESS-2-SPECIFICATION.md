@@ -2985,6 +2985,15 @@ James's play-test list after the round 385d TestFlight, with five screenshots.
   the twins wear it untinted. Made at the original's scale, because a nine-slice draws its caps
   at the picture's natural size and a picture made straight from pixels is three times its size
   in points - the first render's ends were three times too wide.
+- **Round 386c: Ice, Glass and Rainbow the same way.** A sheet of all twelve themes' twins showed
+  the white paddles' lime copies fine and three coloured ones muddy under the tint. James: "do ice,
+  glass and rainbow like that", then of Rainbow, "all different shades of giga-ball green/yellow".
+  `TwinBody` holds the rule per theme - which hues are the body, measured off the art: Ice's blue
+  (200 to 220 degrees, the whole paddle), Glass's teal (170 to 180, its grey highlights left), and
+  Rainbow's seven segments each mapped to its own shade, pale at the red end and dark at the
+  violet, with the last a bigger step down ("the right most 2 blocks ... look the same shade").
+  The body's brightest point is the exact lime and the shading scales from it: keeping each
+  pixel's own brightness had made Ice and Glass khaki. Every other theme keeps the tint.
 - **Retro's sticky band on the safety bar only while it holds a ball** ("showing the retro
   sticky graphic when the ball isn't caught on it"), as the paddle shows it - Retro's band is the
   glow of a held ball, not a face that says "this catches". The mirror's likewise, and in the
@@ -4098,7 +4107,7 @@ James, after the round 358b push: three play-test notes.
 
 | Item | What is known |
 |---|---|
-| **Bricks half a row out after a quit and resume** (round 386) | James, with a screenshot of a resumed Mayhem daily: two white chevrons in the left column, each about four tenths of a row higher than the rows round them, every other brick on its row. Not reproduced. A Gravity brick saved mid-fall was one way to get there and is fixed (saved on its landing row), but a resumed Gravity brick falls on to a row of its own accord, so that is probably not it. Next: which twists the day had, and whether those two were wedges, diamonds or something spinning - a Spinning brick drawn round an off-centre anchor is the other candidate |
+| **Bricks half a row out after a quit and resume** (round 386) | James, with a screenshot of a resumed Mayhem daily: two white chevrons in the left column, each about four tenths of a row higher than the rows round them, every other brick on its row. Not reproduced. A Gravity brick saved mid-fall was one way to get there and is fixed (saved on its landing row), but a resumed Gravity brick falls on to a row of its own accord, so that is probably not it. James, 15 October: "I've seen this several times just on a standard endless mayhem game" - so not a daily twist. Being chased with a round trip of every size, face and behaviour the game makes through a save and a restore |
 | ~~The game view following an iPad or Mac window~~ | **Seen working, 2 October** - James on his iPad: "it's working perfectly" |
 | ~~The settings list keeping its place~~ | **Seen fixed, 2 October**, on his phone and his iPad |
 | ~~Descent's pace~~ | **Settled, round 360** - James: "The Descent pace seemed fine". Three seconds a row stays |
@@ -4116,7 +4125,7 @@ James, after the round 358b push: three play-test notes.
 |---|---|
 | Splash screen: the ball and paddle form the app icon | A future release, James's call in round 385b. Round 100's idea: a small ball-and-paddle graphic above the GIGA-BALL logo on the launch splash, animating in with the glow and settling into the app icon's composition. The icon is a paddle and a lofted ball, so a code attempt is worth one session before falling back to artwork |
 | ~~Global leaderboard lines on the height markers~~ | **Built** - the boards were approved on 21 August 2026, which unblocked the last item here. See "The board comes into the run" in the open queue |
-| Artwork and sound for everything new | §8.5. Deliberately last, while mechanics are still moving |
+| ~~Artwork and sound for everything new~~ | **Nothing left for 1.3** (James, 15 October 2026: "As far as I can see there are no more artworks or sounds due for 1.3"). §8.5 stays the list for whatever 1.4 brings |
 | ~~Ring HUD in Classic and Endless~~ | **Moved to the open queue** - the second play-test round decided the design that kept it here: the old modes keep their tray, order and geometry, and only the indicator becomes the ring. `layoutUnit` never moves, so the brick-size worry dissolves |
 | ~~Wrap-around applying to the paddle, Moving bricks and explosions~~ | **Built**, first time, the way §5.4 wrote it up |
 

@@ -86,7 +86,7 @@ extension GameScene {
         guard gameMode == .endlessII else { return }
         guard childNode(withName: GameScene.endlessIIMirrorPaddleName) == nil else { return }
 
-        let mirror = SKSpriteNode(texture: endlessIIMirrorPaddleDrawnDress,
+        let mirror = SKSpriteNode(texture: endlessIITwinPicture(endlessIIMirrorPaddleDrawnDress),
                                   size: CGSize(width: max(1, paddle.size.width),
                                                height: max(1, paddle.size.height)))
         // Never zero on either axis: `SKPhysicsBody(rectangleOf:)` with an empty rectangle
@@ -105,7 +105,7 @@ extension GameScene {
         // appear small and then jump on its first tick
         mirror.zPosition = paddle.zPosition - 0.1
         mirror.color = GameScene.endlessIIMirrorPaddleColour
-        mirror.colorBlendFactor = 1
+        mirror.colorBlendFactor = endlessIITwinBlend
         // The Giga-Ball lime, and a step behind the real paddle (James, round 180: "the
         // mirrored paddle should be a different colour (Giga-Ball green/yellow) and sit
         // behind the original paddle so it's clear which one follows the tap"). When the
@@ -549,10 +549,10 @@ extension GameScene {
         // position and a size write rather than anything rebuilt
 
         if endlessIIDressRetroTwin(mirror, reflected: true) == false {
-            let drawn = endlessIIMirrorPaddleDrawnDress
+            let drawn = endlessIITwinPicture(endlessIIMirrorPaddleDrawnDress)
             if mirror.texture !== drawn { mirror.texture = drawn }
             mirror.color = GameScene.endlessIIMirrorPaddleColour
-            mirror.colorBlendFactor = 1
+            mirror.colorBlendFactor = endlessIITwinBlend
         }
         // In Retro the picture is a child at the Retro layer's own proportions (round 386); the
         // mirror's own sprite keeps its size, which is its body and its reach

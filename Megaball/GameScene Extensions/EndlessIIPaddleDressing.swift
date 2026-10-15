@@ -595,7 +595,7 @@ extension GameScene {
             surface.addChild(made)
             return made
         }()
-        let lime = GameScene.retroTwinPicture(of: art)
+        let lime = GameScene.twinPicture(of: art, turning: .retro)
         if dress.texture !== lime {
             dress.texture = lime
             dress.centerRect = suffix == nil ? paddleCapRect(for: art)
@@ -628,31 +628,114 @@ extension GameScene {
     /// stay exactly as Retro draws them. Worked out once per picture - the flat paddle, the five
     /// shapes and their Portal versions - and kept.
     static func retroTwinPicture(of texture: SKTexture) -> SKTexture {
-        let key = texture.cacheIdentity
-        if let made = retroTwinPictures[key] { return made }
+        twinPicture(of: texture, turning: .retro)
+    }
+
+    /// Which part of a theme's paddle turns the lime on its twins: the hues that are that
+    /// paddle's body, measured off the art (round 386c). Retro's magenta tube; Ice's blue, which
+    /// is the whole paddle (200 to 220 degrees); Glass's teal (170 to 180), its grey highlights
+    /// left white. A theme with no entry keeps the old tint over the whole picture.
+    enum TwinBody {
+        case retro, ice, glass, rainbow
+
+        func isBody(hue: CGFloat, saturation: CGFloat) -> Bool {
+            guard saturation > 0.2 else { return false }
+            let degrees = hue*360
+            switch self {
+            case .retro: return degrees >= 300 || degrees <= 15
+            case .ice: return degrees >= 190 && degrees < 235
+            case .glass: return degrees >= 155 && degrees < 195
+            case .rainbow: return true
+            }
+        }
+
+        /// Where a Rainbow segment's hue falls along the paddle's run of colours, 0 at the red
+        /// end and 1 at the violet: the seven hues measured off the art, red wrapped round to
+        /// sit before orange, with the hues between them interpolated so an anti-aliased edge
+        /// between two segments is a shade between theirs.
+        static func rainbowShare(ofHue hue: CGFloat) -> CGFloat {
+            var degrees = hue*360
+            if degrees > 300 { degrees -= 360 }
+            let stops: [CGFloat] = [-3, 40, 55, 86, 209, 266, 277]
+            // Each segment's own hue, read across the middle of the picture (round 386c). The
+            // first guesses, ten-degree bins, put indigo and violet so close to the same stop
+            // that the two came out one block
+            guard degrees > stops[0] else { return 0 }
+            for index in 1..<stops.count where degrees <= stops[index] {
+                let within = (degrees - stops[index - 1])/(stops[index] - stops[index - 1])
+                return (CGFloat(index - 1) + within)/CGFloat(stops.count - 1)
+            }
+            return 1
+        }
+
+        /// How bright a Rainbow segment's lime is, by its place in the run: an even step down
+        /// from full at the red end - except the last, which steps down twice as far (James,
+        /// round 386c: "the right most 2 blocks of colour look the same shade. Can you make the
+        /// final colour block a bit darker?"). Indigo and violet are next to each other in hue,
+        /// and the saturation that separates the others had nothing left to separate those two.
+        static func rainbowBrightness(atShare share: CGFloat) -> CGFloat {
+            let stops: [CGFloat] = [1, 0.917, 0.833, 0.75, 0.667, 0.583, 0.4]
+            let place = min(max(share, 0), 1)*CGFloat(stops.count - 1)
+            let lower = Int(place.rounded(.down))
+            guard lower < stops.count - 1 else { return stops[stops.count - 1] }
+            return stops[lower] + (stops[lower + 1] - stops[lower])*(place - CGFloat(lower))
+        }
+    }
+
+    /// The theme's twin rule, if it has one.
+    var endlessIITwinBody: TwinBody? {
+        let prefixes = GameScene.paddleThemePrefixes
+        guard prefixes.indices.contains(paddleSetting) else { return nil }
+        switch prefixes[paddleSetting] {
+        case "ice": return .ice
+        case "glass": return .glass
+        case "rainbow": return .rainbow
+        default: return nil
+        }
+        // Retro's twins are drawn by `endlessIIDressRetroTwin`, which asks for its rule itself
+    }
+
+    /// The picture a twin wears in this theme: the paddle's, with its body turned the lime where
+    /// the theme has a rule for it, and as it is otherwise.
+    func endlessIITwinPicture(_ texture: SKTexture?) -> SKTexture? {
+        guard let texture, let body = endlessIITwinBody else { return texture }
+        return GameScene.twinPicture(of: texture, turning: body)
+    }
+
+    /// How strongly a twin is tinted: not at all where its body has been turned the lime and
+    /// its own colours are the point, fully where it has not (round 386c).
+    var endlessIITwinBlend: CGFloat {
+        endlessIITwinBody != nil ? 0 : 1
+    }
+
+    static func twinPicture(of texture: SKTexture, turning body: TwinBody) -> SKTexture {
+        let key = "\(body) \(texture.cacheIdentity)"
+        if let made = twinPictures[key] { return made }
         let original = texture.cgImage()
         let points = texture.size().width
         let scale = points > 0 ? CGFloat(original.width)/points : 1
-        let made = retroTwinRecoloured(original)
+        let made = twinRecoloured(original, body: body)
             .map { SKTexture(image: UIImage(cgImage: $0, scale: scale, orientation: .up)) }
             ?? texture
-        // At the original's scale, so the picture's natural size is in points as Retro's is. A
+        // At the original's scale, so the picture's natural size is in points as the art's is. A
         // nine-slice draws its caps at the picture's natural width (§8.6), and a picture made
-        // straight from pixels is three times its size in points: the first render had purple
-        // ends three times as wide as the paddle's
-        retroTwinPictures[key] = made
+        // straight from pixels is three times its size in points: the first Retro render had
+        // purple ends three times as wide as the paddle's
+        if twinPictures.count > 96 { twinPictures.removeAll() }
+        // A few dozen at most in a run - five shapes, their Portal versions, a size or two - and
+        // the mirror's drawn-size copies are new pictures at each new width, so the keeping is
+        // bounded rather than left to grow through a long Expand
+        twinPictures[key] = made
         return made
     }
 
-    private static var retroTwinPictures: [String: SKTexture] = [:]
-
-    /// The hues that are the tube's: magenta through pink, either side of red's wrap-round.
-    /// Retro's caps are blue (about 210 degrees) and its ends purple (about 280), well clear.
-    static func isRetroTubeHue(_ hue: CGFloat, saturation: CGFloat) -> Bool {
-        saturation > 0.2 && (hue >= 300.0/360 || hue <= 15.0/360)
-    }
+    private static var twinPictures: [String: SKTexture] = [:]
 
     static func retroTwinRecoloured(_ image: CGImage) -> CGImage? {
+        twinRecoloured(image, body: .retro)
+    }
+
+    static func twinRecoloured(_ image: CGImage, body: TwinBody) -> CGImage? {
         let width = image.width, height = image.height
         guard width > 0, height > 0 else { return nil }
         var pixels = [UInt8](repeating: 0, count: width*height*4)
@@ -663,20 +746,64 @@ extension GameScene {
         else { return nil }
         context.draw(image, in: CGRect(x: 0, y: 0, width: width, height: height))
 
-        var limeHue: CGFloat = 0
-        SettingsTableViewCell.prominentTint.getHue(&limeHue, saturation: nil, brightness: nil,
-                                                   alpha: nil)
-        for index in stride(from: 0, to: pixels.count, by: 4) {
+        var limeHue: CGFloat = 0, limeSaturation: CGFloat = 0, limeBrightness: CGFloat = 0
+        SettingsTableViewCell.prominentTint.getHue(&limeHue, saturation: &limeSaturation,
+                                                   brightness: &limeBrightness, alpha: nil)
+
+        func bodyBrightness(at index: Int) -> CGFloat? {
             let alpha = CGFloat(pixels[index + 3])/255
-            guard alpha > 0.01 else { continue }
+            guard alpha > 0.01 else { return nil }
             let colour = UIColor(red: CGFloat(pixels[index])/255/alpha,
                                  green: CGFloat(pixels[index + 1])/255/alpha,
                                  blue: CGFloat(pixels[index + 2])/255/alpha, alpha: 1)
             var hue: CGFloat = 0, saturation: CGFloat = 0, brightness: CGFloat = 0
             colour.getHue(&hue, saturation: &saturation, brightness: &brightness, alpha: nil)
-            guard isRetroTubeHue(hue, saturation: saturation) else { continue }
+            return body.isBody(hue: hue, saturation: saturation) ? brightness : nil
+        }
+        var brightest: CGFloat = 0
+        for index in stride(from: 0, to: pixels.count, by: 4) {
+            if let brightness = bodyBrightness(at: index) { brightest = max(brightest, brightness) }
+        }
+        guard brightest > 0 else { return context.makeImage() }
+        if body == .rainbow {
+            for index in stride(from: 0, to: pixels.count, by: 4) {
+                let alpha = CGFloat(pixels[index + 3])/255
+                guard alpha > 0.01 else { continue }
+                var hue: CGFloat = 0, saturation: CGFloat = 0
+                UIColor(red: CGFloat(pixels[index])/255/alpha,
+                        green: CGFloat(pixels[index + 1])/255/alpha,
+                        blue: CGFloat(pixels[index + 2])/255/alpha, alpha: 1)
+                    .getHue(&hue, saturation: &saturation, brightness: nil, alpha: nil)
+                guard saturation > 0.2 else { continue }
+                let share = TwinBody.rainbowShare(ofHue: hue)
+                var red: CGFloat = 0, green: CGFloat = 0, blue: CGFloat = 0
+                UIColor(hue: limeHue, saturation: limeSaturation*(0.45 + 0.55*share),
+                        brightness: limeBrightness*TwinBody.rainbowBrightness(atShare: share),
+                        alpha: 1)
+                    .getRed(&red, green: &green, blue: &blue, alpha: nil)
+                pixels[index] = UInt8(min(255, max(0, red*alpha*255)))
+                pixels[index + 1] = UInt8(min(255, max(0, green*alpha*255)))
+                pixels[index + 2] = UInt8(min(255, max(0, blue*alpha*255)))
+            }
+            return context.makeImage()
+            // **Seven shades of the lime, one a segment** (James, round 386c: "For the rainbow,
+            // can we have the coloured segments all different shades of giga-ball green/yellow").
+            // Its stripes are its look, and one lime over all seven would be a plain lime bar -
+            // so each keeps its place in the run and takes its own shade: pale and light at the
+            // red end, deep and dark at the violet, the order the colours already go in
+        }
+        // **The body's brightest point is the lime itself** (round 386c). Keeping each pixel's own
+        // saturation and brightness made Ice and Glass khaki - both paddles are muted, so their
+        // lime was too. Full lime at the brightest point, and every other pixel the same share
+        // of it that it was of the original's brightest, keeps the shading and reads as the
+        // Giga-Ball colour on every theme
+
+        for index in stride(from: 0, to: pixels.count, by: 4) {
+            guard let brightness = bodyBrightness(at: index) else { continue }
+            let alpha = CGFloat(pixels[index + 3])/255
             var red: CGFloat = 0, green: CGFloat = 0, blue: CGFloat = 0
-            UIColor(hue: limeHue, saturation: saturation, brightness: brightness, alpha: 1)
+            UIColor(hue: limeHue, saturation: limeSaturation,
+                    brightness: limeBrightness*brightness/brightest, alpha: 1)
                 .getRed(&red, green: &green, blue: &blue, alpha: nil)
             pixels[index] = UInt8(min(255, max(0, red*alpha*255)))
             pixels[index + 1] = UInt8(min(255, max(0, green*alpha*255)))
@@ -684,6 +811,7 @@ extension GameScene {
         }
         return context.makeImage()
     }
+
 
     /// Whether a ball is held on the safety bar, or on the mirror: the Retro sticky band shows
     /// on a surface only while that surface is holding something, as it does on the paddle.

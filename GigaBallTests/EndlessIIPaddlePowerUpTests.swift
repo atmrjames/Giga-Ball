@@ -7207,6 +7207,68 @@ final class RetroTwinDressTests: XCTestCase {
     }
 }
 
+/// James, round 386c, after a sheet of every theme's twins: Ice, Glass and Rainbow done "like
+/// that" - their own picture with the body turned the Giga-Ball lime rather than a tint over the
+/// whole of it - and Rainbow "all different shades of giga-ball green/yellow".
+final class ThemedTwinTests: XCTestCase {
+
+    private func hue(of image: CGImage, x: Int) -> (hue: CGFloat, brightness: CGFloat) {
+        var pixel = [UInt8](repeating: 0, count: 4)
+        let context = CGContext(data: &pixel, width: 1, height: 1, bitsPerComponent: 8,
+                                bytesPerRow: 4, space: CGColorSpaceCreateDeviceRGB(),
+                                bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)!
+        context.draw(image, in: CGRect(x: -x, y: -(image.height/2),
+                                       width: image.width, height: image.height))
+        let a = max(CGFloat(pixel[3])/255, 0.001)
+        var h: CGFloat = 0, b: CGFloat = 0
+        UIColor(red: CGFloat(pixel[0])/255/a, green: CGFloat(pixel[1])/255/a,
+                blue: CGFloat(pixel[2])/255/a, alpha: 1)
+            .getHue(&h, saturation: nil, brightness: &b, alpha: nil)
+        return (h, b)
+    }
+
+    private var limeHue: CGFloat {
+        var hue: CGFloat = 0
+        SettingsTableViewCell.prominentTint.getHue(&hue, saturation: nil, brightness: nil,
+                                                   alpha: nil)
+        return hue
+    }
+
+    func testIceAndGlassBodiesTurnTheLime() throws {
+        for (name, body) in [("icePaddle", GameScene.TwinBody.ice),
+                             ("glassPaddle", .glass)] {
+            let original = try XCTUnwrap(UIImage(named: name)?.cgImage)
+            let twin = try XCTUnwrap(GameScene.twinRecoloured(original, body: body))
+            XCTAssertEqual(hue(of: twin, x: original.width/2).hue, limeHue, accuracy: 0.02, name)
+        }
+    }
+
+    /// "the right most 2 blocks of colour look the same shade. Can you make the final colour
+    /// block a bit darker?"
+    func testRainbowsSegmentsAreSevenShadesGettingDarker() throws {
+        let original = try XCTUnwrap(UIImage(named: "rainbowPaddle")?.cgImage)
+        let twin = try XCTUnwrap(GameScene.twinRecoloured(original, body: .rainbow))
+        let pitch = original.width/7
+        let shades = (0..<7).map { hue(of: twin, x: pitch/2 + pitch*$0) }
+        for shade in shades {
+            XCTAssertEqual(shade.hue, limeHue, accuracy: 0.02, "every segment is the lime")
+        }
+        for (lighter, darker) in zip(shades, shades.dropFirst()) {
+            XCTAssertGreaterThan(lighter.brightness - darker.brightness, 0.03,
+                                 "each block a shade of its own, darker than the one before")
+        }
+    }
+
+    func testThemesWithoutARuleKeepTheTint() {
+        let scene = GameScene()
+        scene.paddleSetting = GameScene.paddleThemePrefixes.firstIndex(of: "regular") ?? 0
+        XCTAssertNil(scene.endlessIITwinBody)
+        XCTAssertEqual(scene.endlessIITwinBlend, 1, "a white paddle's lime copy is a tint")
+        scene.paddleSetting = GameScene.paddleThemePrefixes.firstIndex(of: "rainbow") ?? 0
+        XCTAssertEqual(scene.endlessIITwinBlend, 0, "its own shades, untinted")
+    }
+}
+
 /// James, round 386: "When split paddle is active, the bounce angle of the ball should be
 /// determined based on where it hits the paddle as if they are individual paddles, not one
 /// long paddle."

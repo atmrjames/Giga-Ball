@@ -115,9 +115,9 @@ extension GameScene {
         // Never zero on either axis: SpriteKit refuses a body built from an empty rectangle
         // and hands back a node with no body at all, which is a safety paddle the ball falls
         // straight through - the kind of failure that looks like the power-up doing nothing
-        let bar = SKSpriteNode(texture: endlessIISafetyPaddleDress, size: size)
+        let bar = SKSpriteNode(texture: endlessIITwinPicture(endlessIISafetyPaddleDress), size: size)
         bar.color = GameScene.endlessIIHaloColour
-        bar.colorBlendFactor = 1
+        bar.colorBlendFactor = endlessIITwinBlend
         bar.centerRect = endlessIIPaddleDressCenterRect
         // The paddle's picture, tinted the Giga-Ball lime, wearing the same nine-slice
         // state the paddle itself is wearing at this moment - see that property's note for
@@ -239,9 +239,9 @@ extension GameScene {
             if bar.size != paddle.size || wantedArt != endlessIISafetyPaddleBodyArt,
                paddle.size.width > 0, paddle.size.height > 0 {
                 bar.size = CGSize(width: paddle.size.width, height: paddle.size.height)
-                bar.texture = endlessIISafetyPaddleDress
+                bar.texture = endlessIITwinPicture(endlessIISafetyPaddleDress)
                 bar.color = GameScene.endlessIIHaloColour
-                bar.colorBlendFactor = 1
+                bar.colorBlendFactor = endlessIITwinBlend
                 bar.centerRect = endlessIIPaddleDressCenterRect
                 bar.physicsBody = endlessIISafetyPaddleBody(size: bar.size)
                 // **Re-dressed as well as resized** (round 224). It took the paddle's picture
@@ -271,9 +271,9 @@ extension GameScene {
                 bar.childNode(withName: GameScene.endlessIIRetroTwinDressName)?.removeFromParent()
             } else if endlessIIDressRetroTwin(bar) == false,
                       bar.texture == nil {
-                bar.texture = endlessIISafetyPaddleDress
+                bar.texture = endlessIITwinPicture(endlessIISafetyPaddleDress)
                 bar.color = GameScene.endlessIIHaloColour
-                bar.colorBlendFactor = 1
+                bar.colorBlendFactor = endlessIITwinBlend
                 bar.centerRect = endlessIIPaddleDressCenterRect
             }
             // **The Retro picture at Retro's proportions** (James, round 386: "The retro mirror
@@ -321,9 +321,9 @@ extension GameScene {
         guard let split = endlessIISafetyPaddleSegmentCentres(span: bar.size.width) else {
             if pieces.isEmpty == false {
                 pieces.forEach { $0.removeFromParent() }
-                bar.texture = endlessIISafetyPaddleDress
+                bar.texture = endlessIITwinPicture(endlessIISafetyPaddleDress)
                 bar.color = GameScene.endlessIIHaloColour
-                bar.colorBlendFactor = 1
+                bar.colorBlendFactor = endlessIITwinBlend
                 bar.centerRect = endlessIIPaddleDressCenterRect
                 bar.physicsBody = endlessIISafetyPaddleBody(size: bar.size)
             }
@@ -350,10 +350,10 @@ extension GameScene {
             // The whole bar's own face goes with it - each piece grows its own below
 
             for centre in split.centres {
-                let piece = SKSpriteNode(texture: endlessIISafetyPaddleDress, size: size)
+                let piece = SKSpriteNode(texture: endlessIITwinPicture(endlessIISafetyPaddleDress), size: size)
                 piece.name = GameScene.endlessIISafetyPaddleSegmentName
                 piece.color = GameScene.endlessIIHaloColour
-                piece.colorBlendFactor = 1
+                piece.colorBlendFactor = endlessIITwinBlend
                 piece.centerRect = endlessIIPaddleDressCenterRect
                 piece.position = CGPoint(x: centre, y: 0)
                 piece.zPosition = 0.1
