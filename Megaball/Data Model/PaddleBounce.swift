@@ -554,7 +554,7 @@ extension PaddleOutline {
                       height: Int((size.height*10).rounded()))
         if let kept = cache[key] { return kept.copy() as? SKPhysicsBody }
 
-        guard let image = UIImage(named: texture.description.name)?.cgImage
+        guard let image = UIImage(named: texture.description.textureAssetName)?.cgImage
                 ?? texture.cgImage() as CGImage? else { return nil }
         let pieces = pieces(of: image, size: size)
         guard pieces.isEmpty == false else { return nil }
@@ -608,7 +608,7 @@ extension PaddleOutline {
                       height: Int((size.height*10).rounded()))
         if let kept = profiles[key] { return kept }
 
-        guard let image = UIImage(named: texture.description.name)?.cgImage
+        guard let image = UIImage(named: texture.description.textureAssetName)?.cgImage
                 ?? texture.cgImage() as CGImage? else { return nil }
         let run = boundaries(of: image, size: size).map { (x: $0.x, top: $0.top) }
         guard run.count > 1 else { return nil }
@@ -725,10 +725,10 @@ extension PaddleOutline {
     static func empty() { cache.removeAll(); profiles.removeAll() }
 }
 
-private extension String {
+extension String {
     /// The asset name inside an `SKTexture`'s description, which reads
     /// `<SKTexture> 'regularPaddleConvex' (225 x 45)`.
-    var name: String {
+    var textureAssetName: String {
         guard let start = firstIndex(of: "'"),
               let end = self[index(after: start)...].firstIndex(of: "'") else { return self }
         return String(self[index(after: start)..<end])

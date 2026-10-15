@@ -7388,6 +7388,35 @@ final class PaddleExitStandInTests: XCTestCase {
         XCTAssertEqual(scene.children.filter { $0.name == GameScene.paddleStandInName }.count, 1,
                        "frozen once: the run's end and the exit do not make two")
     }
+
+    /// James, round 386d: "The game crashed when I had a shaped paddle and lost the ball for a
+    /// game over." A shaped paddle wears the polygon traced from its picture, and `copy()`
+    /// copied that body too: PhysicsKit died inside `-[PKPhysicsBody copyWithZone:]`. The full
+    /// suite met it as well, in a resume test that lost its ball with a shape on.
+    func testAShapedPaddleIsTakenAwayWithoutCopyingItsTracedBody() throws {
+        let scene = GameScene()
+        scene.addChild(scene.paddle)
+        let shaped = SKTexture(imageNamed: "regularPaddleConcave")
+        let size = CGSize(width: 91.8, height: 15.9)
+        scene.paddle.texture = shaped
+        scene.paddle.size = size
+        scene.paddle.physicsBody = try XCTUnwrap(PaddleOutline.body(for: shaped, size: size),
+                                                 "the body the game itself gives a concave paddle")
+        scene.paddleLaser.addChild(SKShapeNode(rectOf: CGSize(width: 4, height: 4)))
+        scene.addChild(scene.paddleLaser)
+
+        scene.freezeThePaddleForItsExit()
+        let copies = scene.children.filter { $0.name == GameScene.paddleStandInName }
+        XCTAssertEqual(copies.count, 2, "the paddle and the layer on it")
+        let paddle = try XCTUnwrap(copies.first as? SKSpriteNode)
+        XCTAssertTrue(paddle.texture === shaped)
+        XCTAssertEqual(paddle.frame.size.width, size.width, accuracy: 0.01)
+        XCTAssertEqual(paddle.frame.size.height, size.height, accuracy: 0.01)
+        for copy in copies {
+            XCTAssertNil(copy.physicsBody)
+            XCTAssertEqual(copy.children.count, copy === paddle ? 0 : 1, "children come too")
+        }
+    }
 }
 
 /// James, round 386: "The ball landing marker can be a bit jittery and flashy."
@@ -7429,5 +7458,53 @@ final class ShapedPaddleWarmTests: XCTestCase {
         XCTAssertTrue(PaddleOutline.isKept(SKTexture(imageNamed: name), size: size),
                       "kept under the name and size the shape will be put on at")
         XCTAssertNotNil(PaddleOutline.profile(for: SKTexture(imageNamed: name), size: size))
+    }
+
+    /// The first hit's hitch (James, round 386d: "Game still hesitates ... on the first ball hit
+    /// with a shaped paddle"). The paddle does not wear the picture the outline was read ahead
+    /// for: it wears that picture's drawn-size copy, which is a picture of its own to the
+    /// outline's keeping, so the first hit traced the shape again - 13 to 20 milliseconds. The
+    /// hit asks about the original instead.
+    func testAPaddleWearingItsDrawnSizeCopyFindsTheOutlineReadAhead() throws {
+        let size = CGSize(width: 91.8, height: 18.4)
+        let name = "regularPaddleConvex"
+        let prepared = try XCTUnwrap(PaddleOutline.prepare(named: name, size: size))
+        PaddleOutline.store(prepared, for: SKTexture(imageNamed: name), size: size)
+        let worn = GameScene.atDrawnHeight(SKTexture(imageNamed: name), height: size.height)
+
+        XCTAssertFalse(PaddleOutline.isKept(worn, size: size),
+                       "asked about the copy, nothing was read ahead - which was the hitch")
+        XCTAssertTrue(PaddleOutline.isKept(try XCTUnwrap(GameScene.originalPaddleArt(worn)),
+                                           size: size),
+                      "asked about the picture it was copied from, it was")
+    }
+
+    /// The arrival's hitch (James, round 386d: "Game still hesitates when a shaped paddle
+    /// power-up is applied"). A shape changes the laser and sticky layers' pictures too, and
+    /// each wanted a drawn-size copy made on that frame - 10 to 26 milliseconds apiece, because
+    /// the pixels were read back off the graphics card. They come from the catalogue now, well
+    /// under a millisecond, and this says they are still the same pixels.
+    func testADrawnSizeCopyIsThePicturesOwnPixels() throws {
+        for name in ["regularLasersConvex", "regularStickyWedgeLeft", "retroPaddleTexture"] {
+            let original = SKTexture(imageNamed: name)
+            let height = original.size().height*1.37
+            let copy = GameScene.atDrawnHeight(original, height: height)
+            XCTAssertEqual(copy.size().height, height, accuracy: 0.01, name)
+            XCTAssertEqual(copy.size().width, original.size().width*1.37, accuracy: 0.01, name)
+            XCTAssertEqual(pixels(of: copy.cgImage()), pixels(of: original.cgImage()), name)
+        }
+    }
+
+    private func pixels(of image: CGImage) -> [UInt8] {
+        var bytes = [UInt8](repeating: 0, count: image.width*image.height*4)
+        bytes.withUnsafeMutableBytes { buffer in
+            let context = CGContext(data: buffer.baseAddress, width: image.width,
+                                    height: image.height, bitsPerComponent: 8,
+                                    bytesPerRow: image.width*4,
+                                    space: CGColorSpaceCreateDeviceRGB(),
+                                    bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)
+            context?.draw(image, in: CGRect(x: 0, y: 0, width: image.width, height: image.height))
+        }
+        return bytes
     }
 }

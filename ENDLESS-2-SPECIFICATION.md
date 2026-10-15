@@ -2964,6 +2964,57 @@ testers:
   falling power-up's position by `brickWidth`, so a bare `GameScene()` with a power-up on
   screen traps converting NaN to Int. A real scene is always laid out before play.
 
+**Round 386e: the shaped paddle's last two hitches, and the game-over crash.**
+
+James: "Game still hesitates when a shaped paddle power-up is applied and on the first ball hit
+with a shaped paddle. The game crashed when I had a shaped paddle and lost the ball for a game
+over." Round 386 read the outlines ahead, which was right and was not reaching either moment.
+
+- **The crash.** Round 386 took the paddle away at the end as a `copy()` of itself, and `copy()`
+  copies the physics body too. A shaped paddle wears the polygon traced from its picture, and
+  PhysicsKit dies copying it - `addPolygonFromPath` inside `-[PKPhysicsBody copyWithZone:]`, in
+  James's crash and again in a full suite run, in a resume test that lost its ball with a shape
+  on. Stripping the body off afterwards was too late. `GameScene.lookAlike(of:)` builds the
+  stand-in afresh from sprites and shapes, with no body to copy; a sweep of four themes by every
+  shape, with the mirror and safety bar running, ended all 24 runs cleanly.
+- **The first hit** (13 to 20 ms). The paddle wears a drawn-size copy of its art (round 379),
+  which is made from pixels and has no name, so every outline lookup missed the outlines read
+  ahead under the picture's name and traced the copy afresh. The four places that ask about the
+  outline - the surface height, both launch angles and the body - ask about
+  `originalPaddleArt` instead. Now 0.2 to 0.6 ms.
+- **The arrival** (23 to 35 ms). A shape changes three pictures at once, the paddle's, the laser
+  layer's and the sticky layer's, and each wanted its drawn-size copy that frame. Making a copy
+  read the picture back off the graphics card at 10 to 26 ms apiece; it reads the catalogue's own
+  pixels now, under a millisecond, and the warm-up makes the paddle's copy ahead as well. The
+  frame a shape arrives on now spends about 1.3 ms on it.
+
+`ShapedPaddleWarmTests` checks that a copy finds the outline read ahead for its original and is
+the original's own pixels; `PaddleExitStandInTests` takes away a concave paddle wearing the body
+the game gives it.
+
+The full suite named `testEveryKindOfBrickComesBackWhereItWas` twice running with no assertion
+behind it. The first time was this crash, in a binary built before the fix; the second had no
+crash report at all, and the test turned out to take 102 seconds alone - two fresh scenes for
+each of 138 cases - and the host was killed partway through. One pair of scenes per brick size,
+cleared between cases, takes 4 seconds.
+
+**Round 386d: shaped bricks come back drawn where they were.**
+
+James: "I've seen this several times just on a standard endless mayhem game", of bricks "not
+aligned with rows on return from resume screen". Looked at closely, his screenshot was one Square
+diamond, not two chevrons out of line - and a render of shaped bricks before and after a restore
+showed the fault: Square convex and wedge faces half a row low, normal-size wedges off to one side.
+
+A face hides its brick's own rectangle by shrinking the sprite into a patch tucked inside the
+silhouette, and that patch is not centred on it. `resumedAnchor` worked the cell's centre back from
+the sprite on the rule that "every shrink holds the centre" - untrue for exactly these bricks - so
+the saved anchor put the restored face round the wrong centre. It reads the face node's position
+now, which sits on the cell's centre by construction. `testAShapedBrickComesBackDrawnWhereItWas`
+runs in a real scene, because the bare test scene does not hide the sprite the way the game does -
+a round trip of every size, face and behaviour there passed with the fault still in, and is kept as
+`testEveryKindOfBrickComesBackWhereItWas` for the node, the frame and now the face. The real-scene
+test fails without the fix (faces 4.6 to 9.1 points off) and passes with it.
+
 **Round 386: Retro's twins redrawn, the paddle leaves as it was, the line knows where the paddle is, and the outlines read ahead.**
 
 James's play-test list after the round 385d TestFlight, with five screenshots.
@@ -4107,7 +4158,7 @@ James, after the round 358b push: three play-test notes.
 
 | Item | What is known |
 |---|---|
-| **Bricks half a row out after a quit and resume** (round 386) | James, with a screenshot of a resumed Mayhem daily: two white chevrons in the left column, each about four tenths of a row higher than the rows round them, every other brick on its row. Not reproduced. A Gravity brick saved mid-fall was one way to get there and is fixed (saved on its landing row), but a resumed Gravity brick falls on to a row of its own accord, so that is probably not it. James, 15 October: "I've seen this several times just on a standard endless mayhem game" - so not a daily twist. Being chased with a round trip of every size, face and behaviour the game makes through a save and a restore |
+| ~~**Bricks half a row out after a quit and resume**~~ | **Fixed, round 386d** - see that round. It was not the bricks but their faces: a shaped brick's drawing came back round the wrong centre |
 | ~~The game view following an iPad or Mac window~~ | **Seen working, 2 October** - James on his iPad: "it's working perfectly" |
 | ~~The settings list keeping its place~~ | **Seen fixed, 2 October**, on his phone and his iPad |
 | ~~Descent's pace~~ | **Settled, round 360** - James: "The Descent pace seemed fine". Three seconds a row stays |

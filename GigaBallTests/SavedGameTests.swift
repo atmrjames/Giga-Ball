@@ -986,6 +986,86 @@ final class SavedMayhemFieldTests: XCTestCase {
         XCTAssertTrue(icon?.texture === resumed.endlessIIPowerUpTexture(33))
     }
 
+    /// James, round 386: bricks "not aligned with rows on return from resume screen after app
+    /// quit", and then: "I've seen this several times just on a standard endless mayhem game."
+    /// Every size the game makes, wearing every face and behaviour it can, saved and brought back:
+    /// the node and the drawing come back where they were.
+    func testEveryKindOfBrickComesBackWhereItWas() {
+        var failures: [String] = []
+        let sizes: [BrickSize] = [.normal, .big, .square]
+        let faces: [EndlessIIStyle?] = [nil, .convex, .concave, .wedge, .diamond]
+        let behaviours: [EndlessIIStyle?] = [nil, .rounded, .spinning, .flashing, .breathing,
+                                             .gravity, .moving, .directional, .fixed, .portal]
+        // **One pair of scenes for each size, cleared between cases** (round 386e). A fresh
+        // pair for every case was 276 scenes and 102 seconds, and the full suite's host was
+        // killed partway through it twice running - no assertion, no crash report, just a test
+        // that took longer than the harness would wait
+        func clear(_ scene: GameScene) {
+            var bricks: [SKNode] = []
+            scene.enumerateChildNodes(withName: BrickCategoryName) { node, _ in bricks.append(node) }
+            bricks.forEach { $0.removeFromParent() }
+        }
+        for size in sizes {
+            let scene = mayhem()
+            let resumed = mayhem()
+            for face in faces {
+                if let face, face.suits(size) == false { continue }
+                for behaviour in behaviours {
+                    if let behaviour {
+                        if behaviour.suitsAnyBrickOf(size) == false { continue }
+                        if let face, face.stacksWith(behaviour) == false { continue }
+                    }
+                    clear(scene)
+                    clear(resumed)
+                    let rowY: CGFloat = 100
+                    let node: SKSpriteNode
+                    switch size {
+                    case .big: node = scene.endlessIIMakeBig(leftColumn: 3, rowY: rowY)
+                    case .square: node = scene.endlessIIMakeSquare(column: 3, rowY: rowY)
+                    default: node = brick(in: scene, x: -40, y: rowY)
+                    }
+                    if let behaviour { scene.applyEndlessIIStyle(behaviour, to: node) }
+                    if let face { scene.applyEndlessIIStyle(face, to: node) }
+                    let before = node.calculateAccumulatedFrame()
+                    let faceBefore = node.childNode(withName: GameScene.brickFaceName)
+                    let record = scene.savedBrick(for: node, texture: 0, colour: 100,
+                                                  restingY: rowY)
+
+                    var save = emptySave()
+                    save.endlessIIBricks = [record]
+                    resumed.savedGame = save
+                    _ = resumed.resumeEndlessIIBricks()
+                    var back: SKSpriteNode?
+                    resumed.enumerateChildNodes(withName: BrickCategoryName) { found, _ in
+                        back = found as? SKSpriteNode
+                    }
+                    let label = "\(size) \(face?.rawValue ?? "-") \(behaviour?.rawValue ?? "-")"
+                    guard let back else { failures.append("\(label): gone"); continue }
+                    let after = back.calculateAccumulatedFrame()
+                    if abs(back.position.y - rowY) > 0.5
+                        || abs(after.midY - before.midY) > 0.5
+                        || abs(after.height - before.height) > 0.5 {
+                        failures.append("\(label): node \(back.position.y) drawn \(before.midY)->\(after.midY) h \(before.height)->\(after.height)")
+                    }
+                    if let faceBefore {
+                        let faceAfter = back.childNode(withName: GameScene.brickFaceName)
+                        let moved = hypot((faceAfter?.position.x ?? .infinity) - faceBefore.position.x,
+                                          (faceAfter?.position.y ?? .infinity) - faceBefore.position.y)
+                        if moved > 0.5 || faceAfter?.xScale != faceBefore.xScale
+                            || faceAfter?.yScale != faceBefore.yScale {
+                            failures.append("\(label): face \(faceBefore.position)->\(faceAfter?.position ?? .zero)")
+                        }
+                        // **The face, not only the frame** (round 386): a restored face drawn
+                        // round the wrong centre left the brick's overall frame where it was,
+                        // and this test passed while James's field came back with shapes off
+                        // their rows. The face's own centre and its way round are what show
+                    }
+                }
+            }
+        }
+        XCTAssertEqual(failures, [], failures.joined(separator: "\n"))
+    }
+
     func testASaveWithoutASideStillRestoresADirectionalBrick() {
         // Optional, so saves written before round 174 restore as they did - with a rolled side
         let scene = mayhem()

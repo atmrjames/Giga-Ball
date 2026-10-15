@@ -3618,11 +3618,20 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     func paddleSurfaceHeight(atOffsetFromCentre offset: CGFloat) -> CGFloat {
         let reach = ball.size.width/2
         guard endlessIIPaddleShapeArtName != nil,
-              let texture = paddle.texture,
+              let texture = GameScene.originalPaddleArt(paddle.texture),
               let top = PaddleOutline.highest(for: texture, size: paddle.size,
                                               from: offset - reach, to: offset + reach)
         else { return paddle.size.height/2 }
         return top
+        // **Asked of the shape's own picture, not the copy the paddle wears** (James, round
+        // 386d: "Game still hesitates when a shaped paddle power-up is applied and on the first
+        // ball hit with a shaped paddle"). The paddle wears a drawn-size copy of its art
+        // (`atDrawnHeight`, round 379), which is made from pixels and has no name - so its
+        // outline was read afresh the first time a ball landed, the copy's pixels pulled back
+        // from the GPU to do it: 13 to 20 milliseconds of the first hit, all of it here, and
+        // none of it reaching the outlines `warmTheShapedPaddleOutlines` had read ahead under the
+        // picture's name. The copy is the same picture drawn smaller, so its outline is the
+        // original's at the same size
         // **The highest point under the ball's own width, not the point under its centre.** The
         // first version asked for the height directly beneath, and round 232's own test caught
         // it: every one of these faces climbs within six points of anywhere, so a ball resting
@@ -4472,7 +4481,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     /// the end of a level ends them on the frame its exit starts, so the paddle was always put
     /// back to plain first and taken away second.
     ///
-    /// So the exit takes away a copy instead. Each visible part is copied where it stands, with
+    /// So the exit takes away a copy instead. Each visible part is redrawn where it stands, with
     /// its children and without its physics, and the real paddle is hidden behind the copies -
     /// free to be reset however the rest of the game likes, out of sight. Called again by the
     /// exit itself, where it does nothing if the run's end has already frozen it.
@@ -4483,13 +4492,56 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         if let glow = childNode(withName: GameScene.paddleGlowName) { parts.append(glow) }
         for part in parts where part.parent === self && part.isHidden == false
             && part.alpha > 0.01 {
-            guard let copy = part.copy() as? SKNode else { continue }
-            copy.removeAllActions()
-            GameScene.removePhysics(from: copy)
+            let copy = GameScene.lookAlike(of: part)
             copy.name = GameScene.paddleStandInName
             addChild(copy)
             part.isHidden = true
         }
+        // **Drawn afresh, never `copy()`'d** (James, round 386d: "The game crashed when I had a
+        // shaped paddle and lost the ball for a game over"). `copy()` copies a node's physics
+        // body as well, and PhysicsKit crashes copying the polygon body a shaped paddle wears -
+        // `addPolygonFromPath` inside `-[PKPhysicsBody copyWithZone:]`, reproduced on the
+        // simulator with a concave paddle. Taking the body off afterwards was too late; the copy
+        // had already died making it. The stand-in only has to look like the paddle
+    }
+
+    /// A node that looks like this one - picture, size, colour, place, and the same of its
+    /// children - and has no physics and no actions. Sprites and shapes, which is everything
+    /// the paddle and its layers are made of.
+    static func lookAlike(of node: SKNode) -> SKNode {
+        let made: SKNode
+        if let sprite = node as? SKSpriteNode {
+            let twin = SKSpriteNode(texture: sprite.texture, color: sprite.color, size: .zero)
+            twin.anchorPoint = sprite.anchorPoint
+            twin.centerRect = sprite.centerRect
+            twin.colorBlendFactor = sprite.colorBlendFactor
+            twin.blendMode = sprite.blendMode
+            twin.size = CGSize(width: sprite.size.width/(sprite.xScale == 0 ? 1 : sprite.xScale),
+                               height: sprite.size.height/(sprite.yScale == 0 ? 1 : sprite.yScale))
+            // The size before the scale, so the scale below is applied once (§8.6)
+            made = twin
+        } else if let shape = node as? SKShapeNode {
+            let twin = SKShapeNode()
+            twin.path = shape.path
+            twin.fillColor = shape.fillColor
+            twin.strokeColor = shape.strokeColor
+            twin.lineWidth = shape.lineWidth
+            twin.glowWidth = shape.glowWidth
+            twin.fillTexture = shape.fillTexture
+            twin.blendMode = shape.blendMode
+            made = twin
+        } else {
+            made = SKNode()
+        }
+        made.position = node.position
+        made.zPosition = node.zPosition
+        made.zRotation = node.zRotation
+        made.xScale = node.xScale
+        made.yScale = node.yScale
+        made.alpha = node.alpha
+        made.isHidden = node.isHidden
+        for child in node.children { made.addChild(lookAlike(of: child)) }
+        return made
     }
 
     /// Takes the frozen copies away the way the paddle has always gone: a beat, then squeezed
@@ -4511,11 +4563,6 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
             part.isHidden = true
         }
         childNode(withName: GameScene.paddleGlowName)?.isHidden = true
-    }
-
-    private static func removePhysics(from node: SKNode) {
-        node.physicsBody = nil
-        node.children.forEach { removePhysics(from: $0) }
     }
 
     func ballLostAnimation(_ lost: SKSpriteNode? = nil) {
@@ -7911,7 +7958,14 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		// A picture made from image data rather than the catalogue describes itself as
 		// `<data>`, so two of them would share a name - those are kept by object instead
 		if let kept = drawnSizeArt[key] { return kept }
-		let image = texture.cgImage()
+		// **The catalogue's pixels where there are some** (James, round 386d: "Game still
+		// hesitates when a shaped paddle power-up is applied"). `texture.cgImage()` reads the
+		// picture back off the graphics card: 10 to 26 milliseconds on the simulator, and a
+		// shape changes three pictures at once - the paddle's, the laser layer's and the
+		// sticky layer's. `UIImage(named:)` is the same pixels at under a millisecond. A
+		// picture made from data has no name to look up, and still reads back
+		let image = UIImage(named: texture.description.textureAssetName)?.cgImage
+			?? texture.cgImage()
 		let scale = CGFloat(image.height)/height
 		guard scale > 0 else { return texture }
 		let made = SKTexture(image: UIImage(cgImage: image, scale: scale, orientation: .up))

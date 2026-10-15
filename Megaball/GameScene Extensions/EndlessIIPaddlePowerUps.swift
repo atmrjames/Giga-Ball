@@ -521,6 +521,12 @@ extension GameScene {
                 guard let prepared = PaddleOutline.prepare(named: name, size: size) else { continue }
                 DispatchQueue.main.async {
                     PaddleOutline.store(prepared, for: SKTexture(imageNamed: name), size: size)
+                    _ = GameScene.atDrawnHeight(SKTexture(imageNamed: name), height: size.height)
+                    // **And the copy the paddle will wear** (round 386d). A shape goes on at
+                    // its picture's grown height, and `keepThePaddleArtAtItsDrawnSize` makes a
+                    // copy of the art at that height. That cost 29 milliseconds until the copies
+                    // were made from the catalogue rather than read back off the graphics card,
+                    // and is under one now; made here, it costs the arrival nothing at all
                 }
             }
         }
@@ -630,7 +636,11 @@ extension GameScene {
         guard let texture = paddle.texture, let old = paddle.physicsBody else { return }
 
         let shaped = endlessIIPaddleShapeArtName != nil
-        let body = (shaped ? PaddleOutline.body(for: texture, size: paddle.size) : nil)
+        let body = (shaped ? PaddleOutline.body(for: GameScene.originalPaddleArt(texture) ?? texture,
+                                                size: paddle.size) : nil)
+        // The shape's own picture rather than the drawn-size copy the paddle wears, so the
+        // outline read ahead under its name is the one found (round 386d) - see
+        // `paddleSurfaceHeight`
             ?? TracedBodyCache.body(texture: texture, size: paddle.size)
             ?? SKPhysicsBody(rectangleOf: paddle.size)
         // **A shaped paddle's outline is computed; a plain one's is traced.**
@@ -675,7 +685,8 @@ extension GameScene {
     /// face's normal is straight up everywhere, which is not the paddle's launch rule, so the
     /// flat paddle never reaches the face at all.
     func endlessIIShapedLaunchAngle(for subject: SKSpriteNode) -> Double? {
-        guard endlessIIShapeOwnsTheBounce, let texture = paddle.texture else { return nil }
+        guard endlessIIShapeOwnsTheBounce,
+              let texture = GameScene.originalPaddleArt(paddle.texture) else { return nil }
         return PaddleOutline.launchAngle(for: texture, size: paddle.size,
                                          atOffsetFromCentre: subject.position.x - paddle.position.x,
                                          ballRadius: subject.size.width/2,

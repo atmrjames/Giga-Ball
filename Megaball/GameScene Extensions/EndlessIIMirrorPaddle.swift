@@ -761,7 +761,8 @@ extension GameScene {
     /// The launch angle off a shaped twin: the paddle's face reflected, so the angle off the
     /// spot opposite, turned the other way.
     func endlessIIMirrorShapedLaunchAngle(for subject: SKSpriteNode) -> Double? {
-        guard endlessIIShapeOwnsTheBounce, let texture = paddle.texture,
+        guard endlessIIShapeOwnsTheBounce,
+              let texture = GameScene.originalPaddleArt(paddle.texture),
               let offset = endlessIIMirrorOffset(of: subject) else { return nil }
         let across = CGFloat(offset)*paddle.size.width/2
         guard let angle = PaddleOutline.launchAngle(for: texture, size: paddle.size,

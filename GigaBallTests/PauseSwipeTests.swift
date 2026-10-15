@@ -552,6 +552,63 @@ final class SceneTouchTests: XCTestCase {
         XCTAssertFalse(scene.ballIsOnPaddle, "held more than ten seconds after the tap")
     }
 
+    /// James, round 386: bricks "not aligned with rows on return from resume screen after app
+    /// quit", "several times just on a standard endless mayhem game". A face hides its brick's
+    /// own rectangle in a patch tucked inside the silhouette, off its centre, and the save worked
+    /// the cell's centre back from that patch - so the restored face was drawn half a row low on
+    /// a Square brick and off to one side on a wedge. In a real scene, because that is where the
+    /// artwork and the hiding patch are.
+    func testAShapedBrickComesBackDrawnWhereItWas() throws {
+        let scene = try playing(.endlessII)
+        let rowY = scene.yBrickOffsetEndless - scene.brickHeight*6
+        var cases: [(SKSpriteNode, CGPoint, CGFloat, CGFloat)] = []
+        var made: [SKSpriteNode] = []
+        let square = scene.endlessIIMakeSquare(column: 1, rowY: rowY)
+        scene.applyEndlessIIStyle(.diamond, to: square)
+        made.append(square)
+        // Square diamond: the brick in James's screenshot, two rows tall
+        for (index, face) in [EndlessIIStyle.convex, .wedge, .diamond].enumerated() {
+            let normal = SKSpriteNode(texture: scene.brickNormalTexture)
+            normal.size = CGSize(width: scene.brickWidth, height: scene.brickHeight)
+            normal.position = CGPoint(x: -scene.gameWidth/2 + scene.brickWidth*(CGFloat(3 + index*2) + 0.5),
+                                      y: rowY)
+            normal.color = scene.brickWhite
+            normal.colorBlendFactor = 1
+            normal.name = BrickCategoryName
+            scene.addChild(normal)
+            scene.applyEndlessIIStyle(face, to: normal)
+            made.append(normal)
+        }
+        // The shapes the game makes: Convex and Wedge come in the normal size only
+        for brick in made {
+            let shape = try XCTUnwrap(brick.childNode(withName: GameScene.brickFaceName))
+            cases.append((brick, shape.position, shape.xScale, shape.yScale))
+        }
+        for (brick, centre, xScale, yScale) in cases {
+            let record = scene.savedBrick(for: brick, texture: 0, colour: 100,
+                                          restingY: brick.position.y)
+            scene.enumerateChildNodes(withName: BrickCategoryName) { node, _ in node.removeFromParent() }
+            var save = try XCTUnwrap(scene.savedGame ?? {
+                scene.saveCurrentGame(); return SavedGame.load(from: scene.defaults) }())
+            save.endlessIIBricks = [record]
+            scene.savedGame = save
+            XCTAssertTrue(scene.resumeEndlessIIBricks())
+            var back: SKSpriteNode?
+            scene.enumerateChildNodes(withName: BrickCategoryName) { node, _ in
+                if abs(node.position.x - brick.position.x) < 1, abs(node.position.y - brick.position.y) < 1 {
+                    back = node as? SKSpriteNode
+                }
+            }
+            // By where it was: a field emptied for the test may start a new row as it resumes
+            let shape = try XCTUnwrap(back?.childNode(withName: GameScene.brickFaceName))
+            XCTAssertEqual(shape.position.x, centre.x, accuracy: 0.5, "\(record.face ?? "")")
+            XCTAssertEqual(shape.position.y, centre.y, accuracy: 0.5,
+                           "\(record.face ?? "") drawn off its row after the restore")
+            XCTAssertEqual(shape.xScale, xScale, "\(record.face ?? "") turned round")
+            XCTAssertEqual(shape.yScale, yScale, "\(record.face ?? "") turned over")
+        }
+    }
+
     /// Touching the pause button pauses.
     func testThePauseButtonPauses() throws {
         let scene = try playing()

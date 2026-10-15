@@ -44,9 +44,19 @@ extension GameScene {
     func resumedAnchor(of sprite: SKSpriteNode) -> CGPoint {
         let cell = endlessIIFieldSize(of: sprite)
         guard cell.width > 0, cell.height > 0 else { return sprite.anchorPoint }
-        let centre = CGPoint(x: (0.5 - sprite.anchorPoint.x)*sprite.size.width,
-                             y: (0.5 - sprite.anchorPoint.y)*sprite.size.height)
+        let centre = sprite.childNode(withName: GameScene.brickFaceName)?.position
+            ?? CGPoint(x: (0.5 - sprite.anchorPoint.x)*sprite.size.width,
+                       y: (0.5 - sprite.anchorPoint.y)*sprite.size.height)
         return CGPoint(x: 0.5 - centre.x/cell.width, y: 0.5 - centre.y/cell.height)
+        // **A shaped brick's centre is its face's** (James, round 386: "brick not aligned with
+        // rows on return from resume screen", then "I've seen this several times just on a
+        // standard endless mayhem game"). A face hides the brick's own rectangle by shrinking
+        // the sprite into a patch tucked inside the silhouette - and that patch is not centred
+        // on it, so "every shrink holds the centre" was untrue for exactly these bricks. The
+        // save worked the cell's anchor back from the patch, and the restored face was drawn
+        // round the wrong centre: a Square brick's half a row low, a wedge's off to one side,
+        // read on the field as bricks off their rows. The face node sits on the cell's centre
+        // by construction (`endlessIIBrickCentre`), so it is asked instead
     }
 
     func savedBrick(for sprite: SKSpriteNode, texture: Int, colour: Int,
