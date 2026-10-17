@@ -1483,6 +1483,37 @@ final class PopUpWithAThirdAnswerTests: XCTestCase {
         return host
     }
 
+    /// Found in the round 389 release sweep, on the "Today's Twists" pop-up: its one OK came
+    /// out a muddy olive beside the bright lime OK of every two-button confirm. A one-button
+    /// pop-up's button is the positive action and is meant to look like the confirm - it was
+    /// given the lime glass and then the pale glass over it as well.
+    func testALoneButtonIsDressedAsTheConfirmIs() throws {
+        let host = UIViewController()
+        let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 402, height: 874))
+        window.rootViewController = host
+        window.isHidden = false
+        GigaBallAlert.show(on: host, title: "Today's Twists", message: "Rainbow Theme",
+                           symbol: "dice")
+        host.view.setNeedsLayout()
+        host.view.layoutIfNeeded()
+
+        let row = try XCTUnwrap(stack(in: host.view))
+        let lone = try XCTUnwrap(row.arrangedSubviews.compactMap { $0 as? UIButton }.first)
+        let paleGlassBeside = lone.superview?.subviews.contains {
+            $0.tag == SettingsTableViewCell.glassPanelTag
+        } ?? false
+        XCTAssertFalse(paleGlassBeside, "no pale glass washing the lime out")
+        let limeGlass = lone.subviews.contains { $0.tag == SettingsTableViewCell.limeGlassTag }
+        if #available(iOS 26.0, *) {
+            XCTAssertTrue(limeGlass, "the confirm's lime glass")
+        } else {
+            var green: CGFloat = 0, blue: CGFloat = 0
+            lone.backgroundColor?.getRed(nil, green: &green, blue: &blue, alpha: nil)
+            XCTAssertGreaterThan(green, 0.9, "the confirm's flat lime, below iOS 26")
+            XCTAssertLessThan(blue, 0.1)
+        }
+    }
+
     func testTwoAnswersStaySideBySide() throws {
         let host = shown(third: false)
         let row = try XCTUnwrap(stack(in: host.view))

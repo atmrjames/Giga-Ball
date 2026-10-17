@@ -739,6 +739,32 @@ final class DailyAlwaysOnKeepsItsPowerUpTests: XCTestCase {
         XCTAssertFalse(scene.dailyStandingPowerUpIsRunning(index), "and hidden, it has ended")
     }
 
+    /// Found in the round 388 sweep. Always On can stand on any lasting power-up, and five of
+    /// the paddle shapes and Drift Left share a clock with a sibling - the running list knew
+    /// the clock only by the sibling's number, so a day standing on Concave Paddle or Drift Left
+    /// read as not running and was collected again on every frame (round 341's fault, back).
+    func testAPaddleShapeOrALeftwardDriftIsKnownByItsOwnNumber() {
+        let setup = LevelPackSetup()
+        let scene = scene()
+        scene.gameMode = .endlessII
+        for (name, surface) in [("Convex Paddle", PaddleBounce.Surface.convex),
+                                ("Concave Paddle", .concave), ("Wavy Paddle", .wavy),
+                                ("Jagged Paddle", .jagged), ("Wedge Left Paddle", .wedgeLeft),
+                                ("Wedge Right Paddle", .wedgeRight)] {
+            let index = setup.powerUpNameArray.firstIndex(of: name)!
+            scene.endlessIICollectPaddleSurface(surface)
+            XCTAssertTrue(scene.dailyStandingPowerUpIsRunning(index), name)
+            XCTAssertEqual(scene.activeRecentPowerUpIndices().intersection(
+                GameScene.endlessIIPaddleShapePowerUps), [index], "only the shape that is on: \(name)")
+            scene.endlessIIPaddleSurfaceClock.reset()
+        }
+        let left = setup.powerUpNameArray.firstIndex(of: "Drift Left")!
+        let right = setup.powerUpNameArray.firstIndex(of: "Drift Right")!
+        scene.endlessIICollectDrift(direction: -1)
+        XCTAssertTrue(scene.dailyStandingPowerUpIsRunning(left))
+        XCTAssertFalse(scene.activeRecentPowerUpIndices().contains(right), "and not the other way")
+    }
+
     /// Put back by the twist, it counts for nothing in the player's statistics.
     func testASilentCollectionLeavesTheTalliesAlone() {
         let scene = scene()

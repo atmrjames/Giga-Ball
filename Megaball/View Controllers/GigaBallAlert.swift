@@ -418,6 +418,7 @@ final class GigaBallAlertViewController: UIViewController {
         button.backgroundColor = UIColor(white: 0.92, alpha: 1)
         button.layer.cornerRadius = 22
         if confirmTitle == nil {
+            button.backgroundColor = #colorLiteral(red: 0.8235294118, green: 1, blue: 0, alpha: 1)
             SettingsTableViewCell.addLimeGlass(behind: button)
             button.setTitleColor(UIColor(red: 0.16, green: 0, blue: 0.24, alpha: 1),
                                  for: .normal)
@@ -426,12 +427,16 @@ final class GigaBallAlertViewController: UIViewController {
         // that button *is* the positive action, so it takes the colour the confirm button
         // takes. Where there are two, this one is the step-back and stays pale, or the pair
         // would be two shouts rather than a choice (round 91)
-        if SettingsTableViewCell.addGlass(behind: button, cornerRadius: 22) != nil {
-            button.setTitleColor(confirmTitle == nil
-                                    ? UIColor(red: 0.16, green: 0, blue: 0.24, alpha: 1)
-                                    : SettingsTableViewCell.glassForeground,
-                                 for: .normal)
+        if confirmTitle != nil,
+           SettingsTableViewCell.addGlass(behind: button, cornerRadius: 22) != nil {
+            button.setTitleColor(SettingsTableViewCell.glassForeground, for: .normal)
         }
+        // **Only the pale button wears the pale glass** (found in the round 389 release sweep).
+        // The lone button was given the lime glass above and then this as well, and the pale
+        // layer over the lime washed it out: every one-button pop-up's OK came out a muddy
+        // olive beside the bright lime of a confirm. It also stood on the pale button's grey
+        // rather than on lime, where the confirm stands - so below iOS 26, where there is no
+        // glass, it was a grey button with a purple word. Now it is dressed as the confirm is
         // **Off-white on the pale glass, purple only on lime** (James, round 351, from an
         // iPhone 17 on iOS 26: "the cancel text cannot be seen"). The dark purple is the colour
         // this button wore when it was a solid white pill. Glass takes its brightness from what

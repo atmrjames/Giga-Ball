@@ -2508,7 +2508,8 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
             return PausedPowerUpHUD.Item(powerUpIndex: ring.index,
                                          icon: setup.powerUpImageArray[ring.index],
                                          remaining: ring.remaining,
-                                         segments: ring.segments)
+                                         segments: ring.segments,
+                                         held: ring.held)
         }
         activePowerUpHUD?.isHidden = items.isEmpty
         activePowerUpHUD?.show(items)

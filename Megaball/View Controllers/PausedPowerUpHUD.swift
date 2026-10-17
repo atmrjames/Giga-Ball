@@ -35,6 +35,8 @@ final class PausedPowerUpHUD: UIView {
         let remaining: CGFloat
         /// Turns rather than seconds, for the ones that count catches.
         var segments: Int?
+        /// Held by a Lock or standing on an Always On day: drawn full, solid and white.
+        var held = false
     }
 
     private static let iconSize: CGFloat = 30
@@ -64,7 +66,11 @@ final class PausedPowerUpHUD: UIView {
             addSubview(button)
             buttons.append(button)
 
-            addRing(remaining: item.remaining, segments: item.segments, to: button)
+            addRing(remaining: item.held ? 1 : item.remaining,
+                    segments: item.held ? nil : item.segments,
+                    colour: PowerUpRingHUD.ringColour(held: item.held), to: button)
+            // Full, solid and white while a Lock or an Always On day holds it, as in the game's
+            // own row (round 388)
 
             let x = step*CGFloat(position) - width/2 + PausedPowerUpHUD.iconSize/2
             NSLayoutConstraint.activate([
@@ -83,7 +89,8 @@ final class PausedPowerUpHUD: UIView {
     ///
     /// The same construction the scene makes, for the reason its own comment gives - the thin
     /// ring carries the reading and stays crisp, and a blurred timer is a timer you squint at.
-    private func addRing(remaining: CGFloat, segments: Int?, to button: UIButton) {
+    private func addRing(remaining: CGFloat, segments: Int?, colour: UIColor,
+                         to button: UIButton) {
         let size = PausedPowerUpHUD.iconSize
         let radius = size/2 - size*0.05
         // `PowerUpRingHUD.ringInset` is 0.05 of the icon - private there, so it is written
@@ -105,13 +112,13 @@ final class PausedPowerUpHUD: UIView {
                                      (CGFloat(2), CGFloat(1), false)] {
             let layer = CAShapeLayer()
             layer.path = path
-            layer.strokeColor = PowerUpRingHUD.ringColour.cgColor
+            layer.strokeColor = colour.cgColor
             layer.fillColor = UIColor.clear.cgColor
             layer.lineWidth = width
             layer.lineCap = .round
             layer.frame = CGRect(x: 0, y: 0, width: size, height: size)
             if glow {
-                layer.shadowColor = PowerUpRingHUD.ringColour.cgColor
+                layer.shadowColor = colour.cgColor
                 layer.shadowRadius = PowerUpRingHUD.ringGlow
                 layer.shadowOpacity = 1
                 layer.shadowOffset = .zero

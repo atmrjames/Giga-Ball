@@ -8530,11 +8530,12 @@ laserTimer?.invalidate()
 		guard gameMode != .endlessII else { return }
 		trayRings.isHidden = powerUpTray.isHidden
 
+		let standing = dailyAlwaysOnPowerUp.flatMap { GameScene.ringID(forPowerUp: $0) }
 		trayRings.update(remaining: iconTimerArray.enumerated().map { index, bar in
 			guard bar.isHidden == false, bar.xScale > 0.001 else { return nil }
 			let segments: Int? = index == GameScene.stickyPaddleTrayIndex
 				&& stickyPaddleCatchesTotal > 0 ? stickyPaddleCatchesTotal : nil
-			return (fraction: bar.xScale, segments: segments)
+			return (fraction: bar.xScale, segments: segments, held: "tray\(index)" == standing)
 		})
 		// The same running-and-how-far read `activePowerUpEntries` makes for Mayhem's
 		// row, against the same arrays
@@ -10436,15 +10437,18 @@ laserTimer?.invalidate()
 		// Endless 2.0's own power-ups have no tray slot to be read from, so they report
 		// themselves
 
-		if gameMode == .endlessII && endlessIILocked {
+		let locked = gameMode == .endlessII && endlessIILocked
+		let standing = dailyAlwaysOnPowerUp.flatMap { GameScene.ringID(forPowerUp: $0) }
+		if locked || standing != nil {
 			entries = entries.map { entry in
 				var held = entry
-				held.held = true
+				held.held = locked || entry.id == standing
 				return held
 			}
 		}
 		// White while a Lock holds them (round 354) - every one, Retreat and Quicksand
-		// included since round 356
+		// included since round 356 - and the day's own on an Always On day (round 388). Both
+		// drawn full and solid: see `PowerUpRingHUD.Entry.drawn`
 		return entries
 	}
 

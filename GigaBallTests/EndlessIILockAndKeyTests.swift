@@ -831,3 +831,74 @@ final class HeldBrickPowerUpTests: XCTestCase {
                       "a power-up waiting for a lost ball does not outlive the run")
     }
 }
+
+/// James, round 388: "For an always on or locked power-up, give it a full white glowing ring in
+/// the power-up HUD instead of the Giga-Ball green/yellow to signify it's always on. For paddle
+/// hit power-ups with the segmented rings, make them solid whilst they are always on or locked.
+/// If they become unlocked, revert to the standard look for the respective power-up."
+final class RingHUDStandingTests: XCTestCase {
+
+    private func white(_ colour: UIColor) -> Bool {
+        var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
+        colour.getRed(&r, green: &g, blue: &b, alpha: &a)
+        return r > 0.99 && g > 0.99 && b > 0.99
+    }
+
+    func testAHeldRingIsFullSolidAndWhiteAndGoesBackWhenLetGo() throws {
+        let hud = PowerUpRingHUD()
+        let radius = PowerUpRingHUD.ringRadius(iconSize: hud.iconSize)
+        var entry = PowerUpRingHUD.Entry(id: "turns", texture: SKTexture(),
+                                         remaining: 1, segments: 5)
+        hud.update(with: [entry])
+        let ring = try XCTUnwrap(hud.ringForTesting("turns"))
+        let segmented = PowerUpRingHUD.ringPath(remaining: 1, segments: 5, radius: radius)
+        let solid = PowerUpRingHUD.ringPath(remaining: 1, segments: nil, radius: radius)
+        XCTAssertEqual(ring.path, segmented, "five marks for five paddle hits")
+        XCTAssertFalse(white(ring.strokeColor))
+
+        entry.held = true
+        hud.update(with: [entry])
+        XCTAssertEqual(ring.path, solid, "solid while it is held")
+        XCTAssertTrue(white(ring.strokeColor), "and white")
+
+        entry.held = false
+        hud.update(with: [entry])
+        XCTAssertEqual(ring.path, segmented,
+                       "let go, it is the segmented ring again, though nothing has been spent")
+        XCTAssertFalse(white(ring.strokeColor))
+    }
+
+    func testAHeldTimerIsDrawnFullWhateverItHasLeft() throws {
+        let hud = PowerUpRingHUD()
+        let radius = PowerUpRingHUD.ringRadius(iconSize: hud.iconSize)
+        var entry = PowerUpRingHUD.Entry(id: "timed", texture: SKTexture(), remaining: 0.4)
+        entry.held = true
+        hud.update(with: [entry])
+        XCTAssertEqual(hud.ringForTesting("timed")?.path,
+                       PowerUpRingHUD.ringPath(remaining: 1, segments: nil, radius: radius),
+                       "a Lock's ring is full, not frozen at four tenths")
+    }
+
+    /// The Always On twist finds its own ring by the name in the clock table; a typo there
+    /// would leave the day's power-up lime with nothing to say so.
+    func testEveryClocksRingIsDrawnUnderTheNameTheTableGivesIt() {
+        for row in GameScene.endlessIIClocksByPowerUp {
+            let scene = GameScene()
+            scene.gameMode = .endlessII
+            scene[keyPath: row.clock].collect(turns: 3)
+            XCTAssertTrue(scene.activePowerUpEntries().contains { $0.id == row.ring },
+                          "power-up \(row.index) is drawn as \(row.ring)")
+        }
+    }
+
+    func testAShapeOrALeftwardDriftFindsTheRingItShares() {
+        let setup = LevelPackSetup()
+        XCTAssertEqual(GameScene.ringID(forPowerUp: setup.powerUpNameArray.firstIndex(of: "Concave Paddle")!),
+                       "endlessIIPaddleSurface")
+        XCTAssertEqual(GameScene.ringID(forPowerUp: setup.powerUpNameArray.firstIndex(of: "Drift Left")!),
+                       "endlessIIDrift")
+        let shrinkBall = setup.powerUpNameArray.firstIndex(of: "Shrink Ball")!
+        let slot = GameScene.trayPowerUpFamilies.firstIndex { $0.contains(shrinkBall) }!
+        XCTAssertEqual(GameScene.ringID(forPowerUp: shrinkBall), "tray\(slot)")
+    }
+}

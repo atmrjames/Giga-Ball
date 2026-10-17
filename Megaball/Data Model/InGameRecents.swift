@@ -69,7 +69,7 @@ final class InGameRecents {
     /// Separate from the set above rather than replacing it, because the set answers "is this
     /// running" for the reference pages and this answers "how much is left" for a row of
     /// dials - and the first is asked far more often than the second.
-    var activePowerUpRings: [(index: Int, remaining: CGFloat, segments: Int?)] = []
+    var activePowerUpRings: [(index: Int, remaining: CGFloat, segments: Int?, held: Bool)] = []
 
     /// What was still falling when the pause menu opened - the same snapshot. A drop
     /// mid-air is not missed, it is a decision the player has not made yet (play-test
@@ -317,28 +317,87 @@ extension GameScene {
     /// One table, read by the pause screen's "which are running" and by the Always On twist's
     /// hold (round 376) - it was a list written inside the first, and the second would have
     /// been a copy of it.
-    static let endlessIIClocksByPowerUp: [(index: Int, clock: ReferenceWritableKeyPath<GameScene, EndlessIIClock>)] = [
-        (31, \.endlessIIAimedStickyClock), (32, \.endlessIIMagnetismClock),
-        (33, \.endlessIIPortalPaddleClock), (34, \.endlessIIPaddleHaloClock),
-        (35, \.endlessIIBallSteeringClock), (36, \.endlessIIInertPaddleClock),
-        (37, \.endlessIIFlippedAngleClock), (38, \.endlessIIReversedControlsClock),
-        (42, \.endlessIIWreckingBallClock), (43, \.endlessIIAuraClock),
-        (45, \.endlessIIDescentClock), (46, \.endlessIIAutoAimClock),
-        (47, \.endlessIIWrapAroundClock), (51, \.endlessIIRandomisedBounceClock),
-        (52, \.endlessIIGhostBallClock), (40, \.endlessIIClearAndRetreatClock),
-        (53, \.endlessIISafetyPaddleClock),
-        (54, \.endlessIIDriftClock), (55, \.endlessIIPaddleSurfaceClock),
-        (59, \.endlessIIDoublePaddleClock),
-        (60, \.endlessIIMirrorPaddleClock),
-        (62, \.endlessIIBallSpinClock),
+    static let endlessIIClocksByPowerUp: [(index: Int, clock: ReferenceWritableKeyPath<GameScene, EndlessIIClock>, ring: String)] = [
+        (31, \.endlessIIAimedStickyClock, "endlessIIAimedSticky"),
+        (32, \.endlessIIMagnetismClock, "endlessIIMagnetism"),
+        (33, \.endlessIIPortalPaddleClock, "endlessIIPortalPaddle"),
+        (34, \.endlessIIPaddleHaloClock, "endlessIIPaddleHalo"),
+        (35, \.endlessIIBallSteeringClock, "endlessIIBallSteering"),
+        (36, \.endlessIIInertPaddleClock, "endlessIIInertPaddle"),
+        (37, \.endlessIIFlippedAngleClock, "endlessIIFlippedAngle"),
+        (38, \.endlessIIReversedControlsClock, "endlessIIReversedControls"),
+        (42, \.endlessIIWreckingBallClock, "endlessIIWreckingBall"),
+        (43, \.endlessIIAuraClock, "endlessIIAura"),
+        (45, \.endlessIIDescentClock, "endlessIIDescent"),
+        (46, \.endlessIIAutoAimClock, "endlessIIAutoAim"),
+        (47, \.endlessIIWrapAroundClock, "endlessIIWrapAround"),
+        (51, \.endlessIIRandomisedBounceClock, "endlessIIRandomisedBounce"),
+        (52, \.endlessIIGhostBallClock, "endlessIIGhostBall"),
+        (40, \.endlessIIClearAndRetreatClock, "endlessIIClearAndRetreat"),
+        (53, \.endlessIISafetyPaddleClock, "endlessIISafetyPaddle"),
+        (54, \.endlessIIDriftClock, "endlessIIDrift"),
+        (55, \.endlessIIPaddleSurfaceClock, "endlessIIPaddleSurface"),
+        (59, \.endlessIIDoublePaddleClock, "endlessIIDoublePaddle"),
+        (60, \.endlessIIMirrorPaddleClock, "endlessIIMirrorPaddle"),
+        (62, \.endlessIIBallSpinClock, "endlessIIBallSpin"),
     ]
     // In the order the pause screen has always listed them, which is why it is a list and not
-    // a dictionary
+    // a dictionary. The third column is the id the ring HUD draws each under (round 388), so
+    // the Always On twist can find its own ring; `RingHUDStandingTests` runs every clock and
+    // checks the ring is there under that name
 
     static func endlessIIClock(forPowerUp index: Int)
         -> ReferenceWritableKeyPath<GameScene, EndlessIIClock>? {
         endlessIIClocksByPowerUp.first { $0.index == index }?.clock
+            ?? (endlessIIPaddleShapePowerUps.contains(index) ? \.endlessIIPaddleSurfaceClock
+                : index == driftLeftPowerUp ? \.endlessIIDriftClock : nil)
+        // The shapes share one clock, and the two Drifts another
     }
+
+    /// The ring the HUD draws a power-up as, by its number - the tray's slot for the original
+    /// twenty-eight, Mayhem's own id for the rest.
+    static func ringID(forPowerUp index: Int) -> String? {
+        if let slot = trayPowerUpFamilies.firstIndex(where: { $0.contains(index) }) {
+            return "tray\(slot)"
+        }
+        if index == 29 { return "endlessIITrajectory" }
+        if index == 30 { return "endlessIILanding" }
+        guard let clock = endlessIIClock(forPowerUp: index) else { return nil }
+        return endlessIIClocksByPowerUp.first { $0.clock == clock }?.ring
+        // The shapes and Drift Left find their sibling's row through the shared clock, which
+        // is right: one ring is drawn for the shape whichever shape it is
+    }
+
+    /// Which power-up a shared clock is running for, given the number the table files it under.
+    ///
+    /// **Found in the round 388 sweep.** Six paddle shapes run on one clock and the two Drifts
+    /// on another, and the table can file each clock under one number only - Convex Paddle's,
+    /// Drift Right's. So a Concave Paddle read as Convex in the pause screen's list, and an
+    /// Always On day standing on Concave Paddle or Drift Left asked "is it running?", heard no,
+    /// and collected it again on every frame - round 341's fault, by another door.
+    func endlessIIRunningPowerUp(sharing index: Int) -> Int {
+        if index == GameScene.convexPaddlePowerUp, let surface = endlessIIPaddleSurface {
+            return GameScene.endlessIIPowerUpIndex(of: surface) ?? index
+        }
+        if index == GameScene.driftRightPowerUp, endlessIIDriftDirection < 0 {
+            return GameScene.driftLeftPowerUp ?? index
+        }
+        return index
+    }
+
+    /// A paddle shape's power-up number, read off its name.
+    static func endlessIIPowerUpIndex(of surface: PaddleBounce.Surface) -> Int? {
+        LevelPackSetup.shared.powerUpNameArray.firstIndex(of: surface.displayName)
+    }
+
+    /// Every paddle shape's power-up number.
+    static let endlessIIPaddleShapePowerUps: Set<Int> =
+        Set(PaddleBounce.Surface.allCases.compactMap { endlessIIPowerUpIndex(of: $0) })
+
+    static let convexPaddlePowerUp = endlessIIPowerUpIndex(of: .convex)
+    static let driftRightPowerUp = LevelPackSetup.shared.powerUpNameArray.firstIndex(of: "Drift Right")
+    static let driftLeftPowerUp = LevelPackSetup.shared.powerUpNameArray.firstIndex(of: "Drift Left")
+    // Looked up once: the running list is asked every frame of an Always On day
 
     func activeRecentPowerUpIndices() -> Set<Int> {
         var active: Set<Int> = []
@@ -364,12 +423,16 @@ extension GameScene {
 
         guard gameMode == .endlessII else { return active }
         let clocks: [(EndlessIIClock, Int)] = GameScene.endlessIIClocksByPowerUp
-            .map { (self[keyPath: $0.clock], $0.index) }
+            .map { (self[keyPath: $0.clock], endlessIIRunningPowerUp(sharing: $0.index)) }
         for (clock, index) in clocks where clock.isRunning { active.insert(index) }
+        let standing = dailyAlwaysOnPowerUp
         InGameRecents.shared.activePowerUpRings = clocks
             .filter { $0.0.isRunning }
             .map { (index: $0.1, remaining: $0.0.fraction,
-                    segments: $0.0.countsTurns ? Int($0.0.total) : nil) }
+                    segments: $0.0.countsTurns ? Int($0.0.total) : nil,
+                    held: endlessIILocked || $0.1 == standing) }
+        // Held as the scene's own row holds them (round 388), so the pause screen draws a Lock
+        // and an Always On day the same full white ring the game does
         // The rings the pause screen redraws. Mayhem's clocks carry a fraction already; the
         // original tray power-ups are added by the caller from their bars, which is the only
         // place that reading exists

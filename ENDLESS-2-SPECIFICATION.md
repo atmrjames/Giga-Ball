@@ -2964,6 +2964,43 @@ testers:
   falling power-up's position by `brickWidth`, so a bare `GameScene()` with a power-up on
   screen traps converting NaN to Int. A real scene is always laid out before play.
 
+**Round 389: standing power-ups drawn as standing, and the release sweep.**
+
+- **"For an always on or locked power-up, give it a full white glowing ring in the power-up HUD
+  instead of the Giga-Ball green/yellow to signify it's always on. For paddle hit power-ups
+  with the segmented rings, make them solid whilst they are always on or locked. If they become
+  unlocked, revert to the standard look."** A Lock already turned the rings white, at whatever
+  each had left. Held now means full and solid whatever is left and however it counts
+  (`PowerUpRingHUD.Entry.drawn`), and a ring let go is redrawn at once, so a segmented ring
+  held at full goes back to its segments rather than staying solid. The day's own power-up on
+  an Always On day is held too, found through a ring-id column on `endlessIIClocksByPowerUp`
+  (`GameScene.ringID(forPowerUp:)`), and so is its ring on the old modes' tray and on the
+  pause screen's copy of the row. Looked at on the simulator: three lime rings, two of them
+  segmented, become three solid white ones inside the Lock's border.
+- **Found doing it: Always On re-collected a shape or Drift Left every frame.** Six paddle
+  shapes share one clock and the two Drifts another, and the running list filed each clock under
+  one number - Convex Paddle's, Drift Right's. An Always On day standing on Concave Paddle or
+  Drift Left asked "is it running?", heard no, and collected it sixty times a second; the pause
+  screen listed a Concave Paddle as Convex. `endlessIIRunningPowerUp(sharing:)` names the one
+  actually on. The test fails without it.
+- **The sweep.** A Release build for a generic iOS device; no TEMP code, no un-gated `print`,
+  no `try!`, and the four `fatalError`s are `init(coder:)` stubs on classes no storyboard loads;
+  no em-dash in any string a player reads, and no doubled words or misspellings in them; every
+  picture and sound the code names by a literal exists and reaches the bundle; version 1.3,
+  `ITSAppUsesNonExemptEncryption` false, and no required-reason API in the code beyond the
+  `UserDefaults` the privacy manifest declares. The Release app is 214 MB unthinned; its
+  pictures at an iPhone's scale come to about 96 MB, so a phone downloads roughly 130 MB, under
+  the 200 MB that would ask before using mobile data.
+- **Found in the sweep: every one-button pop-up's OK was a muddy olive.** "Today's Twists" and
+  the rest wear one button, which is the positive action and meant to look like a confirm. It
+  was given the lime glass and then the pale glass meant for a pair's step-back button as
+  well, which washed the lime out - and below iOS 26 it stood on the pale button's grey. It is
+  dressed exactly as the confirm is now (`testALoneButtonIsDressedAsTheConfirmIs`), and was
+  looked at on the simulator.
+- **And on the simulator, a clean build:** the main menu, the daily screen and its twists
+  pop-up, a Classic daily standing on Sticky Paddle (its tray ring full, solid and white), the
+  pause screen, the leave-the-daily question, the Mayhem screen and a game over.
+
 **Round 388: a louder explosion, the twins' ends kept round, the music kept on a restart, and Drift's end tidied.**
 
 James's list after the round 387 TestFlight, with two screenshots.

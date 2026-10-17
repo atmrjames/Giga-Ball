@@ -32,8 +32,21 @@ final class PowerUpRingHUD: SKNode {
         /// time - the sticky paddle's catches. A segmented ring says "two catches left"
         /// where a smooth one only says "about a third".
         var segments: Int?
-        /// Held by a Lock: not counting down, and drawn white to say so (round 354).
+        /// Held by a Lock, or standing all day on an Always On day: drawn as a full white ring,
+        /// solid even where it would count turns (round 388).
         var held = false
+
+        /// What the ring is drawn as: full and solid while held, its own reading otherwise.
+        ///
+        /// **James, round 388: "For an always on or locked power-up, give it a full white
+        /// glowing ring in the power-up HUD instead of the Giga-Ball green/yellow to signify
+        /// it's always on. For paddle hit power-ups with the segmented rings, make them solid
+        /// whilst they are always on or locked. If they become unlocked, revert to the standard
+        /// look."** A Lock used to leave each ring white at whatever it had left, which read as
+        /// a timer that had stopped rather than one that does not apply.
+        var drawn: (remaining: CGFloat, segments: Int?) {
+            held ? (1, nil) : (remaining, segments)
+        }
     }
 
     /// The Giga-Ball yellow-green, the colour the game uses for anything of its own.
@@ -144,6 +157,9 @@ final class PowerUpRingHUD: SKNode {
     /// The scale the row is drawn at now, for tests.
     var rowScaleForTesting: CGFloat { row.xScale }
 
+    /// One slot's ring, for tests.
+    func ringForTesting(_ id: String) -> SKShapeNode? { slots[id]?.ring }
+
     /// The container never narrows past this, so an empty one still reads as the place
     /// power-ups appear rather than as nothing at all.
     static let minimumSlots = 3
@@ -233,17 +249,21 @@ final class PowerUpRingHUD: SKNode {
                 slot.ring.strokeColor = colour
                 slot.halo.strokeColor = colour
                 slots[entry.id]?.held = entry.held
+                slots[entry.id]?.drawn = -1
+                // And redrawn whatever it reads: a ring let go at full would otherwise keep
+                // the solid one it was held as, when it should go back to its segments
             }
             // Only on a change, like the paths below: a colour written every frame is a
             // redraw every frame
 
+            let look = entry.drawn
             let drawn = slots[entry.id]?.drawn ?? -1
-            if PowerUpRingHUD.hasTurned(from: drawn, to: entry.remaining,
-                                        segments: entry.segments, radius: radius()) {
-                let path = ringPath(remaining: entry.remaining, segments: entry.segments)
+            if PowerUpRingHUD.hasTurned(from: drawn, to: look.remaining,
+                                        segments: look.segments, radius: radius()) {
+                let path = ringPath(remaining: look.remaining, segments: look.segments)
                 slots[entry.id]?.ring.path = path
                 slots[entry.id]?.halo.path = path
-                slots[entry.id]?.drawn = entry.remaining
+                slots[entry.id]?.drawn = look.remaining
             }
             // Only when it has turned somewhere new - see `hasTurned`
         }
@@ -494,6 +514,7 @@ final class PowerUpTrayRings: SKNode {
         let halo: SKShapeNode
         var wasActive = false
         var drawn: CGFloat = -1
+        var held = false
     }
 
     private var slots: [Slot] = []
@@ -542,17 +563,28 @@ final class PowerUpTrayRings: SKNode {
     ///
     /// An entry is nil where the power-up is not running - the ring fades out the way
     /// Mayhem's expire, rather than vanishing.
-    func update(remaining: [(fraction: CGFloat, segments: Int?)?]) {
+    func update(remaining: [(fraction: CGFloat, segments: Int?, held: Bool)?]) {
         for (index, entry) in remaining.enumerated() where slots.indices.contains(index) {
             if let entry {
-                if PowerUpRingHUD.hasTurned(from: slots[index].drawn, to: entry.fraction,
-                                            segments: entry.segments, radius: radius) {
-                    let path = PowerUpRingHUD.ringPath(remaining: entry.fraction,
-                                                      segments: entry.segments,
+                if slots[index].held != entry.held {
+                    let colour = PowerUpRingHUD.ringColour(held: entry.held)
+                    slots[index].ring.strokeColor = colour
+                    slots[index].halo.strokeColor = colour
+                    slots[index].held = entry.held
+                    slots[index].drawn = -1
+                }
+                // Full and white on a Classic or Endless Always On day, as in Mayhem's row
+                // (round 388)
+                let fraction: CGFloat = entry.held ? 1 : entry.fraction
+                let segments = entry.held ? nil : entry.segments
+                if PowerUpRingHUD.hasTurned(from: slots[index].drawn, to: fraction,
+                                            segments: segments, radius: radius) {
+                    let path = PowerUpRingHUD.ringPath(remaining: fraction,
+                                                      segments: segments,
                                                       radius: radius)
                     slots[index].ring.path = path
                     slots[index].halo.path = path
-                    slots[index].drawn = entry.fraction
+                    slots[index].drawn = fraction
                 }
                 if slots[index].wasActive == false {
                     slots[index].wasActive = true
