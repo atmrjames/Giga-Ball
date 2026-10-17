@@ -369,6 +369,41 @@ final class EndlessIINeighbourTests: XCTestCase {
         }
     }
 
+    /// James, round 392: "Sideways and upward facing directional bricks are hard to hit. They
+    /// should come fairly late (>100m) in endless mayhem mode and be fairly rare."
+    func testBelowAHundredMetresADirectionalBrickOpensDownward() {
+        let scene = makeScene()
+        scene.gameMode = .endlessII
+        scene.endlessHeight = GameScene.endlessIIHardFacingFrom - 1
+        for _ in 0..<200 {
+            let brick = addBrick(scene, at: CGPoint(x: 0, y: 200), size: cell)
+            scene.makeDirectional(brick)
+            XCTAssertEqual(brick.endlessIIVulnerableSide, .bottom,
+                           "every face is open, so the easy one is the one it takes")
+            brick.removeFromParent()
+        }
+    }
+
+    func testPastAHundredMetresAHardFaceIsTheException() {
+        let scene = makeScene()
+        scene.gameMode = .endlessII
+        scene.endlessHeight = GameScene.endlessIIHardFacingFrom + 50
+        var hard: [EndlessIISide: Int] = [:]
+        let throws_ = 2000
+        for _ in 0..<throws_ {
+            let brick = addBrick(scene, at: CGPoint(x: 0, y: 200), size: cell)
+            scene.makeDirectional(brick)
+            if let side = brick.endlessIIVulnerableSide, side != .bottom { hard[side, default: 0] += 1 }
+            brick.removeFromParent()
+        }
+        let share = Double(hard.values.reduce(0, +))/Double(throws_)*100
+        let expected = Double(GameScene.endlessIIHardFacingChance)
+        XCTAssertEqual(share, expected, accuracy: expected/2,
+                       "fairly rare - the chance the scene says, give or take the dice")
+        XCTAssertEqual(Set(hard.keys), [.top, .left, .right],
+                       "and once they come, up and sideways both")
+    }
+
     /// And one walled in on all four sides is not offered the role at all.
     func testAPennedInBrickIsNotMadeDirectional() {
         // "Directional bricks shouldn't ... be penned in by them." A brick with no reachable

@@ -313,6 +313,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var endlessIIAuraNodes: [SKSpriteNode] = []
 	/// Power-up bricks broken while a ball was being lost, waiting for play to come back.
 	var endlessIIHeldBrickPowerUps: [Int] = []
+	/// Set while a power-up brick's Mystery is handed over, so the Mystery arm does its
+	/// bookkeeping and leaves the revealing to the brick (`endlessIIApplyBrickPowerUp`).
+	var endlessIIRevealingABrickMystery = false
 	/// Each aura's comet tail, one per ball, parallel to `endlessIIAuraNodes` (round 354).
 	var endlessIIAuraTails: [SKEmitterNode] = []
 	/// Bricks the aura is currently sitting on, so each is hit once per pass rather than
@@ -7352,7 +7355,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			powerUpMultiplierScore = 0
 			totalStatsArray[0].powerupsCollected[24]+=1
 			mysteryPowerUp = true
-			powerUpGenerator (sprite: sprite)
+			if endlessIIRevealingABrickMystery == false {
+				powerUpGenerator (sprite: sprite)
+			}
+			// A Mystery caught at the paddle drops its power-up there, where it is caught at
+			// once. One from a power-up brick is revealed by the brick instead - see
+			// `endlessIIApplyBrickPowerUp` for why a drop was the wrong answer there
 			
 		case powerUpBackstop:
 		// Backstop power

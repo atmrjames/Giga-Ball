@@ -2964,6 +2964,41 @@ testers:
   falling power-up's position by `brickWidth`, so a bare `GameScene()` with a power-up on
   screen traps converting NaN to Int. A real scene is always laid out before play.
 
+**Round 392: a Mystery brick that lands, hard Directional faces kept late, and the grip's sticky ghost.**
+
+James's first list of final play-testing before release.
+
+- **"Power-up bricks are not always activating their power-ups when destroyed - it happened
+  twice on the first one of the game."** Not found. Every power-up a brick can hold at the start
+  of a run was broken in a laid-out scene and all fourteen were collected. Looking turned up a
+  different fault, which was not his: Mystery's collection is the *caught* Mystery's, which
+  drops a fresh power-up where it was - at the paddle for a caught one, so it lands at once,
+  but up in the field for a brick's, twelve times in twelve an ordinary drop to chase, and with
+  enough already falling, nothing. A brick's Mystery now collects itself without the drop
+  (`endlessIIRevealingABrickMystery`) and hands over the power-up it hid on the spot, drawn
+  from the brick's own pool with the Mystery flag set, under a second burst showing what it
+  became (`endlessIIMysteryReveal`). `MysteryBrickRevealsOnTheSpotTests`. **James, after
+  playing it: "On both occasions, it wasn't a mystery power-up but it does now seem to be
+  working properly."** So the report itself is unexplained and has not come back; if it does,
+  what is wanted is which power-up the brick showed and what broke it - ball, laser or
+  explosion.
+- **"Sideways and upward facing directional bricks are hard to hit. They should come fairly
+  late (>100m) in endless mayhem mode and be fairly rare."** The bottom is the only face before
+  100 metres now, and past it one Directional brick in about seven opens up, left or right
+  (`endlessIIHardFacingFrom`, `endlessIIHardFacingChance`). It had been top or bottom from the
+  start - the top counted as easy, and it is not - with an 8% chance of a side before 200
+  metres. A brick whose chosen face is blocked takes the bottom before anything else, and one
+  whose bottom is blocked still reaches for any open face, because an impossible brick is worse
+  than a hard one (round 233).
+- **"I have aimed sticky. I then got ball spin. When ball spin ended, the paddle had the sticky
+  graphic, but no aimed sticky function or power-up active."** Reproduced with the ball held
+  mid-aim when the spin was caught. The grip cancels Aimed Sticky, and the cancel keeps the
+  hold the player is in by owing it (`endlessIIAimOwedHold`); then the grip releases every held
+  ball, the hold ends with nothing to aim, and the debt was never paid - only an aimed launch or
+  `endlessIIEndAim` ever cleared it. `endlessIIWantsStickyFace` reads it, so the grip's going
+  handed the paddle back to a sticky face. The aim tick now lets an owed hold go once there is
+  no hold and nothing held. `testAnAimCancelledMidHoldLeavesNoStickyFaceBehindTheGrip`.
+
 **Round 391: a Lock only when it holds something, and room for the ball above the safety bar.**
 
 - **"Don't show the lock power-up if there are no active timed or paddle hit based power-ups -

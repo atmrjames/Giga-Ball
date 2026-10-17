@@ -3362,6 +3362,37 @@ final class EndlessIIGripTests: XCTestCase {
         XCTAssertEqual(scene.endlessIIPaddleTopKind, "Sticky")
         XCTAssertEqual(scene.paddleSticky.texture, scene.stickyPaddleTexture)
     }
+
+    /// James, round 392: "I have aimed sticky. I then got ball spin. When ball spin ended, the
+    /// paddle had the sticky graphic, but no aimed sticky function or power-up active. Ball spin
+    /// correctly canceled out aimed sticky, but reverted to an incorrect paddle graphic when it
+    /// ended."
+    ///
+    /// The ball was being held to aim when the spin was caught. The cancel owed that hold, the
+    /// grip released the ball anyway, and the debt was never paid - so the paddle still wanted
+    /// a sticky face once the grip came off.
+    func testAnAimCancelledMidHoldLeavesNoStickyFaceBehindTheGrip() {
+        let scene = mayhem()
+        scene.endlessIICollectAimedSticky()
+        scene.endlessIIAimHold = true
+        // Mid-aim: the ball sitting on the paddle, waiting for a direction
+
+        scene.endlessIICollectBallSpin()
+        XCTAssertFalse(scene.endlessIIAimedStickyClock.isRunning, "the spin ends the aim")
+        for _ in 0..<2 {
+            scene.tickEndlessIIAimHold()
+            scene.refreshEndlessIIStickyFace()
+        }
+        // Two frames: the hold ends on the first, with nothing left to aim, and what it owed is
+        // let go on the second
+
+        scene.endlessIIBallSpinClock.reset()
+        scene.tickEndlessIIAimHold()
+        scene.refreshEndlessIIStickyFace()
+        XCTAssertFalse(scene.endlessIIAimOwedHold, "nothing is held, so nothing is owed")
+        XCTAssertTrue(scene.paddleSticky.isHidden,
+                      "the spin is over and nothing on the paddle is sticky any more")
+    }
 }
 
 /// Play-test round 259's four, in the order James gave them.

@@ -173,6 +173,21 @@ extension GameScene {
     ///
     /// Called once a frame from the paddle tick, which runs whatever else is happening.
     func tickEndlessIIAimHold() {
+        if endlessIIAimOwedHold, endlessIIAimHold == false, endlessIINextHeldBall == nil {
+            endlessIIAimOwedHold = false
+        }
+        // **An owed hold with nothing held and no hold running is owed to nobody** (James,
+        // round 392: "I have aimed sticky. I then got ball spin. When ball spin ended, the
+        // paddle had the sticky graphic, but no aimed sticky function or power-up active").
+        // Ball Spin's grip cancels Aimed Sticky, and the cancel keeps the hold the player is in
+        // by owing it - then the grip lets go of every held ball two lines later, so the hold
+        // ends below with nothing to aim. Only an aimed launch or `endlessIIEndAim` ever paid the
+        // debt, and neither came. The flag stayed set for the rest of the run, it is one of the
+        // things `endlessIIWantsStickyFace` reads, and the grip's going handed the paddle back
+        // to a sticky face nothing was using. Asked here, after the hold has had its own frame
+        // to end, rather than in the grip, so any other way of emptying the queue under an
+        // owed hold is answered the same way
+
         guard endlessIIAimHold, endlessIIAimTarget == nil else { return }
         endlessIIEndAimHold(launching: nil)
     }

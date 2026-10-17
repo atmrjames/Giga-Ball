@@ -25,10 +25,19 @@ extension GameScene {
     /// field does rather than only how one brick behaves.
     static let endlessIIRoleChance = 10
 
-    /// The height from which a Directional brick may face left or right.
-    static let endlessIISideFacingFrom = 200
-    /// And the chance of meeting one before then, because nothing is ever locked out.
-    static let endlessIISideFacingEarlyChance = 8
+    /// The height from which a Directional brick may open on a hard face - up, left or right.
+    ///
+    /// James, round 392: "Sideways and upward facing directional bricks are hard to hit. They
+    /// should come fairly late (>100m) in endless mayhem mode and be fairly rare." Until then
+    /// the soft face is the bottom one, the face a ball coming off the paddle meets. It was
+    /// top or bottom from the start, with an 8% chance of a side before 200 metres "because
+    /// nothing is ever locked out": the top was counted as easy, and it is not - the ball has
+    /// to come down onto it from above - and the early chance is exactly what was asked away.
+    static let endlessIIHardFacingFrom = 100
+
+    /// Past that height, the percentage of Directional bricks that open on a hard face. The
+    /// rest still open downward, so a hard one stays the exception it was asked to be.
+    static let endlessIIHardFacingChance = 15
 
     // Gravity's blue and Moving's orange are gone with round 320: both bricks are untinted
     // now, and a colour nothing reads is a colour that comes back by accident. The styles that
@@ -461,18 +470,17 @@ extension GameScene {
     /// Drawn dark like an Indestructible brick with the hittable edge picked out bright, so
     /// which side works is read off the brick rather than remembered.
     func makeDirectional(_ brick: SKSpriteNode) {
-        // Top and bottom first. The ball spends most of its time travelling up and down, so
-        // a brick that only takes damage from above or below is something a player can solve
-        // by waiting for the right pass. Left and right ask for a specific angle, which is a
-        // much harder shot - so they stay rare until a run is well underway.
-        let preferred: [EndlessIISide] = endlessHeight >= GameScene.endlessIISideFacingFrom
-            || Int.random(in: 1...100) <= GameScene.endlessIISideFacingEarlyChance
-            ? [.top, .bottom, .left, .right]
-            : [.top, .bottom]
+        // The bottom first, because it is the face the ball meets coming up off the paddle.
+        // The other three ask for a shot - down onto it from above, or across at an angle -
+        // so they wait for the height above and are the minority even then
+        let hard = endlessHeight >= GameScene.endlessIIHardFacingFrom
+            && Int.random(in: 1...100) <= GameScene.endlessIIHardFacingChance
+        let preferred: [EndlessIISide] = hard ? [.top, .left, .right] : [.bottom]
 
         let open = endlessIIOpenSides(from: brick)
         let side: EndlessIISide = brick.endlessIIVulnerableSide
             ?? preferred.filter(open.contains).randomElement()
+            ?? (open.contains(.bottom) ? .bottom : nil)
             ?? open.randomElement()
             ?? .bottom
         // A side the brick already carries is kept. That is how a resumed run comes back with
@@ -487,8 +495,9 @@ extension GameScene {
         // it was reachable, which meant a brick with an Indestructible above and another below
         // was handed one of those two faces and could never be destroyed - a brick with its
         // one soft side pressed against a wall, when it had a perfectly good side going spare.
-        // An early left-facing brick is rarer than the depth ramp intends; an impossible brick
-        // is worse than rare.
+        // A hard face drawn with none of the hard faces open falls back to the bottom before
+        // anything else. An early left-facing brick is rarer than the depth ramp intends; an
+        // impossible brick is worse than rare.
         //
         // `.bottom` is the last resort and is never reached from the generator: nothing with
         // no open side at all is offered the role (see `endlessIICanTake`). It is here for the

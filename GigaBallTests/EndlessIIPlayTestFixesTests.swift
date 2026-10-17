@@ -1342,3 +1342,89 @@ final class HeightLabelBeatTests: XCTestCase {
         XCTAssertFalse(pulsing(scene.scoreLabel), "once a run, not every metre after")
     }
 }
+
+/// Found looking into James's round 392 report, "Power-up bricks are not always activating
+/// their power-ups when destroyed" - though his two were not Mysteries ("On both occasions, it
+/// wasn't a mystery power-up").
+///
+/// A caught Mystery drops its power-up where it was caught, which is at the paddle; one from a
+/// brick dropped it up in the field, for the player to chase. Every other brick's power-up lands
+/// as the brick breaks, so this one has to as well.
+final class MysteryBrickRevealsOnTheSpotTests: XCTestCase {
+    private var window: UIWindow?
+
+    private func playing() throws -> GameScene {
+        GameScene.settingsStore.set(false, forKey: SavedGame.resumeFlagKey)
+        SavedGame.clear(from: GameScene.settingsStore)
+        GameMode.endlessII.makeCurrent(in: GameScene.settingsStore)
+        let board = UIStoryboard(name: "Main", bundle: Bundle(for: GameViewController.self))
+        let game = try XCTUnwrap(board.instantiateViewController(withIdentifier: "gameView")
+                                 as? GameViewController)
+        game.selectedLevel = LevelPackSetup.shared.startLevelNumber[1]
+        game.numberOfLevels = 1
+        game.levelSender = "MainMenu"
+        game.levelPack = 1
+        let windowScene = try XCTUnwrap(UIApplication.shared.connectedScenes.first as? UIWindowScene)
+        let window = UIWindow(windowScene: windowScene)
+        let host = UIViewController()
+        let view = SKView(frame: window.bounds)
+        host.view = view
+        window.rootViewController = host
+        window.makeKeyAndVisible()
+        self.window = window
+        let scene = try XCTUnwrap(GameScene(fileNamed: "GameScene"))
+        scene.totalStatsArray = [TotalStats()]
+        scene.gameViewControllerDelegate = game
+        scene.scaleMode = .aspectFit
+        scene.size = view.bounds.size
+        view.presentScene(scene)
+        RunLoop.main.run(until: Date().addingTimeInterval(1.5))
+        for _ in 0..<3 where scene.finishEndlessIIBuildIn() {}
+        if !(scene.gameState.currentState is Playing) { scene.gameState.enter(Playing.self) }
+        scene.releaseBall()
+        RunLoop.main.run(until: Date().addingTimeInterval(0.1))
+        scene.physicsWorld.speed = 0
+        // The ball stands still in the air: launched, so a brick's power-up is handed over
+        // rather than held for the next serve, and going nowhere, so it can neither be lost nor
+        // break bricks of its own while a trial waits. Actions still run, which is what clears
+        // the Mystery's flag
+        return scene
+    }
+
+    func testAMysteryBrickHandsOverWhatItHidesAndDropsNothing() throws {
+        let scene = try playing()
+        let mystery = try XCTUnwrap(scene.endlessIIMysteryIndex)
+
+        for trial in 0..<6 {
+            let brick = SKSpriteNode(color: .white,
+                                     size: CGSize(width: scene.brickWidth, height: scene.brickHeight))
+            brick.name = BrickCategoryName
+            brick.position = CGPoint(x: 0, y: scene.finalBrickRowHeight + scene.brickHeight*6)
+            scene.addChild(brick)
+            brick.endlessIIPowerUpIndex = mystery
+            let before = scene.totalStatsArray[0].powerupsCollected
+            var fallingBefore = 0
+            scene.enumerateChildNodes(withName: PowerUpCategoryName) { _, _ in fallingBefore += 1 }
+            // The ball is in play in a real field between trials, and an ordinary brick it
+            // breaks may drop something of its own - so what is counted is what this brick adds
+
+            scene.hitBrick(node: brick, sprite: brick, struckBy: scene.ball)
+
+            let after = scene.totalStatsArray[0].powerupsCollected
+            let landed = after.indices.filter { $0 != mystery && after[$0] > before[$0] }
+            XCTAssertEqual(after[mystery], before[mystery] + 1,
+                           "trial \(trial): the Mystery itself is still collected")
+            XCTAssertEqual(landed.count, 1,
+                           "trial \(trial): and what it hid lands as the brick breaks")
+            var falling = 0
+            scene.enumerateChildNodes(withName: PowerUpCategoryName) { _, _ in falling += 1 }
+            XCTAssertEqual(falling, fallingBefore,
+                           "trial \(trial): nothing left in the field to chase")
+
+            RunLoop.main.run(until: Date().addingTimeInterval(1.1))
+            XCTAssertFalse(scene.mysteryPowerUp,
+                           "trial \(trial): the Mystery's flag is let go once it has landed, or "
+                           + "the next drop is drawn as if it were a Mystery's")
+        }
+    }
+}

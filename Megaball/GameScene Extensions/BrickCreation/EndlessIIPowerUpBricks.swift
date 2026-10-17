@@ -250,7 +250,57 @@ extension GameScene {
     }
 
     /// Hands a power-up brick's power-up to `applyPowerUp`, the way a caught one arrives.
+    ///
+    /// **A Mystery is revealed here, and the power-up it hides lands at once** (round 392, found
+    /// while looking into James's "Power-up bricks are not always activating their power-ups
+    /// when destroyed" - his were not Mysteries, this was a fault of its own). Every other
+    /// power-up a brick holds is collected the moment the brick breaks. A Mystery went through
+    /// the arm a *caught* Mystery takes, which drops a fresh power-up where the Mystery was -
+    /// at the paddle, for a caught
+    /// one, so it is caught at once. From a brick that place is up in the field: what the
+    /// player got was an ordinary drop to chase, twelve times in twelve, and when too many were
+    /// already falling, nothing. Missed, it looks exactly like a brick that did nothing.
     func endlessIIApplyBrickPowerUp(_ index: Int, at point: CGPoint, shown: Bool = false) {
+        if index == endlessIIMysteryIndex {
+            endlessIIRevealingABrickMystery = true
+            endlessIIHandOver(index, at: point, shown: shown)
+            endlessIIRevealingABrickMystery = false
+            // The Mystery's own collection first - its count, its achievement, its sound -
+            // with the drop left out
+
+            guard let revealed = endlessIIMysteryReveal() else {
+                mysteryPowerUp = false
+                return
+                // Nothing can come out of it, so the flag the Mystery set is cleared here: it
+                // is otherwise cleared by the revealed power-up's own collection
+            }
+            if shown == false { endlessIIShowPowerUpBrickBurst(at: point, index: revealed) }
+            // A second burst over the Mystery's, so what it turned into is seen as it happens
+            endlessIIHandOver(revealed, at: point, shown: shown)
+            return
+        }
+        endlessIIHandOver(index, at: point, shown: shown)
+    }
+
+    /// The power-up a brick's Mystery turns out to be, drawn the way a caught Mystery's drop is.
+    ///
+    /// From the brick's pool, under the Mystery flag `applyPowerUp` has just set (it keeps the
+    /// lives and points out of a Mystery, as it always has), and asked the questions a drop
+    /// is asked: unlocked, and worth having now. Not a Mystery again.
+    func endlessIIMysteryReveal() -> Int? {
+        for _ in 0..<20 {
+            guard let drawn = endlessIIPowerUpForBrick() else { return nil }
+            if drawn != endlessIIMysteryIndex, powerUpIsUnlockedForThisRun(drawn),
+               endlessIIConditionalPowerUpIsStillWorthIt(drawn) {
+                return drawn
+            }
+        }
+        return nil
+    }
+
+    var endlessIIMysteryIndex: Int? { powerUpTextureArray.firstIndex(of: powerUpMystery) }
+
+    private func endlessIIHandOver(_ index: Int, at point: CGPoint, shown: Bool) {
         let carrier = endlessIIBrickPowerUpCarrier(index, at: point, shown: shown)
         addChild(carrier)
         // In the scene and invisible. `applyPowerUp` runs the collection animation on the
