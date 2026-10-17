@@ -515,6 +515,7 @@ extension GameScene {
             guard let brick = node as? SKSpriteNode else { return }
             self.refreshEndlessIIBrickArt(brick)
             self.refreshEndlessIIBrickMarks(on: brick)
+            if brick.endlessIIPowerUpIndex != nil { self.keepEndlessIIPowerUpBrickWorthHaving(brick) }
             // Inside this walk rather than beside it. Round 258 measured the per-frame ticks
             // and the two that cost anything were the ones that visited every brick, so a
             // third enumeration to reach the Square bricks would cost more than the drawing

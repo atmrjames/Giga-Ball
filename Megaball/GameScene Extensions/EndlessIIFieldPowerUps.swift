@@ -717,10 +717,12 @@ extension GameScene {
     /// power-up that did not drop.
     var endlessIILockMayDrop: Bool {
         guard gameMode == .endlessII, endlessIILocked == false else { return false }
-        if endlessIIClassicTimerRunning { return true }
+        if endlessIIClassicTimerOutlastsALockDrop { return true }
         // The old timers count as something to freeze from round 221. A field with nothing but
         // a Giga-Ball running was a field a Lock declined to drop on, though a Lock is now
         // exactly what that player wants
+        if endlessIIDescentClock.outlastsALockDrop(lead: GameScene.endlessIILockLead,
+                                                   spentByPaddleHits: false) { return true }
         return endlessIITimedClocks.contains {
             $0.outlastsALockDrop(lead: GameScene.endlessIILockLead)
         }
@@ -955,6 +957,50 @@ extension GameScene {
     /// this is the same reading, generalised.
     var endlessIIClassicTimerRunning: Bool {
         endlessIIClassicTimers.contains { action(forKey: $0.key) != nil }
+    }
+
+    /// Whether one of the old timers has enough left to still be running when a Lock lands.
+    ///
+    /// Any running one used to count (round 221), with a second left on it or nine. Its bar is
+    /// its fraction remaining, emptying over ten seconds at the shortest, so the same margin the
+    /// Mayhem clocks are held to is read off the bar (round 390).
+    var endlessIIClassicTimerOutlastsALockDrop: Bool {
+        endlessIIClassicTimers.contains { entry in
+            guard action(forKey: entry.key) != nil else { return false }
+            guard let bar = entry.timers.last?.node else { return true }
+            return bar.xScale*GameScene.classicPowerUpShortestSeconds > GameScene.endlessIILockLead
+        }
+    }
+
+    /// The shortest an old timed power-up runs: ten seconds, longer when one is collected again.
+    static let classicPowerUpShortestSeconds: CGFloat = 10
+
+    /// Gives a power-up brick something else to hold once what it shows would do nothing.
+    ///
+    /// James, before submitting 1.3: "Don't show the lock power-up if there are no active timed
+    /// or paddle hit based power-ups." A brick's power-up is chosen as its row is built, and
+    /// that already asks whether a Lock, a Wipe or a Key is worth having (round 332) - but the
+    /// brick then sits in the field for as long as the player leaves it, and whatever the Lock
+    /// would have frozen runs out underneath it. Breaking it then gave a Lock holding nothing.
+    /// So the brick is asked again, every frame from the sweep that already visits every brick,
+    /// and a power-up that has stopped being worth it is swapped for one drawn now, before the
+    /// player can reach it. Returns whether it changed, for the tests.
+    @discardableResult
+    func keepEndlessIIPowerUpBrickWorthHaving(_ brick: SKSpriteNode) -> Bool {
+        guard gameMode == .endlessII, let index = brick.endlessIIPowerUpIndex,
+              endlessIIConditionalPowerUpIsStillWorthIt(index) == false else { return false }
+        for conditional in GameScene.endlessIIConditionalPowerUpIndices
+        where powerUpProbArray.indices.contains(conditional)
+            && endlessIIConditionalPowerUpIsStillWorthIt(conditional) == false {
+            powerUpProbArray[conditional] = 0
+        }
+        // The drop path's own move: zeroed until the next row sets the weights again
+        guard let replacement = endlessIIPowerUpForBrick(),
+              endlessIIConditionalPowerUpIsStillWorthIt(replacement) else { return false }
+        brick.endlessIIPowerUpIndex = replacement
+        InGameRecents.shared.sawPowerUp(replacement)
+        endlessIIDressPowerUpBrick(brick, index: replacement)
+        return true
     }
 
     /// Holds the old timers where they are, or lets them run again.

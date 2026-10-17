@@ -902,3 +902,70 @@ final class RingHUDStandingTests: XCTestCase {
         XCTAssertEqual(GameScene.ringID(forPowerUp: shrinkBall), "tray\(slot)")
     }
 }
+
+/// James, before submitting 1.3: "Don't show the lock power-up if there are no active timed or
+/// paddle hit based power-ups - make sure there's enough time / hits left on the active
+/// power-ups that they will still be active when the lock power-up is collected."
+final class LockOnlyWhenItHoldsSomethingTests: XCTestCase {
+
+    private func mayhem() -> GameScene {
+        let scene = GameScene()
+        scene.gameMode = .endlessII
+        scene.totalStatsArray = [TotalStats()]
+        scene.brickWidth = 40
+        scene.brickHeight = 20
+        scene.powerUpTextureArray = scene.powerUpTexturesInOrder
+        scene.powerUpProbArray = Array(repeating: 0, count: scene.powerUpTexturesInOrder.count)
+        return scene
+    }
+
+    func testAPaddleHitPowerUpOnItsLastHitIsNothingForALockToHold() {
+        var clock = EndlessIIClock()
+        clock.collect(turns: 5)
+        XCTAssertTrue(clock.outlastsALockDrop(lead: GameScene.endlessIILockLead))
+        for _ in 0..<3 { clock.spendTurn(thenLingerFor: 1) }
+        XCTAssertTrue(clock.outlastsALockDrop(lead: GameScene.endlessIILockLead), "two hits left")
+        clock.spendTurn(thenLingerFor: 1)
+        XCTAssertFalse(clock.outlastsALockDrop(lead: GameScene.endlessIILockLead),
+                       "one hit left is spent by the bounce before the Lock is caught")
+        clock.spendTurn(thenLingerFor: 1)
+        XCTAssertFalse(clock.outlastsALockDrop(lead: GameScene.endlessIILockLead),
+                       "nor is the second of goodbye after the last")
+    }
+
+    func testAnOldTimerNearlyRunOutIsNothingForALockToHold() {
+        let scene = mayhem()
+        scene.addChild(scene.gravityIconBar)
+        scene.run(.wait(forDuration: 60), withKey: "powerUpGravityBall")
+        scene.gravityIconBar.xScale = 0.9
+        XCTAssertTrue(scene.endlessIILockMayDrop, "nine seconds of Gravity Ball left")
+        scene.gravityIconBar.xScale = 0.1
+        XCTAssertFalse(scene.endlessIILockMayDrop, "one second left, gone before a Lock lands")
+    }
+
+    func testALockBrickOutlivingWhatItWouldFreezeHoldsSomethingElse() {
+        let scene = mayhem()
+        for name in ["Magnetism", "Halo", "Ball Control"] {
+            if let index = LevelPackSetup.shared.powerUpNameArray.firstIndex(of: name) {
+                scene.powerUpProbArray[index] = 5
+            }
+        }
+        scene.powerUpProbArray[GameScene.lockPowerUpIndex] = 3
+        let brick = SKSpriteNode(color: .white, size: CGSize(width: 40, height: 40))
+        brick.name = BrickCategoryName
+        brick.endlessIIPowerUpIndex = GameScene.lockPowerUpIndex
+        scene.addChild(brick)
+
+        scene.endlessIIAuraClock.collect(10)
+        XCTAssertFalse(scene.keepEndlessIIPowerUpBrickWorthHaving(brick),
+                       "while the Aura has time left the Lock is worth having")
+        XCTAssertEqual(brick.endlessIIPowerUpIndex, GameScene.lockPowerUpIndex)
+
+        scene.endlessIIAuraClock.reset()
+        XCTAssertTrue(scene.keepEndlessIIPowerUpBrickWorthHaving(brick))
+        XCTAssertNotEqual(brick.endlessIIPowerUpIndex, GameScene.lockPowerUpIndex,
+                          "nothing left to freeze, so the brick no longer shows a Lock")
+        XCTAssertNotNil(brick.childNode(withName: GameScene.powerUpBrickName),
+                        "and wears the icon of what it holds now")
+    }
+}

@@ -1983,6 +1983,9 @@ final class RandomisedBounceTests: XCTestCase {
         scene.gameWidth = 400
         scene.totalStatsArray = [TotalStats()]
         scene.finalBrickRowHeight = -100
+        scene.paddleHeight = 4
+        // The height the bar is drawn at beside this scene's unsized paddle - its least - so
+        // that it stands where it is drawn, as a laid-out scene's always does
         return scene
     }
 
@@ -1993,11 +1996,32 @@ final class RandomisedBounceTests: XCTestCase {
         XCTAssertTrue(scene.endlessIISafetyPaddleClock.isRunning)
         let bar = scene.childNode(withName: GameScene.endlessIISafetyPaddleName)
         XCTAssertNotNil(bar)
-        XCTAssertEqual(bar?.position.y ?? 0,
-                       scene.finalBrickRowHeight - scene.brickHeight*1.5, accuracy: 0.001,
-                       "one full brick row below the low-limit line, which is drawn half a "
-                       + "row under the lowest brick row (round 200) - clear air, so the bar "
+        let top = (bar?.position.y ?? 0) + (bar?.frame.height ?? 0)/2
+        XCTAssertEqual(top, scene.finalBrickRowHeight - scene.brickHeight*1.5, accuracy: 0.001,
+                       "one full brick row of clear air under the low-limit line, which is "
+                       + "drawn half a row under the lowest brick row (round 200), so the bar "
                        + "and a last-row brick read as two things")
+    }
+
+    /// James, round 391: "I had the ball pass through the safety paddle again - it was near
+    /// the left edge whilst it was extended."
+    ///
+    /// The bar is solid to a ball only once the ball is clear above it. With half the bar in
+    /// the row of air, a ball climbing through it into a last-row brick turned round 0.09
+    /// points short of clear and fell straight back out of the bottom. The proportions are
+    /// the layout's, which holds them on every screen - 0.665 of a layout unit of air for a
+    /// ball 0.67 across was short everywhere, not only on James's phone.
+    func testABallFitsBetweenTheBarAndALastRowBrick() {
+        let layout = GameSceneLayout(screen: CGSize(width: 393, height: 852))
+        let scene = safetyScene()
+        scene.brickHeight = layout.brickHeight
+        scene.paddleHeight = layout.paddleHeight
+
+        let barTop = scene.endlessIISafetyPaddleY + layout.paddleHeight/2
+        let lastRowUnderside = scene.finalBrickRowHeight - scene.brickHeight/2
+        XCTAssertGreaterThan(lastRowUnderside - barTop, layout.ballSize,
+                             "room for the ball to come clear above the bar before it meets "
+                             + "the brick, or the bar never becomes solid to it")
     }
 
     func testItsSurfaceIsNotThePaddlesAndNotAScreenBlocks() {

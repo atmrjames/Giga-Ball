@@ -62,7 +62,20 @@ extension GameScene {
     /// enough that a brick arriving on the last row and the bar beneath it read as one
     /// object. A row of clear air keeps them two things: below the field so it never sits
     /// inside a brick, and well above the real paddle.
-    var endlessIISafetyPaddleY: CGFloat { finalBrickRowHeight - brickHeight*1.5 }
+    ///
+    /// **The row is measured to the bar's top, not to its centre** (James, round 391: "I had
+    /// the ball pass through the safety paddle again - it was near the left edge whilst it
+    /// was extended"). Measured to the centre, half the bar stood in the row, which left
+    /// 12.15 points between its top and a last-row brick's underside - for a ball 12.24
+    /// across. A ball climbing through the bar into that brick turned round 0.09 points short
+    /// of clear above, so the bar never became solid to it (see
+    /// `refreshEndlessIISafetyPaddleReachability`) and it fell straight back out of the
+    /// bottom: 12 in 24 thrown up into a stand-in for that brick. The left edge and Expand
+    /// were only where it happened to be. Making the bar solid to it there instead was tried,
+    /// and wedged the ball between bar and brick in a gap it cannot fit - so the gap is what
+    /// changed. The bar is the paddle's height, which is the ball's, so a whole row of air
+    /// is room for the ball at every size of screen.
+    var endlessIISafetyPaddleY: CGFloat { finalBrickRowHeight - brickHeight*1.5 - paddleHeight/2 }
 
     func endlessIICollectSafetyPaddle() {
         guard gameMode == .endlessII else { return }

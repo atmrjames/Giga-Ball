@@ -2964,6 +2964,44 @@ testers:
   falling power-up's position by `brickWidth`, so a bare `GameScene()` with a power-up on
   screen traps converting NaN to Int. A real scene is always laid out before play.
 
+**Round 391: a Lock only when it holds something, and room for the ball above the safety bar.**
+
+- **"Don't show the lock power-up if there are no active timed or paddle hit based power-ups -
+  make sure there's enough time / hits left."** The rule existed (`endlessIILockMayDrop`, asked
+  again at every drop since round 332) and had three holes. A clock counted in paddle hits
+  qualified on its last hit, or during the second of goodbye after it, and the bounce before
+  the catch spent it: two hits at least now, and not saying goodbye (Descent counts rows, which
+  a falling Lock does not spend, and keeps its old rule). The old timers qualified with any time
+  at all left: their bar is read now against the same two-second fall. And a power-up brick
+  chose its Lock as its row was built and could sit in the field until everything it would
+  freeze had run out: the frame's brick sweep asks again, and a brick whose Lock, Wipe or Key
+  has stopped being worth having is re-dressed with a power-up drawn now
+  (`keepEndlessIIPowerUpBrickWorthHaving`). `LockOnlyWhenItHoldsSomethingTests`.
+- **The device log** (two Mayhem runs, two dailies, a Classic level): no ball outside the field,
+  no phantom brick. Fifty frames of 33 to 66 ms, mean 43, nearly all after rows were built - the
+  known cost. And in Classic the ball twice crossed the field dead flat, heading 0 and 180
+  degrees, and was turned about ten degrees at each wall by something that does not say so;
+  Classic physics, left alone before the release and queued.
+- **"I had the ball pass through the safety paddle again - it was near the left edge whilst it
+  was extended - perhaps the physics body isn't growing and shrinking with it?"** It was: the
+  body is the bar's frame, measured with `physicsWorld.body(at:)` at no, one and two Expands, in
+  the regular look and Retro. The fault was the gap above it. The bar stood one brick row under
+  the low-limit line *measured to its centre*, so half of it was in the row of air, which left
+  12.15 points between its top and a last-row brick's underside for a ball 12.24 across - 0.665
+  of a layout unit for 0.67, on every screen. The bar is solid to a ball only once the ball is
+  clear above it (round 166), and a ball climbing through it into such a brick turned round 0.09
+  points short of clear and fell straight back out of the bottom: thrown up into a stand-in for
+  that brick from under an extended bar, 12 in 24 did. The left edge and Expand were where it
+  happened, not why. The row is measured to the bar's top now (`endlessIISafetyPaddleY`), half a
+  paddle lower, and the same throws give 0 in 24; balls rattle between bar and brick instead,
+  which breaks the brick. Two other ideas were tried and dropped. Making the bar solid to a
+  falling ball in its upper half wedged the ball in a gap it could not fit. Making it solid to a
+  falling ball beside its end answered a hole that turned out not to be one: the bar's own
+  contact mask still reports that ball, and the hit sends it back up, so 48 throws at the end
+  from just below its top lost none either way. The Retro end-cap body of the first attempt is
+  reverted: James, "the purple end caps shouldn't have a physics body".
+  `testABallFitsBetweenTheBarAndALastRowBrick`.
+
 **Round 390: the home-screen icon's trail, the locked squares, and the Halo's fade.**
 
 James's last list before submitting, from an iPhone SE on iOS 18.
@@ -4298,7 +4336,7 @@ James, after the round 358b push: three play-test notes.
 
 | Item | What is known |
 |---|---|
-| **A ball through the Retro safety bar** (round 388) | James: "Ball went through retro safety paddle as if it wasn't there. Check the other paddle themes and mirror paddle for this issue too." Not reproduced. In a laid-out scene, Retro and the regular theme, with and without Expand and a Convex shape, straight drops at four places across the bar all bounced; then sixty angled throws at 380 to 900 points a second, a quarter of them rising through the bar from below first, with Mirror and Expand running and the bar topped up before each - 52 bounced in Retro and none fell through that had not come up through the bar first, which is the bar working as built: it is solid only to a ball that is clear above it (`refreshEndlessIISafetyPaddleReachability`). Worth knowing for the next sighting: in Retro the picture is drawn taller than the bar's body (the Retro layer is about two and a half times the paddle sprite's height), so a ball that rose through the bar can look clear of it while its underside is still below the body's top, and then falls back through. Wanted: whether the ball came down from above or had just come up from the paddle, and what else was running |
+| **A flat ball in Classic, turned at the walls by something unlogged** (round 391) | James's device log: in Classic (Challenge Pack, Lonesome Brick) the ball crossed the field heading exactly 180 and then 0 degrees, and was turned about ten degrees at each wall with no note from any writer the crooked-ball watch knows. Find the writer; whether to change anything in Classic is James's call |
 | **A white patch under an Exploding Diamond** (round 387) | James's screenshot: a red Exploding Diamond with a white bevelled rectangle showing below its lower edges, half a cell wide, centred, reaching the cell's floor. Its width is the Diamond's hiding rectangle's (`EndlessIIFaceGeometry.hidingRect`, half a cell), so it reads as the brick's own sprite drawing and sitting lower than it should - but the hiding rectangle is centred and inside the rhombus, and the sprite is meant to draw nothing at all once the face has art (round 332). Round 387 could not make it happen: every behaviour on a Diamond, applied before and after the face, on Normal, Multi-Hit and Indestructible bricks, through hits and a second of frames, and then saved and resumed in a laid-out scene - every hidden sprite inside its rectangle and drawing nothing. Not a Tiny quarter (those sit left or right of centre). Wanted: what had just happened to that brick - hit, resumed, drifted, a Breathing pulse - or a second sighting |
 | ~~**Bricks half a row out after a quit and resume**~~ | **Fixed, round 386d** - see that round. It was not the bricks but their faces: a shaped brick's drawing came back round the wrong centre |
 | ~~The game view following an iPad or Mac window~~ | **Seen working, 2 October** - James on his iPad: "it's working perfectly" |

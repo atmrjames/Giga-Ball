@@ -125,8 +125,17 @@ struct EndlessIIClock: Equatable {
     /// clock instead: a seconds clock needs more left than the fall takes, and a turns clock
     /// does not decay with time at all, so any turn left will still be there when the Lock
     /// lands.
-    func outlastsALockDrop(lead: TimeInterval) -> Bool {
-        countsTurns ? isRunning : remaining > lead
+    func outlastsALockDrop(lead: TimeInterval, spentByPaddleHits: Bool = true) -> Bool {
+        guard countsTurns else { return remaining > lead }
+        return spentByPaddleHits ? goodbye == 0 && remaining >= 2 : isRunning
+        // Descent counts rows rather than hits, and no row is spent while a Lock falls, so its
+        // last row is still there when the Lock lands - the caller says which kind it is asking
+        // **Two turns at least, and not saying goodbye** (James, before submitting 1.3: "make
+        // sure there's enough time / hits left on the active power-ups that they will still be
+        // active when the lock power-up is collected"). A clock counted in paddle hits was worth
+        // a Lock while it ran at all - on its last hit, or through the second of goodbye after
+        // it - and a falling Lock is caught by the paddle, so the bounce that came first spent
+        // that last hit and the Lock landed on nothing
     }
 
     /// A turn was used - for the clocks that count paddle hits rather than seconds,
