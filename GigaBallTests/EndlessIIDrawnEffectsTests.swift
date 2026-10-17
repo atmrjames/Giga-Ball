@@ -304,6 +304,24 @@ final class PaddleHaloArtworkTests: XCTestCase {
         return scene.endlessIIPaddleHaloNode as? SKSpriteNode
     }
 
+    /// James, before submitting 1.3: "fade halo power up in and out. Right now it's very abrupt
+    /// how it appears and disappears."
+    func testTheHaloFadesInAndFadesOut() throws {
+        let scene = mayhem()
+        let glow = try XCTUnwrap(halo(scene))
+        XCTAssertEqual(glow.alpha, 0, "it arrives from nothing")
+        XCTAssertTrue(glow.hasActions(), "and fades up")
+
+        glow.removeAllActions()
+        glow.alpha = GameScene.endlessIIHaloAlpha
+        scene.endlessIIPaddleHaloClock.reset()
+        scene.tickEndlessIIPaddlePowerUps(1)
+        scene.tickEndlessIIPaddlePowerUps(1.016)
+        XCTAssertNil(scene.endlessIIPaddleHaloNode, "the run is done with it")
+        XCTAssertNotNil(glow.parent, "but it is still there, going")
+        XCTAssertTrue(glow.hasActions(), "fading rather than gone on the frame its clock ran out")
+    }
+
     func testTheHaloHasItsArtwork() {
         XCTAssertNotNil(GameScene.endlessIIHaloTexture, "Halo")
     }

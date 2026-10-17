@@ -2964,6 +2964,33 @@ testers:
   falling power-up's position by `brickWidth`, so a bare `GameScene()` with a power-up on
   screen traps converting NaN to Int. A real scene is always laid out before play.
 
+**Round 390: the home-screen icon's trail, the locked squares, and the Halo's fade.**
+
+James's last list before submitting, from an iPhone SE on iOS 18.
+
+- **"App icon is wrong, they look right in the app, but on the home screen is wrong, there's
+  no trail on the ball."** iOS 26 draws an Icon Composer icon live; earlier systems are given
+  a flat picture `actool` renders at build time. Twelve of the thirteen icons' trail SVGs
+  wrapped the shape in a Gaussian blur of `stdDeviation="0 0"`, which the live renderer treats
+  as no blur and the flattener as no drawing at all. The filter is gone from all twelve (Glow
+  never had one); each icon was compiled on its own and its flat picture looked at, and the
+  SE's home screen on iOS 18 shows the trail. `AppIconLayersDrawOnEverySystemTests` reads every
+  layer for a blur, since Icon Composer writes one on export.
+- **"Poor alignment of the text and icons inside the locked items containers."** A locked
+  square hid its picture and centred the padlock on it - and a hidden view in a stack view
+  collapses to nothing at the block's top, so the padlock hung from wherever the sentence's
+  block began. The padlock is the block's first member now, and is pinned where a two-line
+  block would put it, so every padlock in a row lines up and a third line hangs lower. One
+  cell serves the app icon, theme, power-up, brick and pack grids; looked at on an iPhone 17
+  Pro on iOS 26 and an iPhone SE on iOS 18. The level lists have no padlock - a locked level is
+  its faded name - so there was nothing there to align.
+- **"Fade halo power up in and out."** It arrived at full strength and vanished on the frame
+  its clock ran out. A third of a second each way now, and the fade out follows the paddle,
+  since the scene stops placing a halo whose clock is done. A reset still clears it at once.
+- **The website, for the release** (`atmrjames/Giga-Ball-Website`, published from `main`): four
+  modes in the gallery for iPhone and iPad, the App Preview videos, 65 power-ups and 98
+  achievements, and `whats-new.html` in place of the sneak peek, which now redirects to it.
+
 **Round 389: standing power-ups drawn as standing, and the release sweep.**
 
 - **"For an always on or locked power-up, give it a full white glowing ring in the power-up HUD

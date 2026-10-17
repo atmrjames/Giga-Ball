@@ -101,3 +101,34 @@ final class ScreenPresentationTests: XCTestCase {
                       "or the child never follows a window that changes shape")
     }
 }
+
+/// James, before submitting 1.3, on an iPhone SE running iOS 18: "App icon is wrong, they look
+/// right in the app, but on the home screen is wrong, there's no trail on the ball."
+///
+/// iOS 26 draws an Icon Composer icon live; every earlier system is given a flat picture that
+/// `actool` renders at build time. The trail's SVG wrapped its shape in a Gaussian blur of
+/// `stdDeviation="0 0"`, which the live renderer treats as no blur and the flattener treats as
+/// no drawing at all - so twelve of the thirteen icons lost their trail on iOS 17 and 18, and
+/// nothing on an iOS 26 device or simulator could show it. Icon Composer writes the filter on
+/// export, so this reads every layer of every icon for one.
+final class AppIconLayersDrawOnEverySystemTests: XCTestCase {
+
+    func testNoIconLayerCarriesAZeroBlur() throws {
+        let app = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent("Megaball")
+        let icons = try FileManager.default.contentsOfDirectory(atPath: app.path)
+            .filter { $0.hasSuffix(".icon") }
+        XCTAssertEqual(icons.count, 13, "the app icon and its twelve alternates")
+        for icon in icons {
+            let assets = app.appendingPathComponent(icon).appendingPathComponent("Assets")
+            for layer in try FileManager.default.contentsOfDirectory(atPath: assets.path)
+            where layer.hasSuffix(".svg") {
+                let svg = try String(contentsOf: assets.appendingPathComponent(layer), encoding: .utf8)
+                XCTAssertFalse(svg.contains("feGaussianBlur"),
+                               "\(icon)/\(layer) has a blur filter, which the flat icon for "
+                               + "iOS 17 and 18 can draw as nothing")
+            }
+        }
+    }
+}

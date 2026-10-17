@@ -50,6 +50,13 @@ final class PackGridCell: UICollectionViewCell {
                                                                   constant: 5)
     private lazy var blockAboveStatus = block.bottomAnchor.constraint(
         lessThanOrEqualTo: status.topAnchor, constant: -2)
+    /// A locked square's padlock, at the same height in every square (round 389).
+    ///
+    /// Centring the padlock and its sentence as one block put the padlock higher wherever the
+    /// sentence ran to three lines - "Complete Computer Pack to unlock" beside two-line
+    /// neighbours - so a row of padlocks stepped up and down. Pinned where a two-line block
+    /// would put it, every padlock in a row lines up and a third line simply hangs lower.
+    private lazy var lockLevel = lock.centerYAnchor.constraint(equalTo: card.centerYAnchor)
     /// Opens the pack's level list. Named for where it sits rather than for what it was.
     private let play = UIButton(type: .system)
 
@@ -121,7 +128,15 @@ final class PackGridCell: UICollectionViewCell {
                              withConfiguration: UIImage.SymbolConfiguration(pointSize: 22,
                                                                             weight: .bold))
         lock.tintColor = mark(0.4)
-        card.addSubview(lock)
+        block.insertArrangedSubview(lock, at: 0)
+        // **In the block, above the sentence, rather than over where the picture was** (James,
+        // before submitting 1.3: "Poor alignment of the text and icons inside the locked items
+        // containers"). The padlock was centred on the picture, and a locked square hides its
+        // picture - and a hidden view in a stack collapses to nothing at the block's top edge.
+        // So the padlock hung from the top of whatever the sentence measured: close under the
+        // card's edge over a three-line sentence, lower over a two-line one, never centred with
+        // the words. As the block's first member it is centred with them, the pair as one, the
+        // way a picture and its name are
 
         status.translatesAutoresizingMaskIntoConstraints = false
         status.textAlignment = .center
@@ -174,9 +189,6 @@ final class PackGridCell: UICollectionViewCell {
             blockLeading, blockTrailing,
 
             icon.heightAnchor.constraint(equalTo: icon.widthAnchor),
-
-            lock.centerXAnchor.constraint(equalTo: icon.centerXAnchor),
-            lock.centerYAnchor.constraint(equalTo: icon.centerYAnchor),
 
             // The two corner marks mirror each other - list top-left, tick top-right, the
             // same size - so the card reads as balanced rather than as a control and a
@@ -303,6 +315,19 @@ final class PackGridCell: UICollectionViewCell {
         // line at the power-up grid's smaller size, and a few want a third (round 78)
         name.textColor = unlocked ? mark() : mark(0.4)
         card.alpha = unlocked ? 1 : 0.55
+
+        if unlocked {
+            lockLevel.isActive = false
+            blockCentre.isActive = true
+        } else {
+            let lockHeight = lock.intrinsicContentSize.height
+            let twoLines = lockHeight + block.spacing + name.font.lineHeight*2
+            lockLevel.constant = blockCentre.constant - twoLines/2 + lockHeight/2
+            lockLevel.priority = blockCentre.priority
+            blockCentre.isActive = false
+            lockLevel.isActive = true
+            // Where a two-line block's padlock would sit, centred as `blockCentre` centres one
+        }
     }
 
     /// Dresses the card as Liquid Glass, iOS 26 and up.

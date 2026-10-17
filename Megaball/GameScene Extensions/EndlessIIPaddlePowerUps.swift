@@ -1330,7 +1330,7 @@ extension GameScene {
         // for the other two)
 
         if endlessIIPaddleHaloClock.isRunning == false {
-            endlessIIPaddleHaloNode?.removeFromParent()
+            if let going = endlessIIPaddleHaloNode { fadeEndlessIIPaddleHaloAway(going) }
             endlessIIPaddleHaloNode = nil
             endlessIIPaddleHaloDrawnReach = 0
             // **The drawn reach must die with the node** (play-test round 98: "I picked up
@@ -1571,9 +1571,37 @@ extension GameScene {
             node = shape
         }
         node.zPosition = 2
+        let shown = node.alpha
+        node.alpha = 0
         addChild(node)
+        node.run(.fadeAlpha(to: shown, duration: GameScene.endlessIIHaloFade))
+        // **Faded in, and out** (James, before submitting 1.3: "fade halo power up in and out.
+        // Right now it's very abrupt how it appears and disappears"). It arrived at full
+        // strength on the frame it was collected and vanished on the frame its clock ran out
         endlessIIPaddleHaloNode = node
         return node
+    }
+
+    /// How long the halo takes to arrive or to go.
+    static let endlessIIHaloFade: TimeInterval = 0.35
+
+    /// Lets an expired halo go gradually, still following the paddle as it fades.
+    ///
+    /// The scene has stopped asking about it - its clock has run out, and `tickEndlessIIPaddleHalo`
+    /// returns before the position is written - so the fade carries the following itself, or a
+    /// paddle moving off would leave the glow behind it for the length of the fade. It eats
+    /// nothing while it fades: the bricks are read only while the clock runs.
+    func fadeEndlessIIPaddleHaloAway(_ halo: SKNode) {
+        let from = halo.alpha
+        let fade = GameScene.endlessIIHaloFade
+        halo.removeAllActions()
+        halo.run(.sequence([
+            .customAction(withDuration: fade) { [weak self] node, elapsed in
+                guard let self else { return }
+                node.position = self.endlessIIPaddleHaloCentre
+                node.alpha = from*max(0, 1 - elapsed/CGFloat(fade))
+            },
+            .removeFromParent()]))
     }
 
     /// Draws the glow to this reach, whichever of the two it is.
