@@ -7173,8 +7173,7 @@ final class RetroTwinDressTests: XCTestCase {
         scene.addChild(bar)
 
         XCTAssertTrue(scene.endlessIIDressRetroTwin(bar))
-        let dress = try XCTUnwrap(bar.childNode(withName: GameScene.endlessIIRetroTwinDressName)
-                                    as? SKSpriteNode)
+        let dress = try picture(on: bar)
         XCTAssertEqual(dress.size.height, scene.paddleRetroTexture.size.height, accuracy: 0.01,
                        "the Retro layer's own height, not the paddle sprite's")
         XCTAssertEqual(dress.size.width, 112, accuracy: 0.01,
@@ -7211,6 +7210,41 @@ final class RetroTwinDressTests: XCTestCase {
         colour(original, x: 8, y: 70).getHue(&before, saturation: nil, brightness: nil, alpha: nil)
         colour(recoloured, x: 8, y: 70).getHue(&after, saturation: nil, brightness: nil, alpha: nil)
         XCTAssertEqual(after, before, accuracy: 0.01, "and the purple end is left alone")
+    }
+
+    private func picture(on bar: SKNode) throws -> SKSpriteNode {
+        try XCTUnwrap(bar.childNode(withName: GameScene.endlessIIRetroTwinDressName)?
+            .childNode(withName: GameScene.endlessIIRetroTwinPictureName) as? SKSpriteNode)
+    }
+
+    /// James, round 388: "Retro mirror paddle ends are being distorted when expanded or shrunk.
+    /// Check the other paddle themes and safety paddle for this issue too." A nine-slice keeps
+    /// its ends from its own scale and not from its parent's, and the picture hung on a twin
+    /// that Expand had scaled. Drawn, the bar's end was half as wide again as the paddle's.
+    func testUnderExpandATwinsPictureIsScaledAsThePaddlesRetroLayerIs() throws {
+        let scene = retroMayhem()
+        for (paddleScale, layerScale) in [(1.5, 1.42), (2.0, 1.82), (0.6, 0.6)] as [(CGFloat, CGFloat)] {
+            scene.paddle.xScale = paddleScale
+            scene.paddleRetroTexture.xScale = layerScale
+            let bar = SKSpriteNode(color: .clear, size: CGSize(width: 92, height: 18))
+            bar.xScale = paddleScale
+            // A twin is the paddle's size and wears the paddle's scale, as the mirror and the
+            // safety bar do
+            scene.addChild(bar)
+            XCTAssertTrue(scene.endlessIIDressRetroTwin(bar))
+            let art = try picture(on: bar)
+
+            var net: CGFloat = 1
+            var node: SKNode? = art
+            while let current = node, current !== scene { net *= current.xScale; node = current.parent }
+            XCTAssertEqual(net, layerScale, accuracy: 0.001,
+                           "the picture is scaled as the paddle's own Retro layer is, and by nothing else")
+            let holder = try XCTUnwrap(art.parent)
+            XCTAssertEqual(art.size.width*holder.xScale*bar.xScale,
+                           scene.paddleRetroTexture.size.width, accuracy: 0.01,
+                           "and drawn as wide as that layer, over a twin as wide as the paddle")
+            bar.removeFromParent()
+        }
     }
 
     func testOutsideRetroTheDressComesOff() {

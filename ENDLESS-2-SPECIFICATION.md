@@ -2964,6 +2964,41 @@ testers:
   falling power-up's position by `brickWidth`, so a bare `GameScene()` with a power-up on
   screen traps converting NaN to Int. A real scene is always laid out before play.
 
+**Round 388: a louder explosion, the twins' ends kept round, the music kept on a restart, and Drift's end tidied.**
+
+James's list after the round 387 TestFlight, with two screenshots.
+
+- **"Exploding brick sound effect should be louder."** `explosion.caf` was already the loudest
+  effect by its active level (-13.1 dB) and peaked at -1.6 dBFS, so plain gain had a dB and a
+  half to give. Two thirds of its energy was below 150 Hz, which a phone's speaker barely
+  plays. `tools/sound-presence.swift`, new, lifts everything above a crossover and drives the
+  whole into a soft limiter: at 150 Hz, +8 dB and +5 dB the band a phone plays is about 7 dB
+  louder, the tail 8 dB, and the peak -0.5 dBFS with nothing clipped. Still a 16-bit CAF.
+  Judged by measurement - the simulator here plays nothing - so it wants an ear on a device.
+- **"Retro mirror paddle ends are being distorted when expanded or shrunk."** The twins wear
+  the paddle's scale, and a nine-slice protects its ends only from its *own* scale: Retro's
+  twin picture hung on the twin, so the twin's scale stretched its finished drawing, round ends
+  and all, half as wide again under one Expand. It hangs under a holder now that undoes the
+  twin's scale, and copies the real Retro layer's geometry, own scale included - drawn on the
+  simulator, the safety bar's and the mirror's ends match the paddle's under Expand. The other
+  themes' twins wear their pictures on their own sprites, which is why only Retro did this:
+  drawn too, Regular, Rainbow, Ice and Glass keep their ends.
+- **"If a new game is started without leaving the game scene, don't cut to a new music
+  track."** Every new game crossfaded to a freshly drawn track. `PreGame.changesTheTrack`: only
+  a scene's first game does (it is entered from no state; every restart comes from an end, a
+  pause or the between-levels screen), or a restart that finds nothing playing.
+- **"During the drift power ups, if a large brick ends up half out of view when the power-up
+  ends, automatically destroy it."** `removeEndlessIIBricksPastTheWalls`, at Drift's end: any
+  brick whose cells reach past a wall goes, unscored, with the Directional rule's fade.
+  **And a fault found on the way:** Drift's end rounded every brick to its nearest column
+  centre, which put each Tiny brick's left and right quarters on top of each other. Each brick
+  rounds to its own grid now (`endlessIIGridX`): a quarter of a column either side of a centre
+  for a Tiny quarter, a column centre for everything else as before. (Undoing the unfinished
+  step instead, the save's answer, was tried first and turned the field back on a cancelled
+  Drift, which `testEachDriftSlidesItsOwnWayAndTheOtherOneCancelsIt` caught.)
+- **Queued:** the ball through the Retro safety bar, not reproduced - in §12.0 with what was
+  tried, and what to look for.
+
 **Round 387: a ball that left the field, the arrow at the Portal it goes to, and the daily card's order.**
 
 James's list after the round 386e TestFlight, with three screenshots and a device log.
@@ -4199,6 +4234,7 @@ James, after the round 358b push: three play-test notes.
 
 | Item | What is known |
 |---|---|
+| **A ball through the Retro safety bar** (round 388) | James: "Ball went through retro safety paddle as if it wasn't there. Check the other paddle themes and mirror paddle for this issue too." Not reproduced. In a laid-out scene, Retro and the regular theme, with and without Expand and a Convex shape, straight drops at four places across the bar all bounced; then sixty angled throws at 380 to 900 points a second, a quarter of them rising through the bar from below first, with Mirror and Expand running and the bar topped up before each - 52 bounced in Retro and none fell through that had not come up through the bar first, which is the bar working as built: it is solid only to a ball that is clear above it (`refreshEndlessIISafetyPaddleReachability`). Worth knowing for the next sighting: in Retro the picture is drawn taller than the bar's body (the Retro layer is about two and a half times the paddle sprite's height), so a ball that rose through the bar can look clear of it while its underside is still below the body's top, and then falls back through. Wanted: whether the ball came down from above or had just come up from the paddle, and what else was running |
 | **A white patch under an Exploding Diamond** (round 387) | James's screenshot: a red Exploding Diamond with a white bevelled rectangle showing below its lower edges, half a cell wide, centred, reaching the cell's floor. Its width is the Diamond's hiding rectangle's (`EndlessIIFaceGeometry.hidingRect`, half a cell), so it reads as the brick's own sprite drawing and sitting lower than it should - but the hiding rectangle is centred and inside the rhombus, and the sprite is meant to draw nothing at all once the face has art (round 332). Round 387 could not make it happen: every behaviour on a Diamond, applied before and after the face, on Normal, Multi-Hit and Indestructible bricks, through hits and a second of frames, and then saved and resumed in a laid-out scene - every hidden sprite inside its rectangle and drawing nothing. Not a Tiny quarter (those sit left or right of centre). Wanted: what had just happened to that brick - hit, resumed, drifted, a Breathing pulse - or a second sighting |
 | ~~**Bricks half a row out after a quit and resume**~~ | **Fixed, round 386d** - see that round. It was not the bricks but their faces: a shaped brick's drawing came back round the wrong centre |
 | ~~The game view following an iPad or Mac window~~ | **Seen working, 2 October** - James on his iPad: "it's working perfectly" |

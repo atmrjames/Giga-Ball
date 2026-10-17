@@ -1452,3 +1452,80 @@ final class TinyPassTests: XCTestCase {
         XCTAssertEqual(row.count, 1)
     }
 }
+
+/// James, round 388: "During the drift power ups, if a large brick ends up half out of view when
+/// the power-up ends, automatically destroy it."
+final class DriftEndsInsideTheWallsTests: XCTestCase {
+
+    private func makeScene() -> GameScene {
+        let scene = GameScene(size: CGSize(width: 500, height: 900))
+        scene.gameMode = .endlessII
+        scene.totalStatsArray = [TotalStats()]
+        scene.gameWidth = 440
+        scene.brickWidth = 40
+        scene.brickHeight = 20
+        scene.numberOfBrickColumns = 11
+        scene.numberOfBrickRows = 22
+        scene.yBrickOffsetEndless = 300
+        scene.finalBrickRowHeight = 300 - 20*21
+        scene.ballSize = 12
+        return scene
+    }
+
+    private func bricks(in scene: GameScene) -> [SKSpriteNode] {
+        var found: [SKSpriteNode] = []
+        scene.enumerateChildNodes(withName: BrickCategoryName) { node, _ in
+            if let brick = node as? SKSpriteNode { found.append(brick) }
+        }
+        return found
+    }
+
+    func testABigBrickLeftHalfPastAWallIsTakenAway() {
+        let scene = makeScene()
+        let big = scene.endlessIIMakeBig(leftColumn: 9, rowY: 200)
+        big.position.x += scene.brickWidth
+        // Carried a column right by the drift: its right half is now past the wall
+        XCTAssertGreaterThan(scene.endlessIIFieldRect(of: big).maxX, scene.gameWidth/2)
+        scene.endlessIIDriftDirection = 1
+
+        scene.endEndlessIIDrift()
+        XCTAssertFalse(bricks(in: scene).contains { $0 === big }, "half out of view is taken away")
+    }
+
+    func testABigBrickInsideTheWallsStays() {
+        let scene = makeScene()
+        let big = scene.endlessIIMakeBig(leftColumn: 9, rowY: 200)
+        scene.endlessIIDriftDirection = 1
+        scene.endEndlessIIDrift()
+        XCTAssertTrue(bricks(in: scene).contains { $0 === big })
+    }
+
+    func testEveryKindOfBrickEndsTheDriftWhereItBelongs() {
+        let scene = makeScene()
+        let big = scene.endlessIIMakeBig(leftColumn: 2, rowY: 200)
+        let plain = SKSpriteNode(color: .white, size: CGSize(width: 40, height: 20))
+        plain.name = BrickCategoryName
+        plain.position = CGPoint(x: -220 + 40*5.5, y: 160)
+        scene.addChild(plain)
+        let tinyHome = SKSpriteNode(color: .white, size: CGSize(width: 40, height: 20))
+        tinyHome.name = BrickCategoryName
+        tinyHome.position = CGPoint(x: -220 + 40*7.5, y: 160)
+        scene.addChild(tinyHome)
+        let quarters = scene.makeTiny(tinyHome)
+        let before = bricks(in: scene).map { ObjectIdentifier($0) }
+        let rects = Dictionary(uniqueKeysWithValues: bricks(in: scene).map {
+            (ObjectIdentifier($0), scene.endlessIIFieldRect(of: $0)) })
+        XCTAssertGreaterThanOrEqual(quarters.count, 2)
+        _ = big
+
+        scene.endlessIIDriftDirection = 1
+        scene.endEndlessIIDrift()
+        XCTAssertEqual(bricks(in: scene).map { ObjectIdentifier($0) }.sorted { $0.hashValue < $1.hashValue },
+                       before.sorted { $0.hashValue < $1.hashValue }, "nothing inside the walls goes")
+        for brick in bricks(in: scene) {
+            let was = rects[ObjectIdentifier(brick)]!
+            XCTAssertEqual(scene.endlessIIFieldRect(of: brick).minX, was.minX, accuracy: 0.01,
+                           "a brick already on the grid is not moved by the snap: \(brick.size)")
+        }
+    }
+}

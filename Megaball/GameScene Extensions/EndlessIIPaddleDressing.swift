@@ -539,6 +539,8 @@ extension GameScene {
 extension GameScene {
 
     static let endlessIIRetroTwinDressName = "endlessIIRetroTwinDress"
+    /// The picture itself, inside the dress that undoes the twin's scale (round 388).
+    static let endlessIIRetroTwinPictureName = "endlessIIRetroTwinPicture"
 
     /// Draws a twin of the paddle - the safety bar, the mirror, the mirror's wrap ghost - in the
     /// Retro theme's own picture, at that picture's own proportions.
@@ -566,7 +568,6 @@ extension GameScene {
     @discardableResult
     func endlessIIDressRetroTwin(_ surface: SKSpriteNode, reflected: Bool = false) -> Bool {
         let existing = surface.childNode(withName: GameScene.endlessIIRetroTwinDressName)
-            as? SKSpriteNode
         let shape = endlessIIShapeOwnsTheBounce
             ? (reflected ? endlessIIMirrorPaddleSurface : endlessIIPaddleSurface) : nil
         let suffix = shape.flatMap { endlessIIPaddleShapeSuffix($0) }
@@ -588,11 +589,18 @@ extension GameScene {
         // Drawing nothing of its own: a sprite with no picture and a clear colour is invisible,
         // the arrangement the split safety bar already uses for the bar its pieces stand in
 
-        let dress = existing ?? {
-            let made = SKSpriteNode()
+        let holder = existing ?? {
+            let made = SKNode()
             made.name = GameScene.endlessIIRetroTwinDressName
             made.zPosition = 0.05
             surface.addChild(made)
+            return made
+        }()
+        let dress = (holder.childNode(withName: GameScene.endlessIIRetroTwinPictureName)
+                     as? SKSpriteNode) ?? {
+            let made = SKSpriteNode()
+            made.name = GameScene.endlessIIRetroTwinPictureName
+            holder.addChild(made)
             return made
         }()
         let lime = GameScene.twinPicture(of: art, turning: .retro)
@@ -605,10 +613,30 @@ extension GameScene {
         }
         let xScale = surface.xScale == 0 ? 1 : abs(surface.xScale)
         let yScale = surface.yScale == 0 ? 1 : abs(surface.yScale)
+        holder.xScale = 1/xScale
+        holder.yScale = 1/yScale
+        // **The twin's scale undone, so the picture can wear the Retro layer's own** (James,
+        // round 388: "Retro mirror paddle ends are being distorted when expanded or shrunk").
+        // Expand and Shrink scale the twin, as they scale the paddle, and a nine-slice only
+        // protects its ends from its *own* scale: a parent's is applied afterwards, to the
+        // finished drawing, ends and all. So a picture hung straight on the twin had its round
+        // ends drawn half as wide again under one Expand, while the real Retro layer - a node
+        // of its own, scaled itself - kept them round. Under this holder the picture is back in
+        // points, and is given the layer's geometry exactly, own scale and all.
+        let layerX = paddleRetroTexture.xScale == 0 ? 1 : abs(paddleRetroTexture.xScale)
+        let layerY = paddleRetroTexture.yScale == 0 ? 1 : abs(paddleRetroTexture.yScale)
         let widthShare = paddleRetroTexture.size.width/paddle.size.width
-        dress.size = CGSize(width: abs(surface.size.width)*widthShare/xScale,
-                            height: paddleRetroTexture.size.height/yScale)
-        dress.position = CGPoint(x: 0, y: (-abs(surface.size.height)/2 + paddleHeight/2)/yScale)
+        let drawn = CGSize(width: abs(surface.size.width)*widthShare,
+                           height: paddleRetroTexture.size.height)
+        let unscaled = CGSize(width: drawn.width/layerX, height: drawn.height/layerY)
+        if dress.xScale != 1 || dress.yScale != 1 { dress.setScale(1) }
+        if dress.size != unscaled { dress.size = unscaled }
+        dress.xScale = layerX
+        dress.yScale = layerY
+        // Sized while unscaled and then scaled, the order that leaves no doubt about what the
+        // size means: a sprite's `size` includes its scale (§8.6), so writing it to a sprite
+        // that already has one is asking SpriteKit to divide
+        dress.position = CGPoint(x: 0, y: -abs(surface.size.height)/2 + paddleHeight/2)
         // Centred where the plain paddle's middle would be, measured up from the twin's
         // underside - exactly how `positionRetroPaddleLayers` places the paddle's own layer
         dress.colorBlendFactor = 0

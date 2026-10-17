@@ -25,7 +25,9 @@ class PreGame: GKState {
         // Add slight delay when moving in from main menu
         scene.self.run(wait, completion: { [weak self] in
             guard let self else { return }
-            if self.scene.musicSetting {
+            if self.scene.musicSetting,
+               PreGame.changesTheTrack(enteringFrom: previousState,
+                                       musicIsPlaying: MusicHandler.sharedHelper.player?.isPlaying == true) {
                 MusicHandler.sharedHelper.crossfadeMusic(sender: "PreGame")
                 // **Mixed, not cut** (James, round 210: "when the music goes from the main menu
                 // to a game, it abruptly changes"). This was a stop followed immediately by a
@@ -37,7 +39,22 @@ class PreGame: GKState {
         
     }
     // This function runs when this state is entered.
-    
+
+    /// Whether a new game brings a new track.
+    ///
+    /// **Only a new game scene does** (James, round 388: "If a new game is started without
+    /// leaving the game scene (I.e. without going back to the main menu), don't cut to a new
+    /// music track keep the same one playing on loop. Only cut to a new track when going back
+    /// to the main menus or starting a new game scene"). Every new game came through here and
+    /// drew a fresh track, so Play Again from the end screen or Restart from the pause menu
+    /// crossfaded away from the music the player had just been playing to. The scene's first
+    /// game is the one entered from no state at all - every restart comes from the end of a
+    /// run, a pause or the between-levels screen - and that is the one that changes the track.
+    /// Anything that finds nothing playing starts some, so a restart never begins in silence.
+    static func changesTheTrack(enteringFrom previous: GKState?, musicIsPlaying: Bool) -> Bool {
+        previous == nil || musicIsPlaying == false
+    }
+
     override func willExit(to nextState: GKState) {
         
     }

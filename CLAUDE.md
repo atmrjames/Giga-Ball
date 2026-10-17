@@ -163,7 +163,9 @@ background: piping `xcodebuild` straight into `grep` has hung twice.
   lived in a session's scratch directory and were lost with it.
   Round 360 added two for sound, `sound-loudness.swift` and `sound-gain.swift`: the simulator
   plays nothing, so "too quiet" is judged against the other files in dBFS and a level is changed
-  in the file itself - `playSoundFileNamed` has no volume.
+  in the file itself - `playSoundFileNamed` has no volume. Round 388 added `sound-presence.swift`
+  for a sound already near full scale that still reads quiet on a phone: it lifts what the
+  speaker can play and soft-limits the peaks, where `sound-gain` would only clip.
   **Before round 358b `mutate.py` called a crashing mutant a survivor**: the relaunched test
   host printed `Selected tests' passed` for the tests left after the crash, and that line was
   read first. A Swift `Fatal error:` now counts as killed. A survivor that looks as if it ought

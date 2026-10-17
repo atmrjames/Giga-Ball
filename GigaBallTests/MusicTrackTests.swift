@@ -14,6 +14,7 @@
 //
 
 import XCTest
+import GameplayKit
 @testable import Giga_Ball
 
 final class MusicTrackTests: XCTestCase {
@@ -137,5 +138,23 @@ final class MusicTrackTests: XCTestCase {
     func testRubbishInTheStoreLeavesEveryTrackPlaying() {
         store.set(42, forKey: MusicSelection.defaultsKey)
         XCTAssertEqual(MusicSelection.enabled(in: store), MusicTrack.allCases)
+    }
+}
+
+/// James, round 388: "If a new game is started without leaving the game scene (I.e. without
+/// going back to the main menu), don't cut to a new music track keep the same one playing on
+/// loop. Only cut to a new track when going back to the main menus or starting a new game scene."
+final class RestartKeepsTheTrackTests: XCTestCase {
+
+    func testOnlyTheScenesFirstGameChangesTheTrack() {
+        XCTAssertTrue(PreGame.changesTheTrack(enteringFrom: nil, musicIsPlaying: true),
+                      "a new game scene, coming from the menu's theme, draws a game track")
+        let scene = GameScene(size: CGSize(width: 402, height: 874))
+        for state in [GameOver(scene: scene), Paused(scene: scene)] as [GKState] {
+            XCTAssertFalse(PreGame.changesTheTrack(enteringFrom: state, musicIsPlaying: true),
+                           "Play Again or Restart keeps the track that is playing: \(type(of: state))")
+        }
+        XCTAssertTrue(PreGame.changesTheTrack(enteringFrom: GameOver(scene: scene), musicIsPlaying: false),
+                      "but a restart that finds nothing playing starts something")
     }
 }

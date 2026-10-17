@@ -180,14 +180,53 @@ extension GameScene {
         endlessIIDriftPhase = 0
         endlessIIDriftMoved = 0
         enumerateChildNodes(withName: BrickCategoryName) { node, _ in
-            node.position.x = self.endlessIIColumnCentre(nearest: node.position.x)
+            node.position.x = (node as? SKSpriteNode).map {
+                self.endlessIIGridX(of: $0, near: $0.position.x)
+            } ?? self.endlessIIColumnCentre(nearest: node.position.x)
         }
-        // Snapped rather than left where the clock stopped. Everything else in the mode
-        // speaks in cells - the generator, the crush, a Spinning brick's clearance - and a
-        // field sitting half a column out would keep working by rounding until the day it
-        // did not (§8.6's own warning, in the other axis)
+        // Put back where it belongs rather than left where the clock stopped. Everything else
+        // in the mode speaks in cells - the generator, the crush, a Spinning brick's clearance -
+        // and a field sitting half a column out would keep working by rounding until the day
+        // it did not (§8.6's own warning, in the other axis).
+        //
+        // **Each brick onto its own grid** (round 388). Every brick was rounded to a column
+        // centre, which is right for every size but one: a Tiny brick's quarters sit a quarter
+        // of a cell either side of its centre, and both rounded onto it, so the drift's end
+        // left every Tiny brick's left and right quarters on top of each other.
+        // `endlessIIGridX` rounds each brick to the places its size may stand - a column
+        // centre for the rest, exactly as before
 
+        removeEndlessIIBricksPastTheWalls()
         removeEndlessIIDirectionalsFacingTheWall()
+    }
+
+    /// Takes away any brick the drift has left partly past a wall.
+    ///
+    /// James, round 388: "During the drift power ups, if a large brick ends up half out of view
+    /// when the power-up ends, automatically destroy it." While Drift runs the walls are
+    /// doorways and a brick goes round the side, and a Big brick - two columns wide - can be
+    /// caught half through one when the clock stops. Half of it is then where no ball can
+    /// reach and the eye cannot see, and the other half is a brick that cannot be finished.
+    /// Gone the way the Directional brick facing a wall goes (round 339): no score, because
+    /// the player did not break it, and a short fade so it reads as the field tidying up.
+    ///
+    /// Returns how many went, for the tests.
+    @discardableResult
+    func removeEndlessIIBricksPastTheWalls() -> Int {
+        guard gameMode == .endlessII, gameWidth > 0 else { return 0 }
+        let wall = gameWidth/2 + 0.5
+        var removed = 0
+        enumerateChildNodes(withName: BrickCategoryName) { node, _ in
+            guard let brick = node as? SKSpriteNode else { return }
+            let cells = self.endlessIIFieldRect(of: brick)
+            guard cells.minX < -wall || cells.maxX > wall else { return }
+            brick.name = BrickRemovalCategoryName
+            brick.physicsBody = nil
+            brick.run(.sequence([.fadeOut(withDuration: 0.2), .removeFromParent()]))
+            removed += 1
+        }
+        if removed > 0 { countBricks() }
+        return removed
     }
 
     /// Takes away any Directional brick the drift has left with its open face against a wall.
@@ -260,6 +299,18 @@ extension GameScene {
         if back - half > gameWidth/2 { back -= gameWidth }
         if back + half < -gameWidth/2 { back += gameWidth }
         return back
+    }
+
+    /// The nearest place across the field this brick is allowed to stand: a column centre, or
+    /// for a Tiny brick's quarter, a quarter of a column either side of one.
+    func endlessIIGridX(of brick: SKSpriteNode, near x: CGFloat) -> CGFloat {
+        guard brickWidth > 0, endlessIISizeOf(brick) == .tiny else {
+            return endlessIIColumnCentre(nearest: x)
+        }
+        let quarter = GameScene.endlessIITinyOffset*brickWidth
+        let first = -gameWidth/2 + brickWidth/2 - quarter
+        let step = quarter*2
+        return first + ((x - first)/step).rounded()*step
     }
 
     /// The centre of the column nearest a given x, which is where every brick belongs.
