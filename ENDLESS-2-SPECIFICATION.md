@@ -2964,6 +2964,30 @@ testers:
   falling power-up's position by `brickWidth`, so a bare `GameScene()` with a power-up on
   screen traps converting NaN to Int. A real scene is always laid out before play.
 
+**Round 395: Retro's split lasers with one turret each, and a Portal glow round each piece.**
+
+- **"In the retro image you shared, there's 2 turrets on each of the split paddles, where the
+  classic theme just has a turret on the outer most edges as it should be. Are you able to make
+  this graphic yourself or do you need me to make it?"** Made from his own art rather than drawn
+  anew. The Retro laser picture is a ship with a domed end each side and a turret - a blue post
+  and an orange ball - beside each dome, wholly outside the dome's sloped edge: measured off the
+  3x art, that edge runs from 7 points in from the end at 6 points down, out by 0.8 for every
+  point lower, and the post ends above 12 points. Clearing everything outside the edge above
+  that height takes one turret off and nothing else, the pixels the edge passes through redrawn
+  in the dome's own colour at the share they cover. The two ends are mirror images to the pixel
+  and the Portal picture shares their geometry exactly, so one measurement serves all four
+  (`retroLaserWithOneTurret`, made at runtime from whichever picture is being worn and kept, the
+  way the twins' recolouring is). It is recognised through `originalPaddleArt`, because the
+  paddle wears drawn-size copies of its art (round 379). A shaped Retro laser picture is a
+  different geometry and is left whole. `testRetrosOuterPiecesEachKeepOnlyTheirOuterTurret`
+  reads the pixels: one turret, at the kept end, and the lower half of the picture unchanged.
+- **"The portal paddle glow should just be around the sections of the paddle though. Right now
+  it can be seen in the gap between the split paddles."** One halo across the span was round
+  313's answer, from before each piece was its own paddle (rounds 305 and 386). Each piece has its
+  own halo now, the same margin round it, placed from the segment centres the body is cut from,
+  and one halo again when the paddle is whole (`endlessIIPaddlePieceGlows`).
+  `testASplitPortalPaddleGlowsRoundEachPieceAndNotAcrossTheGap`.
+
 **Round 394: the split drawn where it plays, and a mirror that splits.**
 
 - **"The split safety paddles look right, but the split paddle looks wrong. Each of them has a
@@ -2993,7 +3017,7 @@ testers:
   either end, so the ordinary two-piece split showed four, against round 285's "There should only
   ever be 2 turrets with a split paddle". Each outer piece wears its outer half now
   (`GameScene.outerHalf`). Not in Retro, whose laser picture is a whole ship rather than a strip
-  with ends - queued below. `testEachOuterPieceWearsOnlyItsOuterTurret`.
+  with ends - see round 395. `testEachOuterPieceWearsOnlyItsOuterTurret`.
 - **The mirror's Retro laser in the twin's Retro colours**: magenta to lime and the rest as Retro
   draws it (round 386b's rule), where it had been the whole picture tinted lime, an orange-brown
   ship. Its pieces also sit under the strips copied onto it, as the whole mirror does.
@@ -4442,7 +4466,6 @@ James, after the round 358b push: three play-test notes.
 | Item | What is known |
 |---|---|
 | **A flat ball in Classic, turned at the walls by something unlogged** (round 391) | James's device log: in Classic (Challenge Pack, Lonesome Brick) the ball crossed the field heading exactly 180 and then 0 degrees, and was turned about ten degrees at each wall with no note from any writer the crooked-ball watch knows. Find the writer; whether to change anything in Classic is James's call |
-| **Retro's laser picture on a split paddle** (round 394) | Each outer piece of a split Retro paddle wears the whole Retro laser picture, a ship with a turret at each end, so a two-piece split shows four turrets where round 285 says two. Every other theme's strip is cut to its outer half; Retro's cannot be, because half of it is a ship cut off through its stripes. Wanted from James: a Retro laser piece with one turret (left and right, or one to be mirrored), or a ruling that Retro keeps four |
 | **A white patch under an Exploding Diamond** (round 387) | James's screenshot: a red Exploding Diamond with a white bevelled rectangle showing below its lower edges, half a cell wide, centred, reaching the cell's floor. Its width is the Diamond's hiding rectangle's (`EndlessIIFaceGeometry.hidingRect`, half a cell), so it reads as the brick's own sprite drawing and sitting lower than it should - but the hiding rectangle is centred and inside the rhombus, and the sprite is meant to draw nothing at all once the face has art (round 332). Round 387 could not make it happen: every behaviour on a Diamond, applied before and after the face, on Normal, Multi-Hit and Indestructible bricks, through hits and a second of frames, and then saved and resumed in a laid-out scene - every hidden sprite inside its rectangle and drawing nothing. Not a Tiny quarter (those sit left or right of centre). Wanted: what had just happened to that brick - hit, resumed, drifted, a Breathing pulse - or a second sighting |
 | ~~**Bricks half a row out after a quit and resume**~~ | **Fixed, round 386d** - see that round. It was not the bricks but their faces: a shaped brick's drawing came back round the wrong centre |
 | ~~The game view following an iPad or Mac window~~ | **Seen working, 2 October** - James on his iPad: "it's working perfectly" |

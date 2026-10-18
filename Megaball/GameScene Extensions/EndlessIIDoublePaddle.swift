@@ -406,7 +406,7 @@ extension GameScene {
     ///   from two turrets however many pieces there are (round 286), and a strip on a piece
     ///   with no turret would be back to claiming something untrue.
     func refreshEndlessIISplitOverlay(_ source: SKSpriteNode, centres: [CGFloat],
-                                      outerHalfOnly: Bool = false) {
+                                      outerHalfOnly: Bool = false, oneTurret: Bool = false) {
         let key = ObjectIdentifier(source)
         var pieces = endlessIISplitOverlays[key] ?? []
 
@@ -446,13 +446,16 @@ extension GameScene {
         source.alpha = 0
         let caps = paddleCapRect(for: source.texture)
         for (piece, centre) in zip(pieces, centres) {
-            let side: EndlessIISide? = outerHalfOnly
+            let side: EndlessIISide? = outerHalfOnly || oneTurret
                 ? (centre < paddle.position.x ? .left : .right) : nil
-            let art = side.flatMap { GameScene.outerHalf(of: source.texture, side: $0) }
-                ?? source.texture
+            let art = oneTurret
+                ? side.flatMap { GameScene.retroLaserWithOneTurret(source.texture, keeping: $0) }
+                    ?? source.texture
+                : side.flatMap { GameScene.outerHalf(of: source.texture, side: $0) }
+                    ?? source.texture
             if piece.texture !== art { piece.texture = art }
             piece.size = CGSize(width: segment, height: source.size.height)
-            switch side {
+            switch oneTurret ? nil : side {
             case .left?:
                 piece.centerRect = CGRect(x: caps.minX*2, y: caps.minY,
                                           width: 1 - caps.minX*2, height: caps.height)
@@ -486,6 +489,88 @@ extension GameScene {
 
     private static var outerHalves: [String: (source: SKTexture, half: SKTexture)] = [:]
 
+    /// The Retro laser picture with the turret on one end taken off, for a split paddle's outer
+    /// piece on that side.
+    ///
+    /// **James, round 395: "In the retro image you shared, there's 2 turrets on each of the split
+    /// paddles, where the classic theme just has a turret on the outer most edges as it should
+    /// be."** The Retro laser picture is a ship with a domed end each side and a turret standing
+    /// beside each dome - a blue post with an orange ball - so it cannot be cut in half the way
+    /// the other themes' strips are. Measured off the 3x art, every turret stands wholly outside
+    /// its dome's sloped outer edge, which runs from (84, 6) points down and out at 0.8 of a point
+    /// per point, and the post ends above 12 points, where the dome's own edge carries on alone.
+    /// So clearing everything outside that edge, above that height, takes the turret off and
+    /// nothing else; the pixels the edge passes through are redrawn in the dome's colour at the
+    /// share of them it covers, the anti-aliasing the post had been sitting against. The two ends
+    /// are mirror images to the pixel, and the Portal picture shares their geometry exactly, so
+    /// one measurement serves all four. Made from the picture being worn rather than drawn as new
+    /// files, so it is always that picture. A shaped picture is not this geometry and is left
+    /// whole.
+    static func retroLaserWithOneTurret(_ texture: SKTexture?, keeping side: EndlessIISide)
+        -> SKTexture? {
+        guard let texture, side == .left || side == .right else { return nil }
+        let art = (GameScene.originalPaddleArt(texture) ?? texture).cacheIdentity
+        guard art.hasPrefix("name:retroLasers ") || art.hasPrefix("name:retroLasersPortal ")
+        else { return nil }
+        // Asked of the artwork the picture was made from: the paddle's sprites wear drawn-size
+        // copies of their art (round 379), and a copy has no name of its own
+        let key = "\(texture.cacheIdentity) \(side == .left ? "L" : "R")"
+        if let kept = oneTurretLasers[key] { return kept }
+
+        let original = texture.cgImage()
+        let width = original.width, height = original.height
+        let points = texture.size()
+        guard width > 0, height > 0, points.width > 0, points.height > 0 else { return nil }
+        var pixels = [UInt8](repeating: 0, count: width*height*4)
+        guard let context = CGContext(data: &pixels, width: width, height: height,
+                                      bitsPerComponent: 8, bytesPerRow: width*4,
+                                      space: CGColorSpaceCreateDeviceRGB(),
+                                      bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)
+        else { return nil }
+        context.draw(original, in: CGRect(x: 0, y: 0, width: width, height: height))
+
+        let scale = CGFloat(height)/GameScene.retroLaserArtHeight
+        // Pixels to the art's own points, by height: a drawn-size copy is the art scaled whole,
+        // so its height says how much, whatever size it is drawn at
+        let clearingRight = side == .left
+        for row in 0..<height {
+            let y = (CGFloat(row) + 0.5)/scale
+            guard y < 12 else { break }
+            let edge = CGFloat(width) - (7 - 0.8*(y - 6))*scale
+            // Where the right-hand dome's edge crosses this row, in pixels from the left: seven
+            // art points in from the end at six down, and out by 0.8 for every point lower
+            for column in 0..<width {
+                let x = clearingRight ? column : width - 1 - column
+                let inside = min(max(edge - CGFloat(column), 0), 1)
+                // How much of this pixel, counted as the right end, is dome
+                guard inside < 1 else { continue }
+                let index = (row*width + x)*4
+                if inside <= 0 {
+                    for channel in 0..<4 { pixels[index + channel] = 0 }
+                } else {
+                    let neighbour = (row*width + (clearingRight ? x - 1 : x + 1))*4
+                    for channel in 0..<4 {
+                        pixels[index + channel] = UInt8(CGFloat(pixels[neighbour + channel])*inside)
+                    }
+                    // The dome's own colour at its own edge, premultiplied as the buffer is
+                }
+            }
+        }
+        guard let image = context.makeImage() else { return nil }
+        let made = SKTexture(image: UIImage(cgImage: image, scale: CGFloat(width)/points.width,
+                                            orientation: .up))
+        oneTurretLasers[key] = made
+        return made
+        // At the original's scale, so its natural size in points is the art's, which is what a
+        // nine-slice measures its caps against (§8.6)
+    }
+
+    private static var oneTurretLasers: [String: SKTexture] = [:]
+
+    /// The Retro laser art's height in its own points (`retroLasers.png` is 91 by 26), the unit
+    /// the turret's geometry above is measured in.
+    static let retroLaserArtHeight: CGFloat = 26
+
     /// Every overlay the split has to cut up, each with the segments it belongs on.
     ///
     /// **Two turrets for the lasers and all of them for the rest**, and the difference is the
@@ -502,15 +587,15 @@ extension GameScene {
         let outer = all.isEmpty ? [] : [all[0], all[all.count - 1]]
 
         refreshEndlessIISplitOverlay(paddleLaser, centres: outer, outerHalfOnly: true)
-        refreshEndlessIISplitOverlay(paddleRetroLaserTexture, centres: outer)
+        refreshEndlessIISplitOverlay(paddleRetroLaserTexture, centres: outer, oneTurret: true)
         // **The outer half of the strip on each** (round 394). The whole strip has a turret at
         // each end, so a two-piece split - both pieces outer - showed four turrets, two of them
         // on the inner ends, against James's round 285 rule: "only the outermost section of
         // paddle should have a laser turret on its outer edge. There should only ever be 2
         // turrets with a split paddle." The shots already came from two places; now the picture
-        // says so. **Not Retro's**, whose laser picture is a whole drawn ship rather than a strip
-        // with two ends: half of it is a ship cut off through its stripes. It keeps the whole
-        // picture on each outer piece until there is art for a piece with one turret (queued)
+        // says so. **Retro's is a whole drawn ship** rather than a strip with two ends - half of
+        // it is a ship cut off through its stripes - so each outer piece wears the whole ship with
+        // its inner turret taken off instead (`retroLaserWithOneTurret`, round 395)
         refreshEndlessIISplitOverlay(paddleSticky, centres: all)
         refreshEndlessIISplitOverlay(paddleRetroStickyTexture, centres: all)
     }

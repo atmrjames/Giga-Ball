@@ -5133,6 +5133,68 @@ final class PaddleFamilyParityTests: XCTestCase {
         XCTAssertEqual(scene.endlessIISplitLaserTurrets.count, 2)
     }
 
+    /// James, round 395: "In the retro image you shared, there's 2 turrets on each of the split
+    /// paddles, where the classic theme just has a turret on the outer most edges as it should
+    /// be." Retro's laser picture is a whole ship, so each outer piece wears the ship with its
+    /// inner turret taken off - and nothing else of the picture changed.
+    func testRetrosOuterPiecesEachKeepOnlyTheirOuterTurret() throws {
+        for name in ["retroLasers", "retroLasersPortal"] {
+            let whole = SKTexture(imageNamed: name)
+            for side in [EndlessIISide.left, .right] {
+                let kept = try XCTUnwrap(GameScene.retroLaserWithOneTurret(whole, keeping: side),
+                                         "\(name) has a one-turret form")
+                let before = try pixels(of: whole), after = try pixels(of: kept)
+                XCTAssertEqual(after.width, before.width)
+                let leftBall = orange(in: after, columns: 0..<(after.width/4))
+                let rightBall = orange(in: after, columns: (after.width*3/4)..<after.width)
+                XCTAssertEqual(leftBall > 0, side == .left, "\(name) \(side): the left turret")
+                XCTAssertEqual(rightBall > 0, side == .right, "\(name) \(side): the right turret")
+                XCTAssertEqual(changed(before, after, rows: (before.height/2)..<before.height), 0,
+                               "\(name) \(side): the lower half - domes, tube - is the art untouched")
+            }
+        }
+    }
+
+    private struct Pixels { let width: Int; let height: Int; let bytes: [UInt8] }
+
+    private func pixels(of texture: SKTexture) throws -> Pixels {
+        let image = texture.cgImage()
+        var bytes = [UInt8](repeating: 0, count: image.width*image.height*4)
+        let context = try XCTUnwrap(CGContext(data: &bytes, width: image.width, height: image.height,
+                                              bitsPerComponent: 8, bytesPerRow: image.width*4,
+                                              space: CGColorSpaceCreateDeviceRGB(),
+                                              bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue))
+        context.draw(image, in: CGRect(x: 0, y: 0, width: image.width, height: image.height))
+        return Pixels(width: image.width, height: image.height, bytes: bytes)
+    }
+
+    /// The turrets' orange balls: strongly red, some green, little blue, and opaque.
+    private func orange(in picture: Pixels, columns: Range<Int>) -> Int {
+        var count = 0
+        for row in 0..<picture.height {
+            for column in columns {
+                let i = (row*picture.width + column)*4
+                let (r, g, b, a) = (picture.bytes[i], picture.bytes[i + 1], picture.bytes[i + 2],
+                                    picture.bytes[i + 3])
+                if a > 200, r > 180, g > 60, g < 200, b < 60 { count += 1 }
+            }
+        }
+        return count
+    }
+
+    private func changed(_ one: Pixels, _ other: Pixels, rows: Range<Int>) -> Int {
+        var count = 0
+        for row in rows {
+            for column in 0..<one.width {
+                let i = (row*one.width + column)*4
+                if (0..<4).contains(where: { abs(Int(one.bytes[i + $0]) - Int(other.bytes[i + $0])) > 2 }) {
+                    count += 1
+                }
+            }
+        }
+        return count
+    }
+
     /// Round 394's sweep: two strips, but each was the whole strip with a turret at both ends,
     /// so the two-piece split everyone sees showed four - two on the inner ends, where nothing
     /// fires. Each outer piece wears its own outer half.

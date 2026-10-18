@@ -143,36 +143,62 @@ extension GameScene {
     /// No physics body, like the bricks' - a child sprite has none unless given one, and a
     /// glow the ball could bounce off would be a paddle bigger than it looks.
     func refreshEndlessIIPaddleGlow() {
-        let existing = endlessIIPaddleGlowNode
         guard endlessIIPortalPaddleClock.isRunning,
               let texture = endlessIIPaddleGlowTexture()
-        else { existing?.removeFromParent(); return }
+        else {
+            endlessIIPaddleGlowNode?.removeFromParent()
+            endlessIIPaddlePieceGlows.forEach { $0.removeFromParent() }
+            return
+        }
 
-        let glow = existing ?? {
+        let drawn = paddle.frame.size
+        let pieces: [(x: CGFloat, width: CGFloat)]
+        if endlessIIPaddleIsSplit {
+            let segment = GameScene.endlessIIDoublePaddleLayout(span: paddle.size.width,
+                                                                standardWidth: paddleWidth,
+                                                                ballSize: ballSize).segment
+            pieces = endlessIISplitSegmentCentres.map { ($0, segment) }
+        } else {
+            pieces = [(paddle.position.x, drawn.width)]
+        }
+        // **A halo round each piece, not across the gaps** (James, round 395: "The portal paddle
+        // glow should just be around the sections of the paddle though. Right now it can be seen
+        // in the gap between the split paddles"). One halo across the span was round 313's
+        // answer, from before the gaps were a thing the player reads; each piece is its own
+        // paddle now (rounds 305 and 386), so each gets its own light, the same margin round it
+
+        var glows = [endlessIIPaddleGlowNode].compactMap { $0 } + endlessIIPaddlePieceGlows
+        while glows.count < pieces.count {
             let made = SKSpriteNode()
-            made.name = GameScene.paddleGlowName
+            made.name = glows.isEmpty ? GameScene.paddleGlowName
+                                      : GameScene.paddleGlowName + "#\(glows.count)"
             addChild(made)
-            return made
-        }()
+            glows.append(made)
+        }
+        while glows.count > pieces.count { glows.removeLast().removeFromParent() }
+        // The first keeps the name everything else asks for (`endlessIIPaddleGlowNode`)
 
         let art = texture.size()
-        if glow.texture !== texture {
-            glow.texture = texture
-            glow.xScale = 1
-            glow.yScale = 1
-            glow.size = art
-            let cap = art.width > 0 ? min(0.45, (art.height/2)/art.width) : 0
-            glow.centerRect = CGRect(x: cap, y: 0, width: 1 - cap*2, height: 1)
+        for (glow, piece) in zip(glows, pieces) {
+            if glow.texture !== texture {
+                glow.texture = texture
+                glow.xScale = 1
+                glow.yScale = 1
+                glow.size = art
+                let cap = art.width > 0 ? min(0.45, (art.height/2)/art.width) : 0
+                glow.centerRect = CGRect(x: cap, y: 0, width: 1 - cap*2, height: 1)
+            }
+            // Set up when the picture changes - a shape coming or going - and not every frame
+            let wanted = GameScene.paddleGlowSize(
+                paddleDrawnSize: CGSize(width: piece.width, height: drawn.height),
+                margin: endlessIIPaddleGlowMargin())
+            glow.xScale = art.width > 0 ? wanted.width/art.width : 1
+            glow.yScale = art.height > 0 ? wanted.height/art.height : 1
+            glow.position = CGPoint(x: piece.x, y: paddle.position.y)
+            glow.zPosition = paddle.zPosition - 0.1
+            glow.isHidden = paddle.isHidden
+            glow.alpha = paddle.alpha
         }
-        // Set up when the picture changes - a shape coming or going - and not every frame
-        let wanted = GameScene.paddleGlowSize(paddleDrawnSize: paddle.frame.size,
-                                              margin: endlessIIPaddleGlowMargin())
-        glow.xScale = art.width > 0 ? wanted.width/art.width : 1
-        glow.yScale = art.height > 0 ? wanted.height/art.height : 1
-        glow.position = paddle.position
-        glow.zPosition = paddle.zPosition - 0.1
-        glow.isHidden = paddle.isHidden
-        glow.alpha = paddle.alpha
         // **Beside the paddle, not on it, and widened by its own scale** (James, round 378: "it
         // should remain just slightly bigger than the paddle so the glow effect looks right, but
         // from memory it grows too big and shrinks too small"). It was the paddle's child, so it
@@ -189,9 +215,15 @@ extension GameScene {
         //
         // Followed every frame from the dressing tick, which runs in `update` after touches
         // have moved the paddle, so it is where the paddle is in the frame that is drawn. It
-        // takes the paddle's visibility too, which as a child it used to inherit. One halo
-        // across a split paddle's whole span, as before (round 313s): the paddle node's frame
-        // is the span.
+        // takes the paddle's visibility too, which as a child it used to inherit.
+    }
+
+    /// The halos round a split paddle's second and later pieces; the first is
+    /// `endlessIIPaddleGlowNode` (round 395).
+    var endlessIIPaddlePieceGlows: [SKSpriteNode] {
+        children.compactMap { $0 as? SKSpriteNode }
+            .filter { $0.name?.hasPrefix(GameScene.paddleGlowName + "#") == true }
+            .sorted { ($0.name ?? "") < ($1.name ?? "") }
     }
 
     /// The Portal Paddle's glow, which stands in the scene beside the paddle (round 378).

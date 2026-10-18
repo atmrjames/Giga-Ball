@@ -284,6 +284,36 @@ final class SplitPaddleTintTests: XCTestCase {
                         "and with no tint, the halo is the only thing saying Portal")
     }
 
+    /// James, round 395: "The portal paddle glow should just be around the sections of the paddle
+    /// though. Right now it can be seen in the gap between the split paddles."
+    func testASplitPortalPaddleGlowsRoundEachPieceAndNotAcrossTheGap() throws {
+        let scene = self.scene()
+        scene.endlessIICollectDoublePaddle()
+        scene.endlessIICollectPortalPaddle()
+        scene.tickEndlessIIPaddlePowerUps(0)
+
+        let glows = [scene.endlessIIPaddleGlowNode].compactMap { $0 } + scene.endlessIIPaddlePieceGlows
+        let centres = scene.endlessIISplitSegmentCentres
+        XCTAssertEqual(glows.count, centres.count, "a halo for every piece")
+        let layout = GameScene.endlessIIDoublePaddleLayout(span: scene.paddle.size.width,
+                                                           standardWidth: scene.paddleWidth,
+                                                           ballSize: scene.ballSize)
+        let margin = scene.endlessIIPaddleGlowMargin()
+        for (glow, centre) in zip(glows.sorted { $0.position.x < $1.position.x }, centres) {
+            XCTAssertEqual(glow.position.x, centre, accuracy: 0.5, "centred on its own piece")
+            XCTAssertEqual(glow.frame.width, layout.segment + margin.width, accuracy: 0.5,
+                           "and the piece's width plus the margin, not the span's")
+        }
+        XCTAssertLessThan(layout.segment + margin.width, layout.segment*2 + layout.gap,
+                          "so no halo reaches across a gap")
+
+        scene.endlessIIDoublePaddleClock.reset()
+        scene.tickEndlessIIPaddlePowerUps(0)
+        XCTAssertTrue(scene.endlessIIPaddlePieceGlows.isEmpty, "one halo again once it is whole")
+        XCTAssertEqual(scene.endlessIIPaddleGlowNode?.position.x ?? .nan, scene.paddle.position.x,
+                       accuracy: 0.5)
+    }
+
     /// A whole paddle, which is every run that has no Double Paddle in it.
     func testAWholePaddleIsLitRatherThanTinted() {
         let scene = self.scene()
