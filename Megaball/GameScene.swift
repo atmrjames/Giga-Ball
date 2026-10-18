@@ -10007,6 +10007,13 @@ laserTimer?.invalidate()
 				powerUpActiveTimerArray?.append(endlessIILandingTotal)
 				powerUpActiveMagnitudeArray?.append(0)
 			}
+			if gameMode == .endlessII, endlessIILocked {
+				powerUpActiveArray?.append("endlessIILock")
+				powerUpActiveDurationArray?.append(1)
+				powerUpActiveTimerArray?.append(1)
+				powerUpActiveMagnitudeArray?.append(0)
+				// Restored by `endlessIIRestoreFieldClock` (round 395)
+			}
 			for entry in endlessIIPaddleClockSaveEntries() + endlessIIFieldClockSaveEntries() {
 				powerUpActiveArray?.append(entry.key)
 				powerUpActiveDurationArray?.append(entry.remaining)
@@ -11044,7 +11051,14 @@ laserTimer?.invalidate()
 						})
 						ballSpeedIconBar.isHidden = false
 						ballSpeedIcon.run(SKAction.sequence([timerScaleUp, timerScaleDown]), withKey: "powerUpDecreaseBallSpeedTimer")
-						runClassicPowerUpTimer(key: "powerUpDecreaseBallSpeed", wait: waitDuration, ending: completionBlock)
+						let speedingUp = savedGame.activePowerUpMagnitudes[i] >= 2
+						runClassicPowerUpTimer(key: speedingUp ? "powerUpIncreaseBallSpeed" : "powerUpDecreaseBallSpeed",
+											   wait: waitDuration, ending: completionBlock)
+						// **Under the name of the power-up that is running** (round 395, found by
+						// `EveryPowerUpShowsSavesAndEndsTests`). A faster ball came back from a save
+						// filed as Decrease Ball Speed - the same ending, so it played the same, and
+						// everything that asks which of the two is running heard the wrong one. The
+						// icon and bar keys are shared by the pair, so they stay as they were
 						
 					case "paddleSizeTimer":
 						// The retro paddle art is a wider asset than the default one, so
@@ -11112,7 +11126,10 @@ laserTimer?.invalidate()
 						})
 						paddleSizeIconBar.isHidden = false
 						paddleSizeIcon.run(SKAction.sequence([timerScaleUp, timerScaleDown]), withKey: "powerUpPaddleSizeTimer")
-						runClassicPowerUpTimer(key: "powerUpIncreasePaddleSize", wait: waitDuration, ending: completionBlock)
+						runClassicPowerUpTimer(key: savedGame.activePowerUpMagnitudes[i] <= 1
+											   ? "powerUpDecreasePaddleSize" : "powerUpIncreasePaddleSize",
+											   wait: waitDuration, ending: completionBlock)
+						// Under the running power-up's own name, as the ball speed's is (round 395)
 						
 					case "gravityTimer":
 						gravityIcon.texture = self.iconGravityTexture
@@ -11204,7 +11221,10 @@ laserTimer?.invalidate()
 						})
 						gigaBallIconBar.isHidden = false
 						gigaBallIcon.run(SKAction.sequence([timerScaleUp, timerScaleDown]), withKey: "powerUpGigaBallTimer")
-						runClassicPowerUpTimer(key: "powerUpGigaBall", wait: waitDuration, ending: completionBlock)
+						runClassicPowerUpTimer(key: savedGame.activePowerUpMagnitudes[i] == 1
+											   ? "powerUpUndestructiBall" : "powerUpGigaBall",
+											   wait: waitDuration, ending: completionBlock)
+						// An Inert Ball came back filed as a Giga-Ball (round 395) - see the ball speed's
 						
 					case "laserTimer":
 						lasersIcon.texture = self.iconLasersTexture
@@ -11280,7 +11300,10 @@ laserTimer?.invalidate()
 						})
 						ballSizeIconBar.isHidden = false
 						ballSizeIcon.run(SKAction.sequence([timerScaleUp, timerScaleDown]), withKey: "powerUpBallSizeTimer")
-						runClassicPowerUpTimer(key: "powerUpIncreaseBallSize", wait: waitDuration, ending: completionBlock)
+						runClassicPowerUpTimer(key: savedGame.activePowerUpMagnitudes[i] <= 1
+											   ? "powerUpDecreaseBallSize" : "powerUpIncreaseBallSize",
+											   wait: waitDuration, ending: completionBlock)
+						// Under the running power-up's own name (round 395) - see the ball speed's
 						
 					case "stickyPaddle":
 						stickyPaddleCatches = savedGame.activePowerUpMagnitudes[i]

@@ -2964,6 +2964,40 @@ testers:
   falling power-up's position by `brickWidth`, so a bare `GameScene()` with a power-up on
   screen traps converting NaN to Int. A real scene is always laid out before play.
 
+**Round 396: two more sweeps, and the seven faults the second found on its first run.**
+
+James, after round 395's sweeps: "Yes, please run these new tests now and think about what other
+tests we can implement to ensure there are no silly mistakes before launch." Both live in
+`GameSweepTests.swift`.
+
+- **`BricksDrawnWhereSolidTests`**: every style on every behaviour, every shape with every action
+  it can carry, and every size, built in a cleared field through `applyEndlessIIStyle`, its body
+  probed against what it draws - straight after styling and again a moment later. It passed;
+  shown to work by moving a Square brick's body half a cell off its picture, which it named in
+  every Square case. Spinning and Breathing are compared before they move (a turned picture's box
+  takes in its transparent corners; a breath's body is rebuilt in steps, round 235), traced shapes
+  get two and a half points for their outline, and Breathing swelling past its cell in a field
+  with room is round 175's design, not a fault.
+- **`EveryPowerUpShowsSavesAndEndsTests`**: every power-up an endless run can drop, applied in a
+  fresh run - whatever it leaves running must show its own ring, survive a save and a resume
+  unchanged, and go with a Wipe. Its first runs found seven real faults, all fixed:
+  1. **Four shared timers came back from a save under the other power-up's name** - Increase
+     Ball Speed as Decrease, Shrink Paddle as Expand, Inert Ball as Giga-Ball, Shrink Ball as
+     Expand Ball. Each pair shares an icon and the restore always used one key; the endings are
+     the same so it played the same, but anything asking which was running heard the wrong one.
+     Named from the saved magnitude now. (Shared with Classic and Endless; only the name moves.)
+  2. **A resumed Safety Paddle counted seconds, not bounces** - its restore never set
+     `countsTurns`, so five bounces became five seconds. Descent's restore always had.
+  3. **A Lock was never saved**, so a resumed run came back unlocked and its frozen power-ups ran
+     down again. Saved as `endlessIILock`, restored held.
+  4. **A Wipe left four power-ups running** - Ball Trajectory, the Landing Marker, the paddle
+     shapes (with their rings showing) and the Sticky Paddle, plus the Backstop - against §5.4's
+     "ends every active power-up immediately" and the list's own comment, "a Wipe ends power-ups".
+     The shapes' clock joins the list, the Vision pair are reset, and the two catch-counted ones
+     end as their last catch ends them (`wipeEndlessIICatches`). The Lock is still exempt.
+  Three things run with no ring by design and the sweep allows them: the Backstop (drawn across
+  the field), a Lock (it turns the other rings white), and extra balls.
+
 **Round 395: Retro's split lasers with one turret each, a Portal glow round each piece and round
 the mirror, and two sweeps across the paddle family.**
 

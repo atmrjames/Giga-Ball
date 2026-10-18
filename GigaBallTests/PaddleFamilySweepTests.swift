@@ -244,10 +244,14 @@ final class PaddlePowerUpsEndCleanlyTests: XCTestCase {
 /// What the two sweeps share: a laid-out scene, frames to let it run, and the measuring.
 enum PaddleFamilySweep {
 
-    static func present(theme: Int, keeping window: inout UIWindow?) throws -> GameScene {
-        GameScene.settingsStore.set(false, forKey: SavedGame.resumeFlagKey)
-        SavedGame.clear(from: GameScene.settingsStore)
-        GameMode.endlessII.makeCurrent(in: GameScene.settingsStore)
+    static func present(theme: Int, keeping window: inout UIWindow?,
+                        resuming: Bool = false) throws -> GameScene {
+        if resuming == false {
+            GameScene.settingsStore.set(false, forKey: SavedGame.resumeFlagKey)
+            SavedGame.clear(from: GameScene.settingsStore)
+            GameMode.endlessII.makeCurrent(in: GameScene.settingsStore)
+        }
+        // Resuming, the save and the flag the last scene left are the whole point
         GameScene.settingsStore.set(theme, forKey: "paddleSetting")
         let board = UIStoryboard(name: "Main", bundle: Bundle(for: GameViewController.self))
         let game = try XCTUnwrap(board.instantiateViewController(withIdentifier: "gameView")
@@ -273,7 +277,9 @@ enum PaddleFamilySweep {
         settle(1.5)
         for _ in 0..<3 where scene.finishEndlessIIBuildIn() {}
         if !(scene.gameState.currentState is Playing) { scene.gameState.enter(Playing.self) }
-        scene.releaseBall()
+        if resuming == false { scene.releaseBall() }
+        // A resumed run is looked at as it came back; serving its ball would spend a Sticky
+        // catch on the way in
         settle(0.1)
         scene.physicsWorld.speed = 0
         scene.ball.position = CGPoint(x: -190, y: 150)
@@ -331,6 +337,52 @@ enum PaddleFamilySweep {
             }
         }
         return merged
+    }
+
+    /// The box a body covers near a point, probed every half point; nil where it is nowhere.
+    static func solidBox(of body: SKPhysicsBody, in scene: GameScene, around: CGRect) -> CGRect? {
+        var box: CGRect?
+        var y = around.minY
+        while y <= around.maxY {
+            var x = around.minX
+            while x <= around.maxX {
+                if scene.physicsWorld.body(at: CGPoint(x: x, y: y)) === body {
+                    let point = CGRect(x: x, y: y, width: 0, height: 0)
+                    box = box?.union(point) ?? point
+                }
+                x += 0.5
+            }
+            y += 0.5
+        }
+        return box
+    }
+
+    /// The box a node draws across, in the scene: every visible sprite with a picture under it,
+    /// leaving out the halos, which are drawn bigger than the thing they light on purpose.
+    static func drawnBox(of node: SKNode, in scene: GameScene) -> CGRect? {
+        var box: CGRect?
+        func walk(_ current: SKNode) {
+            guard current.isHidden == false, current.alpha > 0.01 else { return }
+            if (current.name ?? "").lowercased().contains("glow") { return }
+            if let sprite = current as? SKSpriteNode, sprite.texture != nil {
+                let frame = sprite.frame
+                let parent = sprite.parent ?? scene
+                let corners = [CGPoint(x: frame.minX, y: frame.minY), CGPoint(x: frame.maxX, y: frame.maxY),
+                               CGPoint(x: frame.minX, y: frame.maxY), CGPoint(x: frame.maxX, y: frame.minY)]
+                    .map { scene.convert($0, from: parent) }
+                let xs = corners.map(\.x), ys = corners.map(\.y)
+                let drawn = CGRect(x: xs.min()!, y: ys.min()!, width: xs.max()! - xs.min()!,
+                                   height: ys.max()! - ys.min()!)
+                box = box?.union(drawn) ?? drawn
+            }
+            current.children.forEach(walk)
+        }
+        walk(node)
+        return box
+    }
+
+    static func text(_ box: CGRect) -> String {
+        "\(Int(box.minX.rounded()))...\(Int(box.maxX.rounded())) x \(Int(box.minY.rounded()))...\(Int(box.maxY.rounded()))"
     }
 
     static func text(_ span: ClosedRange<CGFloat>) -> String {

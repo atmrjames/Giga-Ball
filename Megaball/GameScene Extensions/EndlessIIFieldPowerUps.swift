@@ -817,8 +817,10 @@ extension GameScene {
             \.endlessIIFlippedAngleClock, \.endlessIIReversedControlsClock,
             \.endlessIIAutoAimClock,
             \.endlessIIDoublePaddleClock, \.endlessIIMirrorPaddleClock,
-            \.endlessIIBallSpinClock,
+            \.endlessIIBallSpinClock, \.endlessIIPaddleSurfaceClock,
         ]
+    // **The paddle shapes too** (round 395, found by `EveryPowerUpShowsSavesAndEndsTests`): a
+    // shape is a power-up with a ring, and a Wipe left it running and its ring showing
 
     // MARK: - What ends what
 
@@ -1050,6 +1052,38 @@ extension GameScene {
         // power-up being taken away, and the debt goes with it
 
         wipeClassicTimers()
+
+        endlessIIResetVision()
+        wipeEndlessIICatches()
+        // **Every power-up, not every clock** (round 395, found by
+        // `EveryPowerUpShowsSavesAndEndsTests`). Ball Trajectory and the Landing Marker keep
+        // clocks of their own outside this list, and the Sticky Paddle and the Backstop count
+        // catches rather than time - so a Wipe, which "ends every active power-up immediately"
+        // (§5.4), left all four running, three of them with their rings still showing
+    }
+
+    /// Ends the two of the original power-ups that count catches rather than time, the way
+    /// their own last catch ends them.
+    private func wipeEndlessIICatches() {
+        if stickyPaddleCatches != 0 {
+            stickyPaddleCatches = 0
+            stickyPaddleCatchesTotal = 0
+            stickyPaddleIconBar.isHidden = true
+            stickyPaddleIcon.texture = iconStickyPaddleDisabledTexture
+            endlessIIReleaseRemainingHeldBalls()
+            // Anything it was holding leaves now, as the last catch lets it go; the face comes
+            // off on the next frame (`refreshEndlessIIStickyFace`)
+        }
+        if backstopCatches != 0 {
+            backstopCatches = 0
+            backstopCatchesTotal = 0
+            backstop.isHidden = true
+            backstop.physicsBody?.categoryBitMask = 0
+            backstop.physicsBody?.collisionBitMask = 0
+            backstop.physicsBody?.contactTestBitMask = 0
+            // Its own last catch's reset, without the shrink it plays on the way out. Still
+            // spent for the run (`backstopSpentThisRun`): one Backstop a run is the rule
+        }
     }
 
     /// Every one of the original twenty-eight's timed power-ups, ended now.
@@ -1362,8 +1396,20 @@ extension GameScene {
             // A resumed drift keeps drifting. The direction rides in the save since round
             // 201 (two Drifts, one per direction, so which way is part of which power-up);
             // this line is only the fallback for a save written before it carried one
+        case "endlessIILock":
+            endlessIILockClock.hold()
+            // **A Lock survives a save** (round 395, found by
+            // `EveryPowerUpShowsSavesAndEndsTests`). It was never written down, so a resumed run
+            // came back unlocked and the power-ups it was holding started running down again.
+            // It has no time to restore - it holds until a Key - so held is the whole of it
         case "endlessIISafetyPaddle":
             endlessIISafetyPaddleClock.restore(remaining: remaining, total: total, level: 0)
+            endlessIISafetyPaddleClock.countsTurns = true
+            // **Bounces, as it was collected** (round 395, found by
+            // `EveryPowerUpShowsSavesAndEndsTests`). The bar is collected as five bounces
+            // (`collect(turns:)`), the flag is not in the save, and this line was missing - so
+            // a resumed bar's clock was read as seconds and the field tick ran it down by the
+            // second: five bounces became five seconds. Descent, above, has always set it
             showEndlessIISafetyPaddle()
             // The surface comes back with its clock: a resumed run that had one standing
             // must find it standing, or the save has quietly changed the field

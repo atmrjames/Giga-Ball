@@ -261,8 +261,10 @@ its `PBXGroup`, and — the one that is easy to miss — the **right target's** 
 - **Sweep a whole family, not only the reported case.** Rounds 393 to 395 fixed one paddle-family
   report at a time and each round's own tests passed while the next report was already in the
   build. `PaddleFamilySweepTests` (drawn where solid, in every theme and split state; every pair
-  of paddle power-ups ends leaving nothing behind) and `EveryBrickHitIsHeardTests` ask about every
-  member at once. When a report shows a new *kind* of fault, add its kind to a sweep, and prove
+  of paddle power-ups ends leaving nothing behind), `GameSweepTests` (every brick drawn where it
+  is solid; every power-up shown, saved and resumed, and ended by a Wipe) and
+  `EveryBrickHitIsHeardTests` ask about every member at once - the power-up sweep found seven
+  faults on its first run (round 396). When a report shows a new *kind* of fault, add its kind to a sweep, and prove
   the sweep by putting the bug back and watching it fail.
 - **Tests are written from play-test reports.** When a bug is described, the test says what
   was reported, in the comment, in the reporter's terms. That is what stops a fix regressing
