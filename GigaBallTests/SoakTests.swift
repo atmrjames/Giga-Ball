@@ -60,26 +60,30 @@ final class SoakTests: XCTestCase {
         for seed in range {
             var random = PlayWatch.Seeded(state: seed &* 104729)
             let theme = Int(seed % UInt64(themeCount))
-            let playFor = Double.random(in: 1.5...20, using: &random)
+            let keeper = seed % 3 != 0
+            let playFor = keeper ? Double.random(in: 5...45, using: &random)
+                : Double.random(in: 1.5...20, using: &random)
+            // Two seeds in three with the ball kept up, so a save can land deep in a long game;
+            // the third as the paddle plays it, misses and all
             let found: [String]
             switch seed % 10 {
             case 0...4:
                 found = try ResumeCheck.run(mode: .endlessII, seed: seed, theme: theme,
                                             startHeight: Int.random(in: 0...900, using: &random),
-                                            playFor: playFor, window: &window,
+                                            playFor: playFor, keeper: keeper, window: &window,
                                             resumedWindow: &resumedWindow)
             case 5, 6:
                 found = try ResumeCheck.run(mode: .classic, seed: seed, theme: theme,
-                                            playFor: playFor, window: &window,
+                                            playFor: playFor, keeper: keeper, window: &window,
                                             resumedWindow: &resumedWindow)
             case 7:
                 found = try ResumeCheck.run(mode: .endless, seed: seed, theme: theme,
-                                            playFor: playFor, window: &window,
+                                            playFor: playFor, keeper: keeper, window: &window,
                                             resumedWindow: &resumedWindow)
             default:
                 let challenge = day(seed % 400)
                 found = try ResumeCheck.run(mode: challenge.mode, seed: seed, theme: theme,
-                                            daily: challenge, playFor: playFor, window: &window,
+                                            daily: challenge, playFor: playFor, keeper: keeper, window: &window,
                                             resumedWindow: &resumedWindow)
             }
             print("SOAK resume seed \(seed) \(found.isEmpty ? "ok" : "FAILED")")
@@ -98,7 +102,10 @@ final class SoakTests: XCTestCase {
         for seed in range {
             var random = PlayWatch.Seeded(state: seed &* 15485863)
             let theme = Int(seed % UInt64(themeCount))
-            let seconds = Double.random(in: 30...60, using: &random)
+            let keeper = seed % 2 == 0
+            let seconds = keeper ? Double.random(in: 60...150, using: &random)
+                : Double.random(in: 30...60, using: &random)
+            // Every other game with the ball kept up, and longer, for depth; the rest lose balls
             let found: [String]
             switch seed % 6 {
             case 0, 1:
@@ -106,20 +113,20 @@ final class SoakTests: XCTestCase {
                 let level = DailyChallengeGenerator.levelNumber(forClassicLevel: catalogue)
                 let pack = DailyChallengeGenerator.pack(forClassicLevel: catalogue)
                 found = try PlayWatch.watch(seconds: seconds, seed: seed,
-                                            label: "Classic level \(level) theme \(theme) seed \(seed)") {
+                                            label: "Classic level \(level) theme \(theme) seed \(seed)\(keeper ? " kept up" : "")", keeper: keeper) {
                     try PaddleFamilySweep.present(theme: theme, keeping: &self.window, mode: .classic,
                                                   frozen: false, level: level, pack: pack)
                 }
             case 2:
                 found = try PlayWatch.watch(seconds: seconds, seed: seed,
-                                            label: "Endless theme \(theme) seed \(seed)") {
+                                            label: "Endless theme \(theme) seed \(seed)\(keeper ? " kept up" : "")", keeper: keeper) {
                     try PaddleFamilySweep.present(theme: theme, keeping: &self.window, mode: .endless,
                                                   frozen: false)
                 }
             case 3, 4:
                 let height = Int.random(in: 0...1200, using: &random)
                 found = try PlayWatch.watch(seconds: seconds, seed: seed,
-                                            label: "Mayhem from \(height)m theme \(theme) seed \(seed)") {
+                                            label: "Mayhem from \(height)m theme \(theme) seed \(seed)\(keeper ? " kept up" : "")", keeper: keeper) {
                     let scene = try PaddleFamilySweep.present(theme: theme, keeping: &self.window,
                                                               frozen: false)
                     scene.endlessHeight = height
@@ -128,8 +135,8 @@ final class SoakTests: XCTestCase {
             default:
                 let challenge = day(seed % 400)
                 found = try PlayWatch.watch(seconds: seconds, seed: seed,
-                                            label: "daily \(challenge.dateKey) \(challenge.mode) \(challenge.twists) seed \(seed)",
-                                            powerUps: challenge.has(.noPowerUps) == false) {
+                                            label: "daily \(challenge.dateKey) \(challenge.mode) \(challenge.twists) seed \(seed)\(keeper ? " kept up" : "")",
+                                            powerUps: challenge.has(.noPowerUps) == false, keeper: keeper) {
                     DailyChallengeSession.shared.active = challenge
                     let level = challenge.classicLevel.map(DailyChallengeGenerator.levelNumber(forClassicLevel:))
                     let pack = challenge.classicLevel.map(DailyChallengeGenerator.pack(forClassicLevel:)) ?? 1

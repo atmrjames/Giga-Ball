@@ -1080,6 +1080,7 @@ enum ResumeCheck {
 
     static func run(mode: GameMode, seed: UInt64, theme: Int = 0, startHeight: Int? = nil,
                     daily: DailyChallenge? = nil, playFor chosen: TimeInterval? = nil,
+                    keeper: Bool = false,
                     window: inout UIWindow?, resumedWindow: inout UIWindow?) throws -> [String] {
         var failures: [String] = []
         let setup = LevelPackSetup.shared
@@ -1116,6 +1117,7 @@ enum ResumeCheck {
                 let reach = scene.gameWidth/2 - scene.paddle.size.width/2
                 scene.paddle.position.x = min(max(lowest.position.x, -reach), reach)
             }
+            if keeper { _ = PlayWatch.keep(scene) }
             if clock >= nextPowerUp {
                 nextPowerUp += 0.7
                 let pool = scene.powerUpTextureArray.indices.filter {
@@ -1153,7 +1155,7 @@ enum ResumeCheck {
         scene.isPaused = true
         // The same still moment the resumed game is given below, so a field that was about
         // to step down into an empty bottom row does it here rather than there
-        let label = "\(mode)\(daily.map { " daily \($0.dateKey) \($0.twists)" } ?? "") theme \(theme) seed \(seed) after \(String(format: "%.1f", clock))s"
+        let label = "\(mode)\(daily.map { " daily \($0.dateKey) \($0.twists)" } ?? "") theme \(theme) seed \(seed)\(keeper ? " kept up" : "") after \(String(format: "%.1f", clock))s"
         let before = (bricks: GameSnapshot.bricks(in: scene), drops: GameSnapshot.drops(in: scene),
                       running: GameSnapshot.running(in: scene),
                       rings: scene.activePowerUpEntries().map(\.id).sorted(),
@@ -1218,7 +1220,7 @@ enum PlayWatch {
     }
 
     static func watch(seconds: TimeInterval, seed: UInt64, label: String,
-                      powerUps: Bool = true,
+                      powerUps: Bool = true, keeper: Bool = false,
                       present: () throws -> GameScene) throws -> [String] {
         var random = Seeded(state: seed)
         var scene = try present()
@@ -1229,6 +1231,7 @@ enum PlayWatch {
         var stillFor: [ObjectIdentifier: TimeInterval] = [:]
         var flatFor: [ObjectIdentifier: TimeInterval] = [:]
         var livesNoted = false
+        var kept = 0
         var phantomFor: TimeInterval = 0
         var peakNodes = 0
         let startNodes = nodeCount(scene)
@@ -1258,6 +1261,7 @@ enum PlayWatch {
                 let reach = scene.gameWidth/2 - scene.paddle.size.width/2
                 scene.paddle.position.x = min(max(lowest.position.x, -reach), reach)
             }
+            if keeper { kept += keep(scene) }
 
             if powerUps, clock >= nextPowerUp {
                 nextPowerUp += 1.5
@@ -1345,8 +1349,40 @@ enum PlayWatch {
             failures.append("\(label): the scene grew from \(startNodes) nodes to \(endNodes) "
                             + "(peak \(peakNodes)) - something is left behind")
         }
-        if failures.isEmpty == false { failures.insert("\(label): \(restarts) restarts", at: 0) }
+        print("PLAYWATCH \(label): \(String(format: "%.0f", clock))s, \(restarts) restarts"
+              + (keeper ? ", \(kept) balls kept up" : ""))
+        if failures.isEmpty == false {
+            failures.insert("\(label): \(restarts) restarts"
+                            + (keeper ? ", \(kept) balls kept up" : ""), at: 0)
+        }
         return failures
+    }
+
+    /// A paddle that never misses, faked: every ball heading below the paddle's top is sent back
+    /// up as if the paddle had struck it. Returns how many it caught.
+    ///
+    /// James, round 398b: "To make the games longer and easier to play for you, can you stop the
+    /// ball going below the paddle. Fake a paddle bounce, that way the ball stays in play and you
+    /// can keep playing for longer. Obviously do runs without that to test the paddle's movement
+    /// losing a ball." The paddle follows the lowest ball already, and still misses - a ball
+    /// faster than it can follow, two balls far apart, a shot off the very edge - and a run that
+    /// ends there never reaches the depth, the power-up pile-ups and the hundreds of rows a long
+    /// run is made of. Done here, in the harness, so the game has no hook in it: the ball leaves at
+    /// no flatter than thirty degrees, keeping its side, and is lifted clear of the paddle.
+    static func keep(_ scene: GameScene) -> Int {
+        let top = scene.paddle.position.y + scene.paddle.size.height/2
+        var caught = 0
+        for ball in scene.endlessIIBallsInPlay where ball.parent != nil {
+            guard let body = ball.physicsBody, body.velocity.dy < 0,
+                  ball.position.y - ball.size.height/2 < top else { continue }
+            let speed = hypot(body.velocity.dx, body.velocity.dy)
+            let lift = max(abs(body.velocity.dy), CGFloat(sin(30*Double.pi/180))*speed)
+            let across = (max(0, speed*speed - lift*lift)).squareRoot()
+            body.velocity = CGVector(dx: body.velocity.dx < 0 ? -across : across, dy: lift)
+            ball.position.y = max(ball.position.y, top + ball.size.height/2 + 1)
+            caught += 1
+        }
+        return caught
     }
 
     static func nodeCount(_ node: SKNode) -> Int {

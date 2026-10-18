@@ -7,6 +7,10 @@
 # thorough as possible." Two simulators at once, each built once and then run in chunks with
 # `test-without-building`, so a crash or a hang costs one chunk rather than the day:
 #
+# Two seeds in three of the resume soak, and every other game of the play soak, keep the ball in
+# play with a faked paddle bounce (`PlayWatch.keep`), so games run long and deep; the rest play
+# the paddle as it is, misses and all.
+#
 #   16 Pro (FULL_DEST)  testResumeSoak - play, save at a seeded moment, resume, compare -
 #                       in every mode, theme and depth, and in dailies
 #   17 Pro (WORK_DEST)  testDailyYearSoak over the next 365 days, then testPlaySoak - long
@@ -68,6 +72,7 @@ chunk() {
     failed=$(grep -c "^SOAK .* FAILED$" "$log")
     relaunches=$(grep -c "Restarting after unexpected exit" "$log")
     say "$name $test seeds $from..$((from + count - 1)): $ok ok, $failed failed, $relaunches relaunches ($(( (waited + 0) / 60 )) min)"
+    grep "^PLAYWATCH" "$log" | sed 's/^PLAYWATCH /    /' >> "$SUMMARY"
     if [ "$failed" -gt 0 ] || grep -q "error: -\[" "$log"; then
         grep -E "error: -\[" "$log" | sed -E 's/.*failed - //' | cut -c1-600 >> "$SUMMARY"
         # The rest of a multi-line failure follows its first line in the log, unprefixed
