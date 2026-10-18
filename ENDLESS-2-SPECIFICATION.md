@@ -2964,7 +2964,8 @@ testers:
   falling power-up's position by `brickWidth`, so a bare `GameScene()` with a power-up on
   screen traps converting NaN to Int. A real scene is always laid out before play.
 
-**Round 395: Retro's split lasers with one turret each, and a Portal glow round each piece.**
+**Round 395: Retro's split lasers with one turret each, a Portal glow round each piece and round
+the mirror, and two sweeps across the paddle family.**
 
 - **"In the retro image you shared, there's 2 turrets on each of the split paddles, where the
   classic theme just has a turret on the outer most edges as it should be. Are you able to make
@@ -2987,6 +2988,28 @@ testers:
   own halo now, the same margin round it, placed from the segment centres the body is cut from,
   and one halo again when the paddle is whole (`endlessIIPaddlePieceGlows`).
   `testASplitPortalPaddleGlowsRoundEachPieceAndNotAcrossTheGap`.
+- **"Yes, the mirror paddle should glow too."** The mirror has had a portal of its own since round
+  284 and nothing said so. It glows while a Portal Paddle runs, piece by piece when split, in its
+  own reflected shape's glow - a wedge's twin glows as the other wedge (`endlessIIMirrorGlows`;
+  the glow lookups take a shape now). James's screenshot of a halo across the Retro gap was of
+  the render made before the per-piece fix; rendered again with Lasers, split and Portal, it is
+  round each piece. `testTheMirrorGlowsWithThePortalPieceByPiece`.
+- **"Are there any other final checks, tests, inspections you can do to ensure there are no more
+  silly mistakes left? I feel a lot of these recent mistakes would be preventable with better and
+  more thorough checks and tests in place."** Yes - rounds 393 to 395 were five reports about the
+  paddle family and one about a leftover, each caught by eye because every test asked about its
+  own case. Two sweeps now ask about all of them (`PaddleFamilySweepTests.swift`):
+  **`DrawnWhereSolidTests`** probes the paddle's, the mirror's and the safety bar's bodies point by
+  point in all twelve themes, whole, split, and split under Expand, and requires one drawn stretch
+  over every solid one and nothing drawn anywhere else, then the halos round each piece under a
+  Portal; **`PaddlePowerUpsEndCleanlyTests`** collects every pair of fourteen paddle power-ups in
+  the regular theme and Retro, a ball caught first where Aimed Sticky is one of them, runs them
+  out as play does - turns, the goodbye second, a Wipe, the tap - and requires nothing left: no
+  sticky face or band, no pieces, strips, halos, twins, held or owed aim, no resize. Each was
+  shown to catch its bug by putting the bug back: with the scale-cancelling holder undone the
+  first names every theme's split under Expand on all three surfaces; with round 392's owed-hold
+  fix undone the second names "Aimed Sticky then Ball Spin" and no other pair. Round 393's
+  `EveryBrickHitIsHeardTests` is the same idea for the bricks.
 
 **Round 394: the split drawn where it plays, and a mirror that splits.**
 

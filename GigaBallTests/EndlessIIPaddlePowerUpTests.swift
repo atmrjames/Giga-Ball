@@ -1630,6 +1630,36 @@ final class MirrorPaddleSplitTests: XCTestCase {
         XCTAssertGreaterThan(offset, 0.9, "the edge of its own piece, not near the middle of the span")
     }
 
+    /// James, round 395: "Yes, the mirror paddle should glow too." Round the mirror while a
+    /// Portal Paddle runs - round each piece while split, as the paddle's glow now is - and gone
+    /// with the Portal.
+    func testTheMirrorGlowsWithThePortalPieceByPiece() throws {
+        let scene = mayhem()
+        scene.endlessIICollectMirrorPaddle()
+        scene.endlessIICollectPortalPaddle()
+        scene.tickEndlessIIMirrorPaddle()
+        scene.refreshEndlessIIPaddleGlow()
+        let twin = try XCTUnwrap(mirror(scene))
+        XCTAssertEqual(scene.endlessIIMirrorGlows.count, 1, "a halo round the whole mirror")
+        XCTAssertEqual(scene.endlessIIMirrorGlows.first?.position.x ?? .nan, twin.position.x,
+                       accuracy: 0.5)
+
+        scene.endlessIICollectDoublePaddle()
+        scene.refreshEndlessIIDoublePaddle()
+        scene.tickEndlessIIMirrorPaddle()
+        scene.refreshEndlessIIPaddleGlow()
+        let offsets = scene.endlessIISplitSegmentCentres.map { $0 - scene.paddle.position.x }
+        let glows = scene.endlessIIMirrorGlows.sorted { $0.position.x < $1.position.x }
+        XCTAssertEqual(glows.count, offsets.count, "one round each of its pieces")
+        for (glow, offset) in zip(glows, offsets) {
+            XCTAssertEqual(glow.position.x, twin.position.x + offset, accuracy: 0.5)
+        }
+
+        scene.endlessIIPortalPaddleClock.reset()
+        scene.refreshEndlessIIPaddleGlow()
+        XCTAssertTrue(scene.endlessIIMirrorGlows.isEmpty, "and gone with the Portal")
+    }
+
     /// And back to one bar, with one body, when the split ends.
     func testTheMirrorIsWholeAgainWhenTheSplitEnds() throws {
         let scene = mayhem()

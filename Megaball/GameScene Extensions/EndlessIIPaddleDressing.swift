@@ -86,7 +86,13 @@ extension GameScene {
     /// both names rather than renamed, so that if a square-themed glow is ever drawn this does
     /// not quietly take its place.
     func endlessIIPaddleGlowTexture() -> SKTexture? {
-        endlessIIPaddleGlowArt().flatMap { GameScene.catalogueTexture($0.glow) }
+        endlessIIPaddleGlowTexture(for: endlessIIPaddleSurface)
+    }
+
+    /// The glow for a given shape - the mirror asks for its reflected one, so a wedge's twin
+    /// glows as the other wedge (round 395).
+    func endlessIIPaddleGlowTexture(for surface: PaddleBounce.Surface?) -> SKTexture? {
+        endlessIIPaddleGlowArt(for: surface).flatMap { GameScene.catalogueTexture($0.glow) }
     }
     // The catalogue's kept picture rather than a new `SKTexture(imageNamed:)`: this is asked
     // every frame a Portal Paddle runs (round 381, from the review)
@@ -98,7 +104,11 @@ extension GameScene {
     /// see `endlessIIPaddleGlowMargin`. Nil for a shape with no glow drawn, which is Jagged, the one
     /// shape with no paddle picture either: no halo rather than the plain one sitting wrong.
     func endlessIIPaddleGlowArt() -> (paddle: String, glow: String)? {
-        let shape = endlessIIPaddleSurface.flatMap { endlessIIPaddleShapeSuffix($0) }
+        endlessIIPaddleGlowArt(for: endlessIIPaddleSurface)
+    }
+
+    func endlessIIPaddleGlowArt(for surface: PaddleBounce.Surface?) -> (paddle: String, glow: String)? {
+        let shape = surface.flatMap { endlessIIPaddleShapeSuffix($0) }
         let pairs = shape.map { [("regularPaddle\($0)", "regularPaddle\($0)Glow")] }
             ?? [("regularPaddle", "regularPaddleGlow"), ("squarePaddle", "squarePaddleGlow")]
 
@@ -127,7 +137,11 @@ extension GameScene {
     /// Asked per shape because a shaped paddle's picture is taller than the plain one while
     /// its glow grows by the same absolute amount, so the margin is the one thing they share.
     func endlessIIPaddleGlowMargin() -> CGSize {
-        guard let art = endlessIIPaddleGlowArt(),
+        endlessIIPaddleGlowMargin(for: endlessIIPaddleSurface)
+    }
+
+    func endlessIIPaddleGlowMargin(for surface: PaddleBounce.Surface?) -> CGSize {
+        guard let art = endlessIIPaddleGlowArt(for: surface),
               let paddle = GameScene.catalogueTexture(art.paddle)?.size(),
               let glow = GameScene.catalogueTexture(art.glow)?.size() else { return .zero }
         guard paddle.width > 0, paddle.height > 0 else { return .zero }
@@ -148,35 +162,68 @@ extension GameScene {
         else {
             endlessIIPaddleGlowNode?.removeFromParent()
             endlessIIPaddlePieceGlows.forEach { $0.removeFromParent() }
+            endlessIIMirrorGlows.forEach { $0.removeFromParent() }
             return
         }
 
-        let drawn = paddle.frame.size
-        let pieces: [(x: CGFloat, width: CGFloat)]
-        if endlessIIPaddleIsSplit {
-            let segment = GameScene.endlessIIDoublePaddleLayout(span: paddle.size.width,
-                                                                standardWidth: paddleWidth,
-                                                                ballSize: ballSize).segment
-            pieces = endlessIISplitSegmentCentres.map { ($0, segment) }
-        } else {
-            pieces = [(paddle.position.x, drawn.width)]
-        }
+        layEndlessIIGlows(named: GameScene.paddleGlowName, texture: texture,
+                          margin: endlessIIPaddleGlowMargin(), round: paddle,
+                          centreX: paddle.position.x)
         // **A halo round each piece, not across the gaps** (James, round 395: "The portal paddle
         // glow should just be around the sections of the paddle though. Right now it can be seen
         // in the gap between the split paddles"). One halo across the span was round 313's
         // answer, from before the gaps were a thing the player reads; each piece is its own
         // paddle now (rounds 305 and 386), so each gets its own light, the same margin round it
 
-        var glows = [endlessIIPaddleGlowNode].compactMap { $0 } + endlessIIPaddlePieceGlows
+        if let mirror = childNode(withName: GameScene.endlessIIMirrorPaddleName) as? SKSpriteNode,
+           let mirrorTexture = endlessIIPaddleGlowTexture(for: endlessIIMirrorPaddleSurface) {
+            layEndlessIIGlows(named: GameScene.mirrorGlowName, texture: mirrorTexture,
+                              margin: endlessIIPaddleGlowMargin(for: endlessIIMirrorPaddleSurface),
+                              round: mirror, centreX: mirror.position.x)
+        } else {
+            endlessIIMirrorGlows.forEach { $0.removeFromParent() }
+        }
+        // **And round the mirror** (James, round 395: "Yes, the mirror paddle should glow too").
+        // The twin has had a portal of its own since round 284 - "a mirrored paddle gets its own
+        // portal" - and nothing said so; "Mirror paddle should always take on the form and
+        // function of the main paddle". Its own reflected shape's glow, piece by piece as the
+        // paddle's is, a step behind it as the mirror is a step behind the paddle
+    }
+
+    static let mirrorGlowName = "endlessIIMirrorGlow"
+
+    /// The mirror's halos, the first and then the rest of a split (round 395).
+    var endlessIIMirrorGlows: [SKSpriteNode] {
+        children.compactMap { $0 as? SKSpriteNode }
+            .filter { $0.name == GameScene.mirrorGlowName
+                      || $0.name?.hasPrefix(GameScene.mirrorGlowName + "#") == true }
+            .sorted { ($0.name ?? "") < ($1.name ?? "") }
+    }
+
+    /// Lays one halo round a surface, or one round each of its pieces while the paddle is split,
+    /// at the surface's drawn height and `margin` bigger, a step behind it.
+    private func layEndlessIIGlows(named name: String, texture: SKTexture, margin: CGSize,
+                                   round surface: SKSpriteNode, centreX: CGFloat) {
+        let drawn = surface.frame.size
+        let pieces: [(x: CGFloat, width: CGFloat)]
+        if let split = endlessIISafetyPaddleSegmentCentres(span: surface.size.width) {
+            pieces = split.centres.map { (centreX + $0, split.segment) }
+        } else {
+            pieces = [(centreX, drawn.width)]
+        }
+        // The pieces stand symmetrically about the middle, so the mirror's are the paddle's
+
+        var glows = children.compactMap { $0 as? SKSpriteNode }
+            .filter { $0.name == name || $0.name?.hasPrefix(name + "#") == true }
+            .sorted { ($0.name ?? "") < ($1.name ?? "") }
         while glows.count < pieces.count {
             let made = SKSpriteNode()
-            made.name = glows.isEmpty ? GameScene.paddleGlowName
-                                      : GameScene.paddleGlowName + "#\(glows.count)"
+            made.name = glows.isEmpty ? name : name + "#\(glows.count)"
             addChild(made)
             glows.append(made)
         }
         while glows.count > pieces.count { glows.removeLast().removeFromParent() }
-        // The first keeps the name everything else asks for (`endlessIIPaddleGlowNode`)
+        // The first keeps the plain name, which is what everything else asks for
 
         let art = texture.size()
         for (glow, piece) in zip(glows, pieces) {
@@ -190,14 +237,13 @@ extension GameScene {
             }
             // Set up when the picture changes - a shape coming or going - and not every frame
             let wanted = GameScene.paddleGlowSize(
-                paddleDrawnSize: CGSize(width: piece.width, height: drawn.height),
-                margin: endlessIIPaddleGlowMargin())
+                paddleDrawnSize: CGSize(width: piece.width, height: drawn.height), margin: margin)
             glow.xScale = art.width > 0 ? wanted.width/art.width : 1
             glow.yScale = art.height > 0 ? wanted.height/art.height : 1
-            glow.position = CGPoint(x: piece.x, y: paddle.position.y)
-            glow.zPosition = paddle.zPosition - 0.1
-            glow.isHidden = paddle.isHidden
-            glow.alpha = paddle.alpha
+            glow.position = CGPoint(x: piece.x, y: surface.position.y)
+            glow.zPosition = surface.zPosition - 0.1
+            glow.isHidden = surface.isHidden
+            glow.alpha = surface === paddle ? paddle.alpha : min(surface.alpha, paddle.alpha)
         }
         // **Beside the paddle, not on it, and widened by its own scale** (James, round 378: "it
         // should remain just slightly bigger than the paddle so the glow effect looks right, but
