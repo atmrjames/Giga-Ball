@@ -1503,6 +1503,23 @@ final class EveryBrickHitIsHeardTests: XCTestCase {
         Heard(knock: scene.brickKnockedAt, voice: scene.brickVoicedAt, mayhem: scene.mayhemSoundLastPlayed)
     }
 
+    /// James, round 398: "When halo destroys bricks it should make the brick hit sound as well as
+    /// the haptic." The halo takes bricks directly rather than through `hitBrick`, so it was the
+    /// one way of destroying a brick that the sweep below could not hear.
+    func testAPaddleHaloBiteIsHeard() throws {
+        let scene = try playing()
+        scene.endlessIICollectPaddleHalo()
+        PaddleFamilySweep.settle(0.5)
+        let brick = try XCTUnwrap(freshBrick(scene))
+        brick.position = scene.endlessIIPaddleHaloCentre
+        let before = scene.brickKnockedAt
+        for _ in 0..<10 where brick.parent != nil {
+            scene.tickEndlessIIPaddleHalo()
+        }
+        XCTAssertNil(brick.parent, "the halo took the brick")
+        XCTAssertNotEqual(scene.brickKnockedAt, before, "and it was heard")
+    }
+
     func testEveryKindOfBrickIsHeardWhenItIsHit() throws {
         let scene = try playing()
 
@@ -1557,5 +1574,109 @@ final class EveryBrickHitIsHeardTests: XCTestCase {
             // Taken away whatever it was, so a Portal case is the only Portal and the next
             // case's copy is not standing on top of this one
         }
+    }
+}
+
+/// A split or shaped paddle keeps its body through a level start.
+///
+/// Round 398, found by the power-up sweep rather than a play test: the app came down in
+/// `loadNextLevel` - "Unexpectedly found nil" unwrapping the paddle's body - a second after
+/// SpriteKit logged "Could not create physics body". Every level grows the paddle in from no
+/// width at all, and a split or shaped paddle rebuilds its body whenever the paddle's width
+/// moves, so mid-grow it was rebuilt from nothing and left with none. In play the Always On
+/// twist collects its power-up inside that same grow.
+final class PaddleKeepsItsBodyWhileGrowingInTests: XCTestCase {
+    private var window: UIWindow?
+
+    func testASplitOrShapedPaddleKeepsItsBodyAsALevelGrowsItIn() throws {
+        let collections: [(String, (GameScene) -> Void)] = [
+            ("split", { $0.endlessIICollectDoublePaddle() }),
+            ("dome", { $0.endlessIICollectPaddleSurface(.convex) }),
+            ("split and dome", {
+                $0.endlessIICollectDoublePaddle()
+                $0.endlessIICollectPaddleSurface(.convex)
+            })]
+        for (name, collect) in collections {
+            let scene = try PaddleFamilySweep.present(theme: 0, keeping: &window)
+            collect(scene)
+            PaddleFamilySweep.settle(0.2)
+            let y = scene.paddle.position.y
+            let before = PaddleFamilySweep.solid(in: scene, y: y,
+                                                 category: CollisionTypes.paddleCategory.rawValue)
+            XCTAssertFalse(before.isEmpty, "\(name): the paddle was solid before the level start")
+
+            scene.paddle.xScale = 0
+            // Where `loadNextLevel` starts every level's paddle
+            PaddleFamilySweep.settle(0.2)
+            XCTAssertNotNil(scene.paddle.physicsBody, "\(name): no body at all while the paddle "
+                            + "is drawn at no width")
+
+            scene.paddle.run(scene.settlePaddleToItsSize(duration: 0.2))
+            PaddleFamilySweep.settle(0.5)
+            XCTAssertNotNil(scene.paddle.physicsBody, "\(name): no body once it has grown in")
+            let after = PaddleFamilySweep.solid(in: scene, y: y,
+                                                category: CollisionTypes.paddleCategory.rawValue)
+            XCTAssertEqual(after.count, before.count, "\(name): solid in \(after.count) pieces "
+                           + "after growing in, \(before.count) before")
+            for (a, b) in zip(after, before) {
+                XCTAssertEqual(a.lowerBound, b.lowerBound, accuracy: 1.5,
+                               "\(name): solid \(after), was \(before)")
+                XCTAssertEqual(a.upperBound, b.upperBound, accuracy: 1.5,
+                               "\(name): solid \(after), was \(before)")
+            }
+            scene.view?.presentScene(nil)
+        }
+    }
+}
+
+/// A Breathing brick comes back from a save at its full size, however far into a breath it was.
+///
+/// Round 398, found by `BricksSaveAndResumeTests`: the save wrote the size a Breathing brick was
+/// at that instant, and the resumed brick took that as its full breath. A pause saves, so every
+/// pause mid-breath shrank it for good - the sweep's second save measured one at a three-hundredth
+/// of a cell.
+final class BreathingBrickKeepsItsSizeAcrossAResumeTests: XCTestCase {
+    private var window: UIWindow?
+    private var resumedWindow: UIWindow?
+
+    override func tearDown() {
+        GameScene.settingsStore.set(false, forKey: SavedGame.resumeFlagKey)
+        SavedGame.clear(from: GameScene.settingsStore)
+        window = nil
+        resumedWindow = nil
+        super.tearDown()
+    }
+
+    func testABrickSavedMidBreathComesBackAtItsFullSize() throws {
+        let scene = try PaddleFamilySweep.present(theme: 0, keeping: &window)
+        scene.enumerateChildNodes(withName: BrickCategoryName) { node, _ in node.removeFromParent() }
+        _ = BrickSweep.brick("normal", texture: scene.brickNormalTexture, in: scene,
+                             rowY: scene.finalBrickRowHeight, column: 0)
+        // Holds the field still (see `BricksSaveAndResumeTests`)
+        let brick = BrickSweep.brick("normal", texture: scene.brickNormalTexture, in: scene,
+                                     rowY: scene.yBrickOffsetEndless - scene.brickHeight*8,
+                                     column: 5)
+        scene.applyEndlessIIStyle(.breathing, to: brick)
+        let full = try XCTUnwrap(scene.endlessIIBreathers.first { $0.brick === brick }?.full)
+        for _ in 0..<40 where brick.size.width > full.width*0.8 {
+            PaddleFamilySweep.settle(0.1)
+        }
+        XCTAssertLessThan(brick.size.width, full.width*0.8, "the brick never breathed in")
+
+        scene.saveCurrentGame()
+        let saved = SavedGame.load(from: GameScene.settingsStore)?.endlessIIBricks?
+            .first { $0.styles.contains(EndlessIIStyle.breathing.rawValue) }
+        XCTAssertEqual(saved?.width ?? 0, Double(full.width), accuracy: 0.05,
+                       "saved at \(brick.size.width) wide, mid-breath, rather than its full "
+                       + "\(full.width)")
+
+        GameScene.settingsStore.set(true, forKey: SavedGame.resumeFlagKey)
+        let resumed = try PaddleFamilySweep.present(theme: 0, keeping: &resumedWindow,
+                                                    resuming: true)
+        let breather = try XCTUnwrap(resumed.endlessIIBreathers.first, "nothing breathing after "
+                                     + "the resume")
+        XCTAssertEqual(breather.full.width, full.width, accuracy: 0.05,
+                       "resumed breathing round \(breather.full.width), not \(full.width)")
+        resumed.view?.presentScene(nil)
     }
 }

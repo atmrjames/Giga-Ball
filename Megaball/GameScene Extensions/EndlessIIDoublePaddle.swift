@@ -132,7 +132,7 @@ extension GameScene {
     /// otherwise keep the body it had when it was small.
     func refreshEndlessIIDoublePaddle() {
         guard endlessIIPaddleIsSplit else {
-            guard endlessIIDoublePaddleWidth > 0 else { return }
+            guard endlessIIDoublePaddleWidth > 0, paddleTooThinForABody == false else { return }
             endlessIIDoublePaddleWidth = 0
             paddle.childNode(withName: GameScene.endlessIISplitHolderName)?.removeFromParent()
             paddle.texture = endlessIIDoublePaddleDress ?? paddle.texture
@@ -164,6 +164,9 @@ extension GameScene {
 
         let holder = endlessIISplitHolder(on: paddle)
         // Every frame, ahead of the guard: Expand and Shrink animate the scale it undoes
+
+        guard paddleTooThinForABody == false else { return }
+        // Before the width is written down, so the first frame with a paddle to cut rebuilds
 
         let dressNow = endlessIIDoublePaddleHalfDress
         let widthMoved = abs(endlessIIDoublePaddleWidth - paddle.size.width) > 0.5
@@ -262,6 +265,20 @@ extension GameScene {
     /// the paddle can leave the field, the ball-lost sequence changes it twice - and a
     /// replacement body built from remembered constants would undo whichever of those was in
     /// force at the moment the split happened to start.
+    /// Whether the paddle is drawn too thin, right now, for a body to be made from its size.
+    ///
+    /// Every level starts with the paddle at no width at all and grows it in (`loadNextLevel`),
+    /// and a body traced or cut from a paddle of no width is no body: SpriteKit logs "Could not
+    /// create physics body" and hands back nothing. Round 398's sweep crashed on exactly that -
+    /// a split or shaped paddle rebuilt its body mid-grow, the paddle was left with none, and the
+    /// level start's own completion unwrapped it. In play, the Always On twist collects its
+    /// power-up inside that same grow. So a rebuild that finds the paddle this thin waits a
+    /// frame, keeping the body it has, and its own change guard brings it back once there is a
+    /// paddle to fit.
+    var paddleTooThinForABody: Bool {
+        paddle.size.width < 1 || paddle.size.height < 1
+    }
+
     func paddleBodyMatchingCurrent(_ body: SKPhysicsBody) -> SKPhysicsBody {
         guard let current = paddle.physicsBody else { return body }
         body.allowsRotation = current.allowsRotation

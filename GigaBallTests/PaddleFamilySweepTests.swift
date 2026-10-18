@@ -245,21 +245,23 @@ final class PaddlePowerUpsEndCleanlyTests: XCTestCase {
 enum PaddleFamilySweep {
 
     static func present(theme: Int, keeping window: inout UIWindow?,
-                        resuming: Bool = false) throws -> GameScene {
+                        resuming: Bool = false, mode: GameMode = .endlessII,
+                        frozen: Bool = true, level: Int? = nil,
+                        pack: Int = 1, stats: TotalStats = TotalStats()) throws -> GameScene {
         if resuming == false {
             GameScene.settingsStore.set(false, forKey: SavedGame.resumeFlagKey)
             SavedGame.clear(from: GameScene.settingsStore)
-            GameMode.endlessII.makeCurrent(in: GameScene.settingsStore)
+            mode.makeCurrent(in: GameScene.settingsStore)
         }
         // Resuming, the save and the flag the last scene left are the whole point
         GameScene.settingsStore.set(theme, forKey: "paddleSetting")
         let board = UIStoryboard(name: "Main", bundle: Bundle(for: GameViewController.self))
         let game = try XCTUnwrap(board.instantiateViewController(withIdentifier: "gameView")
                                  as? GameViewController)
-        game.selectedLevel = LevelPackSetup.shared.startLevelNumber[1]
+        game.selectedLevel = level ?? LevelPackSetup.shared.startLevelNumber[1]
         game.numberOfLevels = 1
         game.levelSender = "MainMenu"
-        game.levelPack = 1
+        game.levelPack = pack
         let windowScene = try XCTUnwrap(UIApplication.shared.connectedScenes.first as? UIWindowScene)
         let made = UIWindow(windowScene: windowScene)
         let host = UIViewController()
@@ -269,18 +271,26 @@ enum PaddleFamilySweep {
         made.makeKeyAndVisible()
         window = made
         let scene = try XCTUnwrap(GameScene(fileNamed: "GameScene"))
-        scene.totalStatsArray = [TotalStats()]
+        scene.totalStatsArray = [stats]
         scene.gameViewControllerDelegate = game
         scene.scaleMode = .aspectFit
         scene.size = view.bounds.size
         view.presentScene(scene)
         settle(1.5)
+        for _ in 0..<45 where scene.gameState.currentState is Playing == false {
+            settle(0.1)
+        }
+        // **Into play by itself where it can** (round 398). A level's intro reveals its bricks on
+        // the way into `Playing`, and forcing the state below skips that: the daily sweep met a
+        // whole field solid and hidden, from the run's first frame, on a Mac busy enough that
+        // a second and a half was not long enough. Usually it is, and this waits for nothing
         for _ in 0..<3 where scene.finishEndlessIIBuildIn() {}
         if !(scene.gameState.currentState is Playing) { scene.gameState.enter(Playing.self) }
         if resuming == false { scene.releaseBall() }
         // A resumed run is looked at as it came back; serving its ball would spend a Sticky
         // catch on the way in
         settle(0.1)
+        guard frozen else { return scene }
         scene.physicsWorld.speed = 0
         scene.ball.position = CGPoint(x: -190, y: 150)
         // Launched and still, high in the field: nothing the ball does can be on the lines

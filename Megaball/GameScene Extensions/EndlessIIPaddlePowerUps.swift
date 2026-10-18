@@ -539,6 +539,9 @@ extension GameScene {
         } : nil
 
         let width = paddle.size.width
+        guard paddleTooThinForABody == false else { return }
+        // A level's paddle grows in from nothing; the shape is fitted on the first frame it has
+        // a width (`paddleTooThinForABody`)
         guard wanted != endlessIIPaddleShapeArtName
                 || (wanted != nil && abs(width - endlessIIPaddleShapeBodyWidth) > 0.5)
         else { return }
@@ -633,7 +636,8 @@ extension GameScene {
 
     /// Traces the paddle's current picture, and keeps everything the old body was carrying.
     func rebuildEndlessIIPaddleBody() {
-        guard let texture = paddle.texture, let old = paddle.physicsBody else { return }
+        guard let texture = paddle.texture, let old = paddle.physicsBody,
+              paddleTooThinForABody == false else { return }
 
         let shaped = endlessIIPaddleShapeArtName != nil
         let body = (shaped ? PaddleOutline.body(for: GameScene.originalPaddleArt(texture) ?? texture,
@@ -1515,7 +1519,16 @@ extension GameScene {
         if bites.isEmpty == false {
             countBricks()
             if hapticsSetting { lightHaptic.impactOccurred(intensity: 0.5) }
-            playMayhemSound("paddleHalo")
+            playBrickVoice("paddleHalo")
+            playBrickHitUnlessVoiced()
+            // **The brick hit sound with the haptic** (James, round 398: "When halo destroys
+            // bricks it should make the brick hit sound as well as the haptic"). It made only the
+            // haptic: the halo takes bricks directly rather than through `hitBrick`, where every
+            // other destruction is heard, and its own recording was never delivered. Its own
+            // name is still asked first, as a brick's voice is (round 341), so the day a
+            // `paddleHalo` recording lands it plays instead of the knock rather than over it.
+            // Once per bite however many bricks it takes - the bites are already spread over
+            // frames, a few at a time
         }
     }
 

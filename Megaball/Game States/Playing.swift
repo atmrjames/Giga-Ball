@@ -197,7 +197,9 @@ class Playing: GKState {
             scene.paddle.isHidden = false
             scene.paddle.run(animationSequencePaddle, completion: { [weak self] in
                 guard let self else { return }
-                self.scene.paddle.physicsBody!.collisionBitMask = CollisionTypes.paddleCategory.rawValue | CollisionTypes.boarderCategory.rawValue
+                self.scene.paddle.physicsBody?.collisionBitMask = CollisionTypes.paddleCategory.rawValue | CollisionTypes.boarderCategory.rawValue
+                // Not unwrapped: round 398's sweep found a Mayhem paddle that had lost its body
+                // mid-grow, and this line took the app down with it (`paddleTooThinForABody`)
             })
             
             if scene.paddleTexture == scene.retroPaddle {

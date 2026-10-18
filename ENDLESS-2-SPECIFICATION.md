@@ -2964,6 +2964,60 @@ testers:
   falling power-up's position by `brickWidth`, so a bare `GameScene()` with a power-up on
   screen traps converting NaN to Int. A real scene is always laid out before play.
 
+**Round 398: six more checks before launch, and what they found.**
+
+- **"When halo destroys bricks it should make the brick hit sound as well as the haptic."** The
+  Paddle Halo's bite now plays the brick's knock (or its own voice, where it has one) beside the
+  haptic. `EveryBrickHitIsHeardTests.testAPaddleHaloBiteIsHeard`.
+- **The six checks James asked for** ("Yes, let's build it!"), each asking a whole family at once:
+  - `UpgradeFromOnePointTwoTests` - a stats file written by 1.2 (`Stats-1.2.plist`, 38 fields with
+    distinctive values) decodes whole under 1.3. Proven by breaking `CloudKitHandler.padded`.
+  - `LongPlaySessionTests` - Mayhem for a minute, Classic and Endless for 25 seconds each, played
+    by a paddle that follows the lowest ball, with a power-up every second and a half in a seeded
+    order. Ten times a second: every ball inside, moving and a number; nothing solid and unseen for
+    two seconds; the node count not running away. The play loop is `PlayWatch`, shared with:
+  - `EveryDailyTwistPlaysTests` - every twist alone in every mode it can be drawn for, then the
+    next three weeks of real days as the generator will hand them out.
+  - `BricksSaveAndResumeTests` - every brick `BricksDrawnWhereSolidTests` builds, a batch at a
+    time: saved, resumed in a second scene, and the second scene's save compared with the first
+    field for field, and every brick drawn and solid where it was.
+  - `MenuScreensFitEverySizeTests` - every menu screen at all six of the gallery's sizes: no text
+    cut off, no text or picture printed over another, nothing pushed off the window. Measured by
+    what is drawn - a label's text, a button's picture and title - not by bounds, which made every
+    row overlap itself (500 findings, none real).
+  - `GoldenValuesTests` - Classic and the original Endless written down as they play
+    (`ClassicEndlessGolden.json`): speeds, sizes, bounce angles across the paddle, the odds a new
+    player and a player with everything unlocked start with, the ball's and paddle's physics, and
+    every one of the 110 Classic levels' bricks as a count and a hash. Nothing in them may change
+    without someone meaning it to; when it is meant, `TEST_RUNNER_GOLDEN_WRITE=1 tools/test.sh
+    only GoldenValuesTests` writes the record again, to be committed with the change.
+- **A crash, found by the power-up sweep.** "Unexpectedly found nil" in `loadNextLevel`. Every
+  level grows the paddle in from no width, and a split or shaped Mayhem paddle rebuilds its body
+  whenever the width moves - so mid-grow it was rebuilt from nothing (SpriteKit: "Could not create
+  physics body"), left with no body, and the level start's completion unwrapped it. In play, the
+  Always On twist collects its power-up inside that grow. A rebuild now waits for a paddle with
+  width (`paddleTooThinForABody`) and the completion no longer unwraps.
+  `PaddleKeepsItsBodyWhileGrowingInTests` fails against the old code.
+- **Breathing bricks shrank on every pause** (found by the brick resume sweep). The save wrote a
+  Breathing brick's size at that instant, and the resumed brick breathed round it as its full
+  size; a pause saves, so each pause mid-breath shrank it for good - one came back breathing
+  round 2.9 points of a 36.5-point cell. The save now writes the full breath
+  (`savedCellSize`). `BreathingBrickKeepsItsSizeAcrossAResumeTests` fails against the old code.
+- **`tools/test.sh` said "all passed" over a crash.** When the test host dies, the harness skips
+  the test it died in and prints no failure, so the report now names the test running at each
+  relaunch, with the Swift `Fatal error` if there was one - none is usually the audio trap, and
+  one never is. A test target that fails to compile, which says `TEST FAILED` rather than `BUILD
+  FAILED` and runs nothing, is reported as a failure too.
+- **`full` runs in two halves at once**: the main suite in parallel on the 16 Pro (three clones),
+  the sweeps one at a time on the 17 Pro. 26 minutes against about 40 run one after another; the
+  sweeps stay sequential because long scenes and moving bricks do not share the processors well.
+- **Harness fixes, recorded so they are not mistaken for game faults:** the field steps down
+  whenever its bottom row is empty, so the brick resume sweep holds it with one brick in the bottom
+  row; the presenter now waits for the scene to reach `Playing` by itself (a busy Mac took longer
+  than 1.5 seconds, and forcing the state skipped the level intro that reveals the bricks); and the
+  play watch offers only power-ups the run could drop (`powerUpCanAppear` let a Wipe into Classic).
+  A catalogue level is numbered from 1: level 0 indexes the high-score table at -1.
+
 **Round 397: the general chime proven, the tests in tiers, and a pre-launch audit.**
 
 - **"For any power-ups without a specific sound, they should play the general power-up sound."**

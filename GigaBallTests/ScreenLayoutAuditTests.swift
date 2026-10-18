@@ -1299,6 +1299,12 @@ final class MenuGalleryTests: XCTestCase {
     }
 
     func host(_ screen: UIViewController, size: CGSize, regular: Bool) -> UIView {
+        Self.host(screen, size: size, regular: regular, keeping: &windows)
+    }
+
+    /// Lays a screen out in a window of its own at the size asked, as the app's own window would.
+    static func host(_ screen: UIViewController, size: CGSize, regular: Bool,
+                     keeping windows: inout [UIWindow]) -> UIView {
         let parent = UIViewController()
         parent.view.frame = CGRect(origin: .zero, size: size)
         parent.view.backgroundColor = UIColor(red: 0.09, green: 0.03, blue: 0.12, alpha: 1)
@@ -1333,7 +1339,7 @@ final class MenuGalleryTests: XCTestCase {
     /// Stood down here rather than by asking the menu not to show it: the menu *should* show
     /// it, and what is wrong is only that a photograph taken a tenth of a second into the app's
     /// life is not a photograph of the main menu.
-    func standDownTheSplash(over screen: UIViewController) {
+    static func standDownTheSplash(over screen: UIViewController) {
         for child in screen.children where child is SplashViewController {
             child.willMove(toParent: nil)
             child.view.removeFromSuperview()
@@ -2068,5 +2074,155 @@ final class RoundButtonsAreOneDrawingTests: XCTestCase {
         let disc = FlatRoundButton.image(symbol: "xmark", side: 50)
         XCTAssertEqual(disc.size, CGSize(width: 50, height: 50))
         XCTAssertFalse(disc === FlatRoundButton.image(symbol: "xmark", side: 50, pressed: true))
+    }
+}
+
+/// Every menu screen is tidy at every size the app runs at: no words cut off, nothing printed over
+/// anything else, nothing a player needs pushed off the window.
+///
+/// James, round 397, on what should be checked before launch. The gallery above writes these
+/// screens out as pictures for a person to look at, and the audits ask about the column; nothing
+/// asked whether what is *in* the column fits. A label that ends in an ellipsis on the SE, or two
+/// that sit on each other in a narrow iPad window, is exactly the silly mistake that only a play
+/// test on that one device would find.
+final class MenuScreensFitEverySizeTests: XCTestCase {
+
+    private var windows: [UIWindow] = []
+
+    override func tearDown() {
+        windows.forEach { $0.isHidden = true }
+        windows.removeAll()
+        super.tearDown()
+    }
+
+    private struct Seen {
+        let view: UIView
+        let frame: CGRect
+        let inScroll: Bool
+    }
+
+    /// Every label and button a player can see, where what it draws is, and whether it can be
+    /// scrolled to.
+    ///
+    /// What it *draws*, not its bounds: a label is often laid out a cell wide around a word, and a
+    /// button a whole row wide around an icon or nothing - a row you tap anywhere on. Measured by
+    /// bounds every row overlapped itself, and the five hundred findings that came back buried
+    /// the few worth reading. So a label is the rectangle its text takes, placed by its
+    /// alignment, and a button is its picture and title; an empty one draws nothing.
+    private func furniture(in view: UIView, to root: UIView, inScroll: Bool = false) -> [Seen] {
+        var found: [Seen] = []
+        for subview in view.subviews {
+            guard subview.isHidden == false, subview.alpha > 0.05 else { continue }
+            if let label = subview as? UILabel, subview.superview is UIButton == false,
+               let ink = ink(of: label) {
+                found.append(Seen(view: label, frame: label.convert(ink, to: root),
+                                  inScroll: inScroll))
+            }
+            if let button = subview as? UIButton {
+                var parts: [CGRect] = []
+                if let picture = button.imageView, picture.image != nil, shows(picture) {
+                    parts.append(picture.convert(picture.bounds, to: root))
+                }
+                if let title = button.titleLabel, title.text?.isEmpty == false, shows(title) {
+                    parts.append(title.convert(title.bounds, to: root))
+                }
+                if let first = parts.first {
+                    found.append(Seen(view: button, frame: parts.dropFirst().reduce(first) {
+                        $0.union($1)
+                    }, inScroll: inScroll))
+                }
+            }
+            found += furniture(in: subview, to: root, inScroll: inScroll || subview is UIScrollView)
+        }
+        return found
+    }
+
+    private func shows(_ view: UIView) -> Bool {
+        view.isHidden == false && view.bounds.width > 1 && view.bounds.height > 1
+    }
+
+    /// The rectangle a label's text is drawn in, in the label's own coordinates.
+    private func ink(of label: UILabel) -> CGRect? {
+        guard let text = label.text, text.trimmingCharacters(in: .whitespaces).isEmpty == false,
+              label.bounds.width > 1, label.bounds.height > 1 else { return nil }
+        let used = label.textRect(forBounds: label.bounds,
+                                  limitedToNumberOfLines: label.numberOfLines)
+        let width = min(used.width, label.bounds.width)
+        let x: CGFloat
+        switch label.effectiveAlignment {
+        case .center: x = (label.bounds.width - width)/2
+        case .right: x = label.bounds.width - width
+        default: x = 0
+        }
+        let height = min(used.height, label.bounds.height)
+        return CGRect(x: x, y: (label.bounds.height - height)/2, width: width, height: height)
+    }
+
+    /// Whether a label shows less than all of its text.
+    private func cutOff(_ label: UILabel) -> Bool {
+        guard let text = label.text, text.isEmpty == false else { return false }
+        let width = label.bounds.width
+        if label.numberOfLines == 1 {
+            let needed = label.intrinsicContentSize.width
+            let shrinks = label.adjustsFontSizeToFitWidth ? max(label.minimumScaleFactor, 0.01) : 1
+            return needed*shrinks > width + 1
+        }
+        let all = label.textRect(forBounds: CGRect(x: 0, y: 0, width: width,
+                                                   height: .greatestFiniteMagnitude),
+                                 limitedToNumberOfLines: 0)
+        let shown = label.textRect(forBounds: CGRect(x: 0, y: 0, width: width,
+                                                     height: .greatestFiniteMagnitude),
+                                   limitedToNumberOfLines: label.numberOfLines)
+        return all.height > shown.height + 1 || all.height > label.bounds.height + 2
+            && label.adjustsFontSizeToFitWidth == false
+    }
+
+    func testEveryMenuScreenFitsEverySize() {
+        var failures: [String] = []
+        for (shape, size, regular) in MenuGalleryTests.shapes {
+            for (name, screen) in MenuGalleryTests.everyScreen() {
+                let root = MenuGalleryTests.host(screen, size: size, regular: regular,
+                                                 keeping: &windows)
+                let seen = furniture(in: root, to: root)
+                let window = root.bounds
+                for item in seen {
+                    let what = "\(name) at \(shape): a \(type(of: item.view))"
+                        + ((item.view as? UILabel)?.text.map { " \"\($0)\"" }
+                           ?? (item.view as? UIButton)?.currentTitle.map { " \"\($0)\"" } ?? "")
+                    if let label = (item.view as? UILabel) ?? (item.view as? UIButton)?.titleLabel,
+                       cutOff(label) {
+                        failures.append("\(what) is cut off in \(Int(label.bounds.width))x"
+                                        + "\(Int(label.bounds.height))")
+                    }
+                    if item.inScroll == false,
+                       window.insetBy(dx: -1, dy: -1).contains(item.frame) == false {
+                        failures.append("\(what) runs off the window at \(item.frame.integral)")
+                    }
+                }
+                for (i, a) in seen.enumerated() {
+                    for b in seen[(i + 1)...] {
+                        guard a.view.isDescendant(of: b.view) == false,
+                              b.view.isDescendant(of: a.view) == false else { continue }
+                        let overlap = a.frame.intersection(b.frame)
+                        guard overlap.width > 2, overlap.height > 2 else { continue }
+                        func text(_ view: UIView) -> String {
+                            "\(type(of: view)) \"\((view as? UILabel)?.text ?? (view as? UIButton)?.currentTitle ?? "")\""
+                        }
+                        failures.append("\(name) at \(shape): \(text(a.view)) and \(text(b.view)) "
+                                        + "overlap by \(Int(overlap.width))x\(Int(overlap.height))")
+                    }
+                }
+            }
+        }
+        XCTAssertTrue(failures.isEmpty, "\(failures.count) problems:\n"
+                      + failures.joined(separator: "\n"))
+    }
+}
+
+private extension UILabel {
+    /// Natural alignment, resolved: left in a left-to-right language.
+    var effectiveAlignment: NSTextAlignment {
+        guard textAlignment == .natural else { return textAlignment }
+        return effectiveUserInterfaceLayoutDirection == .rightToLeft ? .right : .left
     }
 }

@@ -412,6 +412,8 @@
 		1AF1710000000802 /* SafetyPaddleDressTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1710000000801 /* SafetyPaddleDressTests.swift */; };
 		1AF1710000000902 /* PaddleFamilySweepTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1710000000901 /* PaddleFamilySweepTests.swift */; };
 		1AF1710000000904 /* GameSweepTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1710000000903 /* GameSweepTests.swift */; };
+		1AF1710000000908 /* GoldenValuesTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1710000000907 /* GoldenValuesTests.swift */; };
+		1AF1710000000906 /* Stats-1.2.plist in Resources */ = {isa = PBXBuildFile; fileRef = 1AF1710000000905 /* Stats-1.2.plist */; };
 		1AF1710000000602 /* DailyCardTwistsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1710000000601 /* DailyCardTwistsTests.swift */; };
 		1AF1700000000E02 /* MenuLayoutTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1700000000E01 /* MenuLayoutTests.swift */; };
 		1AF1930000000A02 /* ScreenLayoutAuditTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1AF1930000000A01 /* ScreenLayoutAuditTests.swift */; };
@@ -834,6 +836,8 @@
 		1AF1710000000801 /* SafetyPaddleDressTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SafetyPaddleDressTests.swift; sourceTree = "<group>"; };
 		1AF1710000000901 /* PaddleFamilySweepTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PaddleFamilySweepTests.swift; sourceTree = "<group>"; };
 		1AF1710000000903 /* GameSweepTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameSweepTests.swift; sourceTree = "<group>"; };
+		1AF1710000000907 /* GoldenValuesTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GoldenValuesTests.swift; sourceTree = "<group>"; };
+		1AF1710000000905 /* Stats-1.2.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "Stats-1.2.plist"; sourceTree = "<group>"; };
 		1AF1710000000601 /* DailyCardTwistsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DailyCardTwistsTests.swift; sourceTree = "<group>"; };
 		1AF1700000000E01 /* MenuLayoutTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MenuLayoutTests.swift; sourceTree = "<group>"; };
 		1AF1930000000A01 /* ScreenLayoutAuditTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ScreenLayoutAuditTests.swift; sourceTree = "<group>"; };
@@ -907,6 +911,8 @@
 				1AF1710000000801 /* SafetyPaddleDressTests.swift */,
 				1AF1710000000901 /* PaddleFamilySweepTests.swift */,
 				1AF1710000000903 /* GameSweepTests.swift */,
+				1AF1710000000907 /* GoldenValuesTests.swift */,
+				1AF1710000000905 /* Stats-1.2.plist */,
 				1AF1710000000601 /* DailyCardTwistsTests.swift */,
 				1AF1700000000E01 /* MenuLayoutTests.swift */,
 				1AF1930000000A01 /* ScreenLayoutAuditTests.swift */,
@@ -1644,6 +1650,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				1AF1710000000906 /* Stats-1.2.plist in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -1786,6 +1793,7 @@
 				1AF1710000000802 /* SafetyPaddleDressTests.swift in Sources */,
 				1AF1710000000902 /* PaddleFamilySweepTests.swift in Sources */,
 				1AF1710000000904 /* GameSweepTests.swift in Sources */,
+				1AF1710000000908 /* GoldenValuesTests.swift in Sources */,
 				1AF1710000000602 /* DailyCardTwistsTests.swift in Sources */,
 				1AF1700000000E02 /* MenuLayoutTests.swift in Sources */,
 				1AF1930000000A02 /* ScreenLayoutAuditTests.swift in Sources */,

@@ -59,6 +59,19 @@ extension GameScene {
         // by construction (`endlessIIBrickCentre`), so it is asked instead
     }
 
+    /// The size a brick is saved at: its cell, and for a Breathing brick the cell it swells to.
+    ///
+    /// **Not the size it is at this moment** (round 398, found by the brick save-and-resume
+    /// sweep). A Breathing brick spends its life between half a cell and a whole one, and
+    /// `makeBreathing` takes the size it is given as the full breath - so a brick saved mid-breath
+    /// came back breathing round a smaller cell, and the next save mid-breath shrank it again.
+    /// A pause saves, so a player who paused a few times watched it dwindle: the sweep's own
+    /// second save measured one at a three-hundredth of a cell. The breath remembers its full
+    /// size, and that is the one written down.
+    func savedCellSize(of sprite: SKSpriteNode) -> CGSize {
+        endlessIIBreathers.first { $0.brick === sprite }?.full ?? endlessIIFieldSize(of: sprite)
+    }
+
     func savedBrick(for sprite: SKSpriteNode, texture: Int, colour: Int,
                     restingY: CGFloat) -> SavedGame.SavedBrick {
         SavedGame.SavedBrick(
@@ -66,8 +79,8 @@ extension GameScene {
             colour: colour,
             x: Double(endlessIICanonicalRestingX(of: sprite)),
             y: Double(restingY),
-            width: Double(endlessIIFieldSize(of: sprite).width),
-            height: Double(endlessIIFieldSize(of: sprite).height),
+            width: Double(savedCellSize(of: sprite).width),
+            height: Double(savedCellSize(of: sprite).height),
             anchorX: Double(resumedAnchor(of: sprite).x),
             anchorY: Double(resumedAnchor(of: sprite).y),
             // **The cell it occupies, not the sprite hidden inside it.** `makeRounded` and

@@ -285,8 +285,17 @@ its `PBXGroup`, and — the one that is easy to miss — the **right target's** 
   of paddle power-ups ends leaving nothing behind), `GameSweepTests` (every brick drawn where it
   is solid; every power-up shown, saved and resumed, and ended by a Wipe) and
   `EveryBrickHitIsHeardTests` ask about every member at once - the power-up sweep found seven
-  faults on its first run (round 396). When a report shows a new *kind* of fault, add its kind to a sweep, and prove
+  faults on its first run (round 396). Round 398 added play itself (`LongPlaySessionTests`,
+  `EveryDailyTwistPlaysTests`, both through `PlayWatch`), every brick across a save and resume
+  (`BricksSaveAndResumeTests`), every menu screen at every size (`MenuScreensFitEverySizeTests`) and
+  a 1.2 stats file (`UpgradeFromOnePointTwoTests`); between them they found a crash and a brick that
+  shrank on every pause. When a report shows a new *kind* of fault, add its kind to a sweep, and prove
   the sweep by putting the bug back and watching it fail.
+- **Classic and Endless are written down** (`GoldenValuesTests`, `ClassicEndlessGolden.json`):
+  speeds, sizes, bounce angles, starting odds, physics and all 110 levels. A change that moves any
+  of it fails, which is the point - those boards hold years of scores. When the change is meant,
+  write the record again (`TEST_RUNNER_GOLDEN_WRITE=1 tools/test.sh only GoldenValuesTests`) and
+  commit it with the change, so the difference is in the diff for James to read.
 - **Tests are written from play-test reports.** When a bug is described, the test says what
   was reported, in the comment, in the reporter's terms. That is what stops a fix regressing
   into something that merely passes.
