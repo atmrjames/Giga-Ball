@@ -247,7 +247,8 @@ enum PaddleFamilySweep {
     static func present(theme: Int, keeping window: inout UIWindow?,
                         resuming: Bool = false, mode: GameMode = .endlessII,
                         frozen: Bool = true, level: Int? = nil,
-                        pack: Int = 1, stats: TotalStats = TotalStats()) throws -> GameScene {
+                        pack: Int = 1, stats: TotalStats = TotalStats(),
+                        intoPlay: Bool = true) throws -> GameScene {
         if resuming == false {
             GameScene.settingsStore.set(false, forKey: SavedGame.resumeFlagKey)
             SavedGame.clear(from: GameScene.settingsStore)
@@ -277,6 +278,14 @@ enum PaddleFamilySweep {
         scene.size = view.bounds.size
         view.presentScene(scene)
         settle(1.5)
+        if intoPlay == false {
+            for _ in 0..<45 where (scene.gameState.currentState is Playing
+                                    || scene.gameState.currentState is Paused) == false {
+                settle(0.1)
+            }
+            return scene
+        }
+        // Left exactly as it arrived, for a test that looks at a resumed game before it runs
         for _ in 0..<45 where scene.gameState.currentState is Playing == false {
             settle(0.1)
         }
@@ -286,6 +295,10 @@ enum PaddleFamilySweep {
         // a second and a half was not long enough. Usually it is, and this waits for nothing
         for _ in 0..<3 where scene.finishEndlessIIBuildIn() {}
         if !(scene.gameState.currentState is Playing) { scene.gameState.enter(Playing.self) }
+        for _ in 0..<20 where scene.paddle.hasActions() { settle(0.1) }
+        // And the paddle grown in: every level starts it at no width and grows it over half a
+        // second, and a sweep that measured it mid-grow read "paddle resized" before anything
+        // had been collected (round 398b, on a busy Mac)
         if resuming == false { scene.releaseBall() }
         // A resumed run is looked at as it came back; serving its ball would spend a Sticky
         // catch on the way in

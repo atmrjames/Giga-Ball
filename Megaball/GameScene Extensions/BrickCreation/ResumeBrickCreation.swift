@@ -121,7 +121,9 @@ extension GameScene {
 
         let intoThisLayout = resumeGeometry(for: savedGame!)
 
-        for record in saved {
+        for record in saved where resumedTexture(record.texture) != brickNullTexture {
+            // An empty cell a save from before round 398b recorded as a brick: left empty, so a
+            // run saved with the bug comes back without it (see `saveCurrentGame`)
             let brick = SKSpriteNode(imageNamed: "BrickNormal")
             brick.texture = resumedTexture(record.texture) ?? brickNormalTexture
             brick.isHidden = record.hidden
@@ -323,7 +325,9 @@ extension GameScene {
         var brickArray: [SKNode] = []
         // Array to store all bricks
         
-        for i in 0..<savedGame.brickTextures.count {
+        for i in 0..<savedGame.brickTextures.count
+        where resumedTexture(savedGame.brickTextures[i]) != brickNullTexture {
+            // The same for the original Endless, whose rows arrive the same way
             let brick = SKSpriteNode(imageNamed: "BrickNormal")
                         
             brick.texture = resumedTexture(savedGame.brickTextures[i])

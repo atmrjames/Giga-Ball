@@ -75,7 +75,17 @@ extension GameScene {
     /// and wedged the ball between bar and brick in a gap it cannot fit - so the gap is what
     /// changed. The bar is the paddle's height, which is the ball's, so a whole row of air
     /// is room for the ball at every size of screen.
-    var endlessIISafetyPaddleY: CGFloat { finalBrickRowHeight - brickHeight*1.5 - paddleHeight/2 }
+    ///
+    /// **And it goes down with the field** (James, round 398b: "during quicksand with the safety
+    /// paddle enabled, the safety paddle should move down with the bricks otherwise it ends up on
+    /// the same line as the bricks"). Quicksand steps the field and its lower limit two rows
+    /// toward the paddle (`endlessIIFieldShift`), and a bar measured from the field's resting
+    /// bottom row stayed put while the last row arrived on it. It follows the shift down, gliding
+    /// as the field glides, and only down: Retreat lifts the field away from the bar, which leaves
+    /// more air between them rather than less, and nobody asked for the floor to rise.
+    var endlessIISafetyPaddleY: CGFloat {
+        finalBrickRowHeight - brickHeight*1.5 - paddleHeight/2 + min(0, endlessIIFieldShift)
+    }
 
     func endlessIICollectSafetyPaddle() {
         guard gameMode == .endlessII else { return }
@@ -248,6 +258,8 @@ extension GameScene {
         guard let bar = childNode(withName: GameScene.endlessIISafetyPaddleName)
                 as? SKSpriteNode else { return }
         guard endlessIISafetyPaddleClock.isRunning == false else {
+            if bar.position.y != endlessIISafetyPaddleY { bar.position.y = endlessIISafetyPaddleY }
+            // Every frame, so it glides down with a Quicksand and back up when it ends
             if bar.xScale != paddle.xScale || bar.yScale != paddle.yScale {
                 bar.xScale = paddle.xScale
                 bar.yScale = paddle.yScale

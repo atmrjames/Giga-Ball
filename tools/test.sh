@@ -36,7 +36,7 @@ WORK_DEST='id=5E5D91D9-3BAE-4A61-AE34-CBFD2361FBB9'
 SWEEPS="DrawnWhereSolidTests PaddlePowerUpsEndCleanlyTests BricksDrawnWhereSolidTests
 EveryPowerUpShowsSavesAndEndsTests EveryPowerUpIsHeardTests EveryBrickHitIsHeardTests
 LongPlaySessionTests EveryDailyTwistPlaysTests BricksSaveAndResumeTests
-MenuScreensFitEverySizeTests"
+MenuScreensFitEverySizeTests ResumeIsTheSameGameTests EveryFallingPowerUpSurvivesAResumeTests"
 LOG_DIR=${TEST_LOG_DIR:-/tmp/gigaball-tests}
 mkdir -p "$LOG_DIR"
 

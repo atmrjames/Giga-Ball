@@ -1600,6 +1600,10 @@ final class PaddleKeepsItsBodyWhileGrowingInTests: XCTestCase {
             let scene = try PaddleFamilySweep.present(theme: 0, keeping: &window)
             collect(scene)
             PaddleFamilySweep.settle(0.2)
+            for _ in 0..<30 where scene.paddle.hasActions() { PaddleFamilySweep.settle(0.1) }
+            PaddleFamilySweep.settle(0.1)
+            // Measured once the level's own grow-in has finished, or "before" is a paddle
+            // part-grown - which a busy Mac made it, in round 398b's quick run
             let y = scene.paddle.position.y
             let before = PaddleFamilySweep.solid(in: scene, y: y,
                                                  category: CollisionTypes.paddleCategory.rawValue)
@@ -1678,5 +1682,98 @@ final class BreathingBrickKeepsItsSizeAcrossAResumeTests: XCTestCase {
         XCTAssertEqual(breather.full.width, full.width, accuracy: 0.05,
                        "resumed breathing round \(breather.full.width), not \(full.width)")
         resumed.view?.presentScene(nil)
+    }
+}
+
+/// James, round 398b: "during quicksand with the safety paddle enabled, the safety paddle should
+/// move down with the bricks otherwise it ends up on the same line as the bricks."
+final class SafetyPaddleSinksWithQuicksandTests: XCTestCase {
+    private var window: UIWindow?
+
+    func testTheSafetyPaddleKeepsItsRowOfAirUnderASunkenField() throws {
+        let scene = try PaddleFamilySweep.present(theme: 0, keeping: &window)
+        scene.endlessIICollectSafetyPaddle()
+        PaddleFamilySweep.settle(0.3)
+        let bar = try XCTUnwrap(scene.childNode(withName: GameScene.endlessIISafetyPaddleName)
+                                as? SKSpriteNode)
+        func airAbove() -> CGFloat {
+            let lastRowUnderside = scene.finalBrickRowHeight + scene.endlessIIFieldShift
+                - scene.brickHeight/2
+            return lastRowUnderside - (bar.position.y + bar.size.height/2)
+        }
+        let before = airAbove()
+
+        scene.endlessIICollectQuicksand()
+        for _ in 0..<30 where scene.endlessIIFieldShiftHasSettled == false {
+            PaddleFamilySweep.settle(0.1)
+        }
+        PaddleFamilySweep.settle(0.1)
+        XCTAssertLessThan(scene.endlessIIFieldShift, -scene.brickHeight,
+                          "the Quicksand never moved the field down")
+        XCTAssertEqual(airAbove(), before, accuracy: 0.5,
+                       "the bar kept \(airAbove()) points of air under the sunken field, "
+                       + "where it had \(before) - a row, room for the ball")
+        let paddleTop = scene.paddle.position.y + scene.paddle.size.height/2
+        XCTAssertGreaterThan(bar.position.y - bar.size.height/2, paddleTop + scene.ballSize,
+                             "sunk onto the paddle: no room for a ball between the two")
+    }
+}
+
+/// James, round 398b: "Yellow regular bricks started appearing in Endless Mayhem after a quit and
+/// resume. They look like the placeholder brick graphics."
+///
+/// They were the placeholder. A new row is laid out with `BrickNull` in every empty cell - hidden,
+/// with no body - and each is removed when the row's arrival animation ends. Saved during that
+/// animation they came back as bricks with bodies, and showed the moment anything revealed hidden
+/// bricks.
+final class EmptyCellsAreNotSavedTests: XCTestCase {
+    private var window: UIWindow?
+    private var resumedWindow: UIWindow?
+
+    override func tearDown() {
+        GameScene.settingsStore.set(false, forKey: SavedGame.resumeFlagKey)
+        SavedGame.clear(from: GameScene.settingsStore)
+        super.tearDown()
+    }
+
+    func testARowSavedAsItArrivesComesBackWithoutItsPlaceholders() throws {
+        for mode in [GameMode.endlessII, .endless] {
+            let scene = try PaddleFamilySweep.present(theme: 0, keeping: &window, mode: mode)
+            var placeholders = 0
+            for _ in 0..<6 where placeholders == 0 {
+                scene.buildNewEndlessRow()
+                scene.enumerateChildNodes(withName: BrickCategoryName) { node, _ in
+                    if (node as? SKSpriteNode)?.texture == scene.brickNullTexture { placeholders += 1 }
+                }
+            }
+            XCTAssertGreaterThan(placeholders, 0, "\(mode): no row arrived with an empty cell to save")
+
+            scene.saveCurrentGame()
+            // Straight away: the row is still arriving, its placeholders still on the field
+            let saved = SavedGame.load(from: GameScene.settingsStore)
+            let nullCode = 10
+            XCTAssertFalse(saved?.endlessIIBricks?.contains { $0.texture == nullCode } ?? false,
+                           "\(mode): an empty cell was saved as a brick")
+            XCTAssertFalse(saved?.brickTextures.contains(nullCode) ?? false,
+                           "\(mode): an empty cell was saved in the cell list")
+
+            GameScene.settingsStore.set(true, forKey: SavedGame.resumeFlagKey)
+            let resumed = try PaddleFamilySweep.present(theme: 0, keeping: &resumedWindow,
+                                                        resuming: true, mode: mode)
+            GameScene.settingsStore.set(false, forKey: SavedGame.resumeFlagKey)
+            resumed.powerUpsReset()
+            // What a lost ball or the end of Hide Bricks does: show every hidden brick
+            PaddleFamilySweep.settle(0.3)
+            var shown: [CGPoint] = []
+            resumed.enumerateChildNodes(withName: BrickCategoryName) { node, _ in
+                if (node as? SKSpriteNode)?.texture == resumed.brickNullTexture {
+                    shown.append(node.position)
+                }
+            }
+            XCTAssertTrue(shown.isEmpty, "\(mode): placeholder bricks on the resumed field at "
+                          + "\(shown)")
+            resumed.view?.presentScene(nil)
+            scene.view?.presentScene(nil)
+        }
     }
 }

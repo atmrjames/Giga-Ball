@@ -1,12 +1,14 @@
+300.0 2 ResumeIsTheSameGameTests
 270.8 1 EveryPowerUpShowsSavesAndEndsTests
 259.4 1 PaddlePowerUpsEndCleanlyTests
+250.0 3 LongPlaySessionTests
 240.0 2 EveryDailyTwistPlaysTests
-125.0 2 LongPlaySessionTests
 100.0 4 PowerUpPairInteractionTests
 93.1 5 HorizontalRunBreakerTests
 90.0 1 BricksSaveAndResumeTests
 65.2 44 EndlessIIFrameCostTests
 63.0 21 SceneTouchTests
+60.0 1 EveryFallingPowerUpSurvivesAResumeTests
 50.3 9 ShapedPaddleLaunchTests
 50.0 1 DrawnWhereSolidTests
 48.9 1 BricksDrawnWhereSolidTests

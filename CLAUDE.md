@@ -291,6 +291,13 @@ its `PBXGroup`, and — the one that is easy to miss — the **right target's** 
   a 1.2 stats file (`UpgradeFromOnePointTwoTests`); between them they found a crash and a brick that
   shrank on every pause. When a report shows a new *kind* of fault, add its kind to a sweep, and prove
   the sweep by putting the bug back and watching it fail.
+- **A save must bring back the same game** (`ResumeIsTheSameGameTests`, round 398b). The save
+  and resume produced three faults in round 398b alone and seven in round 396, each found one
+  kind at a time; this compares everything a player could tell apart across a resume, in many
+  seeded games in all three modes. Anything new that a run holds - a brick property, a drop, a
+  running effect, a number - belongs in `GameSnapshot`, or the save can lose it unseen. And a
+  hand-written list of power-ups or textures is a list Mayhem will be missing from: the save's
+  falling-drop switch knew the original twenty-eight for six years. Read indices off the arrays.
 - **Classic and Endless are written down** (`GoldenValuesTests`, `ClassicEndlessGolden.json`):
   speeds, sizes, bounce angles, starting odds, physics and all 110 levels. A change that moves any
   of it fails, which is the point - those boards hold years of scores. When the change is meant,

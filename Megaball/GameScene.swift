@@ -9384,7 +9384,11 @@ laserTimer?.invalidate()
 			guard speed > 1 else { continue }
 
 			let floor = CGFloat(sin(minAngleDeg*Double.pi/180))*speed
-			guard abs(body.velocity.dy) < floor else { continue }
+			let id = ObjectIdentifier(subject)
+			guard abs(body.velocity.dy) < floor else {
+				lastVerticalHeading[id] = body.velocity.dy < 0 ? -1 : 1
+				continue
+			}
 
 			// Sent off at the minimum plus a little, and a different little each time, so two
 			// balls in the same fix do not leave in lockstep and one ball cannot fall into a
@@ -9393,7 +9397,17 @@ laserTimer?.invalidate()
 			let wanted = CGFloat(sin(escape*Double.pi/180))*speed
 			let dy: CGFloat = body.velocity.dy < 0 ? -wanted
 				: body.velocity.dy > 0 ? wanted
-				: (Bool.random() ? wanted : -wanted)
+				: lastVerticalHeading[id].map { -$0*wanted } ?? (Bool.random() ? wanted : -wanted)
+			// **Dead flat goes back the way it came** (James's device log, round 391: a Classic
+			// ball on Lonesome Brick bent into exactly 180 degrees mid-flight, twice under the
+			// brick and twice at the ceiling, with no writer's note). Exactly flat is the
+			// engine's doing, not ours: a ball that clips a brick's corner from below can leave
+			// still climbing, slide into the underside while it is still touching the brick -
+			// so no new contact is reported - and arrive slower across the face than the
+			// engine bounces at, which it answers by taking that part of the velocity away. Up
+			// or down at random then sent it back into the brick half the time, to be flattened
+			// again, and the ball ran along the underside. Whatever it was climbing into or
+			// falling onto is the way it must not go, so it leaves the other way
 			let dx = (max(0, speed*speed - dy*dy)).squareRoot()
 
 			if subject === ball { crookedBallNote("horizontal-escape") }
@@ -9405,6 +9419,10 @@ laserTimer?.invalidate()
 			body.velocity = CGVector(dx: body.velocity.dx < 0 ? -dx : dx, dy: dy)
 		}
 	}
+
+	/// Which way each ball was last travelling vertically, while it was steep enough to say:
+	/// +1 up, -1 down. Read by `breakHorizontalRuns` for a ball the engine has pressed dead flat.
+	var lastVerticalHeading: [ObjectIdentifier: CGFloat] = [:]
 
 	/// A wall bounce, reflected off the approach rather than off whatever the engine left.
 	///
@@ -9883,7 +9901,14 @@ laserTimer?.invalidate()
 
 		if gameState.currentState is Playing || gameState.currentState is Paused {
 			
-			if let ballSpeedPowerUp = self.ballSpeedIconBar.action(forKey: "ballSpeedTimer") {
+			// **Running means the bar is showing** (round 398b, found by `ResumeIsTheSameGameTests`).
+			// Every power-up that cancels another - Show Bricks ending Hide Bricks, a Slow Ball
+			// meeting a Fast one - hides the bar and leaves its countdown animation running
+			// underneath, and the save asked only for the animation. So Show Bricks, then a quit,
+			// brought Hide Bricks back on the resume with whatever time its hidden bar had left.
+			// The rings have always asked the bar to be showing (`activePowerUpEntries`); the
+			// save asks the same now, so what is saved is what the player was shown
+			if let ballSpeedPowerUp = self.ballSpeedIconBar.action(forKey: "ballSpeedTimer"), ballSpeedIconBar.isHidden == false {
 				if ballSpeedLimit != ballSpeedNominal {
 					let remainingTime = Double(ballSpeedPowerUp.duration) * Double(ballSpeedIconBar.xScale)
 					powerUpActiveArray?.append("ballSpeedTimer")
@@ -9906,7 +9931,7 @@ laserTimer?.invalidate()
 					powerUpActiveMagnitudeArray?.append(magnitude!)
 				}
 			}
-			if let paddleSizePowerUp = self.paddleSizeIconBar.action(forKey: "paddleSizeTimer") {
+			if let paddleSizePowerUp = self.paddleSizeIconBar.action(forKey: "paddleSizeTimer"), paddleSizeIconBar.isHidden == false {
 				if paddleSizeTarget != 1.0 {
 					let remainingTime = Double(paddleSizePowerUp.duration) * Double(paddleSizeIconBar.xScale)
 					powerUpActiveArray?.append("paddleSizeTimer")
@@ -9931,7 +9956,7 @@ laserTimer?.invalidate()
 					powerUpActiveMagnitudeArray?.append(magnitude!)
 				}
 			}
-			if let gravityPowerUp = self.gravityIconBar.action(forKey: "gravityTimer") {
+			if let gravityPowerUp = self.gravityIconBar.action(forKey: "gravityTimer"), gravityIconBar.isHidden == false {
 				let remainingTime = Double(gravityPowerUp.duration) * Double(gravityIconBar.xScale)
 				powerUpActiveArray?.append("gravityTimer")
 				powerUpActiveDurationArray?.append(remainingTime)
@@ -9939,14 +9964,14 @@ laserTimer?.invalidate()
 				powerUpActiveMagnitudeArray?.append(0)
 			}
 			
-			if let invisiblePowerUp = self.hiddenBricksIconBar.action(forKey: "invisibleBricksTimer") {
+			if let invisiblePowerUp = self.hiddenBricksIconBar.action(forKey: "invisibleBricksTimer"), hiddenBricksIconBar.isHidden == false {
 				let remainingTime = Double(invisiblePowerUp.duration) * Double(hiddenBricksIconBar.xScale)
 				powerUpActiveArray?.append("invisibleBricksTimer")
 				powerUpActiveDurationArray?.append(remainingTime)
 				powerUpActiveTimerArray?.append(Double(invisiblePowerUp.duration))
 				powerUpActiveMagnitudeArray?.append(0)
 			}
-			if let gigaBallPowerUp = self.gigaBallIconBar.action(forKey: "gigaBallTimer") {
+			if let gigaBallPowerUp = self.gigaBallIconBar.action(forKey: "gigaBallTimer"), gigaBallIconBar.isHidden == false {
 				let remainingTime = Double(gigaBallPowerUp.duration) * Double(gigaBallIconBar.xScale)
 				powerUpActiveArray?.append("gigaBallTimer")
 				powerUpActiveDurationArray?.append(remainingTime)
@@ -9959,7 +9984,7 @@ laserTimer?.invalidate()
 				}
 				powerUpActiveMagnitudeArray?.append(magnitude!)
 			}
-			if let laserPowerUp = self.lasersIconBar.action(forKey: "laserTimer") {
+			if let laserPowerUp = self.lasersIconBar.action(forKey: "laserTimer"), lasersIconBar.isHidden == false {
 				let remainingTime = Double(laserPowerUp.duration) * Double(lasersIconBar.xScale)
 				powerUpActiveArray?.append("laserTimer")
 				powerUpActiveDurationArray?.append(remainingTime)
@@ -9967,7 +9992,7 @@ laserTimer?.invalidate()
 				powerUpActiveMagnitudeArray?.append(laserStacks)
 				// The laser's magnitude was unused, so it carries the fire-rate stacking
 			}
-			if let ballSizePowerUp = self.ballSizeIconBar.action(forKey: "ballSizeTimer") {
+			if let ballSizePowerUp = self.ballSizeIconBar.action(forKey: "ballSizeTimer"), ballSizeIconBar.isHidden == false {
 				if ballSizeTarget != 1.0 {
 					let remainingTime = Double(ballSizePowerUp.duration) * Double(ballSizeIconBar.xScale)
 					powerUpActiveArray?.append("ballSizeTimer")
@@ -10034,6 +10059,15 @@ laserTimer?.invalidate()
 			
 			enumerateChildNodes(withName: BrickCategoryName) { (node, _) in
 				let sprite = node as! SKSpriteNode
+				guard sprite.texture != self.brickNullTexture else { return }
+				// **An empty cell is not a brick** (James, round 398b: "Yellow regular bricks
+				// started appearing in Endless Mayhem after a quit and resume. They look like the
+				// placeholder brick graphics"). They were the placeholder: a new endless row is
+				// laid out with `BrickNull` in every empty cell, hidden and bodiless, and each is
+				// removed when the row's arrival animation ends. A pause or a quit during that
+				// animation saved them as bricks, the resume gave them bodies, and the first thing
+				// that showed hidden bricks again - Hide Bricks ending, a ball lost - showed them:
+				// solid yellow rectangles in the top rows. Nothing is saved for an empty cell
 				var spriteTextureIndex: Int?
 				switch sprite.texture {
 				case self.brickNormalTexture:
@@ -10213,74 +10247,23 @@ laserTimer?.invalidate()
 
 			enumerateChildNodes(withName: PowerUpCategoryName) { (node, _) in
 				let sprite = node as! SKSpriteNode
-				var powerUpTextureIndex: Int = 0
-				
 				if sprite.zPosition == 1 {
 					return
 				}
 				// Don't save power-ups that are animating out after collection
-								
-				switch sprite.texture {
-				case self.powerUpGetALife:
-					powerUpTextureIndex = 0
-				case self.powerUpLoseALife:
-					powerUpTextureIndex = 1
-				case self.powerUpDecreaseBallSpeed:
-					powerUpTextureIndex = 2
-				case self.powerUpIncreaseBallSpeed:
-					powerUpTextureIndex = 3
-				case self.powerUpIncreasePaddleSize:
-					powerUpTextureIndex = 4
-				case self.powerUpDecreasePaddleSize:
-					powerUpTextureIndex = 5
-				case self.powerUpStickyPaddle:
-					powerUpTextureIndex = 6
-				case self.powerUpGravityBall:
-					powerUpTextureIndex = 7
-				case self.powerUpPointsBonusSmall:
-					powerUpTextureIndex = 8
-				case self.powerUpPointsPenaltySmall:
-					powerUpTextureIndex = 9
-				case self.powerUpPointsBonus:
-					powerUpTextureIndex = 10
-				case self.powerUpPointsPenalty:
-					powerUpTextureIndex = 11
-				case self.powerUpMultiplier:
-					powerUpTextureIndex = 12
-				case self.powerUpMultiplierReset:
-					powerUpTextureIndex = 13
-				case self.powerUpNextLevel:
-					powerUpTextureIndex = 14
-				case self.powerUpShowInvisibleBricks:
-					powerUpTextureIndex = 15
-				case self.powerUpNormalToInvisibleBricks:
-					powerUpTextureIndex = 16
-				case self.powerUpMultiHitToNormalBricks:
-					powerUpTextureIndex = 17
-				case self.powerUpMultiHitBricksReset:
-					powerUpTextureIndex = 18
-				case self.powerUpRemoveIndestructibleBricks:
-					powerUpTextureIndex = 19
-				case self.powerUpGigaBall:
-					powerUpTextureIndex = 20
-				case self.powerUpUndestructiBall:
-					powerUpTextureIndex = 21
-				case self.powerUpLasers:
-					powerUpTextureIndex = 22
-				case self.powerUpBricksDown:
-					powerUpTextureIndex = 23
-				case self.powerUpMystery:
-					powerUpTextureIndex = 24
-				case self.powerUpBackstop:
-					powerUpTextureIndex = 25
-				case self.powerUpIncreaseBallSize:
-					powerUpTextureIndex = 26
-				case self.powerUpDecreaseBallSize:
-					powerUpTextureIndex = 27
-				default:
-					break
-				}
-				
+
+				guard let powerUpTextureIndex = self.powerUpTextureArray.firstIndex(where: {
+					$0 === sprite.texture
+				}) else { return }
+				// **Read off the power-up list itself** (James, round 398b: "on resume after
+				// quitting both falling power ups turned into extra life power-ups in endless
+				// mayhem mode. I then had 2 lives"). This was a switch over the original
+				// twenty-eight, written in 2020, with `default: break` leaving the index at 0 -
+				// Get a Life. Every Mayhem power-up falling at the moment of a save fell through
+				// it, and came back as a life in the one mode that has no lives. The list the
+				// restore reads is the list asked here, so the two cannot disagree again; a drop
+				// not in it is not saved at all rather than saved as something else
+
 				var currentPowerUpXIndex = Double((self.gameWidth/2 - self.brickWidth/2 - sprite.position.x)/self.brickWidth)
 				var currentPowerUpYIndex = Double((self.yBrickOffset - sprite.position.y)/self.brickHeight)
 				
@@ -10993,8 +10976,14 @@ laserTimer?.invalidate()
 			// Load ball position and velocity if it has been saved
 			
 			if (savedGame.fallingPowerUps.isEmpty == false) {
-				for i in 0..<savedGame.fallingPowerUps.count {
-					
+				for i in 0..<savedGame.fallingPowerUps.count
+				where powerUpTextureArray.indices.contains(savedGame.fallingPowerUps[i])
+					&& (gameMode != .endlessII || powerUpCanAppear(savedGame.fallingPowerUps[i])) {
+					// Nothing this run could not have dropped. A Mayhem save written before round
+					// 398b holds a Get a Life for every Mayhem power-up that was falling, and a
+					// life is the one thing Mayhem never drops - so it is left out rather than
+					// handed over. An index past the list is a save this build cannot read
+
 					let powerUpPositionX = savedGame.fallingPowerUpXPositions[i]
 					let powerUpPositionY = savedGame.fallingPowerUpYPositions[i]
 
@@ -11010,8 +10999,9 @@ laserTimer?.invalidate()
 					powerUp.physicsBody!.mass = 0
 					powerUp.name = PowerUpCategoryName
 					powerUp.physicsBody!.categoryBitMask = CollisionTypes.powerUpCategory.rawValue
-					powerUp.physicsBody!.collisionBitMask = CollisionTypes.paddleCategory.rawValue | CollisionTypes.bottomScreenBlockCategory.rawValue
-					powerUp.physicsBody!.contactTestBitMask = CollisionTypes.paddleCategory.rawValue | CollisionTypes.bottomScreenBlockCategory.rawValue
+					powerUp.physicsBody!.collisionBitMask = CollisionTypes.paddleCategory.rawValue | CollisionTypes.bottomScreenBlockCategory.rawValue | CollisionTypes.mirrorPaddleCategory.rawValue
+					powerUp.physicsBody!.contactTestBitMask = CollisionTypes.paddleCategory.rawValue | CollisionTypes.bottomScreenBlockCategory.rawValue | CollisionTypes.mirrorPaddleCategory.rawValue
+					// The mirror catches a resumed drop as it catches a fresh one (round 209)
 					powerUp.zPosition = 2
 					addChild(powerUp)
 					

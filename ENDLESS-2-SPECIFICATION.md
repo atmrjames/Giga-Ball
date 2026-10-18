@@ -2964,6 +2964,69 @@ testers:
   falling power-up's position by `brickWidth`, so a bare `GameScene()` with a power-up on
   screen traps converting NaN to Int. A real scene is always laid out before play.
 
+**Round 398b: the flat ball, the Quicksand bar, three save faults, and a test of the whole resume.**
+
+- **The open item from round 391**, James's device log: a Classic ball "bent 10.85 deg at (137,
+  -31) heading 180.0 deg", and three more - two just under Lonesome Brick, two at the ceiling, each
+  bent 11 to 19 degrees into exactly 180.0 in mid-flight with no writer's note. Round 391 had
+  read them as turns at the walls; the coordinates say otherwise.
+- **Reproduced** by firing a ball at an indestructible brick's underside near its corner. A ball
+  that clips the corner from below can leave still climbing (168 degrees), slide into the
+  underside while it is still touching the brick - so no new contact is reported and no handler
+  runs - and arrive slower across that face than the engine bounces at. The engine takes that
+  part of the velocity away rather than reflecting it: dead flat, and nobody's note. In 42
+  approaches between 6 and 16 degrees at the nominal and slowest speeds, it did this 6 times.
+- **The fault was ours**: `breakHorizontalRuns` lifted the flat ball the next frame, as it should,
+  but a ball *exactly* flat has no vertical sign to keep, so it picked up or down at random - and
+  half the time sent it back into the brick to be flattened again. That was the ball sliding
+  along the underside. A dead-flat ball now leaves away from whatever it was last climbing into
+  or falling onto (`lastVerticalHeading`). James: "Fix it in all modes."
+- Nothing else moves: speeds, angles and every ordinary bounce are as they were, and
+  `GoldenValuesTests` passes unchanged. `AFlatBallLeavesTheWayItCameTests` fires 21 angles at two
+  speeds at that corner; against the old escape the ball stayed dead flat for three frames, and
+  now it leaves downward on the next one. `PlayWatch` reports any ball flatter than the minimum
+  for more than a quarter of a second, so the long play and daily sweeps ask it too, and
+  `LongPlaySessionTests` plays Lonesome Brick itself three times.
+
+- **"During quicksand with the safety paddle enabled, the safety paddle should move down with the
+  bricks otherwise it ends up on the same line as the bricks."** Quicksand steps the field and its
+  lower limit two rows down (`endlessIIFieldShift`); the bar was measured from the field's resting
+  bottom row and stayed put. It follows the shift down now, gliding with it, and only down - a
+  Retreat leaves it where it is. `SafetyPaddleSinksWithQuicksandTests`: against the old bar it
+  stood 55 points inside the field rather than a row below it.
+- **"Yellow regular bricks started appearing in Endless Mayhem after a quit and resume. They look
+  like the placeholder brick graphics."** They were: a new endless row is laid out with `BrickNull`
+  in every empty cell, hidden and bodiless, removed when the row's arrival animation ends. A save
+  during that animation wrote them as bricks, the resume gave them bodies, and the first thing to
+  show hidden bricks again showed them. Nothing is saved for an empty cell now, and a save from
+  before the fix skips them on the way back. `EmptyCellsAreNotSavedTests` (both endless modes)
+  found a whole top row of them on the old code.
+- **"On resume after quitting both falling power ups turned into extra life power-ups in endless
+  mayhem mode. I then had 2 lives."** Not this week's work: the save named a falling drop through a
+  switch over the original twenty-eight written in July 2020, `default: break` leaving it at 0 -
+  Get a Life - so every Mayhem power-up in the air at a save came back as a life. The index is read
+  off `powerUpTextureArray` itself now, a drop not in it is not saved, and a Mayhem restore skips
+  anything Mayhem could not have dropped, which clears the lives an existing save already holds. A
+  restored drop is catchable by the Mirror Paddle too, as a fresh one always was.
+  `EveryFallingPowerUpSurvivesAResumeTests` saves every power-up each mode can drop while it is
+  falling, in all three modes: on the old code Multi-Ball came back as Extra Ball.
+- **`ResumeIsTheSameGameTests`, James: "We still need more thorough checking and testing in
+  place."** Every save fault so far was found one kind at a time - a sweep of one family, or James.
+  This plays a run by itself for a seeded while, with power-ups collected and others left in the
+  air, freezes it, saves, resumes, and compares everything a player could tell apart: every brick
+  (picture, shown, solid, role, styles, power-up, open side, cell size, resting place), every drop
+  in the air, what is running and which rings show, and lives, height, score and multiplier. Ten
+  Mayhem games and eight Classic and Endless. Its first run found:
+- **Show Bricks did not survive a resume** (Classic and Endless). Show Bricks ends Hide Bricks by
+  hiding its bar, and the bar's countdown went on underneath; the save asked only for the
+  countdown, so it wrote Hide Bricks as running and the resume hid the field again. Every power-up
+  that cancels another leaves its bar this way, so the save now asks what the rings have always
+  asked - that the bar is showing - for all seven. `ShowBricksStaysShownAcrossAResumeTests`.
+- Harness notes, so they are not taken for faults: a resumed game waits paused at READY, and some
+  of what it restores (a paddle's size, a timer begun in an animation's completion) lands only once
+  it runs, so both scenes are given the same still moment before they are compared; and a power-up
+  cancelled by its opposite leaves a timer that ends nothing, which is not "running".
+
 **Round 398: six more checks before launch, and what they found.**
 
 - **"When halo destroys bricks it should make the brick hit sound as well as the haptic."** The
@@ -4600,7 +4663,7 @@ James, after the round 358b push: three play-test notes.
 
 | Item | What is known |
 |---|---|
-| **A flat ball in Classic, turned at the walls by something unlogged** (round 391) | James's device log: in Classic (Challenge Pack, Lonesome Brick) the ball crossed the field heading exactly 180 and then 0 degrees, and was turned about ten degrees at each wall with no note from any writer the crooked-ball watch knows. Find the writer; whether to change anything in Classic is James's call |
+| ~~A flat ball in Classic, turned at the walls by something unlogged~~ | **Fixed, round 398b**, in all three modes (James: "Fix it in all modes"). Not at the walls and not a writer: the engine pressing a ball flat against a brick it was already touching, and the escape choosing at random which way to send it - see round 398b |
 | **A white patch under an Exploding Diamond** (round 387) | James's screenshot: a red Exploding Diamond with a white bevelled rectangle showing below its lower edges, half a cell wide, centred, reaching the cell's floor. Its width is the Diamond's hiding rectangle's (`EndlessIIFaceGeometry.hidingRect`, half a cell), so it reads as the brick's own sprite drawing and sitting lower than it should - but the hiding rectangle is centred and inside the rhombus, and the sprite is meant to draw nothing at all once the face has art (round 332). Round 387 could not make it happen: every behaviour on a Diamond, applied before and after the face, on Normal, Multi-Hit and Indestructible bricks, through hits and a second of frames, and then saved and resumed in a laid-out scene - every hidden sprite inside its rectangle and drawing nothing. Not a Tiny quarter (those sit left or right of centre). Wanted: what had just happened to that brick - hit, resumed, drifted, a Breathing pulse - or a second sighting |
 | ~~**Bricks half a row out after a quit and resume**~~ | **Fixed, round 386d** - see that round. It was not the bricks but their faces: a shaped brick's drawing came back round the wrong centre |
 | ~~The game view following an iPad or Mac window~~ | **Seen working, 2 October** - James on his iPad: "it's working perfectly" |
