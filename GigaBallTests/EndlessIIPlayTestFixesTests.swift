@@ -1428,3 +1428,134 @@ final class MysteryBrickRevealsOnTheSpotTests: XCTestCase {
         }
     }
 }
+
+/// Every way a ball or a laser can strike a brick, and whether the player hears it.
+///
+/// Three rounds found the same fault in three places - round 37 a Wrecking Ball hit with no
+/// haptic, round 334 the same hit with no sound, and round 393 a cooling Portal with neither
+/// (James: "portal brick not making sound or haptic when hit when not active still") - because
+/// `hitBrick` answers the special bricks in early returns, and the sound lives in the type switch
+/// they return before. So this asks every kind of brick and every early return at once, rather
+/// than waiting for the next one to be found by ear. What counts as heard: the ordinary knock
+/// (`brickKnockedAt`), a brick's own voice (`brickVoicedAt`), or a Mayhem sound of any name.
+/// The haptic sits beside the sound in every branch and cannot be observed from a test, so it
+/// is read in review instead.
+final class EveryBrickHitIsHeardTests: XCTestCase {
+    private var window: UIWindow?
+
+    private func playing() throws -> GameScene {
+        GameScene.settingsStore.set(false, forKey: SavedGame.resumeFlagKey)
+        SavedGame.clear(from: GameScene.settingsStore)
+        GameMode.endlessII.makeCurrent(in: GameScene.settingsStore)
+        let board = UIStoryboard(name: "Main", bundle: Bundle(for: GameViewController.self))
+        let game = try XCTUnwrap(board.instantiateViewController(withIdentifier: "gameView")
+                                 as? GameViewController)
+        game.selectedLevel = LevelPackSetup.shared.startLevelNumber[1]
+        game.numberOfLevels = 1
+        game.levelSender = "MainMenu"
+        game.levelPack = 1
+        let windowScene = try XCTUnwrap(UIApplication.shared.connectedScenes.first as? UIWindowScene)
+        let window = UIWindow(windowScene: windowScene)
+        let host = UIViewController()
+        let view = SKView(frame: window.bounds)
+        host.view = view
+        window.rootViewController = host
+        window.makeKeyAndVisible()
+        self.window = window
+        let scene = try XCTUnwrap(GameScene(fileNamed: "GameScene"))
+        scene.totalStatsArray = [TotalStats()]
+        scene.gameViewControllerDelegate = game
+        scene.scaleMode = .aspectFit
+        scene.size = view.bounds.size
+        view.presentScene(scene)
+        RunLoop.main.run(until: Date().addingTimeInterval(1.5))
+        for _ in 0..<3 where scene.finishEndlessIIBuildIn() {}
+        if !(scene.gameState.currentState is Playing) { scene.gameState.enter(Playing.self) }
+        scene.releaseBall()
+        RunLoop.main.run(until: Date().addingTimeInterval(0.1))
+        scene.physicsWorld.speed = 0
+        // Launched, so nothing is held back for the next serve; still, so the ball breaks
+        // nothing of its own between the cases
+        scene.soundsSetting = true
+        return scene
+    }
+
+    /// A copy of a plain brick from the real field: its body, size and cell are the field's
+    /// own, which is what every hit in play meets. A copy each time, because most of these
+    /// cases break the brick they hit and the opening field runs out.
+    private func freshBrick(_ scene: GameScene) -> SKSpriteNode? {
+        var template: SKSpriteNode?
+        scene.enumerateChildNodes(withName: BrickCategoryName) { node, stop in
+            guard let brick = node as? SKSpriteNode,
+                  brick.endlessIIPowerUpIndex == nil, brick.endlessIIRole == nil,
+                  scene.endlessIIStyles(on: brick).isEmpty, brick.endlessIIFace == nil,
+                  brick.texture == scene.brickNormalTexture else { return }
+            template = brick
+            stop.pointee = true
+        }
+        guard let copy = template?.copy() as? SKSpriteNode else { return nil }
+        scene.addChild(copy)
+        return copy
+    }
+
+    private struct Heard { let knock: CFTimeInterval; let voice: CFTimeInterval; let mayhem: [String: TimeInterval] }
+    private func heard(_ scene: GameScene) -> Heard {
+        Heard(knock: scene.brickKnockedAt, voice: scene.brickVoicedAt, mayhem: scene.mayhemSoundLastPlayed)
+    }
+
+    func testEveryKindOfBrickIsHeardWhenItIsHit() throws {
+        let scene = try playing()
+
+        typealias Case = (name: String, dress: (GameScene, SKSpriteNode) -> Void,
+                          from: EndlessIISide?, laser: Bool)
+        let cases: [Case] = [
+            ("normal", { _, _ in }, .bottom, false),
+            ("multi-hit", { s, b in b.texture = s.brickMultiHit1Texture }, .bottom, false),
+            ("indestructible once", { s, b in b.texture = s.brickIndestructible1Texture }, .bottom, false),
+            ("indestructible", { s, b in b.texture = s.brickIndestructible2Texture }, .bottom, false),
+            ("invisible, hidden", { s, b in b.texture = s.brickInvisibleTexture; b.isHidden = true }, .bottom, false),
+            ("normal by a laser", { _, _ in }, .bottom, true),
+            ("indestructible by a laser", { s, b in b.texture = s.brickIndestructible2Texture }, .bottom, true),
+            ("directional, open face", { s, b in b.endlessIIVulnerableSide = .bottom; s.makeDirectional(b) }, .bottom, false),
+            ("directional, armoured face", { s, b in b.endlessIIVulnerableSide = .top; s.makeDirectional(b) }, .bottom, false),
+            ("fixed, first hit", { s, b in s.makeFixed(b) }, .bottom, false),
+            ("exploding", { s, b in s.makeExploding(b) }, .bottom, false),
+            ("spawner", { s, b in s.makeSpawner(b) }, .bottom, false),
+            ("gravity", { s, b in s.makeGravity(b) }, .bottom, false),
+            ("moving", { s, b in s.makeMoving(b) }, .bottom, false),
+            ("spinning", { s, b in s.makeSpinning(b) }, .bottom, false),
+            ("flashing", { s, b in s.makeFlashing(b) }, .bottom, false),
+            ("breathing", { s, b in s.makeBreathing(b) }, .bottom, false),
+            ("rounded", { s, b in s.makeRounded(b) }, .bottom, false),
+            ("convex", { s, b in s.makeFace(.convex, on: b) }, .bottom, false),
+            ("portal, ready", { s, b in s.endlessIIPortalCooldown = 0; s.makePortal(b) }, .bottom, false),
+            ("portal, cooling", { s, b in s.makePortal(b); s.endlessIIPortalCooldown = 5 }, .bottom, false),
+            ("portal, by a laser", { s, b in s.makePortal(b); s.endlessIIPortalCooldown = 0 }, .bottom, true),
+        ]
+
+        for test in cases {
+            guard let brick = freshBrick(scene) else {
+                return XCTFail("the field has no plain brick to copy for \(test.name)")
+            }
+            test.dress(scene, brick)
+            RunLoop.main.run(until: Date().addingTimeInterval(0.12))
+            // Longer than the gap that keeps one sound from playing twice at once, so a sound
+            // the case before played cannot hide this one
+            let before = heard(scene)
+
+            let laser = test.laser ? SKSpriteNode(texture: scene.laserNormalTexture) : nil
+            if let laser { scene.addChild(laser) }
+            scene.hitBrick(node: brick, sprite: brick, laserNode: laser, laserSprite: laser,
+                           hitFrom: test.from, struckBy: test.laser ? nil : scene.ball)
+
+            let after = heard(scene)
+            XCTAssertTrue(after.knock != before.knock || after.voice != before.voice
+                          || after.mayhem != before.mayhem,
+                          "\(test.name): struck and not heard")
+            scene.endlessIIPortalCooldown = 0
+            brick.removeFromParent()
+            // Taken away whatever it was, so a Portal case is the only Portal and the next
+            // case's copy is not standing on top of this one
+        }
+    }
+}

@@ -1841,3 +1841,81 @@ final class EndlessIIFaceBodyAtEverySizeTests: XCTestCase {
         }
     }
 }
+
+/// James, round 393: "Flashing bricks are too frequent at the start - below 100m there should be
+/// no more than 1 on screen at a time, above 100m the rarity of getting one should drop, then as
+/// the player gets higher having 2, then 3 then more on screen at the same time should get more
+/// likely."
+final class FlashingLimitTests: XCTestCase {
+    private let cell = CGSize(width: 40, height: 20)
+
+    private func fieldScene(at height: Int) -> GameScene {
+        let scene = GameScene(size: CGSize(width: 500, height: 900))
+        scene.gameMode = .endlessII
+        scene.gameWidth = 440
+        scene.brickWidth = cell.width
+        scene.brickHeight = cell.height
+        scene.numberOfBrickColumns = 11
+        scene.numberOfBrickRows = 22
+        scene.yBrickOffsetEndless = 300
+        scene.finalBrickRowHeight = 300 - cell.height*21
+        scene.ballSize = 12
+        scene.endlessHeight = height
+        return scene
+    }
+
+    private func brick(_ scene: GameScene, column: Int) -> SKSpriteNode {
+        let brick = SKSpriteNode(texture: scene.brickNormalTexture, size: cell)
+        brick.position = CGPoint(x: -200 + CGFloat(column)*cell.width*2, y: 200)
+        brick.name = BrickCategoryName
+        scene.addChild(brick)
+        return brick
+        // The ordinary texture, because a brick with none is refused every style and the
+        // refusals below would pass for the wrong reason
+    }
+
+    /// How many the field can hold at each height: one, then two, then three, then the field.
+    private func flashersAllowed(at height: Int) -> Int {
+        let scene = fieldScene(at: height)
+        var flashing = 0
+        for column in 0..<6 {
+            let next = brick(scene, column: column)
+            guard scene.endlessIICanTake(.flashing, next) else { break }
+            scene.applyEndlessIIStyle(.flashing, to: next)
+            flashing += 1
+        }
+        return flashing
+    }
+
+    func testBelowAHundredMetresTheFieldHoldsOneAtATime() {
+        XCTAssertEqual(flashersAllowed(at: 0), 1)
+        XCTAssertEqual(flashersAllowed(at: 99), 1)
+    }
+
+    func testHigherUpTwoThenThreeThenAsManyAsAreDrawn() {
+        XCTAssertEqual(flashersAllowed(at: 100), 2)
+        XCTAssertEqual(flashersAllowed(at: 175), 3)
+        XCTAssertEqual(flashersAllowed(at: 250), 6, "no limit once Static can be drawn")
+    }
+
+    func testABrokenFlashingBrickMakesRoomForAnother() {
+        let scene = fieldScene(at: 50)
+        let first = brick(scene, column: 0)
+        scene.applyEndlessIIStyle(.flashing, to: first)
+        let second = brick(scene, column: 1)
+        XCTAssertFalse(scene.endlessIICanTake(.flashing, second))
+        first.removeFromParent()
+        XCTAssertTrue(scene.endlessIICanTake(.flashing, second),
+                      "one on screen at a time, so the next one can come once it has gone")
+    }
+
+    /// The phase that leans on Flashing bricks waits for the height where there can be more
+    /// than one of them.
+    func testTheFlickerPhaseWaitsForAHundredMetres() {
+        XCTAssertGreaterThanOrEqual(EndlessIIPhase.flicker.minimumHeight, 100)
+        let progression = EndlessIIProgression.make()
+        for _ in 0..<500 {
+            XCTAssertNotEqual(progression.pickPhase(at: 99), .flicker)
+        }
+    }
+}

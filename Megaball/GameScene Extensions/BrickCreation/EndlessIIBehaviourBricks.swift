@@ -1316,9 +1316,13 @@ extension GameScene {
     /// The cooldown is what stops it being a trap: without it a ball arriving at the top
     /// travelling upward would bounce off the ceiling straight back into whatever sent it
     /// there, over and over.
-    func endlessIIEnterPortal(_ brick: SKSpriteNode, entering traveller: SKSpriteNode? = nil) {
-        guard gameMode == .endlessII else { return }
-        guard endlessIIPortalCooldown <= 0 else { return }
+    ///
+    /// Returns whether the ball went through, so a hit that was refused - the Portal cooling -
+    /// can still sound like a hit.
+    @discardableResult
+    func endlessIIEnterPortal(_ brick: SKSpriteNode, entering traveller: SKSpriteNode? = nil) -> Bool {
+        guard gameMode == .endlessII else { return false }
+        guard endlessIIPortalCooldown <= 0 else { return false }
         endlessIIPortalCooldown = GameScene.endlessIIPortalCooldownSeconds
 
         let ball = traveller ?? self.ball
@@ -1413,6 +1417,7 @@ extension GameScene {
                              .fadeAlpha(to: 1, duration: 0.12)]))
 
         showEndlessIIPortalsCooling()
+        return true
     }
 
     /// Greys both ends out while the cooldown runs.

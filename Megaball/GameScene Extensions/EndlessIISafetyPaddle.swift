@@ -322,6 +322,32 @@ extension GameScene {
 
     static let endlessIISafetyPaddleSegmentName = "endlessIISafetyPaddleSegment"
 
+    /// What the split bar's pieces are drawn with: the paddle's own halves' picture, height and
+    /// caps (`endlessIIDoublePaddleHalfDress`), in the twin's colours.
+    ///
+    /// **James, round 393: "retro split safety paddle is wrong"**, with a screenshot of two thin
+    /// red and green slivers where the bar's halves should be. The pieces were cut from the
+    /// bar's picture at the bar's height - right for every theme but Retro, whose paddle is drawn
+    /// by a layer of its own two and a half times the paddle's height. The whole bar has worn
+    /// that layer's proportions since round 386 (`endlessIIDressRetroTwin`), and the split takes
+    /// that dress off; the pieces got the tall picture crushed into a strip a few points high,
+    /// and only the purple ends' colours survived. The paddle's own halves have been drawn at
+    /// the Retro height since round 166, so the pieces are drawn exactly as they are - the same
+    /// picture with its tube turned the lime, at the same height, with the same caps - and the
+    /// bar's halves look like the paddle's halves under Expand and Shrink as well, because both
+    /// are children of a node those scale.
+    func endlessIISafetyPaddlePieceDress(barHeight: CGFloat)
+        -> (texture: SKTexture?, height: CGFloat, centerRect: CGRect, blend: CGFloat) {
+        if paddleTexture == retroPaddle, let art = paddleRetroTexture.texture {
+            return (GameScene.twinPicture(of: art, turning: .retro),
+                    paddleRetroTexture.size.height, paddleCapRect(for: art), 0)
+            // Untinted, as the whole Retro bar is: the picture carries its own colours, the
+            // tube recoloured (round 386b)
+        }
+        return (endlessIITwinPicture(endlessIISafetyPaddleDress), barHeight,
+                endlessIIPaddleDressCenterRect, endlessIITwinBlend)
+    }
+
     /// Draws the bar as pieces while the paddle is in pieces, and as one bar otherwise.
     ///
     /// The same bargain the split itself makes: put back exactly. A bar left in pieces after
@@ -347,11 +373,15 @@ extension GameScene {
             // note - so it sits outside the rebuild rather than inside it
         }
 
-        let size = CGSize(width: split.segment, height: bar.size.height)
+        let dress = endlessIISafetyPaddlePieceDress(barHeight: bar.size.height)
+        let size = CGSize(width: split.segment, height: dress.height)
         let stale = pieces.count != split.centres.count
             || zip(pieces, split.centres).contains { abs($0.position.x - $1) > 0.5 }
             || pieces.contains { abs($0.size.width - size.width) > 0.5
-                              || abs($0.size.height - size.height) > 0.5 }
+                              || abs($0.size.height - size.height) > 0.5
+                              || $0.texture !== dress.texture }
+        // The picture as well as the geometry, so a theme changed from the pause menu takes
+        // the pieces with it
         // Rebuilt when the pieces are wrong rather than every frame, which is the rule the
         // paddle's own split follows - two fresh sprites a frame is a habit an update loop
         // does not survive
@@ -363,11 +393,11 @@ extension GameScene {
             // The whole bar's own face goes with it - each piece grows its own below
 
             for centre in split.centres {
-                let piece = SKSpriteNode(texture: endlessIITwinPicture(endlessIISafetyPaddleDress), size: size)
+                let piece = SKSpriteNode(texture: dress.texture, size: size)
                 piece.name = GameScene.endlessIISafetyPaddleSegmentName
                 piece.color = GameScene.endlessIIHaloColour
-                piece.colorBlendFactor = endlessIITwinBlend
-                piece.centerRect = endlessIIPaddleDressCenterRect
+                piece.colorBlendFactor = dress.blend
+                piece.centerRect = dress.centerRect
                 piece.position = CGPoint(x: centre, y: 0)
                 piece.zPosition = 0.1
                 bar.addChild(piece)
@@ -384,6 +414,19 @@ extension GameScene {
 
             bar.physicsBody = endlessIISafetyPaddleBody(size: bar.size)
         }
+
+        if bar.texture != nil || bar.color != .clear {
+            bar.texture = nil
+            bar.color = .clear
+            bar.colorBlendFactor = 1
+        }
+        // **Every frame, not only when the pieces are rebuilt** (round 393). The tick re-dresses
+        // the whole bar in its own picture whenever the paddle's size changes - an Expand, a
+        // Shrink, the split itself starting - and a resize that leaves the pieces where they
+        // were never came back here to take it off. So the whole bar drew again under its own
+        // pieces: across the gap in every theme, and in Retro as a thin orange strip, the Retro
+        // picture crushed to the bar's height and tinted, between the two halves of James's
+        // screenshot
 
         for piece in bar.children.compactMap({ $0 as? SKSpriteNode })
         where piece.name == GameScene.endlessIISafetyPaddleSegmentName {

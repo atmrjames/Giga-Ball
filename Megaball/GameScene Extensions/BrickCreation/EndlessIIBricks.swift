@@ -669,7 +669,11 @@ extension GameScene {
             // what a legend needs: this is a shape being told which way it faces
 
             if let shape = spec.shape { applyEndlessIIStyle(shape, to: brick) }
-            for action in spec.actions { applyEndlessIIStyle(action, to: brick) }
+            for action in spec.actions where action != .flashing || endlessIIFlashingIsFull == false {
+                applyEndlessIIStyle(action, to: brick)
+            }
+            // A set piece answers to the Flashing limit too: it is the field the player sees,
+            // whoever drew it (round 393)
             // Shape first. It rewrites the sprite's size and anchor, and every action drawn
             // over it measures itself against the room the brick fills - which is a question
             // `endlessIIFieldSize` can only answer once the face is on
@@ -804,6 +808,14 @@ extension GameScene {
     /// is another, in `stacksWith`. Whether this particular sprite can carry it is a
     /// mechanical one: Rounded and Spinning both assume a sprite centred on its node, which
     /// a Big brick's is not.
+    /// Whether the field already holds as many Flashing bricks as this height allows.
+    var endlessIIFlashingIsFull: Bool {
+        guard let limit = EndlessIIProgression.flashingLimit(at: endlessHeight) else { return false }
+        return endlessIIFlashers.filter { $0.brick.parent != nil }.count >= limit
+        // Counted by what is still in the scene: the list is swept of broken bricks once a
+        // frame, and a row can be built between two sweeps
+    }
+
     func endlessIICanTake(_ style: EndlessIIStyle, _ brick: SKSpriteNode) -> Bool {
         guard brick.endlessIIStaysPlain == false else { return false }
         guard let behaviour = endlessIIBehaviour(of: brick) else { return false }
@@ -813,6 +825,8 @@ extension GameScene {
         guard worn.allSatisfy({ $0.stacksWith(style) }) else { return false }
 
         if style == .portal, endlessIIHasPortal() { return false }
+        if style == .flashing, endlessIIFlashingIsFull { return false }
+        // As many Flashing bricks as the height allows, and no more (round 393)
         if style == .portal {
             // Portal does not need to find an Indestructible brick, it makes one: it takes
             // the behaviour over, because "a hit does nothing" is part of what a Portal is.

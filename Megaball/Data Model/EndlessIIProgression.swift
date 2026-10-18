@@ -599,6 +599,26 @@ struct EndlessIIProgression: Codable, Equatable {
     ///
     /// It also does not begin at all until a run is properly under way. The opening is a plain
     /// field on purpose (§12.1), and Tiny is the least plain thing in it.
+    /// How many Flashing bricks may be in the field at once at this height, or nil for no limit.
+    ///
+    /// James, round 393: "Flashing bricks are too frequent at the start - below 100m there should
+    /// be no more than 1 on screen at a time, above 100m the rarity of getting one should drop,
+    /// then as the player gets higher having 2, then 3 then more on screen at the same time
+    /// should get more likely." A flashing brick is one you time rather than aim at, and a field
+    /// of them early on is a field you wait for. A draw that would go over the limit is refused
+    /// the way a second Portal is, so the brick stays as it was or takes something else.
+    ///
+    /// No limit from 250 metres, which is also where Static begins - the phase that is a whole
+    /// field of them blinking in step.
+    static func flashingLimit(at height: Int) -> Int? {
+        switch height {
+        case ..<100: return 1
+        case ..<175: return 2
+        case ..<250: return 3
+        default: return nil
+        }
+    }
+
     func tinyChance(at height: Int) -> Int {
         guard height >= EndlessIIProgression.tinyFirstMetres else { return 0 }
         return EndlessIIProgression.ramped(from: EndlessIIProgression.openingTinyChance,
@@ -783,7 +803,11 @@ enum EndlessIIPhase: String, CaseIterable, Codable {
     var minimumHeight: Int {
         switch self {
         case .standard, .quiet: return 0
-        case .swarm, .drift, .flicker: return 40
+        case .swarm, .drift: return 40
+        case .flicker: return 100
+        // A stretch that leans on Flashing bricks, and below 100 metres the field may hold only
+        // one of them (`flashingLimit`, round 393) - so a Flicker there would be a phase with
+        // nothing to lean on
         case .cascade, .minefield: return 120
         case .fortress, .gauntlet, .carousel: return 250
         case .windfall: return 60

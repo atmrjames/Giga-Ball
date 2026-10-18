@@ -1692,6 +1692,21 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	func playBrickHitUnlessVoiced() {
 		guard soundsSetting,
 			  CACurrentMediaTime() - brickVoicedAt > GameScene.brickVoiceWindow else { return }
+		playBrickKnock()
+	}
+
+	/// When the ordinary knock last played.
+	var brickKnockedAt: CFTimeInterval = 0
+
+	/// The ordinary knock, and the note that it played.
+	///
+	/// Every hit that is answered with the knock goes through here, so "did that hit make a
+	/// sound" has one place to be asked (round 393: a cooling Portal was the third early return
+	/// in `hitBrick` to be found silent, after the Wrecking Ball's in round 334 and its haptic in
+	/// round 37, and `EveryBrickHitIsHeardTests` now asks the question of every kind of brick).
+	func playBrickKnock() {
+		guard soundsSetting else { return }
+		brickKnockedAt = CACurrentMediaTime()
 		run(brickHitNormalSound)
 	}
 
@@ -5087,7 +5102,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		if revealDailyFog(sprite) {
 			stopLaser()
 			if hapticsSetting { lightHaptic.impactOccurred() }
-			if soundsSetting { self.run(brickHitNormalSound) }
+			playBrickKnock()
 			return
 		}
 		// Fog of War: the first strike reveals and is spent on the reveal, whatever the
@@ -5097,9 +5112,17 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 
 		if sprite.endlessIIRole == .portal {
 			stopLaser()
-			if laserNode == nil {
-				endlessIIEnterPortal(sprite, entering: struckBy ?? ball)
+			let jumped = laserNode == nil && endlessIIEnterPortal(sprite, entering: struckBy ?? ball)
+			if jumped == false {
+				if hapticsSetting { lightHaptic.impactOccurred() }
+				playBrickHitUnlessVoiced()
 			}
+			// **A Portal that does not take the ball is still a brick that was hit** (James,
+			// round 393: "portal brick not making sound or haptic when hit when not active
+			// still"). The jump plays its own sound and haptic, and this branch returns before
+			// the type switch, which is where every other hit plays one - so a Portal that was
+			// cooling, or was struck by a laser, bounced the ball in silence. The ordinary knock
+			// and tap, which is what the Indestructible underneath it gives
 			// A Portal takes the ball somewhere. A laser is not the ball, and firing one into
 			// a Portal teleported the ball from wherever it happened to be - so the jump is
 			// the one thing here that only the ball can set off. The laser still stops, as it
@@ -5120,7 +5143,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		if endlessIIWreckingHit(struckBy: struckBy, laser: laserNode != nil) {
 			stopLaser()
 			if hapticsSetting { heavyHaptic.impactOccurred() }
-			if soundsSetting { self.run(brickHitNormalSound) }
+			playBrickKnock()
 			// **And a sound** (James, round 334: "wrecking ball doesn't make sound when hitting
 			// bricks - fix"). This branch returns before the type switch, which is where every
 			// other hit plays one, so a Wrecking Ball went through the field in silence - the
@@ -5168,9 +5191,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			if hapticsSetting {
 				lightHaptic.impactOccurred()
 			}
-			if soundsSetting {
-				self.run(brickHitNormalSound)
-			}
+			playBrickKnock()
 			noteBrickBounce(for: struckBy)
 			return
 		}

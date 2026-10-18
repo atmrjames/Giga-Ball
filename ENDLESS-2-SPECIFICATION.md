@@ -601,7 +601,7 @@ Each has a **weight** and some a **minimum height**, so the opening stays gentle
 | Quiet | Low density, a breather | — |
 | Swarm | Many Tiny bricks, sparse | — |
 | Drift | Moving bricks, wide spacing | Low |
-| Flicker | Flashing bricks dominant | Low |
+| Flicker | Flashing bricks dominant | Medium - 100 m, where a second Flashing brick is allowed (round 393) |
 | Cascade | Gravity bricks, field reshapes as it is cleared | Medium |
 | Minefield | Exploding bricks scattered through ordinary ones | Medium |
 | Fortress | Big and Indestructible, few gaps, one clear route | Medium |
@@ -2964,6 +2964,42 @@ testers:
   falling power-up's position by `brickWidth`, so a bare `GameScene()` with a power-up on
   screen traps converting NaN to Int. A real scene is always laid out before play.
 
+**Round 393: the Retro split safety bar, a cooling Portal heard, and Flashing bricks kept few.**
+
+James's next play-test list, with "some of these are silly mistakes that should've been caught or
+fixed already. Please make sure there's no more of these lingering issues in the game by more
+thorough testing and checking." So each fix below was followed by a sweep for its kind.
+
+- **"retro split safety paddle is wrong"**, with a screenshot of two thin red and green slivers
+  where the bar's halves should be. Two faults. The pieces were cut from the bar's picture at the
+  bar's height, which in Retro is the tall Retro picture crushed into a strip a few points high;
+  they are drawn now exactly as the paddle's own halves are, the same picture at the same height
+  with the same caps, the tube in the lime (`endlessIISafetyPaddlePieceDress`). And the tick
+  re-dressed the whole bar in its own picture on every paddle resize - Expand, Shrink, the split
+  starting - without the pieces being rebuilt, so the whole bar drew again under them: across the
+  gap in every theme, and in Retro as the orange strip between the halves. The split now keeps the
+  bar drawing nothing on every frame. **The sweep:** the safety bar and the Mirror rendered in all
+  twelve themes, plain, split, split and expanded, and shrunk - every bar matches the paddle's
+  halves. One thing it showed that is a question rather than a fault: the Mirror does not split
+  with the paddle (queued below).
+- **"portal brick not making sound or haptic when hit when not active still"**. A Portal that does
+  not take the ball - cooling, or struck by a laser - returned from `hitBrick` before the type
+  switch, which is where every other hit is heard. It gets the ordinary knock and tap now
+  (`endlessIIEnterPortal` says whether the ball went through). The third early return found
+  silent, after the Wrecking Ball's haptic (round 37) and sound (round 334), so **the sweep** is a
+  test that asks the question of every kind of brick at once: twenty-two cases - each texture, each
+  role and style, both Directional faces, Fixed's anchoring hit, lasers, and Portals ready, cooling
+  and lasered - each struck in a laid-out scene and required to be heard
+  (`EveryBrickHitIsHeardTests`, through `brickKnockedAt`, which every knock now passes). With the
+  Portal fix switched off it names the cooling and the lasered Portal and nothing else.
+- **"Flashing bricks are too frequent at the start - below 100m there should be no more than 1 on
+  screen at a time, above 100m the rarity of getting one should drop, then as the player gets
+  higher having 2, then 3 then more on screen at the same time should get more likely."** Nothing
+  limited them, and the Flicker phase, which leans on them, could begin at 40 metres. The field
+  holds one below 100 metres, two to 175, three to 250, and from there as many as are drawn
+  (`EndlessIIProgression.flashingLimit`), refused the way a second Portal is, in the ordinary draw
+  and in set pieces alike. Flicker waits for 100 metres. `FlashingLimitTests`.
+
 **Round 392: a Mystery brick that lands, hard Directional faces kept late, and the grip's sticky ghost.**
 
 James's first list of final play-testing before release.
@@ -4372,6 +4408,7 @@ James, after the round 358b push: three play-test notes.
 | Item | What is known |
 |---|---|
 | **A flat ball in Classic, turned at the walls by something unlogged** (round 391) | James's device log: in Classic (Challenge Pack, Lonesome Brick) the ball crossed the field heading exactly 180 and then 0 degrees, and was turned about ten degrees at each wall with no note from any writer the crooked-ball watch knows. Find the writer; whether to change anything in Classic is James's call |
+| **Should the Mirror Paddle split with the paddle?** (round 393) | Found by round 393's sweep, not reported. Under a Split Paddle the safety bar splits with the paddle (James, round 313: "the safety paddle should also be split"), and the Mirror stays one whole bar at the paddle's full span - lime, so with the paddle near the middle it shows across the gap between the white halves. Never decided either way, so not built: James's call. If yes, it is the safety bar's split (`refreshEndlessIISafetyPaddleSplit`, `endlessIISafetyPaddlePieceDress`) applied to the mirror, with its reflected picture |
 | **A white patch under an Exploding Diamond** (round 387) | James's screenshot: a red Exploding Diamond with a white bevelled rectangle showing below its lower edges, half a cell wide, centred, reaching the cell's floor. Its width is the Diamond's hiding rectangle's (`EndlessIIFaceGeometry.hidingRect`, half a cell), so it reads as the brick's own sprite drawing and sitting lower than it should - but the hiding rectangle is centred and inside the rhombus, and the sprite is meant to draw nothing at all once the face has art (round 332). Round 387 could not make it happen: every behaviour on a Diamond, applied before and after the face, on Normal, Multi-Hit and Indestructible bricks, through hits and a second of frames, and then saved and resumed in a laid-out scene - every hidden sprite inside its rectangle and drawing nothing. Not a Tiny quarter (those sit left or right of centre). Wanted: what had just happened to that brick - hit, resumed, drifted, a Breathing pulse - or a second sighting |
 | ~~**Bricks half a row out after a quit and resume**~~ | **Fixed, round 386d** - see that round. It was not the bricks but their faces: a shaped brick's drawing came back round the wrong centre |
 | ~~The game view following an iPad or Mac window~~ | **Seen working, 2 October** - James on his iPad: "it's working perfectly" |
