@@ -51,6 +51,45 @@ extension GameScene {
 
     static let doublePaddleHalfName = "endlessIIDoublePaddleHalf"
 
+    static let endlessIISplitHolderName = "endlessIISplitHolder"
+
+    /// The node a split surface's pieces stand in: a child of the surface that undoes the
+    /// surface's own scale, so the pieces inside are laid out and drawn in points.
+    ///
+    /// **James, round 394: "the split paddle looks wrong."** The paddle, the safety bar and the
+    /// mirror all lay their pieces out from their `size`, which already carries Expand's and
+    /// Shrink's scale (§8.6) - and the pieces were children of the scaled node, so they were
+    /// scaled a second time. Under one Expand a split paddle's halves were *drawn* half as far
+    /// out again as the body the ball actually meets: solid at -158 to -125 and -54 to -21,
+    /// drawn at -193 to -142 and -37 to 13, so balls fell through pieces the player could see
+    /// and bounced off empty air beside them. The body was always right; it is built from the
+    /// same numbers and does not take the node's scale a second time. A parent's scale also
+    /// stretches a nine-slice's protected ends (§8.6), so the pieces' round ends were half as
+    /// wide again as the whole paddle's under the same Expand. Inside this holder both are true
+    /// to the numbers they were built from. Its scale is written every frame, because Expand
+    /// and Shrink animate.
+    @discardableResult
+    func endlessIISplitHolder(on surface: SKNode) -> SKNode {
+        let holder = surface.childNode(withName: GameScene.endlessIISplitHolderName) ?? {
+            let made = SKNode()
+            made.name = GameScene.endlessIISplitHolderName
+            surface.addChild(made)
+            return made
+        }()
+        let xScale = surface.xScale == 0 ? 1 : surface.xScale
+        let yScale = surface.yScale == 0 ? 1 : surface.yScale
+        if holder.xScale != 1/xScale { holder.xScale = 1/xScale }
+        if holder.yScale != 1/yScale { holder.yScale = 1/yScale }
+        return holder
+    }
+
+    /// The pieces a split surface is drawn as, in the order they stand.
+    func endlessIISplitPieces(of surface: SKNode, named name: String) -> [SKSpriteNode] {
+        surface.childNode(withName: GameScene.endlessIISplitHolderName)?.children
+            .compactMap { $0 as? SKSpriteNode }
+            .filter { $0.name == name } ?? []
+    }
+
     func endlessIICollectDoublePaddle() {
         guard gameMode == .endlessII else { return }
         endlessIIDoublePaddleClock.collect(turns: GameScene.endlessIIDoublePaddleTurns)
@@ -95,9 +134,7 @@ extension GameScene {
         guard endlessIIPaddleIsSplit else {
             guard endlessIIDoublePaddleWidth > 0 else { return }
             endlessIIDoublePaddleWidth = 0
-            paddle.children
-                .filter { $0.name == GameScene.doublePaddleHalfName }
-                .forEach { $0.removeFromParent() }
+            paddle.childNode(withName: GameScene.endlessIISplitHolderName)?.removeFromParent()
             paddle.texture = endlessIIDoublePaddleDress ?? paddle.texture
             paddle.color = .white
             paddle.colorBlendFactor = 0
@@ -124,6 +161,9 @@ extension GameScene {
         // The paddle's dress changes underneath this - themes, Lasers, the sticky and retro
         // textures - so the current one is remembered every frame rather than once at the
         // start, and the halves wear whatever it is now
+
+        let holder = endlessIISplitHolder(on: paddle)
+        // Every frame, ahead of the guard: Expand and Shrink animate the scale it undoes
 
         let dressNow = endlessIIDoublePaddleHalfDress
         let widthMoved = abs(endlessIIDoublePaddleWidth - paddle.size.width) > 0.5
@@ -167,9 +207,7 @@ extension GameScene {
         // there are. The gaps carry no rectangle at all, so there is nothing in them for the
         // ball to collide with - a ball down a gap falls through (round 180)
 
-        paddle.children
-            .filter { $0.name == GameScene.doublePaddleHalfName }
-            .forEach { $0.removeFromParent() }
+        holder.removeAllChildren()
         for x in centres {
             let half = SKSpriteNode(texture: dress.texture, size: size)
             half.name = GameScene.doublePaddleHalfName
@@ -184,7 +222,9 @@ extension GameScene {
             // in proportion to how short the piece was
             half.position = CGPoint(x: x, y: 0)
             half.zPosition = 0.1
-            paddle.addChild(half)
+            holder.addChild(half)
+            // In the holder, in points: `centres` and `size` are measured off `paddle.size`, which
+            // already carries the paddle's scale - see `endlessIISplitHolder`
         }
         paddle.texture = nil
         paddle.color = .clear
@@ -311,6 +351,26 @@ extension GameScene {
         return min(max((ballX - piece.centre)/piece.halfWidth, -1), 1)
     }
 
+    /// The same measure across a twin of the paddle - the safety bar or the mirror - standing at
+    /// `surfaceX` with the paddle's span, while the paddle is split.
+    ///
+    /// **A twin is split the way the paddle is, so it steers the way the paddle does** (James,
+    /// round 394: "Mirror paddle should always take on the form and function of the main
+    /// paddle"). Both twins measured a landing across their whole span, so an inner edge of a
+    /// piece came back almost straight up - the very thing round 305 and round 386 took out of
+    /// the paddle. Nil over a gap, as on the paddle, and the caller keeps its whole-span answer.
+    func endlessIISplitCollision(ballX: CGFloat, surfaceX: CGFloat, span: CGFloat,
+                                 ballRadius: CGFloat = 0) -> CGFloat? {
+        guard let split = endlessIISafetyPaddleSegmentCentres(span: span) else { return nil }
+        let half = split.segment/2
+        guard half > 0 else { return nil }
+        let reach = half + max(0, ballRadius)
+        guard let centre = split.centres.map({ surfaceX + $0 })
+            .filter({ abs(ballX - $0) <= reach })
+            .min(by: { abs(ballX - $0) < abs(ballX - $1) }) else { return nil }
+        return min(max((ballX - centre)/half, -1), 1)
+    }
+
     /// The piece of a split paddle a ball at this x would strike: its centre and half-width.
     func endlessIISplitSegment(near ballX: CGFloat, ballRadius: CGFloat = 0)
         -> (centre: CGFloat, halfWidth: CGFloat)? {
@@ -345,7 +405,8 @@ extension GameScene {
     /// - Parameter centres: which segments wear it. Not always all of them: the lasers fire
     ///   from two turrets however many pieces there are (round 286), and a strip on a piece
     ///   with no turret would be back to claiming something untrue.
-    func refreshEndlessIISplitOverlay(_ source: SKSpriteNode, centres: [CGFloat]) {
+    func refreshEndlessIISplitOverlay(_ source: SKSpriteNode, centres: [CGFloat],
+                                      outerHalfOnly: Bool = false) {
         let key = ObjectIdentifier(source)
         var pieces = endlessIISplitOverlays[key] ?? []
 
@@ -383,10 +444,26 @@ extension GameScene {
         }
 
         source.alpha = 0
+        let caps = paddleCapRect(for: source.texture)
         for (piece, centre) in zip(pieces, centres) {
-            piece.texture = source.texture
+            let side: EndlessIISide? = outerHalfOnly
+                ? (centre < paddle.position.x ? .left : .right) : nil
+            let art = side.flatMap { GameScene.outerHalf(of: source.texture, side: $0) }
+                ?? source.texture
+            if piece.texture !== art { piece.texture = art }
             piece.size = CGSize(width: segment, height: source.size.height)
-            piece.centerRect = paddleCapRect(for: source.texture)
+            switch side {
+            case .left?:
+                piece.centerRect = CGRect(x: caps.minX*2, y: caps.minY,
+                                          width: 1 - caps.minX*2, height: caps.height)
+            case .right?:
+                piece.centerRect = CGRect(x: 0, y: caps.minY,
+                                          width: 1 - (1 - caps.maxX)*2, height: caps.height)
+            default:
+                piece.centerRect = caps
+            }
+            // The half keeps its outer end protected and stretches to its inner edge, which in
+            // the whole strip is the plain middle
             piece.position = CGPoint(x: centre, y: source.position.y)
             piece.alpha = 1
         }
@@ -394,6 +471,20 @@ extension GameScene {
         // its own end caps in proportion to how short it is
         endlessIISplitOverlays[key] = pieces
     }
+
+    /// One end of a strip's picture: the left half for `.left`, the right half for `.right`.
+    /// Kept per picture, because the strip is re-dressed every frame.
+    static func outerHalf(of texture: SKTexture?, side: EndlessIISide) -> SKTexture? {
+        guard let texture, side == .left || side == .right else { return nil }
+        let key = "\(ObjectIdentifier(texture)) \(side == .left ? "L" : "R")"
+        if let kept = outerHalves[key], kept.source === texture { return kept.half }
+        let half = SKTexture(rect: CGRect(x: side == .left ? 0 : 0.5, y: 0, width: 0.5, height: 1),
+                             in: texture)
+        outerHalves[key] = (texture, half)
+        return half
+    }
+
+    private static var outerHalves: [String: (source: SKTexture, half: SKTexture)] = [:]
 
     /// Every overlay the split has to cut up, each with the segments it belongs on.
     ///
@@ -410,8 +501,16 @@ extension GameScene {
         let all = endlessIISplitSegmentCentres
         let outer = all.isEmpty ? [] : [all[0], all[all.count - 1]]
 
-        refreshEndlessIISplitOverlay(paddleLaser, centres: outer)
+        refreshEndlessIISplitOverlay(paddleLaser, centres: outer, outerHalfOnly: true)
         refreshEndlessIISplitOverlay(paddleRetroLaserTexture, centres: outer)
+        // **The outer half of the strip on each** (round 394). The whole strip has a turret at
+        // each end, so a two-piece split - both pieces outer - showed four turrets, two of them
+        // on the inner ends, against James's round 285 rule: "only the outermost section of
+        // paddle should have a laser turret on its outer edge. There should only ever be 2
+        // turrets with a split paddle." The shots already came from two places; now the picture
+        // says so. **Not Retro's**, whose laser picture is a whole drawn ship rather than a strip
+        // with two ends: half of it is a ship cut off through its stripes. It keeps the whole
+        // picture on each outer piece until there is art for a piece with one turret (queued)
         refreshEndlessIISplitOverlay(paddleSticky, centres: all)
         refreshEndlessIISplitOverlay(paddleRetroStickyTexture, centres: all)
     }

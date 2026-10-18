@@ -111,7 +111,7 @@ extension GameScene {
         // behind the original paddle so it's clear which one follows the tap"). When the
         // two cross in the middle, the white one in front is yours
         mirror.alpha = 0
-        mirror.physicsBody = endlessIIMirrorPaddleBody(size: mirror.size)
+        dressEndlessIIMirrorBody(mirror, size: mirror.size)
         addChild(mirror)
 
         mirror.run(.fadeIn(withDuration: 0.15))
@@ -155,11 +155,13 @@ extension GameScene {
             return made
         }()
         if ghost.texture !== mirror.texture { ghost.texture = mirror.texture }
-        if ghost.size != mirror.size || ghost.physicsBody == nil {
+        if ghost.size != mirror.size || ghost.physicsBody == nil
+            || endlessIIMirrorBodyIsSplit(ghost) != endlessIIPaddleIsSplit
+            || endlessIIMirrorBodyIsStale(ghost) {
             ghost.xScale = 1
             ghost.yScale = 1
             ghost.size = mirror.size
-            ghost.physicsBody = endlessIIMirrorPaddleBody(size: mirror.size)
+            dressEndlessIIMirrorBody(ghost, size: mirror.size)
             // The mirror's size already carries its scale, so the ghost wears it at scale one
             // - copying the scale as well would draw it twice as wide as the twin it continues
         }
@@ -171,9 +173,12 @@ extension GameScene {
         ghost.position = CGPoint(x: mirror.position.x > 0 ? mirror.position.x - gameWidth
                                                           : mirror.position.x + gameWidth,
                                  y: mirror.position.y)
-        endlessIIDressRetroTwin(ghost, reflected: true)
+        if refreshEndlessIIMirrorSplit(ghost) == false {
+            endlessIIDressRetroTwin(ghost, reflected: true)
+        }
         // The ghost copies the mirror's own picture, which in Retro is none - so it wears the
-        // same Retro dress the mirror does (round 386)
+        // same Retro dress the mirror does (round 386), and the same pieces while the paddle is
+        // split (round 394)
     }
 
     /// The laser turrets, on the mirror, while the paddle wears them.
@@ -191,6 +196,22 @@ extension GameScene {
     func dressEndlessIIMirrorTurrets(_ mirror: SKSpriteNode) {
         for (index, source) in endlessIIMirroredOverlays.enumerated() {
             let ownBand = source.node === paddleRetroStickyTexture
+            let splitPieces = endlessIISplitOverlays[ObjectIdentifier(source.node)] ?? []
+            if splitPieces.isEmpty == false {
+                childNode(withName: source.name)?.removeFromParent()
+                dressEndlessIIMirrorSplitStrips(copying: splitPieces, named: source.name,
+                                                tinted: source.tinted, on: mirror, layer: index,
+                                                showing: ownBand == false
+                                                    || (endlessIIRetroHidesPaddleTop
+                                                        && endlessIIABallIsHeldOnTheMirror))
+                continue
+            }
+            removeEndlessIIMirrorSplitStrips(named: source.name)
+            // **Split as the paddle's are** (round 394): while the paddle is in pieces each strip
+            // it wears is cut into pieces too - the turrets on the outer two, the sticky band on
+            // all of them (`refreshEndlessIISplitDress`) - and the whole strip is hidden. The
+            // mirror copied the whole strip, so a split paddle's mirror lost its turrets and its
+            // band altogether; it copies the pieces now
             let reflectedBand = ownBand && endlessIIShapeOwnsTheBounce
                 ? endlessIIMirrorPaddleSurface.flatMap { endlessIIPaddleShapeSuffix($0) }
                     .flatMap { GameScene.catalogueTexture("retroSticky" + $0) }
@@ -237,10 +258,16 @@ extension GameScene {
         let existing = childNode(withName: name) as? SKSpriteNode
         let showing = wanted
             ?? (source.isHidden == false && source.parent != nil && source.alpha > 0.01)
-        guard showing, let art = drawn ?? source.texture else {
+        guard showing, let sourceArt = drawn ?? source.texture else {
             existing?.removeFromParent()
             return
         }
+        let retroLaser = source === paddleRetroLaserTexture
+        let art = retroLaser ? GameScene.twinPicture(of: sourceArt, turning: .retro) : sourceArt
+        // **Retro's laser picture in the twin's Retro colours** (round 394): its magenta turned the
+        // lime and everything else left as Retro draws it, which is round 386b's rule for the
+        // Retro twins. It was the whole picture tinted the lime instead, and over Retro's pink
+        // that came out an orange-brown ship on the mirror
         let strip = existing ?? {
             let made = SKSpriteNode()
             made.name = name
@@ -255,11 +282,147 @@ extension GameScene {
         strip.centerRect = source.centerRect
         strip.zPosition = mirror.zPosition + 0.05 + CGFloat(layer)*0.001
         strip.color = tinted ? GameScene.endlessIIMirrorPaddleColour : source.color
-        strip.colorBlendFactor = tinted ? mirror.colorBlendFactor : source.colorBlendFactor
+        strip.colorBlendFactor = retroLaser ? 0
+            : tinted ? mirror.colorBlendFactor : source.colorBlendFactor
         strip.alpha = mirror.alpha
         strip.position = CGPoint(x: mirror.position.x + (source.position.x - paddle.position.x),
                                  y: source.position.y - paddle.position.y + mirror.position.y)
         // Wherever the paddle wears it relative to itself, the twin wears it relative to itself
+    }
+
+    /// The mirror's copies of a split paddle's strip pieces, a sibling of the mirror each, at
+    /// the mirror's x plus the piece's offset from the paddle - the whole strip's own rule.
+    private func dressEndlessIIMirrorSplitStrips(copying pieces: [SKSpriteNode], named name: String,
+                                                 tinted: Bool, on mirror: SKSpriteNode,
+                                                 layer: Int, showing: Bool) {
+        var strips = endlessIIMirrorSplitStrips(named: name)
+        guard showing else {
+            strips.forEach { $0.removeFromParent() }
+            return
+        }
+        while strips.count < pieces.count {
+            let made = SKSpriteNode()
+            made.name = name + "#\(strips.count)"
+            addChild(made)
+            strips.append(made)
+        }
+        while strips.count > pieces.count { strips.removeLast().removeFromParent() }
+        let retroLaser = name == GameScene.endlessIIMirrorLaserStripName + "Retro"
+        for (strip, piece) in zip(strips, pieces) {
+            let art = retroLaser
+                ? piece.texture.map { GameScene.twinPicture(of: $0, turning: .retro) }
+                : piece.texture
+            if strip.texture !== art { strip.texture = art }
+            // Retro's laser picture in the twin's Retro colours, as the whole strip is
+            strip.anchorPoint = piece.anchorPoint
+            strip.xScale = piece.xScale
+            strip.yScale = piece.yScale
+            strip.size = piece.size
+            strip.centerRect = piece.centerRect
+            strip.zPosition = mirror.zPosition + 0.05 + CGFloat(layer)*0.001
+            strip.color = tinted ? GameScene.endlessIIMirrorPaddleColour : piece.color
+            strip.colorBlendFactor = retroLaser ? 0
+                : tinted ? mirror.colorBlendFactor : piece.colorBlendFactor
+            strip.alpha = mirror.alpha
+            strip.position = CGPoint(x: mirror.position.x + (piece.position.x - paddle.position.x),
+                                     y: piece.position.y - paddle.position.y + mirror.position.y)
+        }
+    }
+
+    private func endlessIIMirrorSplitStrips(named name: String) -> [SKSpriteNode] {
+        children.compactMap { $0 as? SKSpriteNode }
+            .filter { $0.name?.hasPrefix(name + "#") == true }
+            .sorted { ($0.name ?? "") < ($1.name ?? "") }
+    }
+
+    func removeEndlessIIMirrorSplitStrips(named name: String) {
+        endlessIIMirrorSplitStrips(named: name).forEach { $0.removeFromParent() }
+    }
+
+    static let endlessIIMirrorSegmentName = "endlessIIMirrorSegment"
+
+    /// Puts a body on the mirror or its ghost, and notes whether it was cut for a split - the
+    /// one thing about it a change of size or art would not show (round 394).
+    func dressEndlessIIMirrorBody(_ node: SKSpriteNode, size: CGSize) {
+        node.physicsBody = endlessIIMirrorPaddleBody(size: size)
+        if node.userData == nil { node.userData = [:] }
+        node.userData?["endlessIISplitBody"] = endlessIIPaddleIsSplit
+        node.userData?["endlessIIBodySpan"] = size.width
+    }
+
+    func endlessIIMirrorBodyIsSplit(_ node: SKNode) -> Bool {
+        node.userData?["endlessIISplitBody"] as? Bool ?? false
+    }
+
+    /// Whether the mirror's body was cut for a different span from the one it has now.
+    ///
+    /// **A split body has to be cut again for every span** (round 394). SpriteKit scales a body
+    /// with its node, which is right for a whole bar and wrong for a split one: the pieces keep
+    /// their width as the paddle grows and the gaps take the difference
+    /// (`endlessIIDoublePaddleLayout`), so a body cut before an Expand and scaled by it had wide
+    /// pieces in the wrong places - measured, solid at 28 to 72 and 109 to 151 under a mirror
+    /// drawn at 21 to 54 and 125 to 158. The paddle and the safety bar are cut again whenever
+    /// their pieces move; this asks the mirror the same question.
+    func endlessIIMirrorBodyIsStale(_ node: SKSpriteNode) -> Bool {
+        guard endlessIIPaddleIsSplit else { return false }
+        let span = node.userData?["endlessIIBodySpan"] as? CGFloat ?? 0
+        return abs(span - node.size.width) > 0.5
+    }
+
+    /// Draws the mirror, or its wrap ghost, as pieces while the paddle is split.
+    ///
+    /// **James, round 394: "Yes, the mirror paddle should also be split. Mirror paddle should
+    /// always take on the form and function of the main paddle."** It followed the paddle's
+    /// width and stayed whole, so beside a paddle in pieces it was one lime bar - and laid over
+    /// the paddle in the middle of the field, it showed through the gap. The safety bar's split
+    /// (round 313, its pieces dressed since round 393 as the paddle's halves are), in the
+    /// mirror's own colour, in the scale-cancelling holder (`endlessIISplitHolder`).
+    ///
+    /// - Returns: whether the twin is in pieces, so the caller leaves its whole picture off.
+    @discardableResult
+    func refreshEndlessIIMirrorSplit(_ twin: SKSpriteNode) -> Bool {
+        let pieces = endlessIISplitPieces(of: twin, named: GameScene.endlessIIMirrorSegmentName)
+        guard let split = endlessIISafetyPaddleSegmentCentres(span: twin.size.width) else {
+            if pieces.isEmpty == false {
+                twin.childNode(withName: GameScene.endlessIISplitHolderName)?.removeFromParent()
+            }
+            return false
+            // The whole picture is put back by the caller, which dresses the twin every frame
+        }
+        twin.childNode(withName: GameScene.endlessIIRetroTwinDressName)?.removeFromParent()
+        // The Retro dress is the whole twin's; its pieces wear their own
+
+        let dress = endlessIITwinPieceDress(
+            plain: endlessIITwinPicture(endlessIIMirrorPaddleDrawnDress), height: twin.size.height)
+        let size = CGSize(width: split.segment, height: dress.height)
+        let holder = endlessIISplitHolder(on: twin)
+        let stale = pieces.count != split.centres.count
+            || zip(pieces, split.centres).contains { abs($0.position.x - $1) > 0.5 }
+            || pieces.contains { abs($0.size.width - size.width) > 0.5
+                              || abs($0.size.height - size.height) > 0.5
+                              || $0.texture !== dress.texture }
+        if stale {
+            holder.removeAllChildren()
+            for centre in split.centres {
+                let piece = SKSpriteNode(texture: dress.texture, size: size)
+                piece.name = GameScene.endlessIIMirrorSegmentName
+                piece.color = GameScene.endlessIIMirrorPaddleColour
+                piece.colorBlendFactor = dress.blend
+                piece.centerRect = dress.centerRect
+                piece.position = CGPoint(x: centre, y: 0)
+                piece.zPosition = 0.01
+                // Under the turret and sticky copies, which stand 0.05 in front of the mirror -
+                // where the whole mirror's picture is, so the strips are over it either way
+                holder.addChild(piece)
+            }
+        }
+        if twin.texture != nil || twin.color != .clear {
+            twin.texture = nil
+            twin.color = .clear
+            twin.colorBlendFactor = 1
+        }
+        // Drawing nothing of its own, on every frame - the lesson round 393 learned on the bar
+        return true
     }
 
     static let endlessIIPaddleShadowName = "mirrorPaddleShadow"
@@ -378,7 +541,16 @@ extension GameScene {
     func endlessIIMirrorPaddleBody(size: CGSize) -> SKPhysicsBody {
         endlessIIMirrorPaddleBodyArt = endlessIIMirrorPaddleShapeArtName
         let body: SKPhysicsBody
-        if endlessIIShapeOwnsTheBounce, let art = endlessIIMirrorPaddleDress {
+        if let pieces = endlessIISafetyPaddleSegmentCentres(span: size.width) {
+            body = SKPhysicsBody.compound(of: pieces.centres.map {
+                SKPhysicsBody.rectangle(of: CGSize(width: pieces.segment, height: size.height),
+                                        centre: CGPoint(x: $0, y: 0))
+            }) ?? SKPhysicsBody(rectangleOf: size)
+            // **With the paddle's holes in it** (James, round 394: "Mirror paddle should always
+            // take on the form and function of the main paddle"). The safety bar's split body
+            // (round 313), reflected for free - the pieces stand symmetrically about the middle.
+            // A shaped mirror gives its traced outline up while split, for the bar's reason
+        } else if endlessIIShapeOwnsTheBounce, let art = endlessIIMirrorPaddleDress {
             body = TracedBodyCache.body(texture: art, size: size)
                 ?? SKPhysicsBody(rectangleOf: size)
         } else {
@@ -415,15 +587,21 @@ extension GameScene {
     /// which is the same reasoning `catchStickyBallBeforeStep` uses to catch the ball in
     /// `update` rather than waiting for a contact that comes too late.
     func endlessIIMirrorCollectsDrops(_ mirror: SKSpriteNode) {
-        let catcher = mirror.frame
-        guard catcher.width > 0, catcher.height > 0 else { return }
+        let whole = mirror.frame
+        guard whole.width > 0, whole.height > 0 else { return }
+        let catchers = endlessIISafetyPaddleSegmentCentres(span: mirror.size.width).map { split in
+            split.centres.map { CGRect(x: mirror.position.x + $0 - split.segment/2, y: whole.minY,
+                                       width: split.segment, height: whole.height) }
+        } ?? [whole]
+        // The pieces while split: a drop down a gap falls past the mirror as it falls past the
+        // paddle (round 394)
 
         var landed: [SKNode] = []
         enumerateChildNodes(withName: PowerUpCategoryName) { node, _ in
             guard node.zPosition == 2 else { return }
             // Two is "still falling" - `collectPowerUpDrop` drops it to one as it takes it, and
             // asking here as well keeps a drop from being collected twice in one frame
-            if node.frame.intersects(catcher) { landed.append(node) }
+            if catchers.contains(where: { node.frame.intersects($0) }) { landed.append(node) }
         }
         for drop in landed { collectPowerUpDrop(drop) }
     }
@@ -499,7 +677,10 @@ extension GameScene {
             // second removal on the same node
             mirror.physicsBody = nil
             mirror.run(.sequence([.fadeOut(withDuration: 0.2), .removeFromParent()]))
-            for name in endlessIIMirrorOverlayNames { childNode(withName: name)?.removeFromParent() }
+            for name in endlessIIMirrorOverlayNames {
+                childNode(withName: name)?.removeFromParent()
+                removeEndlessIIMirrorSplitStrips(named: name)
+            }
             childNode(withName: GameScene.endlessIIMirrorWrapGhostName)?.removeFromParent()
             removeEndlessIIPaddleShadow()
             // The shadow is the mirror's costume on the real paddle, and it leaves with it
@@ -508,18 +689,6 @@ extension GameScene {
 
         mirror.position = CGPoint(x: GameScene.endlessIIMirrorPaddleX(paddleX: paddle.position.x),
                                   y: paddle.position.y)
-
-        let wantedArt = endlessIIMirrorPaddleShapeArtName
-        if mirror.size != paddle.size || wantedArt != endlessIIMirrorPaddleBodyArt,
-           paddle.size.width > 0, paddle.size.height > 0 {
-            mirror.size = paddle.size
-            mirror.centerRect = endlessIIPaddleDressCenterRect
-            // The paddle switches its nine-slice on when a resize stretches it; its twin
-            // switches with it or the two wear the same picture differently (round 201)
-            mirror.physicsBody = endlessIIMirrorPaddleBody(size: paddle.size)
-            // Split Paddle writes the paddle's width directly, and a mirror that kept the
-            // width it was born with would be a different paddle from the one it mirrors
-        }
 
         if mirror.xScale != paddle.xScale || mirror.yScale != paddle.yScale {
             mirror.xScale = paddle.xScale
@@ -533,6 +702,27 @@ extension GameScene {
             // node's scale, which is the same thing the paddle's own body has relied on for
             // six years
         }
+        // **Before the size, not after** (round 394). The size write below compares against the
+        // paddle's, which already carries the scale - so a mirror rescaled after it is the wrong
+        // width for a frame, and a split mirror cut its pieces for that width and cut them again
+        // the frame after
+
+        let wantedArt = endlessIIMirrorPaddleShapeArtName
+        if mirror.size != paddle.size || wantedArt != endlessIIMirrorPaddleBodyArt
+            || endlessIIMirrorBodyIsSplit(mirror) != endlessIIPaddleIsSplit
+            || endlessIIMirrorBodyIsStale(mirror),
+           paddle.size.width > 0, paddle.size.height > 0 {
+            mirror.size = paddle.size
+            mirror.centerRect = endlessIIPaddleDressCenterRect
+            // The paddle switches its nine-slice on when a resize stretches it; its twin
+            // switches with it or the two wear the same picture differently (round 201)
+            dressEndlessIIMirrorBody(mirror, size: paddle.size)
+            // And when the paddle splits or comes back together, which changes neither the
+            // size nor the art (round 394)
+            // Split Paddle writes the paddle's width directly, and a mirror that kept the
+            // width it was born with would be a different paddle from the one it mirrors
+        }
+
         dressEndlessIIMirrorTurrets(mirror)
         tickEndlessIIMirrorWrapGhost(mirror)
         endlessIIMirrorCollectsDrops(mirror)
@@ -548,7 +738,8 @@ extension GameScene {
         // Every frame: it follows the paddle's position and its drawn size, which is a
         // position and a size write rather than anything rebuilt
 
-        if endlessIIDressRetroTwin(mirror, reflected: true) == false {
+        if refreshEndlessIIMirrorSplit(mirror) == false,
+           endlessIIDressRetroTwin(mirror, reflected: true) == false {
             let drawn = endlessIITwinPicture(endlessIIMirrorPaddleDrawnDress)
             if mirror.texture !== drawn { mirror.texture = drawn }
             mirror.color = GameScene.endlessIIMirrorPaddleColour
@@ -612,9 +803,13 @@ extension GameScene {
 
         let arriving = ballStateBeforeStep[ObjectIdentifier(subject)]?.velocity ?? body.velocity
         let twinX = endlessIIMirrorXNearest(to: subject.position.x, mirror: mirror)
-        let collision = PaddleBounce.collision(ballX: subject.position.x,
-                                               paddleX: twinX,
-                                               paddleWidth: mirror.size.width)
+        let collision = endlessIISplitCollision(ballX: subject.position.x, surfaceX: twinX,
+                                                span: mirror.size.width,
+                                                ballRadius: subject.size.width/2)
+            ?? PaddleBounce.collision(ballX: subject.position.x,
+                                      paddleX: twinX,
+                                      paddleWidth: mirror.size.width)
+        // Across the piece it struck while split, as the paddle measures (rounds 305 and 386)
         let clamped = min(max(collision, -1), 1)
 
         if endlessIIPaddlePortalTook(subject, collision: clamped) { return }
@@ -755,6 +950,11 @@ extension GameScene {
         guard let mirror = childNode(withName: GameScene.endlessIIMirrorPaddleName)
                 as? SKSpriteNode, mirror.size.width > 0 else { return nil }
         let twinX = endlessIIMirrorXNearest(to: subject.position.x, mirror: mirror)
+        if let onPiece = endlessIISplitCollision(ballX: subject.position.x, surfaceX: twinX,
+                                                 span: mirror.size.width,
+                                                 ballRadius: subject.size.width/2) {
+            return Double(onPiece)
+        }
         return Double((subject.position.x - twinX)/(mirror.size.width/2))
     }
 

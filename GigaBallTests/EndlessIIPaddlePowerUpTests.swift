@@ -1229,6 +1229,41 @@ final class EndlessIIDoublePaddleTests: XCTestCase {
     /// James, round 180: the gap "should be bigger - big enough for ball to fit though",
     /// it must not collide - "the ball should be able to fall through the middle" - and a
     /// "longer paddle should make more segments, not longer segments."
+    /// Where a piece is drawn, in the scene: its left and right edges.
+    private func drawnSpan(of piece: SKSpriteNode, in scene: GameScene) -> ClosedRange<CGFloat> {
+        let local = CGRect(x: -piece.size.width/2/piece.xScale, y: 0,
+                           width: piece.size.width/piece.xScale, height: 1)
+        let left = scene.convert(CGPoint(x: local.minX, y: 0), from: piece)
+        let right = scene.convert(CGPoint(x: local.maxX, y: 0), from: piece)
+        return min(left.x, right.x)...max(left.x, right.x)
+    }
+
+    /// James, round 394: "the split paddle looks wrong."
+    ///
+    /// Under Expand the pieces were drawn half as far out again as the body the ball meets -
+    /// measured in a laid-out scene, solid at -158 to -125 and -54 to -21 and drawn at -193 to
+    /// -142 and -37 to 13 - because they were laid out from a size that already carries the
+    /// paddle's scale and then scaled by it again as its children.
+    func testUnderExpandEachPieceIsDrawnOverItsOwnBody() {
+        let scene = mayhem()
+        scene.paddle.position.x = -40
+        scene.endlessIICollectDoublePaddle()
+        scene.paddle.xScale = 1.5
+        scene.refreshEndlessIIDoublePaddle()
+
+        let layout = GameScene.endlessIIDoublePaddleLayout(span: scene.paddle.size.width,
+                                                           standardWidth: scene.paddleWidth,
+                                                           ballSize: scene.ballSize)
+        let pieces = scene.endlessIISplitPieces(of: scene.paddle, named: GameScene.doublePaddleHalfName)
+        XCTAssertEqual(pieces.count, layout.count)
+        for (piece, centre) in zip(pieces, scene.endlessIISplitSegmentCentres) {
+            let span = drawnSpan(of: piece, in: scene)
+            XCTAssertEqual(span.lowerBound, centre - layout.segment/2, accuracy: 0.5,
+                           "drawn where its body is, not half as far out again")
+            XCTAssertEqual(span.upperBound, centre + layout.segment/2, accuracy: 0.5)
+        }
+    }
+
     func testTheGapFitsTheBallWithRoomToSpare() {
         let layout = GameScene.endlessIIDoublePaddleLayout(span: 120, standardWidth: 120,
                                                            ballSize: 16)
@@ -1284,7 +1319,7 @@ final class EndlessIIDoublePaddleTests: XCTestCase {
     }
 
     private func halves(_ scene: GameScene) -> [SKNode] {
-        scene.paddle.children.filter { $0.name == GameScene.doublePaddleHalfName }
+        scene.endlessIISplitPieces(of: scene.paddle, named: GameScene.doublePaddleHalfName)
     }
 
     func testCollectingItLeavesAHoleInTheMiddleOfThePaddle() {
@@ -1496,6 +1531,119 @@ final class EndlessIIDoublePaddleTests: XCTestCase {
 /// is one** (James: "mirror paddle should act just like the main paddle - collect power ups,
 /// have power ups applied, etc", and "Paddle hit counter power ups not lowering by 1 count when
 /// the ball hits the mirror paddle"), and the tests at the foot of this class say so.
+/// James, round 394: "Yes, the mirror paddle should also be split. Mirror paddle should always
+/// take on the form and function of the main paddle."
+final class MirrorPaddleSplitTests: XCTestCase {
+
+    private func mayhem() -> GameScene {
+        let scene = GameScene()
+        scene.gameMode = .endlessII
+        scene.totalStatsArray = [TotalStats()]
+        scene.ballIsOnPaddle = false
+        scene.ballSize = 16
+        scene.paddleWidth = 120
+        scene.paddle.size = CGSize(width: 120, height: 12)
+        scene.paddle.position = CGPoint(x: 60, y: -300)
+        scene.addChild(scene.paddle)
+        return scene
+    }
+
+    private func mirror(_ scene: GameScene) -> SKSpriteNode? {
+        scene.childNode(withName: GameScene.endlessIIMirrorPaddleName) as? SKSpriteNode
+    }
+
+    private func split(_ scene: GameScene) {
+        scene.endlessIICollectMirrorPaddle()
+        scene.endlessIICollectDoublePaddle()
+        scene.refreshEndlessIIDoublePaddle()
+        scene.tickEndlessIIMirrorPaddle()
+    }
+
+    /// Form: the mirror is drawn as the paddle's pieces, where the paddle's would be reflected,
+    /// and draws nothing across the gaps - under Expand as well, which scales both.
+    func testTheMirrorIsDrawnInPiecesWhereThePaddleIsInPieces() throws {
+        let scene = mayhem()
+        split(scene)
+        scene.paddle.xScale = 1.5
+        scene.refreshEndlessIIDoublePaddle()
+        scene.tickEndlessIIMirrorPaddle()
+        let twin = try XCTUnwrap(mirror(scene))
+
+        let layout = GameScene.endlessIIDoublePaddleLayout(span: scene.paddle.size.width,
+                                                           standardWidth: scene.paddleWidth,
+                                                           ballSize: scene.ballSize)
+        let pieces = scene.endlessIISplitPieces(of: twin, named: GameScene.endlessIIMirrorSegmentName)
+        XCTAssertEqual(pieces.count, layout.count, "as many pieces as the paddle has")
+        XCTAssertNil(twin.texture, "and no whole bar drawn underneath them")
+
+        let paddleOffsets = scene.endlessIISplitSegmentCentres.map { $0 - scene.paddle.position.x }
+        for (piece, offset) in zip(pieces, paddleOffsets) {
+            let centre = scene.convert(CGPoint.zero, from: piece).x
+            XCTAssertEqual(centre, twin.position.x + offset, accuracy: 0.5,
+                           "each piece where the paddle's is, about the mirror's own middle")
+            let width = abs(scene.convert(CGPoint(x: piece.size.width/2/piece.xScale, y: 0),
+                                          from: piece).x - centre)*2
+            XCTAssertEqual(width, layout.segment, accuracy: 0.5,
+                           "and the paddle's piece's width, not scaled a second time")
+        }
+    }
+
+    /// Function: a ball down a gap falls through the mirror as it falls through the paddle.
+    func testTheMirrorHasThePaddlesHolesInIt() throws {
+        let scene = mayhem()
+        scene.endlessIICollectMirrorPaddle()
+        let whole = try XCTUnwrap(mirror(scene)?.physicsBody?.area)
+        split(scene)
+        let cut = try XCTUnwrap(mirror(scene)?.physicsBody?.area)
+        XCTAssertLessThan(cut, whole*0.8, "a body with the gaps left out of it")
+    }
+
+    /// Function under Expand: the body is cut again for the new span rather than stretched. A
+    /// split layout keeps its pieces' width and widens its gaps, so a body scaled up with the
+    /// mirror has wide pieces in the wrong places (round 394, measured).
+    func testTheMirrorsSplitBodyIsCutAgainForAnExpandedSpan() throws {
+        let scene = mayhem()
+        split(scene)
+        scene.paddle.xScale = 1.5
+        scene.refreshEndlessIIDoublePaddle()
+        scene.tickEndlessIIMirrorPaddle()
+        let twin = try XCTUnwrap(mirror(scene))
+        XCTAssertFalse(scene.endlessIIMirrorBodyIsStale(twin),
+                       "cut for the span it has now, not the one it had before the Expand")
+    }
+
+    /// Function: an inner edge steers like an edge - the paddle's rule since round 305, and
+    /// James's round 386 note that the pieces are "individual paddles".
+    func testAMirrorPieceSteersAcrossItsOwnWidth() throws {
+        let scene = mayhem()
+        split(scene)
+        let twin = try XCTUnwrap(mirror(scene))
+        let layout = GameScene.endlessIIDoublePaddleLayout(span: scene.paddle.size.width,
+                                                           standardWidth: scene.paddleWidth,
+                                                           ballSize: scene.ballSize)
+        let innerEdge = twin.position.x - layout.gap/2 - 1
+        // Just inside the left piece's inner end
+        let ball = SKSpriteNode(color: .white, size: CGSize(width: 16, height: 16))
+        ball.position = CGPoint(x: innerEdge, y: twin.position.y + 14)
+        scene.addChild(ball)
+        let offset = try XCTUnwrap(scene.endlessIIMirrorOffset(of: ball))
+        XCTAssertGreaterThan(offset, 0.9, "the edge of its own piece, not near the middle of the span")
+    }
+
+    /// And back to one bar, with one body, when the split ends.
+    func testTheMirrorIsWholeAgainWhenTheSplitEnds() throws {
+        let scene = mayhem()
+        split(scene)
+        scene.endlessIIDoublePaddleClock.reset()
+        scene.refreshEndlessIIDoublePaddle()
+        scene.tickEndlessIIMirrorPaddle()
+        let twin = try XCTUnwrap(mirror(scene))
+        XCTAssertTrue(scene.endlessIISplitPieces(of: twin, named: GameScene.endlessIIMirrorSegmentName).isEmpty)
+        XCTAssertNotNil(twin.texture, "drawing itself again")
+        XCTAssertFalse(scene.endlessIIMirrorBodyIsSplit(twin), "and bouncing off the whole of itself")
+    }
+}
+
 final class EndlessIIMirrorPaddleTests: XCTestCase {
 
     private func mayhem() -> GameScene {
@@ -4983,6 +5131,29 @@ final class PaddleFamilyParityTests: XCTestCase {
                        "and still two turrets - the first attempt at this armed every piece, "
                        + "which is not what was asked for")
         XCTAssertEqual(scene.endlessIISplitLaserTurrets.count, 2)
+    }
+
+    /// Round 394's sweep: two strips, but each was the whole strip with a turret at both ends,
+    /// so the two-piece split everyone sees showed four - two on the inner ends, where nothing
+    /// fires. Each outer piece wears its own outer half.
+    func testEachOuterPieceWearsOnlyItsOuterTurret() throws {
+        let scene = mayhem()
+        scene.endlessIICollectDoublePaddle()
+        scene.paddleLaser.isHidden = false
+        scene.paddleLaser.texture = scene.laserPaddleTexture
+        scene.paddleLaser.size = CGSize(width: 120, height: 20)
+        scene.refreshEndlessIISplitDress()
+
+        let strips = try XCTUnwrap(scene.endlessIISplitOverlays[ObjectIdentifier(scene.paddleLaser)])
+        XCTAssertEqual(strips.count, 2)
+        let left = try XCTUnwrap(strips.min { $0.position.x < $1.position.x })
+        let right = try XCTUnwrap(strips.max { $0.position.x < $1.position.x })
+        XCTAssertEqual(left.texture?.textureRect().minX ?? -1, 0, accuracy: 0.001,
+                       "the left piece shows the strip's left end")
+        XCTAssertEqual(left.texture?.textureRect().width ?? 0, 0.5, accuracy: 0.001,
+                       "and only that half of it")
+        XCTAssertEqual(right.texture?.textureRect().minX ?? -1, 0.5, accuracy: 0.001,
+                       "the right piece the right end")
     }
 
     /// The sticky band is the other half of the same fault, and gets the opposite answer.

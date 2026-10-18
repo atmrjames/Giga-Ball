@@ -300,6 +300,12 @@ scene. The ones that bite widest:
   squashed or stretched; the paddle's sprites are handed drawn-size copies for this
   (`keepThePaddleArtAtItsDrawnSize`, round 379). A parent's scale stretches a child's slices
   again, so a nine-sliced halo cannot be a child of the thing it surrounds.
+- **A child laid out from its parent's `size` is scaled twice.** `size` carries the scale,
+  and the child then takes the parent's scale again: under Expand the split paddle's pieces
+  were drawn half as far out again as the body the ball met (round 394). Split pieces stand in
+  `endlessIISplitHolder`, which undoes the parent's scale. And **a physics body scales with
+  its node after it is made** - harmless for a whole bar, wrong for a split one, whose pieces
+  keep their width while the gaps grow, so a split body is cut again for every span.
 - **`removeAllActions()` on the scene cancels every wait the scene is holding**, not only the
   ones the caller meant. Skipping a build-in did it to stop the rows' knocks and took each
   brick's fog timer with it (round 380). Anything scheduled on the scene must survive that or

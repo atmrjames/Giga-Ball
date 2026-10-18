@@ -44,8 +44,8 @@ final class SafetyPaddleDressTests: XCTestCase {
     }
 
     private func segments(_ bar: SKSpriteNode) -> [SKSpriteNode] {
-        bar.children.compactMap { $0 as? SKSpriteNode }
-            .filter { $0.name == GameScene.endlessIISafetyPaddleSegmentName }
+        GameScene().endlessIISplitPieces(of: bar, named: GameScene.endlessIISafetyPaddleSegmentName)
+        // In the scale-cancelling holder since round 394; the lookup asks nothing of the scene
     }
 
     // MARK: - The sticky face
@@ -221,8 +221,7 @@ final class SplitPaddleTintTests: XCTestCase {
     }
 
     private func halves(_ scene: GameScene) -> [SKSpriteNode] {
-        scene.paddle.children.compactMap { $0 as? SKSpriteNode }
-            .filter { $0.name == GameScene.doublePaddleHalfName }
+        scene.endlessIISplitPieces(of: scene.paddle, named: GameScene.doublePaddleHalfName)
     }
 
     private func alpha(of colour: UIColor) -> CGFloat {

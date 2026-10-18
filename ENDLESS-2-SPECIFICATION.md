@@ -2964,6 +2964,40 @@ testers:
   falling power-up's position by `brickWidth`, so a bare `GameScene()` with a power-up on
   screen traps converting NaN to Int. A real scene is always laid out before play.
 
+**Round 394: the split drawn where it plays, and a mirror that splits.**
+
+- **"The split safety paddles look right, but the split paddle looks wrong. Each of them has a
+  yellow/green section in the centre that shouldn't be there."** The lime was the mirror: with
+  the paddle in the middle of the field the mirror stands on it, and it stayed one whole bar while
+  the paddle was in pieces. Looking for it found the larger fault. **Under Expand every split
+  piece was drawn in the wrong place** - the paddle's, the safety bar's, and now the mirror's.
+  The pieces were laid out from the surface's `size`, which already carries Expand's scale, and
+  then scaled again as its children: measured in a laid-out scene, the paddle solid at -158 to
+  -125 and -54 to -21 and drawn at -193 to -142 and -37 to 13. Balls fell through pieces the
+  player could see and bounced off air beside them; the round ends were stretched half as wide
+  again too. Every surface's pieces stand in a scale-cancelling holder now
+  (`endlessIISplitHolder`, `endlessIISplitPieces`), and probing all twelve themes split, with
+  and without Expand, finds every surface drawn exactly over its body. The twins' ticks copy the
+  paddle's scale before its size, so a twin is never the wrong width for a frame.
+- **"Yes, the mirror paddle should also be split. Mirror paddle should always take on the form and
+  function of the main paddle."** Built: pieces drawn as the paddle's are, in the lime
+  (`refreshEndlessIIMirrorSplit`); a body with the gaps left out, cut again for every span,
+  because SpriteKit scales an existing body with its node and a split layout does not scale - it
+  keeps the pieces' width and widens the gaps (`endlessIIMirrorBodyIsStale`); each piece steering
+  across its own width, the paddle's rule from rounds 305 and 386, for the bounce and for a held
+  ball's launch; drops caught by the pieces and not by the gaps; the turret and sticky strips cut
+  as the paddle's are; the wrap ghost in pieces too. The safety bar now steers per piece as well
+  (`endlessIISplitCollision(ballX:surfaceX:span:)`), which it never did. `MirrorPaddleSplitTests`,
+  `testUnderExpandEachPieceIsDrawnOverItsOwnBody`.
+- **Two turrets, drawn as two.** Each outer laser strip was the whole strip with a turret at
+  either end, so the ordinary two-piece split showed four, against round 285's "There should only
+  ever be 2 turrets with a split paddle". Each outer piece wears its outer half now
+  (`GameScene.outerHalf`). Not in Retro, whose laser picture is a whole ship rather than a strip
+  with ends - queued below. `testEachOuterPieceWearsOnlyItsOuterTurret`.
+- **The mirror's Retro laser in the twin's Retro colours**: magenta to lime and the rest as Retro
+  draws it (round 386b's rule), where it had been the whole picture tinted lime, an orange-brown
+  ship. Its pieces also sit under the strips copied onto it, as the whole mirror does.
+
 **Round 393: the Retro split safety bar, a cooling Portal heard, and Flashing bricks kept few.**
 
 James's next play-test list, with "some of these are silly mistakes that should've been caught or
@@ -4408,7 +4442,7 @@ James, after the round 358b push: three play-test notes.
 | Item | What is known |
 |---|---|
 | **A flat ball in Classic, turned at the walls by something unlogged** (round 391) | James's device log: in Classic (Challenge Pack, Lonesome Brick) the ball crossed the field heading exactly 180 and then 0 degrees, and was turned about ten degrees at each wall with no note from any writer the crooked-ball watch knows. Find the writer; whether to change anything in Classic is James's call |
-| **Should the Mirror Paddle split with the paddle?** (round 393) | Found by round 393's sweep, not reported. Under a Split Paddle the safety bar splits with the paddle (James, round 313: "the safety paddle should also be split"), and the Mirror stays one whole bar at the paddle's full span - lime, so with the paddle near the middle it shows across the gap between the white halves. Never decided either way, so not built: James's call. If yes, it is the safety bar's split (`refreshEndlessIISafetyPaddleSplit`, `endlessIISafetyPaddlePieceDress`) applied to the mirror, with its reflected picture |
+| **Retro's laser picture on a split paddle** (round 394) | Each outer piece of a split Retro paddle wears the whole Retro laser picture, a ship with a turret at each end, so a two-piece split shows four turrets where round 285 says two. Every other theme's strip is cut to its outer half; Retro's cannot be, because half of it is a ship cut off through its stripes. Wanted from James: a Retro laser piece with one turret (left and right, or one to be mirrored), or a ruling that Retro keeps four |
 | **A white patch under an Exploding Diamond** (round 387) | James's screenshot: a red Exploding Diamond with a white bevelled rectangle showing below its lower edges, half a cell wide, centred, reaching the cell's floor. Its width is the Diamond's hiding rectangle's (`EndlessIIFaceGeometry.hidingRect`, half a cell), so it reads as the brick's own sprite drawing and sitting lower than it should - but the hiding rectangle is centred and inside the rhombus, and the sprite is meant to draw nothing at all once the face has art (round 332). Round 387 could not make it happen: every behaviour on a Diamond, applied before and after the face, on Normal, Multi-Hit and Indestructible bricks, through hits and a second of frames, and then saved and resumed in a laid-out scene - every hidden sprite inside its rectangle and drawing nothing. Not a Tiny quarter (those sit left or right of centre). Wanted: what had just happened to that brick - hit, resumed, drifted, a Breathing pulse - or a second sighting |
 | ~~**Bricks half a row out after a quit and resume**~~ | **Fixed, round 386d** - see that round. It was not the bricks but their faces: a shaped brick's drawing came back round the wrong centre |
 | ~~The game view following an iPad or Mac window~~ | **Seen working, 2 October** - James on his iPad: "it's working perfectly" |

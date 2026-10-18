@@ -248,6 +248,20 @@ extension GameScene {
         guard let bar = childNode(withName: GameScene.endlessIISafetyPaddleName)
                 as? SKSpriteNode else { return }
         guard endlessIISafetyPaddleClock.isRunning == false else {
+            if bar.xScale != paddle.xScale || bar.yScale != paddle.yScale {
+                bar.xScale = paddle.xScale
+                bar.yScale = paddle.yScale
+                // Expand and Shrink animate `xScale` and never touch `size`, so the check
+                // above never fired for them - the same miss the mirror had until round 216
+            }
+            // **The paddle's twin follows the paddle** (round 203, the first cell of the
+            // parity matrix James asked for): Expand and Shrink write the paddle's width
+            // directly, and a bar that kept its birth width was the same object at a
+            // different size - the mirror learned this in round 180, and the nine-slice
+            // has to be re-copied with it or the fresh width stretches the old state
+            // Before the size, for the mirror's reason (round 394): the size is compared with
+            // the paddle's, which carries the scale already
+
             let wantedArt = endlessIIShapeOwnsTheBounce ? endlessIIPaddleShapeArtName : nil
             if bar.size != paddle.size || wantedArt != endlessIISafetyPaddleBodyArt,
                paddle.size.width > 0, paddle.size.height > 0 {
@@ -265,21 +279,11 @@ extension GameScene {
                 // shaped picture is the same width as the plain one, so the cap rect protects
                 // the same strip on both
             }
-            if bar.xScale != paddle.xScale || bar.yScale != paddle.yScale {
-                bar.xScale = paddle.xScale
-                bar.yScale = paddle.yScale
-                // Expand and Shrink animate `xScale` and never touch `size`, so the check
-                // above never fired for them - the same miss the mirror had until round 216
-            }
-            // **The paddle's twin follows the paddle** (round 203, the first cell of the
-            // parity matrix James asked for): Expand and Shrink write the paddle's width
-            // directly, and a bar that kept its birth width was the same object at a
-            // different size - the mirror learned this in round 180, and the nine-slice
-            // has to be re-copied with it or the fresh width stretches the old state
             refreshEndlessIISafetyPaddleSplit(bar)
             // Last, because it owns whether the bar draws itself or its pieces do - and the
             // face above is put on whichever of those is showing
-            let split = bar.children.contains { $0.name == GameScene.endlessIISafetyPaddleSegmentName }
+            let split = endlessIISplitPieces(of: bar, named: GameScene.endlessIISafetyPaddleSegmentName)
+                .isEmpty == false
             if split {
                 bar.childNode(withName: GameScene.endlessIIRetroTwinDressName)?.removeFromParent()
             } else if endlessIIDressRetroTwin(bar) == false,
@@ -338,14 +342,22 @@ extension GameScene {
     /// are children of a node those scale.
     func endlessIISafetyPaddlePieceDress(barHeight: CGFloat)
         -> (texture: SKTexture?, height: CGFloat, centerRect: CGRect, blend: CGFloat) {
+        endlessIITwinPieceDress(plain: endlessIITwinPicture(endlessIISafetyPaddleDress),
+                                height: barHeight)
+    }
+
+    /// A twin's piece, whichever twin: the Retro halves' picture at their height in Retro, the
+    /// twin's own plain picture at the twin's height otherwise. The mirror's pieces are the
+    /// same pieces in its own colour (round 394).
+    func endlessIITwinPieceDress(plain: SKTexture?, height barHeight: CGFloat)
+        -> (texture: SKTexture?, height: CGFloat, centerRect: CGRect, blend: CGFloat) {
         if paddleTexture == retroPaddle, let art = paddleRetroTexture.texture {
             return (GameScene.twinPicture(of: art, turning: .retro),
                     paddleRetroTexture.size.height, paddleCapRect(for: art), 0)
             // Untinted, as the whole Retro bar is: the picture carries its own colours, the
             // tube recoloured (round 386b)
         }
-        return (endlessIITwinPicture(endlessIISafetyPaddleDress), barHeight,
-                endlessIIPaddleDressCenterRect, endlessIITwinBlend)
+        return (plain, barHeight, endlessIIPaddleDressCenterRect, endlessIITwinBlend)
     }
 
     /// Draws the bar as pieces while the paddle is in pieces, and as one bar otherwise.
@@ -353,13 +365,11 @@ extension GameScene {
     /// The same bargain the split itself makes: put back exactly. A bar left in pieces after
     /// the Double Paddle's clock stopped would be a power-up that never ended.
     func refreshEndlessIISafetyPaddleSplit(_ bar: SKSpriteNode) {
-        let pieces = bar.children
-            .compactMap { $0 as? SKSpriteNode }
-            .filter { $0.name == GameScene.endlessIISafetyPaddleSegmentName }
+        let pieces = endlessIISplitPieces(of: bar, named: GameScene.endlessIISafetyPaddleSegmentName)
 
         guard let split = endlessIISafetyPaddleSegmentCentres(span: bar.size.width) else {
             if pieces.isEmpty == false {
-                pieces.forEach { $0.removeFromParent() }
+                bar.childNode(withName: GameScene.endlessIISplitHolderName)?.removeFromParent()
                 bar.texture = endlessIITwinPicture(endlessIISafetyPaddleDress)
                 bar.color = GameScene.endlessIIHaloColour
                 bar.colorBlendFactor = endlessIITwinBlend
@@ -386,8 +396,11 @@ extension GameScene {
         // paddle's own split follows - two fresh sprites a frame is a habit an update loop
         // does not survive
 
+        let holder = endlessIISplitHolder(on: bar)
+        // Every frame, for the scale it undoes - see `endlessIISplitHolder`, and round 394
+
         if stale {
-            pieces.forEach { $0.removeFromParent() }
+            holder.removeAllChildren()
             bar.childNode(withName: GameScene.endlessIISafetyPaddleTopName)?
                 .removeFromParent()
             // The whole bar's own face goes with it - each piece grows its own below
@@ -400,7 +413,7 @@ extension GameScene {
                 piece.centerRect = dress.centerRect
                 piece.position = CGPoint(x: centre, y: 0)
                 piece.zPosition = 0.1
-                bar.addChild(piece)
+                holder.addChild(piece)
             }
             // Nine-sliced from the paddle's own cap rect, for round 182's reason: a strip cut
             // to a fraction of its width squashes its own end caps in proportion to how short
@@ -428,8 +441,7 @@ extension GameScene {
         // picture crushed to the bar's height and tinted, between the two halves of James's
         // screenshot
 
-        for piece in bar.children.compactMap({ $0 as? SKSpriteNode })
-        where piece.name == GameScene.endlessIISafetyPaddleSegmentName {
+        for piece in endlessIISplitPieces(of: bar, named: GameScene.endlessIISafetyPaddleSegmentName) {
             refreshEndlessIISafetyPaddleTop(piece)
         }
         // Each piece wears its own sticky band or grip, which is what the paddle's split does
@@ -541,6 +553,12 @@ extension GameScene {
     func endlessIISafetyPaddleCollision(of subject: SKSpriteNode) -> CGFloat {
         guard let bar = childNode(withName: GameScene.endlessIISafetyPaddleName)
                 as? SKSpriteNode, bar.size.width > 0 else { return 0 }
+        if let onPiece = endlessIISplitCollision(ballX: subject.position.x,
+                                                 surfaceX: bar.position.x, span: bar.size.width,
+                                                 ballRadius: subject.size.width/2) {
+            return onPiece
+        }
+        // Across its own piece while split, as the paddle's is (round 394)
         return min(max(PaddleBounce.collision(ballX: subject.position.x,
                                               paddleX: bar.position.x,
                                               paddleWidth: bar.size.width), -1), 1)
@@ -726,6 +744,11 @@ extension GameScene {
     func endlessIISafetyBarOffset(of subject: SKSpriteNode) -> Double? {
         guard let bar = childNode(withName: GameScene.endlessIISafetyPaddleName)
                 as? SKSpriteNode, bar.size.width > 0 else { return nil }
+        if let onPiece = endlessIISplitCollision(ballX: subject.position.x,
+                                                 surfaceX: bar.position.x, span: bar.size.width,
+                                                 ballRadius: subject.size.width/2) {
+            return Double(onPiece)
+        }
         return Double((subject.position.x - bar.position.x)/(bar.size.width/2))
     }
 

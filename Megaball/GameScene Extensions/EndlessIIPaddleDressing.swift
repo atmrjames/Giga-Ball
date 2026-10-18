@@ -234,9 +234,9 @@ extension GameScene {
         // Magnetism keeps its tint, and is now the only thing here that has one. It has no
         // glow drawn for it, and red is the whole of how a magnet paddle says so.
 
-        let halves = paddle.children.filter { $0.name == GameScene.doublePaddleHalfName }
+        let halves = endlessIISplitPieces(of: paddle, named: GameScene.doublePaddleHalfName)
         guard halves.isEmpty else {
-            paint(halves.compactMap { $0 as? SKSpriteNode }, tint)
+            paint(halves, tint)
             if paddle.colorBlendFactor != 1 || paddle.color != .clear {
                 paddle.color = .clear
                 paddle.colorBlendFactor = 1
