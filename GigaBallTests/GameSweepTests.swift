@@ -1066,107 +1066,137 @@ final class ResumeIsTheSameGameTests: XCTestCase {
 
     private func compare(_ mode: GameMode, seeds: ClosedRange<UInt64>) throws {
         var failures: [String] = []
-        let setup = LevelPackSetup.shared
         for seed in seeds {
-            var random = PlayWatch.Seeded(state: seed &* 7919)
-            let level = mode == .classic
-                ? setup.startLevelNumber[2 + Int(seed) % 10] + Int(seed) % 10 : nil
-            let pack = mode == .classic ? 2 + Int(seed) % 10 : 1
-            let scene = try PaddleFamilySweep.present(theme: 0, keeping: &window, mode: mode,
-                                                      frozen: false, level: level, pack: pack)
-            if mode == .endlessII { scene.endlessHeight = Int.random(in: 40...400, using: &random) }
-            // Deep enough for the field to hold the kinds a deep run meets
-            let playFor = Double.random(in: 3...9, using: &random)
-            var clock = 0.0, nextPowerUp = 0.7
-            while clock < playFor, scene.gameState.currentState is Playing {
-                if scene.ballIsOnPaddle, scene.endlessIIHeldBalls.isEmpty { scene.releaseBall() }
-                if scene.endlessIIAimHold { _ = scene.endlessIIAimLaunch() }
-                if let lowest = scene.endlessIIBallsInPlay.min(by: { $0.position.y < $1.position.y }) {
-                    let reach = scene.gameWidth/2 - scene.paddle.size.width/2
-                    scene.paddle.position.x = min(max(lowest.position.x, -reach), reach)
-                }
-                if clock >= nextPowerUp {
-                    nextPowerUp += 0.7
-                    let pool = scene.powerUpTextureArray.indices.filter {
-                        $0 != 1 && setup.retiredPowerUpIndices.contains($0) == false
-                            && scene.powerUpCanAppear($0)
-                            && (mode == .endlessII || scene.powerUpProbArray[$0] > 0)
-                    }
-                    if let index = pool.randomElement(using: &random) {
-                        let carrier = SKSpriteNode(texture: scene.powerUpTextureArray[index])
-                        scene.addChild(carrier)
-                        scene.applyPowerUp(node: carrier, silently: true)
-                    }
-                    // And one left in the air, as a brick would drop it
-                    if let index = pool.randomElement(using: &random) {
-                        let drop = SKSpriteNode(texture: scene.powerUpTextureArray[index])
-                        drop.size = CGSize(width: scene.brickWidth*0.85, height: scene.brickWidth*0.85)
-                        drop.name = PowerUpCategoryName
-                        drop.zPosition = 2
-                        drop.position = CGPoint(x: CGFloat.random(in: -150...150, using: &random),
-                                                y: CGFloat.random(in: -100...200, using: &random))
-                        scene.addChild(drop)
-                    }
-                }
-                PaddleFamilySweep.settle(1.0/30)
-                clock += 1.0/30
-            }
-            guard scene.gameState.currentState is Playing else {
-                scene.view?.presentScene(nil)
-                continue
-            }
-            // A run that ended has nothing to save; another seed will play on
-
-            scene.physicsWorld.speed = 0
-            PaddleFamilySweep.settle(0.3)
-            scene.isPaused = true
-            // The same still moment the resumed game is given below, so a field that was about
-            // to step down into an empty bottom row does it here rather than there
-            let label = "\(mode) seed \(seed) after \(String(format: "%.1f", clock))s"
-            let before = (bricks: GameSnapshot.bricks(in: scene), drops: GameSnapshot.drops(in: scene),
-                          running: GameSnapshot.running(in: scene),
-                          rings: scene.activePowerUpEntries().map(\.id).sorted(),
-                          numbers: GameSnapshot.numbers(in: scene))
-            scene.saveCurrentGame()
-            let wrote = SavedGame.load(from: GameScene.settingsStore)?.activePowerUps ?? []
-
-            GameScene.settingsStore.set(true, forKey: SavedGame.resumeFlagKey)
-            let resumed = try PaddleFamilySweep.present(theme: 0, keeping: &resumedWindow,
-                                                        resuming: true, mode: mode, level: level,
-                                                        pack: pack, intoPlay: false)
-            GameScene.settingsStore.set(false, forKey: SavedGame.resumeFlagKey)
-            resumed.physicsWorld.speed = 0
-            resumed.gameState.enter(Playing.self)
-            PaddleFamilySweep.settle(0.3)
-            resumed.isPaused = true
-            // Into play for a still moment, as the READY countdown ends: a resumed game waits
-            // paused, and some of what it restores - a paddle's size, a timer begun in an
-            // animation's completion - only lands once the scene runs. The physics stays
-            // stopped, so nothing is struck while it does
-            let after = (bricks: GameSnapshot.bricks(in: resumed), drops: GameSnapshot.drops(in: resumed),
-                         running: GameSnapshot.running(in: resumed),
-                         rings: resumed.activePowerUpEntries().map(\.id).sorted(),
-                         numbers: GameSnapshot.numbers(in: resumed))
-
-            func differ(_ what: String, _ a: [String], _ b: [String]) {
-                guard a != b else { return }
-                var lost = a, gained = b
-                for item in a where gained.contains(item) {
-                    gained.remove(at: gained.firstIndex(of: item)!)
-                    lost.remove(at: lost.firstIndex(of: item)!)
-                }
-                failures.append("\(label): \(what) - lost \(lost.prefix(6)), gained \(gained.prefix(6))")
-            }
-            differ("bricks", before.bricks, after.bricks)
-            differ("power-ups in the air", before.drops, after.drops)
-            differ("running (of \(before.running), saved as \(wrote))", before.running,
-                   after.running)
-            differ("rings", before.rings, after.rings)
-            differ("the run", before.numbers, after.numbers)
-            resumed.view?.presentScene(nil)
-            scene.view?.presentScene(nil)
+            failures += try ResumeCheck.run(mode: mode, seed: seed, window: &window,
+                                            resumedWindow: &resumedWindow)
         }
         XCTAssertTrue(failures.isEmpty, failures.joined(separator: "\n"))
+    }
+}
+
+/// One game played, frozen, saved, resumed and compared - `ResumeIsTheSameGameTests`' question for
+/// one seed, shared with the soak (`SoakTests`), which asks it of hundreds.
+enum ResumeCheck {
+
+    static func run(mode: GameMode, seed: UInt64, theme: Int = 0, startHeight: Int? = nil,
+                    daily: DailyChallenge? = nil, playFor chosen: TimeInterval? = nil,
+                    window: inout UIWindow?, resumedWindow: inout UIWindow?) throws -> [String] {
+        var failures: [String] = []
+        let setup = LevelPackSetup.shared
+        defer {
+            GameScene.settingsStore.set(false, forKey: SavedGame.resumeFlagKey)
+            DailyChallengeSession.shared.active = nil
+        }
+        var random = PlayWatch.Seeded(state: seed &* 7919)
+        let level: Int?
+        let pack: Int
+        if let classic = daily?.classicLevel {
+            level = DailyChallengeGenerator.levelNumber(forClassicLevel: classic)
+            pack = DailyChallengeGenerator.pack(forClassicLevel: classic)
+        } else if mode == .classic {
+            pack = 2 + Int(seed % UInt64(setup.numberOfLevels.count - 2))
+            level = setup.startLevelNumber[pack] + Int((seed / 11) % UInt64(setup.numberOfLevels[pack]))
+        } else {
+            level = nil
+            pack = 1
+        }
+        DailyChallengeSession.shared.active = daily
+        let scene = try PaddleFamilySweep.present(theme: theme, keeping: &window, mode: mode,
+                                                  frozen: false, level: level, pack: pack)
+        if mode == .endlessII {
+            scene.endlessHeight = startHeight ?? Int.random(in: 40...400, using: &random)
+        }
+        // Deep enough for the field to hold the kinds a deep run meets
+        let playFor = chosen ?? Double.random(in: 3...9, using: &random)
+        var clock = 0.0, nextPowerUp = 0.7
+        while clock < playFor, scene.gameState.currentState is Playing {
+            if scene.ballIsOnPaddle, scene.endlessIIHeldBalls.isEmpty { scene.releaseBall() }
+            if scene.endlessIIAimHold { _ = scene.endlessIIAimLaunch() }
+            if let lowest = scene.endlessIIBallsInPlay.min(by: { $0.position.y < $1.position.y }) {
+                let reach = scene.gameWidth/2 - scene.paddle.size.width/2
+                scene.paddle.position.x = min(max(lowest.position.x, -reach), reach)
+            }
+            if clock >= nextPowerUp {
+                nextPowerUp += 0.7
+                let pool = scene.powerUpTextureArray.indices.filter {
+                    $0 != 1 && setup.retiredPowerUpIndices.contains($0) == false
+                        && scene.powerUpCanAppear($0)
+                        && (mode == .endlessII || scene.powerUpProbArray[$0] > 0)
+                }
+                if let index = pool.randomElement(using: &random) {
+                    let carrier = SKSpriteNode(texture: scene.powerUpTextureArray[index])
+                    scene.addChild(carrier)
+                    scene.applyPowerUp(node: carrier, silently: true)
+                }
+                // And one left in the air, as a brick would drop it
+                if let index = pool.randomElement(using: &random) {
+                    let drop = SKSpriteNode(texture: scene.powerUpTextureArray[index])
+                    drop.size = CGSize(width: scene.brickWidth*0.85, height: scene.brickWidth*0.85)
+                    drop.name = PowerUpCategoryName
+                    drop.zPosition = 2
+                    drop.position = CGPoint(x: CGFloat.random(in: -150...150, using: &random),
+                                            y: CGFloat.random(in: -100...200, using: &random))
+                    scene.addChild(drop)
+                }
+            }
+            PaddleFamilySweep.settle(1.0/30)
+            clock += 1.0/30
+        }
+        guard scene.gameState.currentState is Playing else {
+            scene.view?.presentScene(nil)
+            return []
+        }
+        // A run that ended has nothing to save; another seed will play on
+
+        scene.physicsWorld.speed = 0
+        PaddleFamilySweep.settle(0.3)
+        scene.isPaused = true
+        // The same still moment the resumed game is given below, so a field that was about
+        // to step down into an empty bottom row does it here rather than there
+        let label = "\(mode)\(daily.map { " daily \($0.dateKey) \($0.twists)" } ?? "") theme \(theme) seed \(seed) after \(String(format: "%.1f", clock))s"
+        let before = (bricks: GameSnapshot.bricks(in: scene), drops: GameSnapshot.drops(in: scene),
+                      running: GameSnapshot.running(in: scene),
+                      rings: scene.activePowerUpEntries().map(\.id).sorted(),
+                      numbers: GameSnapshot.numbers(in: scene))
+        scene.saveCurrentGame()
+        let wrote = SavedGame.load(from: GameScene.settingsStore)?.activePowerUps ?? []
+
+        GameScene.settingsStore.set(true, forKey: SavedGame.resumeFlagKey)
+        let resumed = try PaddleFamilySweep.present(theme: theme, keeping: &resumedWindow,
+                                                    resuming: true, mode: mode, level: level,
+                                                    pack: pack, intoPlay: false)
+        GameScene.settingsStore.set(false, forKey: SavedGame.resumeFlagKey)
+        resumed.physicsWorld.speed = 0
+        resumed.gameState.enter(Playing.self)
+        PaddleFamilySweep.settle(0.3)
+        resumed.isPaused = true
+        // Into play for a still moment, as the READY countdown ends: a resumed game waits
+        // paused, and some of what it restores - a paddle's size, a timer begun in an
+        // animation's completion - only lands once the scene runs. The physics stays
+        // stopped, so nothing is struck while it does
+        let after = (bricks: GameSnapshot.bricks(in: resumed), drops: GameSnapshot.drops(in: resumed),
+                     running: GameSnapshot.running(in: resumed),
+                     rings: resumed.activePowerUpEntries().map(\.id).sorted(),
+                     numbers: GameSnapshot.numbers(in: resumed))
+
+        func differ(_ what: String, _ a: [String], _ b: [String]) {
+            guard a != b else { return }
+            var lost = a, gained = b
+            for item in a where gained.contains(item) {
+                gained.remove(at: gained.firstIndex(of: item)!)
+                lost.remove(at: lost.firstIndex(of: item)!)
+            }
+            failures.append("\(label): \(what) - lost \(lost.prefix(6)), gained \(gained.prefix(6))")
+        }
+        differ("bricks", before.bricks, after.bricks)
+        differ("power-ups in the air", before.drops, after.drops)
+        differ("running (of \(before.running), saved as \(wrote))", before.running,
+               after.running)
+        differ("rings", before.rings, after.rings)
+        differ("the run", before.numbers, after.numbers)
+        resumed.view?.presentScene(nil)
+        scene.view?.presentScene(nil)
+        return failures
     }
 }
 
@@ -1198,6 +1228,7 @@ enum PlayWatch {
         var nextPowerUp: TimeInterval = 1.5
         var stillFor: [ObjectIdentifier: TimeInterval] = [:]
         var flatFor: [ObjectIdentifier: TimeInterval] = [:]
+        var livesNoted = false
         var phantomFor: TimeInterval = 0
         var peakNodes = 0
         let startNodes = nodeCount(scene)
@@ -1300,6 +1331,13 @@ enum PlayWatch {
                     phantomFor = -100
                 }
             }
+            if scene.gameMode == .endlessII, scene.numberOfLives > 0, livesNoted == false,
+               DailyChallengeSession.shared.active?.has(.spareBalls) != true {
+                note("Endless Mayhem holding \(scene.numberOfLives) spare lives")
+                livesNoted = true
+            }
+            // **Mayhem has one life** (James, round 398b: "I then had 2 lives in Endless Mayhem
+            // mode which shouldn't be possible"). Only a Spare Balls day gives it a rack
             peakNodes = max(peakNodes, nodeCount(scene))
         }
         let endNodes = nodeCount(scene)

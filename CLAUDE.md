@@ -30,6 +30,11 @@ it the way this section says to, and stops `xcodebuild` when it hangs after fini
   change to shared code (physics, scoring, the paddle, the save format), and every few rounds
   regardless - see "A round is not finished" below for why the last one matters.
 
+- `tools/soak.sh [hours]` - the overnight soak (round 398b): `SoakTests` over hundreds of seeds
+  on both simulators, then a fresh `full`. Writes `summary.txt` as it goes; every failure names
+  its seed, and replays with `TEST_RUNNER_SOAK_FROM=<seed> TEST_RUNNER_SOAK_COUNT=1 tools/test.sh
+  only SoakTests/<test>`. For a day or a night the Mac is otherwise idle, before a release.
+
 Refresh the slow list from a full run's log now and then: `tools/test-times.py LOG >
 tools/slow-tests.txt`. What follows is what the script does by hand, and why.
 
