@@ -2964,6 +2964,30 @@ testers:
   falling power-up's position by `brickWidth`, so a bare `GameScene()` with a power-up on
   screen traps converting NaN to Int. A real scene is always laid out before play.
 
+**Round 397: the general chime proven, the tests in tiers, and a pre-launch audit.**
+
+- **"For any power-ups without a specific sound, they should play the general power-up sound."**
+  They already did: round 334's rule holds the chime back only when a power-up's own recording
+  *exists* (`endlessIIHasItsOwnVoice` asks for the file), so Multi-Ball, Safety Paddle and Mirror
+  Paddle, whose recordings never arrived, chime. Now proven rather than read:
+  `EveryPowerUpIsHeardTests` collects every power-up an endless run can drop and requires the
+  chime (`powerUpChimedAt`) or its own sound. One power-up *effect* is still silent with a
+  haptic - the Paddle Halo's bite - put to James.
+- **"Lock, Multi-Ball and Backstop correctly show no HUD ring. That is intentional."**
+- **The tests in tiers** (James: "it doesn't feel like it makes sense to run after every change.
+  It feels like we should have smaller test suites... We then run the full test suite before a
+  big build or every so often"). `tools/test.sh` - `match`, `only`, `quick` (everything but
+  `tools/slow-tests.txt`: 2,222 tests in under ten minutes), `sweeps` and `full`; it reads its
+  own log as CLAUDE.md says to and stops a hung `xcodebuild`. `tools/test-times.py` refreshes the
+  slow list from a full run's log. CLAUDE.md says which tier when.
+- **A pre-launch audit**: every picture named in the code exists; the six events with no
+  recording are the undelivered ones on §8.5's list plus the wall tap, all silent with their
+  haptic; the privacy manifest declares `UserDefaults` (CA92.1) and no tracking; the shaped-paddle
+  play-test weight is back at its normal 3; and every `#if DEBUG` block only logs (the crooked-ball
+  and phantom-brick watches, the hitch notes, the HUD double-draw report) - James's debug builds
+  play exactly as the release does. Not covered by any test: a stats file from 1.2 decoding whole
+  under 1.3 - offered as a sixth sweep.
+
 **Round 396: two more sweeps, and the seven faults the second found on its first run.**
 
 James, after round 395's sweeps: "Yes, please run these new tests now and think about what other

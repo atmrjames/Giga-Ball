@@ -15,6 +15,24 @@ sections written specifically to stop mistakes being repeated.
 
 ## Build and test
 
+**Use `tools/test.sh`, in tiers** (round 397). The full suite is about 40 minutes, and James:
+"it doesn't feel like it makes sense to run after every change... We then run the full test
+suite before a big build or every so often." It runs the right simulator, writes the log, reads
+it the way this section says to, and stops `xcodebuild` when it hangs after finishing:
+
+- `tools/test.sh match Mirror Safety` - every class whose name contains a word. While working.
+- `tools/test.sh only SomeTests` - exactly these classes.
+- `tools/test.sh quick` - everything but `tools/slow-tests.txt`, about 10 minutes. Before
+  committing a round, with a `match` for the area touched (its slow classes are in there).
+- `tools/test.sh sweeps` - the whole-family sweeps, about 12 minutes. After touching the paddle
+  family, bricks, power-ups, sound or the save.
+- `tools/test.sh full` - everything. Before a build goes to Xcode Cloud for review, after a
+  change to shared code (physics, scoring, the paddle, the save format), and every few rounds
+  regardless - see "A round is not finished" below for why the last one matters.
+
+Refresh the slow list from a full run's log now and then: `tools/test-times.py LOG >
+tools/slow-tests.txt`. What follows is what the script does by hand, and why.
+
 ```bash
 DEVELOPER_DIR=/Applications/Xcode-beta.app/Contents/Developer \
 xcodebuild -project Megaball.xcodeproj -scheme Megaball \
@@ -203,7 +221,10 @@ its `PBXGroup`, and — the one that is easy to miss — the **right target's** 
   never part of a run that reached the end. Targeted runs are the right tool while working and
   they cannot see across rounds: half of those failures were tests pinning a look James changed
   two rounds later, which no single round's own classes would ever run. Start the full suite,
-  and **read what it says**.
+  and **read what it says**. Since round 397 that is `tools/test.sh full`, and it does not have
+  to follow every change: `quick` covers a round, and `full` runs before anything goes for
+  review and every few rounds - often enough that what a targeted run cannot see across rounds
+  is still caught within a few of them.
 
 - **A test may not write anything that outlives its process.** The daily's test-day offset is
   a `UserDefaults` integer only a test sets; the test that set it restored the old value in a

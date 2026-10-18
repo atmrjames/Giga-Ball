@@ -1698,6 +1698,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	/// When the ordinary knock last played.
 	var brickKnockedAt: CFTimeInterval = 0
 
+	/// When the general power-up chime last played (round 397).
+	var powerUpChimedAt: CFTimeInterval = 0
+
 	/// The ordinary knock, and the note that it played.
 	///
 	/// Every hit that is answered with the knock goes through here, so "did that hit make a
@@ -6562,8 +6565,14 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		}
 		
 		if soundsSetting && silently == false, endlessIIHasItsOwnVoice(sprite.texture) == false {
+			powerUpChimedAt = CACurrentMediaTime()
 			self.run(powerUpSound)
 		}
+		// **The chime for anything without a recording of its own** (James, round 397: "For any
+		// power-ups without a specific sound, they should play the general power-up sound").
+		// `endlessIIHasItsOwnVoice` asks for the file, not the name, so a power-up whose
+		// recording was never delivered - Multi-Ball, Safety Paddle, Mirror Paddle - chimes.
+		// `EveryPowerUpIsHeardTests` collects every one and listens
 		// Power-up applied sound - unless this one says something of its own as it lands
 		// (James, round 334: "don't play normal power-up sound for power-ups that have other
 		// sounds when activated"), which is asked below

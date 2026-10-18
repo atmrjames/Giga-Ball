@@ -274,3 +274,43 @@ final class EveryPowerUpShowsSavesAndEndsTests: XCTestCase {
         XCTAssertTrue(failures.isEmpty, failures.joined(separator: "\n"))
     }
 }
+
+/// Every power-up is heard when it is collected: its own recording, or the general chime.
+///
+/// James, round 397: "For any power-ups without a specific sound, they should play the general
+/// power-up sound." Round 334 took the chime away from the ones that say something of their own,
+/// and that rule asks for the file - so a power-up whose recording never arrived still chimes.
+/// This collects every one an endless run can drop, the way a catch does, and listens for either.
+final class EveryPowerUpIsHeardTests: XCTestCase {
+    private var window: UIWindow?
+
+    func testEveryPowerUpIsHeardWhenItIsCollected() throws {
+        let names = LevelPackSetup.shared.powerUpNameArray
+        let setup = LevelPackSetup.shared
+        let scene = try PaddleFamilySweep.present(theme: 0, keeping: &window)
+        scene.soundsSetting = true
+        var failures: [String] = []
+        var heard = 0
+
+        for index in scene.powerUpTextureArray.indices
+        where setup.retiredPowerUpIndices.contains(index) == false
+            && index != 1 && scene.powerUpCanAppear(index) {
+            let name = names.indices.contains(index) ? names[index] : "power-up \(index)"
+            PaddleFamilySweep.settle(0.12)
+            // Past the gap that keeps one sound from playing twice at once
+            let chime = scene.powerUpChimedAt
+            let mayhem = scene.mayhemSoundLastPlayed
+            let carrier = SKSpriteNode(texture: scene.powerUpTextureArray[index])
+            scene.addChild(carrier)
+            scene.applyPowerUp(node: carrier)
+            if scene.powerUpChimedAt != chime || scene.mayhemSoundLastPlayed != mayhem {
+                heard += 1
+            } else {
+                failures.append("\(name): collected in silence")
+            }
+            scene.endlessIIWipe()
+        }
+        XCTAssertGreaterThan(heard, 30)
+        XCTAssertTrue(failures.isEmpty, failures.joined(separator: "\n"))
+    }
+}
