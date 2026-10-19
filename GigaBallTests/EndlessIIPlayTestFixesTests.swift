@@ -1849,3 +1849,48 @@ final class DriftSurvivesAResumeTests: XCTestCase {
         XCTAssertTrue(failures.isEmpty, failures.joined(separator: "\n"))
     }
 }
+
+/// A power-up caught at the very bottom of the screen does not take the app down.
+///
+/// The overnight soak's first crash, round 398c: "Unexpectedly found nil while unwrapping an
+/// Optional value" in the contact handler, on an Always On daily. A drop met the paddle and the
+/// bottom of the screen in the same physics step: the paddle's contact collected it and it was
+/// gone, and the bottom's contact then force-cast a node that no longer existed. Every mode.
+final class ADropCaughtAtTheBottomEdgeTests: XCTestCase {
+    private var window: UIWindow?
+
+    func testTheBottomOfTheScreenLeavesACollectedDropAlone() throws {
+        for mode in [GameMode.endlessII, .classic, .endless] {
+            let level = mode == .classic ? LevelPackSetup.shared.startLevelNumber[2] : nil
+            let scene = try PaddleFamilySweep.present(theme: 0, keeping: &window, mode: mode,
+                                                      level: level, pack: mode == .classic ? 2 : 1)
+            let bottom = try XCTUnwrap(scene.bottomScreenBlock.physicsBody)
+            var body: SKPhysicsBody?
+            autoreleasepool {
+                let drop = SKSpriteNode(texture: scene.powerUpTextureArray[2])
+                drop.name = PowerUpCategoryName
+                drop.physicsBody = SKPhysicsBody(rectangleOf: CGSize(width: 20, height: 20))
+                drop.physicsBody?.categoryBitMask = CollisionTypes.powerUpCategory.rawValue
+                scene.addChild(drop)
+                body = drop.physicsBody
+                drop.removeFromParent()
+                drop.physicsBody = nil
+            }
+            // Collected and gone, as the paddle's contact had left it - the body outliving it
+            let orphan = try XCTUnwrap(body)
+            scene.handleContact(between: orphan, and: bottom)
+            scene.handleContact(between: bottom, and: orphan)
+
+            let fading = SKSpriteNode(texture: scene.powerUpTextureArray[3])
+            fading.name = PowerUpCategoryName
+            fading.zPosition = 1
+            fading.physicsBody = SKPhysicsBody(rectangleOf: CGSize(width: 20, height: 20))
+            fading.physicsBody?.categoryBitMask = CollisionTypes.powerUpCategory.rawValue
+            scene.addChild(fading)
+            scene.handleContact(between: try XCTUnwrap(fading.physicsBody), and: bottom)
+            XCTAssertFalse(fading.hasActions(), "\(mode): a drop already collected was faded "
+                           + "out a second time as if it had been missed")
+            scene.view?.presentScene(nil)
+        }
+    }
+}

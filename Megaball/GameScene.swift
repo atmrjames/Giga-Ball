@@ -4914,10 +4914,15 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			}
 			// Ball hits bottom screen block
 		
-			if firstBody.categoryBitMask == CollisionTypes.powerUpCategory.rawValue && secondBody.categoryBitMask == CollisionTypes.bottomScreenBlockCategory.rawValue {
-				
-				let powerUpNode = firstBody.node
-				let powerUpSprite = powerUpNode as! SKSpriteNode
+			if firstBody.categoryBitMask == CollisionTypes.powerUpCategory.rawValue && secondBody.categoryBitMask == CollisionTypes.bottomScreenBlockCategory.rawValue,
+			   let powerUpSprite = firstBody.node as? SKSpriteNode, powerUpSprite.zPosition != 1 {
+				// **Only a drop still falling** (round 398c, the soak's first crash: "Unexpectedly
+				// found nil" here, on an Always On day). A drop can meet the paddle and the bottom
+				// of the screen in the same step; the paddle's contact collects it first and takes
+				// it away, and this branch then unwrapped a drop that was no longer there. One
+				// already collected, or already fading out down here, is left alone too
+
+				let powerUpNode: SKNode? = powerUpSprite
 				powerUpNode?.name = GameScene.powerUpLeavingName
 				// No longer a drop that is falling: it fades where it lands, and nothing that
 				// asks for the drops in play - the cap, the save, the spacing - should find it

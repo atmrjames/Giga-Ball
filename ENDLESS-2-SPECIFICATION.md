@@ -2983,6 +2983,11 @@ seeds, so games run long and deep while the rest still lose balls. Every failure
   `DriftSurvivesAResumeTests` saves both Drifts at eight moments; on the old code the field came
   back elsewhere at every one. The round-trip check had agreed with the fault because it measured
   bricks in the same arithmetic; it measures where they stand now.
+- **A crash: a drop caught at the very bottom edge** (every mode; the soak's first crash, on an
+  Always On daily). A falling power-up can meet the paddle and the bottom of the screen in the same
+  physics step; the paddle's contact collected it and it was gone, and the bottom's contact then
+  force-cast the missing node - "Unexpectedly found nil". The bottom now handles only a drop still
+  falling. `ADropCaughtAtTheBottomEdgeTests` crashes on the old code at the soak's own line.
 - **Round 398b's own restore threw drops away** (found the next morning). It skipped any falling
   power-up `powerUpCanAppear` refused - and a Backstop already in the air is refused, being once a
   game, as is Clear Multi-Hit Bricks once the multi-hit bricks are gone. Only the lives are skipped
