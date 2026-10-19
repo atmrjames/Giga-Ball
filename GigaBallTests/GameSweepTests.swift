@@ -1179,6 +1179,13 @@ enum ResumeCheck {
                 PaddleFamilySweep.settle(0.1)
             }
         }
+        let reachable = scene.paddle.position.y + scene.brickHeight*4
+        scene.enumerateChildNodes(withName: PowerUpCategoryName) { node, _ in
+            if node.position.y < reachable { node.removeFromParent() }
+        }
+        // A drop already within reach of the paddle is taken out before the save. The save keeps
+        // a falling drop's place to the nearest cell, so one restored a little lower was caught in
+        // the resumed game's still moment - ordinary play, read as the resume changing the run
         scene.isPaused = true
         // The same still moment the resumed game is given below, so a field that was about
         // to step down into an empty bottom row does it here rather than there - and in an
@@ -1193,6 +1200,17 @@ enum ResumeCheck {
             ending.insert(name.replacingOccurrences(of: "\\GameScene.", with: "")
                 .replacingOccurrences(of: "Clock", with: ""))
         }
+        for timer in scene.endlessIIClassicTimers where scene.action(forKey: timer.key) != nil {
+            for (node, key) in timer.timers where key.hasPrefix("powerUp") == false {
+                guard let bar = node as? SKSpriteNode, let countdown = bar.action(forKey: key),
+                      Double(countdown.duration)*Double(bar.xScale) < 1 else { continue }
+                ending.insert(timer.key)
+                if let tray = scene.iconTimerArray.firstIndex(where: { $0 === bar }) {
+                    ending.insert("tray\(tray)")
+                }
+            }
+        }
+        // And one of the original twenty-eight's, read off its bar, with its tray ring
         // **A power-up within a second of its end is left out of both** (round 398b, the soak). It
         // can run out in the resumed game's still moment, which is the clock doing its job, and
         // it read as the resume losing it - a Drift, a Wrap Around, their rings
