@@ -27,6 +27,9 @@ final class EndlessIIFieldPowerUpTests: XCTestCase {
         scene.brickWidth = 40
         scene.totalStatsArray = [TotalStats()]
         scene.addChild(scene.ball)
+        scene.endlessFieldIsLaidOut = true
+        // A running game always has its field laid out before anything can step it, and since
+        // round 398c the step refuses to run before then (`tickEndlessIIDescent`)
         return scene
     }
 
@@ -2537,6 +2540,9 @@ final class EndlessIIQuicksandTests: XCTestCase {
 
     private func mayhem() -> GameScene {
         let scene = GameScene()
+        scene.endlessFieldIsLaidOut = true
+        // A running game always has its field laid out before anything can step it, and since
+        // round 398c the step refuses to run before then (`tickEndlessIIDescent`)
         scene.gameMode = .endlessII
         scene.brickHeight = 20
         scene.brickWidth = 40

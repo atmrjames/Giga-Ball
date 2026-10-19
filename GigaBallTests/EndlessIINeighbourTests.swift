@@ -33,6 +33,9 @@ final class EndlessIINeighbourTests: XCTestCase {
         scene.finalBrickRowHeight = 300 - cell.height*21
         scene.ballSize = 12
         scene.screenBlockTopHeight = 100
+        scene.endlessFieldIsLaidOut = true
+        // A running game always has its field laid out before anything can step it, and since
+        // round 398c the step refuses to run before then (`tickEndlessIIDescent`)
         return scene
     }
 
