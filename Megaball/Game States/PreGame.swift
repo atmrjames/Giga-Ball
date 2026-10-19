@@ -25,6 +25,13 @@ class PreGame: GKState {
         // Add slight delay when moving in from main menu
         scene.self.run(wait, completion: { [weak self] in
             guard let self else { return }
+            if self.scene.resumeGameToLoad, let saved = self.scene.savedGame {
+                MusicHandler.sharedHelper.continueOnResume(track: saved.musicTrack,
+                                                           at: saved.musicPosition)
+            }
+            // **A resumed run carries on with its own track, from where it was** (James, round
+            // 399: "When quitting and resuming can the same music track be playing from the same
+            // position?")
             if self.scene.musicSetting,
                PreGame.changesTheTrack(enteringFrom: previousState,
                                        musicIsPlaying: MusicHandler.sharedHelper.player?.isPlaying == true) {
@@ -34,6 +41,8 @@ class PreGame: GKState {
                 // start, which is the title theme ending mid-bar and a game track beginning at
                 // full volume in the same instant
             }
+            MusicHandler.sharedHelper.continueOnResume(track: nil, at: nil)
+            // Taken by the crossfade if it ran; let go if it did not, so a later new game draws
             self.scene.gameState.enter(Playing.self)
         })
         

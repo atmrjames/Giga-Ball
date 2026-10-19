@@ -210,6 +210,15 @@ final class BricksSaveAndResumeTests: XCTestCase {
             scene.ball.physicsBody?.velocity = .zero
             // And still: the save carries its velocity too, and a ball moving through the
             // resumed scene's settling second flew into the batch (round 398b)
+            scene.ballIsOnPaddle = true
+            // **And saved as on the paddle, so the resumed scene has no ball in flight at all**
+            // (round 399). A still ball is not a still ball once it is back in play:
+            // `ballSpeedControl` gives it the run's speed along heading nought and
+            // `breakHorizontalRuns` tips it off horizontal, so for the resumed scene's second
+            // and a half of settling it crossed the field and now and then climbed into row 13
+            // - where the only thing that ever stands over column 2 is a Moving brick passing
+            // through, broken in one hit. "Standard square, moving: saved, and nothing like it
+            // came back", one run in four. A ball on the paddle is not saved and not served
             // Out of every slot. The presenter parks the ball where a Big brick at row 9, column
             // 1 stands, which is harmless while this scene is frozen - but the save carries the
             // ball there, the resumed scene runs while it settles, and the ball struck that brick:

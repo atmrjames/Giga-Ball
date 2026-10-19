@@ -137,7 +137,8 @@ enum PaddleSpeed {
 
 final class PaddleSpeedViewController: UIViewController, MenuNavigable {
 
-    let defaults = UserDefaults.standard
+    var defaults = UserDefaults.standard
+    // A variable so a test can show the screen in a theme without writing the app's own settings
     var hapticsSetting: Bool = true
     private let interfaceHaptic = UIImpactFeedbackGenerator(style: .light)
 
@@ -208,6 +209,12 @@ final class PaddleSpeedViewController: UIViewController, MenuNavigable {
             scene.layout = playLayout
             scene.speedFactor = PaddleSpeed.snapped(CGFloat(slider.value))
             scene.themeIndex = defaults.integer(forKey: "ballSetting")
+            scene.paddleIndex = defaults.integer(forKey: "paddleSetting")
+            scene.brickSetting = defaults.integer(forKey: "brickSetting")
+            // **Each from its own setting** (James, round 399: "With the retro theme applied, the
+            // paddle in the paddle speed looks wrong and the bricks are the classic theme. The
+            // theme and background in this view should match the user's selection"). The paddle
+            // was drawn from the *ball's* setting, and the bricks from no setting at all
             scene.soundsSetting = defaults.bool(forKey: "soundsSetting")
             scene.hapticsSetting = hapticsSetting
             // The player's own two switches, so the practice field is as loud and as felt as
@@ -530,6 +537,11 @@ final class PaddleSpeedScene: SKScene, SKPhysicsContactDelegate {
 
     /// The ball and paddle the player has chosen, by index into the theme arrays.
     var themeIndex: Int = 0
+    static let retroLayerName = "retroPaddleLayer"
+    /// The paddle the player has chosen, which is its own setting and not the ball's.
+    var paddleIndex: Int = 0
+    /// The bricks the player has chosen: 0 the classic look, 1 Retro.
+    var brickSetting: Int = 0
 
     /// The player's own sound and haptic switches (James, round 161: "these things should be
     /// the same as in the actual game view").
@@ -650,9 +662,19 @@ final class PaddleSpeedScene: SKScene, SKPhysicsContactDelegate {
         physicsBody?.friction = 0
         physicsBody?.restitution = 1
 
-        let index = setup.paddleImageArray.indices.contains(themeIndex) ? themeIndex : 0
-        paddle.texture = SKTexture(image: setup.paddleImageArray[index])
+        let index = setup.ballImageArray.indices.contains(themeIndex) ? themeIndex : 0
+        let paddleTheme = setup.paddleImageArray.indices.contains(paddleIndex) ? paddleIndex : 0
+        paddle.texture = SKTexture(image: setup.paddleImageArray[paddleTheme])
         paddle.size = CGSize(width: layout.paddleWidth, height: layout.paddleHeight)
+        if paddleTheme == LevelPackSetup.retroThemeIndex {
+            let retro = SKSpriteNode(imageNamed: "retroPaddleTexture")
+            retro.size = CGSize(width: layout.paddleWidth*1.22, height: layout.paddleHeight*2.6)
+            retro.zPosition = 1
+            retro.name = PaddleSpeedScene.retroLayerName
+            paddle.addChild(retro)
+        }
+        // Retro is the one theme whose paddle the game draws as a layer over the plain one -
+        // the tube with its purple ends - at these proportions (`GameScene` sets the same two)
         paddle.position = CGPoint(x: size.width/2, y: paddleFloorGap)
         paddle.physicsBody = SKPhysicsBody(rectangleOf: paddle.size)
         paddle.physicsBody?.isDynamic = false
@@ -713,9 +735,14 @@ final class PaddleSpeedScene: SKScene, SKPhysicsContactDelegate {
         // rather than the game's row spacing. The first cut used the game's rows and put
         // three of the four above the top of a field that is half a screen tall
 
+        let setup = LevelPackSetup.shared
+        let brickImage = setup.brickImageArray[
+            setup.brickImageArray.indices.contains(brickSetting) ? brickSetting : 0]
+        // The player's brick theme, as the game swaps it in at set-up
+
         for row in rows {
             for column in row.columns {
-                let brick = SKSpriteNode(texture: SKTexture(imageNamed: "BrickNormal"))
+                let brick = SKSpriteNode(texture: SKTexture(image: brickImage))
                 brick.size = CGSize(width: layout.brickWidth, height: layout.brickHeight)
                 brick.color = .white
                 brick.colorBlendFactor = 1

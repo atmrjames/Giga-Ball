@@ -5656,6 +5656,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 
 	func moveEndlessModeRowDown() {
 		guard endlessFieldIsLaidOut else { return }
+		guard dailyTimeTrial == false || dailyTimeTrialRemaining > 0 else { return }
+		// After a Time Trial's whistle the steps still to come have been scored already
+		// (`endlessStepsToSettle`, round 399), so taking them would count them twice
 		// Whoever asks: a step before the level has been laid out builds a row from settings the
 		// layout makes (`tickEndlessIIDescent`, round 398c)
 				
@@ -6116,6 +6119,12 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		
 		if isOnPaddle == false && endlessIIPaddlePortalTook(ball,
 														   collision: collisionPercentage) {
+			endlessIIGripBall(ball, collision: collisionPercentage)
+			// **Ball Spin through a portal** (James, round 399: "ball spin with portal paddle
+			// should cause the ball to spin when coming out of the portal"). The grip is the
+			// paddle's flick at the moment of contact, and the portal is still a contact - it
+			// only changes where the ball goes. The rate is kept by ball, so it curves the
+			// flight from the portal's exit onwards
 			return
 		}
 		// A Portal Paddle swallows the ball instead of bouncing it; it re-enters at the top
@@ -10382,6 +10391,11 @@ laserTimer?.invalidate()
 			pausedBetweenLevels: savedBetweenLevels
 		)
 		savedGame?.endlessIIBricks = savedMayhemBricks
+		let music = MusicHandler.sharedHelper.gameTrackForTheSave
+		savedGame?.musicTrack = music?.track.rawValue ?? previous?.musicTrack
+		savedGame?.musicPosition = music?.position ?? previous?.musicPosition
+		// The run's own track and how far in, for the resume (round 399). Kept from the last save
+		// when no game track is playing - music off, or the menu's theme behind a pause menu
 		savedGame?.dailyTimeTrialRemaining = timeTrialClock
 		savedGame?.endlessIIDriftDirection =
 			endlessIIDriftDirection != 0 ? endlessIIDriftDirection : nil

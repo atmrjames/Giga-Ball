@@ -653,6 +653,18 @@ extension GameScene {
     func endTheRunForLeaving() {
         guard GameScene.leavingEndsTheRun(noBreaks: dailyNoPausing,
                                           inPlay: gameState.currentState is Playing) else { return }
+        if endlessMode {
+            endlessHeight += endlessStepsToSettle()
+            showHeightLabel()
+        }
+        // **The height the field was already on its way to** (James, round 399: "if the bricks
+        // are animating down at the end of the timer, the height that is scored should
+        // represent the height that would've been achieved if the animation had finished
+        // getting the bricks to the bottom row"). A cleared bottom row with empty rows above it
+        // steps down one row at a time, a metre each, and the whistle could blow two rows into
+        // a five-row fall. Counted here and the field then left where it is
+        // (`moveEndlessModeRowDown` stands down once the clock has run out), so the metres are
+        // counted once: the steps still to come are in the score, and never taken
         gameoverStatus = true
         removeAction(forKey: "gameTimer")
         levelTimerBonus = 0
@@ -868,6 +880,35 @@ extension GameScene {
         // same state - so everything downstream (the daily result, the game-over screen,
         // posting) treats it as a run that finished rather than a special case. The score
         // at the whistle is the score, which is the whole twist
+    }
+
+    /// How many more rows the endless field would step before a brick sat in the bottom row -
+    /// each one a metre - if it were left to settle (round 399).
+    ///
+    /// Read off the same rule `countBricks` steps by: the lowest brick that holds the field up,
+    /// which is anything but an indestructible or anchored one, measured from the row it is
+    /// heading for rather than where it is mid-step - that step's metre is already counted.
+    /// An empty field would build rows at the top and walk the first of them down, so that is
+    /// one step to build it and the rest to bring it down.
+    func endlessStepsToSettle() -> Int {
+        guard endlessMode, brickHeight > 0 else { return 0 }
+        let byCentreFloor = finalBrickRowHeight + brickHeight/2
+        let byEdgeFloor = finalBrickRowHeight - brickHeight/2 + 1
+        var fewest: Int?
+        enumerateChildNodes(withName: BrickCategoryName) { node, _ in
+            guard let sprite = node as? SKSpriteNode,
+                  sprite.texture != self.brickIndestructible2Texture,
+                  sprite.endlessIIIsAnchored == false else { return }
+            let resting = sprite.descentRestingY ?? sprite.position.y
+            let lowEdge = self.endlessIIFieldRect(of: sprite).minY - (sprite.position.y - resting)
+            let rows = min((resting - byCentreFloor)/self.brickHeight,
+                           (lowEdge - byEdgeFloor)/self.brickHeight)
+            let steps = max(0, Int(rows.rounded(.up)))
+            fewest = min(fewest ?? steps, steps)
+        }
+        if let fewest { return fewest }
+        let fromTheTop = (endlessNewRowY - byCentreFloor)/brickHeight
+        return 1 + max(0, Int(fromTheTop.rounded(.up)))
     }
 
     /// Whether the Time Trial's clock is running, given whether it already was and where the

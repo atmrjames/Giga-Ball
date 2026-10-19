@@ -426,10 +426,17 @@ extension GameScene {
     /// flat one clears by 8. So the picture's own proportions are the whole fix, and the
     /// underside stays where `positionRetroPaddleLayers` puts it.
     func fitTheRetroStickyBandToItsPicture() {
-        guard let natural = paddleRetroStickyTexture.texture?.size(),
-              natural.width > 0, paddleRetroStickyTexture.size.width > 0 else { return }
-        paddleRetroStickyTexture.size.height =
-            paddleRetroStickyTexture.size.width*natural.height/natural.width
+        let band = paddleRetroStickyTexture
+        guard let natural = band.texture?.size(), natural.width > 0, band.size.width > 0,
+              band.xScale != 0 else { return }
+        band.size.height = band.size.width/band.xScale*natural.height/natural.width*band.yScale
+        // **The band's own width, not its stretched one** (James, round 399, two screenshots:
+        // "Retro sticky graphic became super tall", "Aimed sticky retro graphic is still way too
+        // big"). Expand and Shrink stretch the band sideways by its `xScale`, and `size` carries
+        // that scale - so a shape or a grip collected while the paddle was expanded fitted the
+        // band's height to the stretched width, up to 2.24 times too tall, and it kept that
+        // height when the paddle shrank back: tall, narrow brackets standing over the tube.
+        // Only the width scales, so only the width has it taken out
         positionRetroPaddleLayers()
     }
 

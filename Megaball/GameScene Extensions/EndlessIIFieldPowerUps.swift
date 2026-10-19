@@ -1353,9 +1353,32 @@ extension GameScene {
         // build without the new art looks exactly as it did
     }
 
+    /// How many columns a Drift of this length moves: one as it is caught, and one every
+    /// `endlessIIDriftColumnSeconds` after that.
+    static func endlessIIDriftSteps(total: TimeInterval) -> Int {
+        max(1, Int((total/endlessIIDriftColumnSeconds).rounded(.up)))
+    }
+
+    /// How many of those columns are still to come with this much of the Drift left. Read off
+    /// the time, so a resumed Drift's ring is right without anything else being saved.
+    static func endlessIIDriftStepsLeft(remaining: TimeInterval) -> Int {
+        max(0, Int((remaining/endlessIIDriftColumnSeconds).rounded(.up)))
+    }
+
     func endlessIIFieldRingEntries() -> [PowerUpRingHUD.Entry] {
         endlessIIFieldClocks.compactMap { id, clock, texture in
             guard clock.isRunning else { return nil }
+            if id == "endlessIIDrift" {
+                let steps = GameScene.endlessIIDriftSteps(total: clock.total)
+                return PowerUpRingHUD.Entry(id: id, texture: texture,
+                                            remaining: Double(GameScene.endlessIIDriftStepsLeft(
+                                                remaining: clock.remaining))/Double(steps),
+                                            segments: steps)
+            }
+            // **A Drift's ring counts its steps** (James, round 399: "Drift power ups should
+            // have a segmented power up HUD progress bar not a continuous one"). The field moves
+            // a column at a time, so the ring says how many columns are still to come rather than
+            // how many seconds - the way Descent's says rows
             return PowerUpRingHUD.Entry(id: id, texture: texture,
                                         remaining: clock.fraction,
                                         segments: clock.countsTurns ? Int(clock.total) : nil)

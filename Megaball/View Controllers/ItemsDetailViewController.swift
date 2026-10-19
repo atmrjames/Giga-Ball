@@ -945,7 +945,11 @@ class ItemsDetailViewController: UIViewController, UITableViewDelegate, UITableV
             square.show(name: item.name, icon: item.icon,
                         unlocked: item.unlocked, completed: item.chosen, recolour: false,
                         nameSize: gridNameSize,
-                        status: gridStatusNote(at: indexPath))
+                        status: gridStatusNote(at: indexPath),
+                        progress: senderID == 3
+                            ? totalStatsArray[0].achievementCornerShare(
+                                shownAchievements[indexPath.item])
+                            : "")
             // Both of these lists are pictures - an app icon and a ball-and-paddle theme -
             // and the picture is the thing being chosen
             return square

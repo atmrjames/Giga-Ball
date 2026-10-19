@@ -40,6 +40,8 @@ final class PackGridCell: UICollectionViewCell {
     private let icon = UIImageView()
     private let name = UILabel()
     private let tick = UIImageView()
+    /// How far an achievement not yet earned has got, where the tick will go once it is.
+    private let progress = UILabel()
     private let lock = UIImageView()
     /// What became of one appearance of a power-up: ACTIVE, FALLING, BRICK, COLLECTED,
     /// MISSED. Empty on every other grid, which is every grid but the in-game recents
@@ -122,6 +124,12 @@ final class PackGridCell: UICollectionViewCell {
         tick.tintColor = mark()
         card.addSubview(tick)
 
+        progress.translatesAutoresizingMaskIntoConstraints = false
+        progress.font = .monospacedDigitSystemFont(ofSize: 10, weight: .bold)
+        progress.textAlignment = .right
+        progress.isHidden = true
+        card.addSubview(progress)
+
         lock.translatesAutoresizingMaskIntoConstraints = false
         lock.contentMode = .scaleAspectFit
         lock.image = UIImage(systemName: "lock.fill",
@@ -195,6 +203,12 @@ final class PackGridCell: UICollectionViewCell {
             // sticker (play-test round 36; the list button sat against the name before)
             tick.topAnchor.constraint(equalTo: card.topAnchor, constant: 7),
             tick.trailingAnchor.constraint(equalTo: card.trailingAnchor, constant: -7),
+            // The share sits where the tick will (James, round 399: "put this value in the
+            // position that the checkmark would be... it should be quite small, but
+            // readable"). Centred on the tick's height and held to its right edge, so "100%"
+            // and "7%" both end where the mark's circle does
+            progress.centerYAnchor.constraint(equalTo: tick.centerYAnchor),
+            progress.trailingAnchor.constraint(equalTo: tick.trailingAnchor),
 
             play.topAnchor.constraint(equalTo: card.topAnchor, constant: -3),
             play.leadingAnchor.constraint(equalTo: card.leadingAnchor, constant: -3),
@@ -281,7 +295,8 @@ final class PackGridCell: UICollectionViewCell {
 
     func show(name packName: String, icon packIcon: UIImage?,
               unlocked: Bool, completed: Bool, recolour: Bool = true,
-              nameSize: CGFloat = 13, status statusNote: String = "") {
+              nameSize: CGFloat = 13, status statusNote: String = "",
+              progress share: String = "") {
         status.text = statusNote
         status.isHidden = statusNote.isEmpty
         blockAboveStatus.isActive = statusNote.isEmpty == false
@@ -302,6 +317,11 @@ final class PackGridCell: UICollectionViewCell {
         icon.isHidden = unlocked == false
         lock.isHidden = unlocked
         tick.isHidden = completed == false || unlocked == false
+        progress.text = share
+        progress.textColor = mark(0.75)
+        progress.isHidden = share.isEmpty || completed || unlocked == false
+        // Once it is done the tick replaces it, as James asked: a finished achievement has
+        // nothing left to measure
         isUnlocked = unlocked
         updateListButton()
 

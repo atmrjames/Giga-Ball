@@ -2015,3 +2015,321 @@ final class AnEmptySaveIsNotTheLastSaveTests: XCTestCase {
         }
     }
 }
+
+/// James, round 399, with screenshots: "Retro sticky graphic became super tall", then "Aimed
+/// sticky retro graphic is still way too big". A shape or a grip collected while the paddle was
+/// expanded fitted the Retro sticky band's height to its stretched width.
+final class RetroStickyBandKeepsItsHeightTests: XCTestCase {
+    private var window: UIWindow?
+
+    func testTheBandIsAsTallUnderExpandAsWithout() throws {
+        let unstretched = try PaddleFamilySweep.present(theme: LevelPackSetup.retroThemeIndex,
+                                                        keeping: &window)
+        unstretched.endlessIICollectPaddleSurface(.convex)
+        PaddleFamilySweep.settle(0.6)
+        let wanted = unstretched.paddleRetroStickyTexture.size.height
+        unstretched.view?.presentScene(nil)
+
+        for expands in 1...3 {
+            let scene = try PaddleFamilySweep.present(theme: LevelPackSetup.retroThemeIndex,
+                                                      keeping: &window)
+            for _ in 0..<expands {
+                let carrier = SKSpriteNode(texture: scene.powerUpTextureArray[4])
+                scene.addChild(carrier)
+                scene.applyPowerUp(node: carrier, silently: true)
+                PaddleFamilySweep.settle(0.4)
+            }
+            scene.endlessIICollectPaddleSurface(.convex)
+            PaddleFamilySweep.settle(0.6)
+            XCTAssertGreaterThan(scene.paddleRetroStickyTexture.xScale, 1.1,
+                                 "the paddle was not expanded")
+            XCTAssertEqual(scene.paddleRetroStickyTexture.size.height, wanted, accuracy: 0.5,
+                           "\(expands) Expand: the band stood \(scene.paddleRetroStickyTexture.size.height)"
+                           + " tall where it stands \(wanted) at its own width")
+            scene.view?.presentScene(nil)
+        }
+    }
+}
+
+/// James, round 399: "Drift power ups should have a segmented power up HUD progress bar not a
+/// continuous one." The field moves a column at a time, so the ring counts columns.
+final class DriftRingCountsItsStepsTests: XCTestCase {
+    private var window: UIWindow?
+
+    func testADriftRingIsSegmentedByTheColumnsStillToCome() throws {
+        let steps = GameScene.endlessIIDriftSteps(total: GameScene.endlessIIDriftDuration)
+        XCTAssertEqual(steps, 5, "ten seconds, a column every 2.2: five columns")
+        XCTAssertEqual(GameScene.endlessIIDriftStepsLeft(remaining: GameScene.endlessIIDriftDuration), 5)
+        XCTAssertEqual(GameScene.endlessIIDriftStepsLeft(
+            remaining: GameScene.endlessIIDriftDuration - GameScene.endlessIIDriftColumnSeconds - 0.01), 4,
+            "a segment goes with each column")
+        XCTAssertEqual(GameScene.endlessIIDriftStepsLeft(remaining: 0.1), 1)
+
+        let scene = try PaddleFamilySweep.present(theme: 0, keeping: &window)
+        let names = LevelPackSetup.shared.powerUpNameArray
+        let drift = try XCTUnwrap(names.firstIndex { $0.hasPrefix("Drift") })
+        let carrier = SKSpriteNode(texture: scene.powerUpTextureArray[drift])
+        scene.addChild(carrier)
+        scene.applyPowerUp(node: carrier, silently: true)
+        PaddleFamilySweep.settle(0.2)
+        let ring = try XCTUnwrap(scene.activePowerUpEntries().first { $0.id == "endlessIIDrift" })
+        XCTAssertEqual(ring.segments, 5, "the Drift's ring is drawn in segments")
+        XCTAssertEqual(ring.remaining, 1, accuracy: 0.001, "all five still to come")
+    }
+}
+
+/// James, round 399: "ball spin with portal paddle should cause the ball to spin when coming out
+/// of the portal." The Portal Paddle's branch returned before the grip was taken.
+final class BallSpinThroughThePortalPaddleTests: XCTestCase {
+    private var window: UIWindow?
+
+    func testABallSwallowedByThePortalPaddleComesOutSpinning() throws {
+        let scene = try PaddleFamilySweep.present(theme: 0, keeping: &window)
+        scene.enumerateChildNodes(withName: BrickCategoryName) { node, _ in node.removeFromParent() }
+        for column in [2, 8] {
+            let brick = BrickSweep.brick("normal", texture: scene.brickNormalTexture, in: scene,
+                                         rowY: scene.yBrickOffsetEndless - scene.brickHeight*6,
+                                         column: column)
+            scene.applyEndlessIIStyle(.portal, to: brick)
+        }
+        XCTAssertFalse(scene.endlessIIPortals().isEmpty, "a portal to come out of")
+        scene.endlessIICollectBallSpin()
+        scene.endlessIICollectPortalPaddle()
+        scene.endlessIIPaddleGripSpeed = 400
+        // The paddle moving as it strikes: that is what the grip is made of
+
+        scene.ball.position = CGPoint(x: scene.paddle.position.x + 10,
+                                      y: scene.paddle.position.y + scene.paddleHeight/2 + scene.ballSize/2)
+        scene.ball.physicsBody?.velocity = CGVector(dx: 0, dy: -300)
+        scene.recordBallStatesBeforeStep()
+        scene.paddleHit(scene.ball)
+        XCTAssertFalse(scene.endlessIIPendingPaddlePortals.isEmpty, "the portal took the ball")
+        scene.applyEndlessIIPaddlePortals()
+        XCTAssertGreaterThan(scene.ball.position.y, scene.paddle.position.y + 100,
+                             "it came out at a portal, up the field")
+        XCTAssertNotNil(scene.endlessIIBallSpinRates[ObjectIdentifier(scene.ball)],
+                        "and spinning, as it would have off the paddle itself")
+    }
+}
+
+/// James, round 399: "When quitting and resuming can the same music track be playing from the
+/// same position?" The save carries the run's track and how far in; a resume asks for it back.
+final class MusicCarriesOnAcrossAResumeTests: XCTestCase {
+
+    override func tearDown() {
+        MusicHandler.sharedHelper.continueOnResume(track: nil, at: nil)
+        super.tearDown()
+    }
+
+    private var window: UIWindow?
+
+    func testTheSaveKeepsTheTrackAndWhereItWas() throws {
+        let scene = try PaddleFamilySweep.present(theme: 0, keeping: &window)
+        scene.saveCurrentGame()
+        var saved = try XCTUnwrap(SavedGame.load(from: GameScene.settingsStore))
+        saved.musicTrack = MusicTrack.theRebound.rawValue
+        saved.musicPosition = 42.5
+        let store = InMemoryKeyValueStore()
+        saved.save(to: store)
+        let back = try XCTUnwrap(SavedGame.load(from: store))
+        XCTAssertEqual(back.musicTrack, MusicTrack.theRebound.rawValue)
+        XCTAssertEqual(back.musicPosition ?? 0, 42.5, accuracy: 0.001)
+        SavedGame.clear(from: GameScene.settingsStore)
+        scene.view?.presentScene(nil)
+    }
+
+    func testAResumeAsksForItsOwnTrackBackAndTheMenuKeepsItsOwn() throws {
+        let music = MusicHandler.sharedHelper
+        let ticked = MusicTrack.allCases.filter { MusicSelection.isEnabled($0) }
+        let wanted = try XCTUnwrap(ticked.last, "a ticked track to resume with")
+        music.continueOnResume(track: wanted.rawValue, at: 30)
+        XCTAssertEqual(music.track(for: "PreGame"), wanted,
+                       "the resumed run's track, not a fresh draw")
+        XCTAssertEqual(music.track(for: "Menu"), MusicSelection.menuTrack(),
+                       "the menu is not the run, and keeps its own")
+        music.continueOnResume(track: "not a track", at: 30)
+        XCTAssertNotNil(music.track(for: "PreGame"), "a save with no readable track draws one")
+    }
+}
+
+/// James, round 399: "With the retro theme applied, the paddle in the paddle speed looks wrong and
+/// the bricks are the classic theme. The theme and background in this view should match the
+/// user's selection." The paddle was drawn from the ball's setting and the bricks from none.
+final class PaddleSpeedWearsThePlayersThemeTests: XCTestCase {
+    private var window: UIWindow?
+    private let suite = "PaddleSpeedWearsThePlayersThemeTests"
+
+    override func tearDown() {
+        UserDefaults(suiteName: suite)?.removePersistentDomain(forName: suite)
+        window?.isHidden = true
+        window = nil
+        super.tearDown()
+    }
+
+    private func scene(paddle: Int, ball: Int, bricks: Int) throws -> PaddleSpeedScene {
+        let store = try XCTUnwrap(UserDefaults(suiteName: suite))
+        store.removePersistentDomain(forName: suite)
+        store.set(paddle, forKey: "paddleSetting")
+        store.set(ball, forKey: "ballSetting")
+        store.set(bricks, forKey: "brickSetting")
+        let screen = PaddleSpeedViewController()
+        screen.defaults = store
+        let made = UIWindow(windowScene: try XCTUnwrap(
+            UIApplication.shared.connectedScenes.first as? UIWindowScene))
+        made.rootViewController = screen
+        made.makeKeyAndVisible()
+        window = made
+        for _ in 0..<10 { RunLoop.main.run(until: Date().addingTimeInterval(0.1)) }
+        func find(_ view: UIView) -> SKView? {
+            if let sk = view as? SKView { return sk }
+            for child in view.subviews { if let sk = find(child) { return sk } }
+            return nil
+        }
+        return try XCTUnwrap(find(screen.view)?.scene as? PaddleSpeedScene)
+    }
+
+    func testTheRetroPaddleAndBricksAreTheOnesChosen() throws {
+        let retro = LevelPackSetup.retroThemeIndex
+        let field = try scene(paddle: retro, ball: 0, bricks: 1)
+        XCTAssertEqual(field.paddleIndex, retro, "the paddle comes from the paddle's own setting")
+        XCTAssertEqual(field.themeIndex, 0, "and the ball from the ball's")
+        XCTAssertEqual(field.brickSetting, 1, "and the bricks from the bricks'")
+        XCTAssertNotNil(field.childNode(withName: "//\(PaddleSpeedScene.retroLayerName)"),
+                        "Retro's paddle is the tube with its purple ends, drawn over the plain one")
+    }
+
+    func testAnotherPaddleWearsNoRetroLayer() throws {
+        let field = try scene(paddle: 0, ball: LevelPackSetup.retroThemeIndex, bricks: 0)
+        XCTAssertNil(field.childNode(withName: "//\(PaddleSpeedScene.retroLayerName)"),
+                     "a Retro ball does not make a Retro paddle")
+    }
+}
+
+/// James, round 399: "For an achievement that isn't completed but has a % complete value, put
+/// this value in the position that the checkmark would be on the achievements selection view, it
+/// should be quite small, but readable. Once complete this can be replaced with the checkmark as
+/// it is."
+final class AchievementSquareShowsItsShareTests: XCTestCase {
+
+    func testOnlyAnAchievementWithAShareHasOneInTheCorner() throws {
+        let stats = TotalStats()
+        let shared = try XCTUnwrap(AchievementCatalogue.storedShare.sorted().first)
+        stats.achievementsPercentageCompleteArray[shared] = "45.6%"
+        XCTAssertEqual(stats.achievementCornerShare(shared), "45%",
+                       "a whole percent, rounded down as the achievement's own page rounds it")
+        stats.achievementsPercentageCompleteArray[shared] = "0.0%"
+        XCTAssertEqual(stats.achievementCornerShare(shared), "", "nothing begun, nothing shown")
+
+        let allOrNothing = try XCTUnwrap((66..<stats.achievementsPercentageCompleteArray.count)
+            .first { stats.achievementProgressText($0).isEmpty
+                && AchievementCatalogue.storedShare.contains($0) == false })
+        stats.achievementsPercentageCompleteArray[allOrNothing] = "50.0%"
+        XCTAssertEqual(stats.achievementCornerShare(allOrNothing), "",
+                       "an achievement that is had or not has no share, whatever is stored")
+    }
+
+    func testTheShareStandsWhereTheTickWillAndGivesWayToIt() {
+        let cell = PackGridCell(frame: CGRect(x: 0, y: 0, width: 120, height: 140))
+        func share() -> UILabel? {
+            func walk(_ view: UIView) -> UILabel? {
+                if let label = view as? UILabel, label.text == "31%" { return label }
+                for child in view.subviews { if let found = walk(child) { return found } }
+                return nil
+            }
+            return walk(cell.contentView)
+        }
+        cell.show(name: "Endless Mode 1,000m Milestone", icon: nil, unlocked: true,
+                  completed: false, recolour: false, progress: "31%")
+        cell.layoutIfNeeded()
+        let label = share()
+        XCTAssertEqual(label?.isHidden, false, "an achievement under way shows how far it has got")
+        XCTAssertLessThanOrEqual(label?.font.pointSize ?? 99, 11, "quite small")
+        if let label {
+            let frame = label.convert(label.bounds, to: cell.contentView)
+            XCTAssertLessThan(frame.minY, 30, "in the top corner, where the tick goes")
+            XCTAssertGreaterThan(frame.midX, cell.bounds.midX, "on the right, where the tick goes")
+        }
+
+        cell.show(name: "Endless Mode 1,000m Milestone", icon: nil, unlocked: true,
+                  completed: true, recolour: false, progress: "31%")
+        XCTAssertEqual(share()?.isHidden, true, "once it is done the tick replaces it")
+
+        cell.show(name: "A pack", icon: nil, unlocked: true, completed: false)
+        XCTAssertNil(share(), "a reused square does not keep the last achievement's share")
+    }
+}
+
+/// James, round 399: "When selecting to play a daily challenge from a previous day, on returning
+/// to the daily challenge menu, it shows today's challenge - can it return to the day that was
+/// selected instead."
+final class ADailyComesBackToItsOwnDayTests: XCTestCase {
+
+    func testTheScreenCanBeOpenedOnAnyDayItCanBrowseTo() {
+        let screen = DailyChallengeViewController()
+        let today = DailyChallengeSession.shared.today
+        func key(_ back: Int) -> String {
+            DailyDay.key(for: DailyDay.utcCalendar.date(byAdding: .day, value: -back, to: today)!)
+        }
+        XCTAssertEqual(screen.offset(showing: key(0)), 0)
+        XCTAssertEqual(screen.offset(showing: key(3)), -3, "three days back is three days back")
+        screen.viewedOffset = -3
+        XCTAssertEqual(screen.viewedKey, key(3), "and that offset is the day that was played")
+        XCTAssertNil(screen.offset(showing: key(90)),
+                     "a day the browse cannot reach opens on today, as before")
+        XCTAssertNil(screen.offset(showing: "not a day"))
+    }
+}
+
+/// James, round 399: "On a daily challenge with time trial and endless mode or endless mayhem - if
+/// the bricks are animating down at the end of the timer, the height that is scored should
+/// represent the height that would've been achieved if the animation had finished getting the
+/// bricks to the bottom row."
+final class TheWhistleScoresTheSettledHeightTests: XCTestCase {
+    private var window: UIWindow?
+
+    func testTheStepsStillToComeAreCountedOnceAndNotTaken() throws {
+        for mode in [GameMode.endless, .endlessII] {
+            let scene = try PaddleFamilySweep.present(theme: 0, keeping: &window, mode: mode)
+            scene.enumerateChildNodes(withName: BrickCategoryName) { node, _ in
+                node.removeFromParent()
+            }
+            func brick(row: CGFloat) -> SKSpriteNode {
+                let brick = SKSpriteNode(texture: scene.brickNormalTexture,
+                                         size: CGSize(width: scene.brickWidth,
+                                                      height: scene.brickHeight))
+                brick.name = BrickCategoryName
+                brick.position = CGPoint(x: 0, y: scene.finalBrickRowHeight + row*scene.brickHeight)
+                scene.addChild(brick)
+                return brick
+            }
+            let empty = scene.endlessStepsToSettle()
+            XCTAssertGreaterThan(empty, 3, "\(mode): an empty field builds a row and walks it down")
+
+            let high = brick(row: 5)
+            XCTAssertEqual(scene.endlessStepsToSettle(), 5, "\(mode): five rows above the bottom")
+            let falling = brick(row: 2.5)
+            falling.descentRestingY = scene.finalBrickRowHeight + 2*scene.brickHeight
+            XCTAssertEqual(scene.endlessStepsToSettle(), 2,
+                           "\(mode): mid-step, from the row it is heading for - that step's "
+                           + "metre is already counted")
+            high.removeFromParent()
+            falling.removeFromParent()
+            _ = brick(row: 0)
+            XCTAssertEqual(scene.endlessStepsToSettle(), 0, "\(mode): a settled field owes nothing")
+
+            DailyChallengeSession.shared.active = DailyChallenge(
+                dateKey: "2026-10-05", mode: mode, classicLevel: nil, twists: [.timeTrial])
+            defer { DailyChallengeSession.shared.active = nil }
+            scene.enumerateChildNodes(withName: BrickCategoryName) { node, _ in
+                node.removeFromParent()
+            }
+            scene.dailyTimeTrialRemaining = 0
+            let height = scene.endlessHeight
+            scene.moveEndlessModeRowDown()
+            XCTAssertEqual(scene.endlessHeight, height,
+                           "\(mode): after the whistle the field takes no step the score has "
+                           + "already counted")
+            scene.view?.presentScene(nil)
+        }
+    }
+}

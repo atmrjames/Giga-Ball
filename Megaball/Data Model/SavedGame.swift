@@ -271,6 +271,13 @@ struct SavedGame: Codable, Equatable {
     /// the record is written. Optional so older saves decode.
     var dailyWasScoringAttempt: Bool?
 
+    /// The track the run was playing and how far into it, so a resume carries on with the same
+    /// music from the same place (James, round 399: "When quitting and resuming can the same
+    /// music track be playing from the same position?"). Optional so older saves decode, and a
+    /// save from before this draws a track as it always did.
+    var musicTrack: String? = nil
+    var musicPosition: Double? = nil
+
     /// Everything about one Endless Mayhem brick, so a resumed field is the field that was
     /// left rather than a field that merely resembles it.
     ///

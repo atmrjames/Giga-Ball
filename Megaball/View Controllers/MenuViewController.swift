@@ -937,9 +937,13 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         itemsView.didMove(toParent: self)
     }
     
-    func moveToDailyChallenge() {
+    func moveToDailyChallenge(showing key: String? = nil) {
         let daily = DailyChallengeViewController()
         daily.menu = self
+        if let key, let offset = daily.offset(showing: key) {
+            daily.viewedOffset = offset
+        }
+        // Before the view loads, so the pager lands on the day rather than passing through today
         self.addChild(daily)
         fillSelf(with: daily.view)
         self.view.addSubview(daily.view)
@@ -1087,6 +1091,7 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
     
     @objc func returnMenuNotificationKeyReceived(_ notification: Notification) {
         let playedDaily = DailyChallengeSession.shared.isActive
+        let playedDay = DailyChallengeSession.shared.active?.dateKey
         DailyChallengeSession.shared.active = nil
         // Read before it is cleared - which mode menu to return to depends on it.
         // Back in the menus, the daily is over - whatever happens next is not it
@@ -1100,7 +1105,8 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
             MusicHandler.sharedHelper.stopMusic()
         }
         returnToModeMenu(playedDaily: playedDaily,
-                         packNumber: notification.userInfo?["packNumber"] as? Int ?? 0)
+                         packNumber: notification.userInfo?["packNumber"] as? Int ?? 0,
+                         dailyKey: playedDay)
     }
 
     /// Puts the player back on the menu of the mode they just played (play-test rule:
@@ -1111,7 +1117,12 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
     /// or may not still be children here depending on the path taken - the daily
     /// briefing removes itself on play, the mode screens do not - and a fresh present
     /// behaves the same from every path and reads the latest stats by construction.
-    func returnToModeMenu(playedDaily: Bool, packNumber: Int) {
+    ///
+    /// A daily comes back to **the day that was played** (James, round 399: "When selecting
+    /// to play a daily challenge from a previous day, on returning to the daily challenge
+    /// menu, it shows today's challenge - can it return to the day that was selected
+    /// instead"). The screen is built fresh, and a fresh one opens on today.
+    func returnToModeMenu(playedDaily: Bool, packNumber: Int, dailyKey: String? = nil) {
         for child in children {
             child.viewIfLoaded?.removeFromSuperview()
             child.willMove(toParent: nil)
@@ -1121,7 +1132,7 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         // The forward history pointed into the screens just removed
 
         if playedDaily {
-            moveToDailyChallenge()
+            moveToDailyChallenge(showing: dailyKey)
             arriveWithoutAnimating(children.last)
             return
         }

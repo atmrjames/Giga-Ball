@@ -66,7 +66,54 @@ final class MusicHandler: NSObject, AVAudioPlayerDelegate {
     /// not (round 346); a run draws from the ticked tracks (`MusicSelection`). Nil means the rotation is empty, which is the music
     /// being off in all but name - so nothing plays and nothing fades.
     private func trackURL(for sender: String?) -> URL? {
-        sender == "Menu" ? MusicSelection.menuTrack()?.url : MusicSelection.drawATrack()?.url
+        track(for: sender)?.url
+    }
+
+    /// The track a caller gets: the menu's for the menu, and for a game the one a resume asked
+    /// to carry on with if there is one and it is still ticked, otherwise a fresh draw.
+    func track(for sender: String?) -> MusicTrack? {
+        if sender == "Menu" { return MusicSelection.menuTrack() }
+        if let wanted = continuing?.track, MusicSelection.isEnabled(wanted) { return wanted }
+        continuing = nil
+        // Unticked since the save: the player's choice now wins over the save's
+        return MusicSelection.drawATrack()
+    }
+
+    /// The track playing now, and whether a game chose it rather than the menu.
+    private(set) var currentTrack: MusicTrack?
+    private(set) var currentIsAGameTrack = false
+
+    /// What a resume asked to hear: the run's own track, from where the save left it.
+    private var continuing: (track: MusicTrack, position: TimeInterval)?
+
+    /// The run's track and how far into it, for the save - nil when a game's track is not
+    /// what is playing.
+    var gameTrackForTheSave: (track: MusicTrack, position: TimeInterval)? {
+        guard currentIsAGameTrack, let track = currentTrack, let player else { return nil }
+        return (track, player.currentTime)
+    }
+
+    /// Asks the next game track to be this one, from this far in (James, round 399: "When
+    /// quitting and resuming can the same music track be playing from the same position?").
+    /// Called by a resumed run before its music starts; nothing for a save that kept no track.
+    func continueOnResume(track name: String?, at position: Double?) {
+        guard let name, let track = MusicTrack(rawValue: name) else {
+            continuing = nil
+            return
+        }
+        continuing = (track, max(0, position ?? 0))
+    }
+
+    /// Takes the resume's starting point, once, for the track about to be played.
+    private func startingPoint(for sender: String?, playing url: URL) -> TimeInterval {
+        guard sender != "Menu", let wanted = continuing, wanted.track.url == url else { return 0 }
+        continuing = nil
+        return wanted.position
+    }
+
+    private func noteNowPlaying(_ url: URL, sender: String?) {
+        currentTrack = MusicTrack.allCases.first { $0.url == url }
+        currentIsAGameTrack = sender != "Menu"
     }
 
     private var wantedVolume: Float { gameInProgress ? gameVolumeSet : menuVolumeSet }
@@ -87,6 +134,8 @@ final class MusicHandler: NSObject, AVAudioPlayerDelegate {
             return
         }
         guard let trackURL = trackURL(for: sender) else { return }
+        let start = startingPoint(for: sender, playing: trackURL)
+        noteNowPlaying(trackURL, sender: sender)
 
         let duration = MusicHandler.crossfadeDuration
         let target = wantedVolume
@@ -99,6 +148,7 @@ final class MusicHandler: NSObject, AVAudioPlayerDelegate {
                 incoming.numberOfLoops = -1
                 incoming.volume = 0
                 incoming.prepareToPlay()
+                incoming.currentTime = min(start, max(0, incoming.duration - 1))
                 incoming.play()
                 incoming.setVolume(target, fadeDuration: duration)
                 outgoing.setVolume(0, fadeDuration: duration)
@@ -124,6 +174,8 @@ final class MusicHandler: NSObject, AVAudioPlayerDelegate {
         // Check if music setting is on
 
         guard let selectedTrackURL = trackURL(for: sender) else { return }
+        let start = startingPoint(for: sender, playing: selectedTrackURL)
+        noteNowPlaying(selectedTrackURL, sender: sender)
         // **Only the tracks the player left ticked** (round 207), and the menu's own theme for
         // the menu - both decided in one place now, because the crossfade has to make exactly
         // the same choice this does
@@ -138,6 +190,8 @@ final class MusicHandler: NSObject, AVAudioPlayerDelegate {
                 // Loop infinitely
                 player.volume = self.gameInProgress ? self.gameVolumeSet : self.menuVolumeSet
                 player.prepareToPlay()
+                player.currentTime = min(start, max(0, player.duration - 1))
+                // From where a resumed run left it, or the top
                 player.play()
                 DispatchQueue.main.async { self.player = player }
                 // Published back on the main queue, where every other method touches it
@@ -154,6 +208,7 @@ final class MusicHandler: NSObject, AVAudioPlayerDelegate {
     func stopMusic() {
         player?.stop()
         player = nil
+        currentTrack = nil
     }
     
     func pauseMusic() {

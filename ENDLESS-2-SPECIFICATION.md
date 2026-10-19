@@ -2964,6 +2964,59 @@ testers:
   falling power-up's position by `brickWidth`, so a bare `GameScene()` with a power-up on
   screen traps converting NaN to Int. A real scene is always laid out before play.
 
+**Round 399: James's nine notes after the soak build.**
+
+James: "This is much better. I still have some notes after playing, but no more silly mistakes yet."
+Each is tested in `EndlessIIPlayTestFixesTests`, in his words.
+
+- **Ball Spin through the Portal Paddle** ("ball spin with portal paddle should cause the ball to
+  spin when coming out of the portal"). The paddle's portal branch returned before the grip was
+  taken, so a ball it swallowed came out without spin. It grips first now.
+  `BallSpinThroughThePortalPaddleTests`.
+- **Retro's sticky band went super tall, and Aimed Sticky's was too big.** The band's height was
+  worked out from its on-screen width, which already carries the paddle's stretch, so under Expand
+  and then a shaped paddle it grew by the stretch: 55 points where 39 was right. It reads the
+  band's unscaled width now. `RetroStickyBandKeepsItsHeightTests`.
+- **Drift's bar is in segments**, one for each column still to slide, as the other stepped power-ups'
+  are. `DriftRingCountsItsStepsTests`.
+- **Quit and resume carries the music on** ("can the same music track be playing from the same
+  position?"). The save holds the track and where it was (`musicTrack`, `musicPosition`), and the
+  resume asks for that track from that point; a fresh game still draws one. A save from a game
+  played with the music off keeps the last save's. `MusicCarriesOnAcrossAResumeTests`.
+- **The Paddle Speed screen wears the player's theme** ("the paddle in the paddle speed looks wrong
+  and the bricks are the classic theme"). It drew the default paddle and Classic bricks; it reads
+  the paddle and brick settings now, and Retro gets its paddle's overlay as in play.
+  `PaddleSpeedWearsThePlayersThemeTests`.
+- **An achievement under way shows its share in the tick's corner** ("quite small, but readable.
+  Once complete this can be replaced with the checkmark"). `achievementCornerShare` is the
+  achievement page's own progress answer cut to its percentage, so the square and the page can
+  never disagree about whether there is any: an all-or-nothing achievement, or one not begun, shows
+  nothing. Ten-point bold, held to the tick's right edge. `AchievementSquareShowsItsShareTests`.
+- **A past day's daily comes back to that day** ("on returning to the daily challenge menu, it
+  shows today's challenge"). The return to the menus rebuilds the daily screen, and a fresh one
+  opened on today; it is handed the played day's key now and opens there, or on today if the day is
+  out of the browse's reach by then. `ADailyComesBackToItsOwnDayTests`.
+- **A Time Trial's height counts the fall that was under way** ("if the bricks are animating down
+  at the end of the timer, the height that is scored should represent the height that would've been
+  achieved"). A cleared bottom row with empty rows above steps down one row, one metre, at a time.
+  At the whistle `endlessStepsToSettle` counts the steps still to come by the rule `countBricks`
+  steps by, from the row each brick is heading for, and adds them; the field then takes no more,
+  so nothing is counted twice. `TheWhistleScoresTheSettledHeightTests`, both endless modes; without
+  the stand-down it took one more step after the whistle in each.
+- **A test fault, found by this round's full run:** `BricksSaveAndResumeTests` lost a Moving brick
+  across the resume about one run in four ("saved, and nothing like it came back"). The sweep
+  parks its ball still, but a still ball back in play is given the run's speed at heading nought
+  and tipped off horizontal, so through the resumed scene's settling it crossed the field and now
+  and then broke the one thing that ever passes over its column: a one-hit Moving brick. Not the
+  game, and not this round: nothing here touches the ball's speed or the wander, though the
+  committed code happened to pass the four runs it was given. The sweep saves its ball on the paddle now, which is not
+  saved and not served; six runs clean after it.
+- **Seen once, not reproduced:** `EveryPowerUpShowsSavesAndEndsTests` found Halo running when saved
+  and not after the resume, in a sweeps run so slow that the class took 503 seconds. Halo's clock
+  runs in real time through each scene's settling, so a slow enough run can save it nearly spent
+  and spend the rest in the resumed scene's second and a half. Two runs of the class alone straight
+  afterwards were clean; if it comes back, look at the remaining time the save wrote first.
+
 **Round 398c: the soak's first day.**
 
 James, leaving for work: "the suite has >8 hours to run, so make it as robust and thorough as

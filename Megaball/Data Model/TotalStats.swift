@@ -1012,6 +1012,23 @@ extension TotalStats {
         return ["0.0%", "0%"].contains(stored) ? "" : stored
     }
 
+    /// The share alone, for the corner of an achievement's square on the grid (round 399).
+    ///
+    /// The same answer as `achievementProgressText`, so the square and the achievement's own
+    /// page can never disagree about whether there is progress to show: nothing for one that
+    /// is all or nothing or not begun. Only the share, because the corner has room for "31%"
+    /// and not for "312m · 31%"; a stored share is rewritten as a whole percent for the same
+    /// reason, "45.0%" being wider than the tick it stands in for.
+    func achievementCornerShare(_ index: Int,
+                                today: String = DailyChallengeSession.shared.todayKey) -> String {
+        let text = achievementProgressText(index, today: today)
+        guard let last = text.components(separatedBy: " · ").last, last.hasSuffix("%") else {
+            return ""
+        }
+        guard let number = Double(last.dropLast()) else { return last }
+        return TotalStats.share(number/100)
+    }
+
     /// What the progress is called on an achievement's own page: the best run or streak so far,
     /// a count of days or twists, or the share every other one has always shown.
     static func achievementProgressLabel(_ index: Int) -> String {

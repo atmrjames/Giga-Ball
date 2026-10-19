@@ -370,6 +370,21 @@ class DailyChallengeViewController: UIViewController, MenuNavigable {
 
     var canGoForward: Bool { viewedOffset < 0 }
 
+    /// The offset that shows the day with this key, if the browse can reach it - nil for a
+    /// day older than `earliestKey` or later than today, and the card then opens on today.
+    /// A day played just before midnight UTC is yesterday by the time the run ends, and this
+    /// still finds it: it is counted back from the session's today, not from when it began.
+    func offset(showing key: String) -> Int? {
+        let earliest = earliestKey
+        for back in 0...40 {
+            let day = DailyDay.key(for: DailyDay.utcCalendar.date(
+                byAdding: .day, value: -back, to: DailyChallengeSession.shared.today)!)
+            if day == key { return -back }
+            if day < earliest { return nil }
+        }
+        return nil
+    }
+
     // MARK: - Layout
 
     private func buildLayout() {
