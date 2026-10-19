@@ -1777,3 +1777,75 @@ final class EmptyCellsAreNotSavedTests: XCTestCase {
         }
     }
 }
+
+/// A field saved during a Drift comes back standing exactly where it stood, still drifting.
+///
+/// Found by the overnight soak, round 398b: a Mayhem daily saved during a Drift came back with
+/// every brick a column to the side and the Drift gone. A Drift step leaves its "moved" at a whole
+/// column until the next step begins, and the save took that off every brick - so any save made
+/// between slides put the field a column back.
+final class DriftSurvivesAResumeTests: XCTestCase {
+    private var window: UIWindow?
+    private var resumedWindow: UIWindow?
+
+    override func tearDown() {
+        GameScene.settingsStore.set(false, forKey: SavedGame.resumeFlagKey)
+        SavedGame.clear(from: GameScene.settingsStore)
+        super.tearDown()
+    }
+
+    func testAFieldSavedMidDriftComesBackWhereItStood() throws {
+        let names = LevelPackSetup.shared.powerUpNameArray
+        var failures: [String] = []
+        for drift in names.indices where names[drift].hasPrefix("Drift") {
+            for moment in 0..<8 {
+                let scene = try PaddleFamilySweep.present(theme: 0, keeping: &window)
+                let carrier = SKSpriteNode(texture: scene.powerUpTextureArray[drift])
+                scene.addChild(carrier)
+                scene.applyPowerUp(node: carrier, silently: true)
+                PaddleFamilySweep.settle(0.3 + Double(moment)*0.37)
+                // Across a step and a half: just landed, and waiting on the new columns
+                for _ in 0..<10 where scene.endlessIIDriftMoved > 0
+                    && scene.endlessIIDriftMoved < scene.brickWidth - 0.01 {
+                    PaddleFamilySweep.settle(0.02)
+                }
+                // Not in the twentieth of a second a slide takes: a field half way across two
+                // columns is saved on the one it left, which is a choice, not this fault
+                for _ in 0..<40 where scene.endlessIIBuildInBricks.isEmpty == false {
+                    PaddleFamilySweep.settle(0.05)
+                }
+                // Nor while a new row is raining in: the save writes where it lands
+                scene.isPaused = true
+                var stood: [String] = []
+                scene.enumerateChildNodes(withName: BrickCategoryName) { node, _ in
+                    let y = scene.endlessIIBuildInFinalY[ObjectIdentifier(node)]
+                        ?? node.descentRestingY ?? node.position.y
+                    stood.append(String(format: "%.0f,%.0f", node.position.x, y))
+                }
+                // A row still stepping down is where it will stop, which is what the save writes
+                scene.saveCurrentGame()
+
+                GameScene.settingsStore.set(true, forKey: SavedGame.resumeFlagKey)
+                let resumed = try PaddleFamilySweep.present(theme: 0, keeping: &resumedWindow,
+                                                            resuming: true, intoPlay: false)
+                GameScene.settingsStore.set(false, forKey: SavedGame.resumeFlagKey)
+                var back: [String] = []
+                resumed.enumerateChildNodes(withName: BrickCategoryName) { node, _ in
+                    back.append(String(format: "%.0f,%.0f", node.position.x, node.position.y))
+                }
+                let label = "\(names[drift]) saved \(String(format: "%.2f", 0.3 + Double(moment)*0.37))s in"
+                if stood.sorted() != back.sorted() {
+                    failures.append("\(label): the field came back somewhere else - "
+                                    + "\(Set(stood).subtracting(back).sorted().prefix(3)) became "
+                                    + "\(Set(back).subtracting(stood).sorted().prefix(3))")
+                }
+                if resumed.endlessIIDriftClock.isRunning == false {
+                    failures.append("\(label): the Drift did not come back")
+                }
+                resumed.view?.presentScene(nil)
+                scene.view?.presentScene(nil)
+            }
+        }
+        XCTAssertTrue(failures.isEmpty, failures.joined(separator: "\n"))
+    }
+}

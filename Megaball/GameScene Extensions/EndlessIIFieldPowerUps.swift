@@ -1393,6 +1393,10 @@ extension GameScene {
         case "endlessIIDrift":
             endlessIIDriftClock.restore(remaining: remaining, total: total, level: 0)
             if endlessIIDriftDirection == 0 { endlessIIDriftDirection = 1 }
+            endlessIIDriftMoved = brickWidth
+            endlessIIDriftPhase = 0
+            // Back as a step just finished: the field was saved standing on its columns, and a
+            // resumed Drift that began by sliding at once moved it a column the run had not
             // A resumed drift keeps drifting. The direction rides in the save since round
             // 201 (two Drifts, one per direction, so which way is part of which power-up);
             // this line is only the fallback for a save written before it carried one

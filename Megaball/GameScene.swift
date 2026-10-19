@@ -10978,11 +10978,15 @@ laserTimer?.invalidate()
 			if (savedGame.fallingPowerUps.isEmpty == false) {
 				for i in 0..<savedGame.fallingPowerUps.count
 				where powerUpTextureArray.indices.contains(savedGame.fallingPowerUps[i])
-					&& (gameMode != .endlessII || powerUpCanAppear(savedGame.fallingPowerUps[i])) {
-					// Nothing this run could not have dropped. A Mayhem save written before round
-					// 398b holds a Get a Life for every Mayhem power-up that was falling, and a
-					// life is the one thing Mayhem never drops - so it is left out rather than
-					// handed over. An index past the list is a save this build cannot read
+					&& (gameMode != .endlessII || savedGame.fallingPowerUps[i] > 1) {
+					// No life in Mayhem. A Mayhem save written before round 398b holds a Get a
+					// Life for every Mayhem power-up that was falling, and the lives are the one
+					// thing Mayhem never drops - so they are left out rather than handed over.
+					// **Only the lives** (found by the soak the next morning): asking
+					// `powerUpCanAppear` instead threw away a Backstop already in the air, because
+					// a Backstop is once a game and this was it, and a Clear Multi-Hit Bricks once
+					// the multi-hit bricks were gone. A drop that was falling was allowed to fall.
+					// An index past the list is a save this build cannot read
 
 					let powerUpPositionX = savedGame.fallingPowerUpXPositions[i]
 					let powerUpPositionY = savedGame.fallingPowerUpYPositions[i]

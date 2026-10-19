@@ -292,7 +292,14 @@ extension GameScene {
     func endlessIICanonicalRestingX(of sprite: SKSpriteNode) -> CGFloat {
         let x = sprite.position.x
         guard gameMode == .endlessII, endlessIIDriftDirection != 0, endlessIIDriftMoved > 0,
+              endlessIIDriftMoved < brickWidth - 0.01,
               endlessIIStaysPut(sprite) == false, gameWidth > 0 else { return x }
+        // **Only a slide still in progress** (round 398b, found by the overnight soak). A step
+        // leaves `endlessIIDriftMoved` at a whole column until the next one begins, and the field
+        // waits there on its new columns for most of the step - so taking it off whenever it was
+        // above nothing put every brick a column back, in any save made between slides. The
+        // resume then slid them forward again, a jump the player could see; and when the Drift
+        // ran out across the resume they stayed a column out for good
 
         var back = x - CGFloat(endlessIIDriftDirection)*endlessIIDriftMoved
         let half = sprite.size.width/2

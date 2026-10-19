@@ -2964,6 +2964,39 @@ testers:
   falling power-up's position by `brickWidth`, so a bare `GameScene()` with a power-up on
   screen traps converting NaN to Int. A real scene is always laid out before play.
 
+**Round 398c: the soak's first day.**
+
+James, leaving for work: "the suite has >8 hours to run, so make it as robust and thorough as
+possible", and then "can you stop the ball going below the paddle. Fake a paddle bounce... Obviously
+do runs without that to test the paddle's movement losing a ball." `tools/soak.sh` runs `SoakTests`
+on both simulators in chunks - the whole-resume check over hundreds of seeds in every mode, theme,
+depth and daily; long `PlayWatch` games over every Classic level, Endless, deep Mayhem and dailies;
+and the coming year of dailies - with `PlayWatch.keep` faking the paddle's bounce on alternate
+seeds, so games run long and deep while the rest still lose balls. Every failure names its seed.
+
+- **Drift moved the field a column on every resume** (Mayhem). A Drift step leaves
+  `endlessIIDriftMoved` at a whole column until the next step begins, and the field waits on its new
+  columns for most of the 2.2 seconds; `endlessIICanonicalRestingX` took that column off every
+  brick, so any save between slides put the field a column back, the resume slid it forward again,
+  and a Drift that ran out across the resume left it a column out for good. Only a slide in progress
+  is taken off now, and a resumed Drift comes back as a step just finished.
+  `DriftSurvivesAResumeTests` saves both Drifts at eight moments; on the old code the field came
+  back elsewhere at every one. The round-trip check had agreed with the fault because it measured
+  bricks in the same arithmetic; it measures where they stand now.
+- **Round 398b's own restore threw drops away** (found the next morning). It skipped any falling
+  power-up `powerUpCanAppear` refused - and a Backstop already in the air is refused, being once a
+  game, as is Clear Multi-Hit Bricks once the multi-hit bricks are gone. Only the lives are skipped
+  now. `EveryFallingPowerUpSurvivesAResumeTests` dropped every power-up into a fresh run, where
+  each could still appear, which is why it passed.
+- **Not faults, recorded so they are not chased again**, each found by a seed that failed and then
+  replayed: a ball level at the top of its arc under the Gravity power-up (the play watch's flat-ball
+  check excuses Gravity, Steering and Magnetism now, as the crooked-ball log always has; a change to
+  the escape written for it was taken back out when the seven sightings replayed clean without it);
+  a power-up within a second of its end running out in the resumed game's still moment; an endless
+  field still closing a gap or gliding a Retreat when the original was frozen; a row still raining
+  in, which the save rightly writes where it lands; and one reading of spare lives in Mayhem's first
+  tenth of a second that never replayed, so the check now asks for half a second of it.
+
 **Round 398b: the flat ball, the Quicksand bar, three save faults, and a test of the whole resume.**
 
 - **The open item from round 391**, James's device log: a Classic ball "bent 10.85 deg at (137,

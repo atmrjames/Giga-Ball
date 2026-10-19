@@ -969,6 +969,11 @@ enum GameSnapshot {
 
     /// Every brick a player could meet: what it is, how it looks and where it is.
     ///
+    /// Where it *stands*, not where the save would call it: the save's own arithmetic
+    /// (`endlessIICanonicalRestingX`) once put a drifted field a column back, and a comparison
+    /// made in that arithmetic agreed with it (round 398b). Both scenes are given a still moment
+    /// first, so a slide in progress has finished.
+    ///
     /// An empty cell's placeholder is not a brick - hidden, bodiless and on its way out - so it
     /// is left out; one that came back from a save as a real brick is exactly what this is for.
     static func bricks(in scene: GameScene) -> [String] {
@@ -988,8 +993,10 @@ enum GameSnapshot {
             let tint = tinted ? String(format: " tint %.2f,%.2f,%.2f", r, g, b) : ""
             // White on a white picture is no tint at all, whichever way it is written
             let place = wanders ? "wandering" : String(format: "at %.0f,%.0f",
-                scene.endlessIICanonicalRestingX(of: brick),
-                scene.endlessIICanonicalRestingY(brick.descentRestingY ?? brick.position.y))
+                brick.position.x,
+                scene.endlessIICanonicalRestingY(scene.endlessIIBuildInFinalY[ObjectIdentifier(brick)]
+                    ?? brick.descentRestingY ?? brick.position.y))
+            // A brick still raining in is where it will land, which is what the save writes
             found.append([
                 brick.texture.flatMap { names[ObjectIdentifier($0)] } ?? "no picture",
                 brick.isHidden ? "hidden" : "shown",
@@ -1129,6 +1136,8 @@ enum ResumeCheck {
                     let carrier = SKSpriteNode(texture: scene.powerUpTextureArray[index])
                     scene.addChild(carrier)
                     scene.applyPowerUp(node: carrier, silently: true)
+                    print("RESUMECHECK \(mode) seed \(seed) applied \(setup.powerUpNameArray[index]) "
+                          + "(pool \(pool.count))")
                 }
                 // And one left in the air, as a brick would drop it
                 if let index = pool.randomElement(using: &random) {
@@ -1152,9 +1161,41 @@ enum ResumeCheck {
 
         scene.physicsWorld.speed = 0
         PaddleFamilySweep.settle(0.3)
+        if scene.endlessMode {
+            func bottomRowEmpty() -> Bool {
+                var empty = true
+                scene.enumerateChildNodes(withName: BrickCategoryName) { node, stop in
+                    guard let brick = node as? SKSpriteNode,
+                          brick.texture !== scene.brickIndestructible2Texture,
+                          brick.endlessIIIsAnchored == false,
+                          scene.brickHasReachedTheBottomZone(brick) else { return }
+                    empty = false
+                    stop.pointee = true
+                }
+                return empty
+            }
+            for _ in 0..<40 where scene.endlessMoveInProgress || bottomRowEmpty()
+                || scene.endlessIIFieldShiftHasSettled == false {
+                PaddleFamilySweep.settle(0.1)
+            }
+        }
         scene.isPaused = true
         // The same still moment the resumed game is given below, so a field that was about
-        // to step down into an empty bottom row does it here rather than there
+        // to step down into an empty bottom row does it here rather than there - and in an
+        // endless field, until it has: a field that needs several steps to close a gap, or a
+        // Retreat still gliding, carried on in the resumed game and read as a different height
+        var ending: Set<String> = []
+        for path in GameScene.endlessIIWipeableClockPaths {
+            let clock = scene[keyPath: path]
+            guard clock.isRunning, clock.countsTurns == false, clock.remaining < 1 else { continue }
+            let name = "\(path)"
+            ending.insert(name)
+            ending.insert(name.replacingOccurrences(of: "\\GameScene.", with: "")
+                .replacingOccurrences(of: "Clock", with: ""))
+        }
+        // **A power-up within a second of its end is left out of both** (round 398b, the soak). It
+        // can run out in the resumed game's still moment, which is the clock doing its job, and
+        // it read as the resume losing it - a Drift, a Wrap Around, their rings
         let label = "\(mode)\(daily.map { " daily \($0.dateKey) \($0.twists)" } ?? "") theme \(theme) seed \(seed)\(keeper ? " kept up" : "") after \(String(format: "%.1f", clock))s"
         let before = (bricks: GameSnapshot.bricks(in: scene), drops: GameSnapshot.drops(in: scene),
                       running: GameSnapshot.running(in: scene),
@@ -1188,13 +1229,16 @@ enum ResumeCheck {
                 gained.remove(at: gained.firstIndex(of: item)!)
                 lost.remove(at: lost.firstIndex(of: item)!)
             }
-            failures.append("\(label): \(what) - lost \(lost.prefix(6)), gained \(gained.prefix(6))")
+            failures.append("\(label): \(what) - lost \(lost.prefix(14)), gained \(gained.prefix(14))")
         }
         differ("bricks", before.bricks, after.bricks)
         differ("power-ups in the air", before.drops, after.drops)
-        differ("running (of \(before.running), saved as \(wrote))", before.running,
-               after.running)
-        differ("rings", before.rings, after.rings)
+        func live(_ list: [String]) -> [String] {
+            list.filter { item in ending.contains { item.hasPrefix($0) } == false }
+        }
+        differ("running (of \(before.running), saved as \(wrote))", live(before.running),
+               live(after.running))
+        differ("rings", live(before.rings), live(after.rings))
         differ("the run", before.numbers, after.numbers)
         resumed.view?.presentScene(nil)
         scene.view?.presentScene(nil)
@@ -1231,6 +1275,7 @@ enum PlayWatch {
         var stillFor: [ObjectIdentifier: TimeInterval] = [:]
         var flatFor: [ObjectIdentifier: TimeInterval] = [:]
         var livesNoted = false
+        var livesFor: TimeInterval = 0
         var kept = 0
         var phantomFor: TimeInterval = 0
         var peakNodes = 0
@@ -1299,7 +1344,14 @@ enum PlayWatch {
                 let held = (scene.ballIsOnPaddle && ball === scene.ball)
                     || scene.endlessIIHeldBalls.contains { $0 === ball }
                 let speed = hypot(v.dx, v.dy)
+                let bent = (scene.gravityActivated && ball.physicsBody?.affectedByGravity == true)
+                    || scene.gravityActivated
+                    || scene.endlessIIBallSteeringClock.isRunning
+                    || scene.endlessIIMagnetismClock.isRunning
+                // Gravity flies the ball in an arc, and an arc is level at its top; Steering and
+                // Magnetism bend it on purpose. The crooked-ball log excuses the same three
                 let flat = speed > 5 && held == false && scene.gameState.currentState is Playing
+                    && bent == false
                     && abs(v.dy) < CGFloat(sin(scene.minAngleDeg*Double.pi/180))*speed*0.9
                 if flat {
                     flatFor[id, default: 0] += step*6
@@ -1337,9 +1389,18 @@ enum PlayWatch {
             }
             if scene.gameMode == .endlessII, scene.numberOfLives > 0, livesNoted == false,
                DailyChallengeSession.shared.active?.has(.spareBalls) != true {
-                note("Endless Mayhem holding \(scene.numberOfLives) spare lives")
-                livesNoted = true
+                livesFor += step*6
+                if livesFor > 0.5 {
+                    note("Endless Mayhem holding \(scene.numberOfLives) spare lives for half a "
+                         + "second, \(String(describing: scene.gameState.currentState)), level "
+                         + "\(scene.levelNumber), endless \(scene.endlessMode)")
+                    livesNoted = true
+                }
+            } else {
+                livesFor = 0
             }
+            // Held for half a second: one reading taken in a game's first instant, on a Mac running
+            // two simulators flat out, was a scene not finished setting up (round 398b, the soak)
             // **Mayhem has one life** (James, round 398b: "I then had 2 lives in Endless Mayhem
             // mode which shouldn't be possible"). Only a Spare Balls day gives it a rack
             peakNodes = max(peakNodes, nodeCount(scene))
