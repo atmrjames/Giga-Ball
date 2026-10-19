@@ -10287,6 +10287,14 @@ laserTimer?.invalidate()
 		// Save bricks, ball and power-ups if playing or paused
 
 		let previous = savedGame
+		let collected = gameState.currentState is Playing || gameState.currentState is Paused
+		// **Whether this save looked, not whether it found anything** (round 398c, found by the
+		// overnight soak). The drops in the air, the power-ups running and the Sticky catches
+		// fell back to the last save whenever their list was *empty* - which is also what a
+		// list is when nothing is running. So a game paused during a Slow Ball, then paused
+		// again after it had ended, saved the Slow Ball again from the first save, and a resume
+		// brought back power-ups long over and drops long caught. The fallback is for a save
+		// that did not look (between Classic levels); one that looked and found nothing says so
 		// The arrays are only rebuilt while playing or paused. Saving from between levels
 		// leaves them empty, and the original code left the stored values untouched in
 		// that case, so the last snapshot survives. Preserved here by falling back to the
@@ -10352,16 +10360,16 @@ laserTimer?.invalidate()
 			// different mode (round 170)
 			// Written whenever the ball is - including empty, which is how a run that has just
 			// lost its extras stops claiming to have them
-			fallingPowerUpXPositions: powerUpFallingXPositionArray != [] ? powerUpFallingXPositionArray! : previous?.fallingPowerUpXPositions ?? [],
-			fallingPowerUpYPositions: powerUpFallingXPositionArray != [] ? powerUpFallingYPositionArray! : previous?.fallingPowerUpYPositions ?? [],
-			fallingPowerUps: powerUpFallingXPositionArray != [] ? powerUpFallingArray! : previous?.fallingPowerUps ?? [],
-			activePowerUps: powerUpActiveArray != [] ? powerUpActiveArray! : previous?.activePowerUps ?? [],
-			activePowerUpDurations: powerUpActiveArray != [] ? powerUpActiveDurationArray! : previous?.activePowerUpDurations ?? [],
-			activePowerUpTimers: powerUpActiveArray != [] ? powerUpActiveTimerArray! : previous?.activePowerUpTimers ?? [],
-			activePowerUpMagnitudes: powerUpActiveArray != [] ? powerUpActiveMagnitudeArray! : previous?.activePowerUpMagnitudes ?? [],
+			fallingPowerUpXPositions: collected ? powerUpFallingXPositionArray! : previous?.fallingPowerUpXPositions ?? [],
+			fallingPowerUpYPositions: collected ? powerUpFallingYPositionArray! : previous?.fallingPowerUpYPositions ?? [],
+			fallingPowerUps: collected ? powerUpFallingArray! : previous?.fallingPowerUps ?? [],
+			activePowerUps: collected ? powerUpActiveArray! : previous?.activePowerUps ?? [],
+			activePowerUpDurations: collected ? powerUpActiveDurationArray! : previous?.activePowerUpDurations ?? [],
+			activePowerUpTimers: collected ? powerUpActiveTimerArray! : previous?.activePowerUpTimers ?? [],
+			activePowerUpMagnitudes: collected ? powerUpActiveMagnitudeArray! : previous?.activePowerUpMagnitudes ?? [],
 			laserXPositions: laserXPositionArray,
 			laserYPositions: laserYPositionArray,
-			stickyPaddleCatchesTotal: stickyPaddleCatches != 0 ? stickyPaddleCatchesTotal : previous?.stickyPaddleCatchesTotal,
+			stickyPaddleCatchesTotal: collected ? (stickyPaddleCatches != 0 ? stickyPaddleCatchesTotal : nil) : previous?.stickyPaddleCatchesTotal,
 			backstopSpent: backstopSpentThisRun ? true : previous?.backstopSpent,
 			// Once true it stays true for the run: written straight when this run has spent
 			// its Backstop, and carried from the previous save otherwise, like every other

@@ -1961,3 +1961,57 @@ final class AlwaysOnResumesWithoutScoringAgainTests: XCTestCase {
         XCTAssertTrue(failures.isEmpty, failures.joined(separator: "\n"))
     }
 }
+
+/// A save made with nothing running says nothing is running.
+///
+/// Found by the overnight soak, round 398c: a resumed game came back with ten power-ups the game
+/// had not had running for some time. The save kept the last save's drops in the air, power-ups
+/// running and Sticky catches whenever its own list was empty - which is also what it is when
+/// nothing is running - so a game paused during a Slow Ball and paused again after it had ended
+/// saved the Slow Ball a second time, and the resume put it back.
+final class AnEmptySaveIsNotTheLastSaveTests: XCTestCase {
+    private var window: UIWindow?
+
+    override func tearDown() {
+        GameScene.settingsStore.set(false, forKey: SavedGame.resumeFlagKey)
+        SavedGame.clear(from: GameScene.settingsStore)
+        super.tearDown()
+    }
+
+    func testPowerUpsAndDropsThatHaveGoneAreNotSavedAgain() throws {
+        let names = LevelPackSetup.shared.powerUpNameArray
+        for mode in [GameMode.classic, .endlessII] {
+            let level = mode == .classic ? LevelPackSetup.shared.startLevelNumber[2] : nil
+            let scene = try PaddleFamilySweep.present(theme: 0, keeping: &window, mode: mode,
+                                                      level: level, pack: mode == .classic ? 2 : 1)
+            let running = mode == .classic ? 2
+                : try XCTUnwrap(names.firstIndex(of: "Magnetism"))
+            let carrier = SKSpriteNode(texture: scene.powerUpTextureArray[running])
+            scene.addChild(carrier)
+            scene.applyPowerUp(node: carrier, silently: true)
+            let drop = SKSpriteNode(texture: scene.powerUpTextureArray[3])
+            drop.name = PowerUpCategoryName
+            drop.zPosition = 2
+            drop.position = CGPoint(x: 0, y: 100)
+            scene.addChild(drop)
+            PaddleFamilySweep.settle(0.3)
+
+            scene.saveCurrentGame()
+            let first = try XCTUnwrap(SavedGame.load(from: GameScene.settingsStore))
+            XCTAssertFalse(first.activePowerUps.isEmpty, "\(mode): the first save saw it running")
+            XCTAssertFalse(first.fallingPowerUps.isEmpty, "\(mode): and the drop in the air")
+
+            if mode == .classic { scene.powerUpsReset() } else { scene.endlessIIWipe() }
+            drop.removeFromParent()
+            PaddleFamilySweep.settle(0.3)
+            // Both over: the power-up ended, the drop caught
+            scene.saveCurrentGame()
+            let second = try XCTUnwrap(SavedGame.load(from: GameScene.settingsStore))
+            XCTAssertEqual(second.activePowerUps, [], "\(mode): a power-up long over was saved "
+                           + "again from the save before")
+            XCTAssertEqual(second.fallingPowerUps, [], "\(mode): a drop long caught was saved "
+                           + "again from the save before")
+            scene.view?.presentScene(nil)
+        }
+    }
+}

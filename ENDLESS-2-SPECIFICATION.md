@@ -2983,6 +2983,16 @@ seeds, so games run long and deep while the rest still lose balls. Every failure
   `DriftSurvivesAResumeTests` saves both Drifts at eight moments; on the old code the field came
   back elsewhere at every one. The round-trip check had agreed with the fault because it measured
   bricks in the same arithmetic; it measures where they stand now.
+- **A save with nothing running brought back the last save's power-ups and drops** (every mode;
+  found by the soak's last chunk). The drops in the air, the power-ups running and the Sticky
+  catches fell back to the previous save whenever their list was empty - which is also what it is
+  when nothing is running - so pausing during a Slow Ball, pausing again after it had ended, and
+  quitting brought the Slow Ball back on the resume, and drops long caught with it. The fallback was
+  meant for a save that did not look (between Classic levels); a save made in play or pause now
+  writes what it found, nothing included. `AnEmptySaveIsNotTheLastSaveTests`, Classic and Mayhem.
+- **An intermittent stall in one soak chunk** (resume seed 1497, twice) did not come back in three
+  runs on the current code - alone, in sequence and as the whole chunk - and no game process was
+  stuck when sampled; recorded as the simulator, and the soak keeps watching for it.
 - **A crash: an Always On Mayhem day standing on Brick Descent crashed as play began, every time**
   (the daily for 7 October 2027, found by the soak and reproduced on a quiet simulator first try).
   Always On collects its power-up at the first moment of play, and Descent stepped the field at
