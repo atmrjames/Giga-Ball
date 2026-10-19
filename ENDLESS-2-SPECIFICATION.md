@@ -2983,6 +2983,14 @@ seeds, so games run long and deep while the rest still lose balls. Every failure
   `DriftSurvivesAResumeTests` saves both Drifts at eight moments; on the old code the field came
   back elsewhere at every one. The round-trip check had agreed with the fault because it measured
   bricks in the same arithmetic; it measures where they stand now.
+- **A crash: an Always On Mayhem day standing on Brick Descent crashed as play began, every time**
+  (the daily for 7 October 2027, found by the soak and reproduced on a quiet simulator first try).
+  Always On collects its power-up at the first moment of play, and Descent stepped the field at
+  once - before the level had been laid out, so the new row read thresholds the layout had not yet
+  set. Descent now counts from the moment the field exists (`endlessFieldIsLaidOut`), and the field
+  step itself refuses to run before it, whoever asks. `EveryAlwaysOnDayStartsTests` starts every
+  pairing of mode and standing power-up the generator deals over the next thousand days - 48 of
+  them - and crashed on the old code at the soak's own line.
 - **An Always On day scored the standing power-up again on every resume** (all three modes). The
   standing power-up is held full rather than timed, so the save - which writes a power-up from its
   bar's countdown - has nothing for it, and the first tick after the resume put it back, scoring it

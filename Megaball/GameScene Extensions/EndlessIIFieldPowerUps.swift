@@ -1217,10 +1217,15 @@ extension GameScene {
     /// unscored, builds the next row, counts the height and moves the markers - which is why
     /// Descent is free height, and why it is a power-up.
     func tickEndlessIIDescent() {
-        guard endlessIIDescentClock.isRunning else {
+        guard endlessIIDescentClock.isRunning, endlessFieldIsLaidOut else {
             endlessIIDescentAccumulated = 0
             return
         }
+        // **Not before there is a field** (round 398c, found by the soak: the daily for 7 October
+        // 2027 - Endless Mayhem, Always On, standing on Brick Descent - crashed as play began,
+        // every time). Always On collects its power-up the moment play starts, and a Descent
+        // stepped the field at once: before the level had been laid out, so the row it built read
+        // settings the layout had not made yet. It counts from the moment the field exists
 
         endlessIIDescentAccumulated += endlessIIClockDelta
         // `endlessIIClockDelta`, not the raw frame delta: a Lock freezes the timed

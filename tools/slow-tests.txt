@@ -3,6 +3,7 @@
 259.4 1 PaddlePowerUpsEndCleanlyTests
 250.0 3 LongPlaySessionTests
 240.0 2 EveryDailyTwistPlaysTests
+240.0 1 EveryAlwaysOnDayStartsTests
 100.0 4 PowerUpPairInteractionTests
 93.1 5 HorizontalRunBreakerTests
 90.0 1 BricksSaveAndResumeTests

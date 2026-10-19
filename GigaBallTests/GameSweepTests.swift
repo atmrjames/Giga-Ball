@@ -1271,6 +1271,58 @@ enum ResumeCheck {
     }
 }
 
+/// Every standing power-up an Always On day can deal starts its day cleanly, in its mode.
+///
+/// Found by the overnight soak, round 398c: the daily for 7 October 2027 - Endless Mayhem, Always
+/// On, standing on Brick Descent - crashed as play began, every time. Always On collects its power-
+/// up at the first moment of play, before anything else has happened, which no ordinary collection
+/// ever does; a power-up that acts on the field at once met a field not yet laid out. This deals
+/// every pairing of mode and standing power-up the generator will hand out over the next thousand
+/// days, and plays each for a few seconds.
+final class EveryAlwaysOnDayStartsTests: XCTestCase {
+    private var window: UIWindow?
+
+    override func tearDown() {
+        DailyChallengeSession.shared.active = nil
+        super.tearDown()
+    }
+
+    func testEveryStandingPowerUpStartsItsDay() throws {
+        let calendar = DailyDay.utcCalendar
+        let today = calendar.startOfDay(for: Date())
+        let names = LevelPackSetup.shared.powerUpNameArray
+        var seen: Set<String> = []
+        var days: [DailyChallenge] = []
+        for offset in 0..<1000 {
+            guard let date = calendar.date(byAdding: .day, value: offset, to: today) else { continue }
+            let day = DailyChallengeGenerator.challenge(forKey: DailyDay.key(for: date))
+            guard day.has(.alwaysOn),
+                  let standing = DailyTwist.alwaysOnPowerUp(forKey: day.dateKey, mode: day.mode)
+            else { continue }
+            if seen.insert("\(day.mode) \(standing)").inserted { days.append(day) }
+        }
+        var failures: [String] = []
+        for day in days {
+            let standing = DailyTwist.alwaysOnPowerUp(forKey: day.dateKey, mode: day.mode) ?? 0
+            let label = "\(day.dateKey) \(day.mode) standing on \(names[standing])"
+            DailyChallengeSession.shared.active = day
+            let level = day.classicLevel.map(DailyChallengeGenerator.levelNumber(forClassicLevel:))
+            let pack = day.classicLevel.map(DailyChallengeGenerator.pack(forClassicLevel:)) ?? 1
+            let scene = try PaddleFamilySweep.present(theme: 0, keeping: &window, mode: day.mode,
+                                                      frozen: false, level: level, pack: pack)
+            PaddleFamilySweep.settle(2)
+            if scene.endlessMode, scene.endlessFieldIsLaidOut == false {
+                failures.append("\(label): two seconds in and the field never laid out")
+            }
+            scene.view?.presentScene(nil)
+            DailyChallengeSession.shared.active = nil
+        }
+        XCTAssertGreaterThan(days.count, 10, "too few Always On days dealt to sweep")
+        print("ALWAYSON swept \(days.count) pairings")
+        XCTAssertTrue(failures.isEmpty, failures.joined(separator: "\n"))
+    }
+}
+
 /// Plays a run by itself and watches it: what `LongPlaySessionTests` and the daily sweep share.
 ///
 /// The paddle follows the lowest ball - a player who never misses - a power-up from the run's own

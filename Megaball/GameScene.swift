@@ -5655,6 +5655,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	// between the catch and the shot it bought.
 
 	func moveEndlessModeRowDown() {
+		guard endlessFieldIsLaidOut else { return }
+		// Whoever asks: a step before the level has been laid out builds a row from settings the
+		// layout makes (`tickEndlessIIDescent`, round 398c)
 				
 		endlessMoveInProgress = true
 						
