@@ -1894,3 +1894,70 @@ final class ADropCaughtAtTheBottomEdgeTests: XCTestCase {
         }
     }
 }
+
+/// An Always On day's score and multiplier are the same after a resume as before it.
+///
+/// Found by the overnight soak, round 398c: an Always On daily's multiplier a tenth higher after a
+/// resume. The day's standing power-up is held full rather than timed, so the save has nothing to
+/// write for it, and the first tick after the resume put it back - scoring it and moving the
+/// multiplier a second time on top of what the save had already brought back.
+final class AlwaysOnResumesWithoutScoringAgainTests: XCTestCase {
+    private var window: UIWindow?
+    private var resumedWindow: UIWindow?
+
+    override func tearDown() {
+        GameScene.settingsStore.set(false, forKey: SavedGame.resumeFlagKey)
+        SavedGame.clear(from: GameScene.settingsStore)
+        DailyChallengeSession.shared.active = nil
+        super.tearDown()
+    }
+
+    func testAResumeLeavesTheScoreAndMultiplierAsTheyWere() throws {
+        let calendar = DailyDay.utcCalendar
+        let today = calendar.startOfDay(for: Date())
+        let days = (0..<500).compactMap { offset -> DailyChallenge? in
+            guard let date = calendar.date(byAdding: .day, value: offset, to: today) else { return nil }
+            let day = DailyChallengeGenerator.challenge(forKey: DailyDay.key(for: date))
+            return day.has(.alwaysOn) ? day : nil
+        }
+        var failures: [String] = []
+        var checked = 0
+        for mode in [GameMode.classic, .endless, .endlessII] {
+            guard let day = days.first(where: { $0.mode == mode }) else { continue }
+            DailyChallengeSession.shared.active = day
+            let level = day.classicLevel.map(DailyChallengeGenerator.levelNumber(forClassicLevel:))
+            let pack = day.classicLevel.map(DailyChallengeGenerator.pack(forClassicLevel:)) ?? 1
+            let scene = try PaddleFamilySweep.present(theme: 0, keeping: &window, mode: mode,
+                                                      level: level, pack: pack)
+            PaddleFamilySweep.settle(0.5)
+            // The standing power-up collected as play began, and held
+            scene.ball.physicsBody?.velocity = .zero
+            // Still, so nothing the resumed ball strikes moves the score
+            scene.isPaused = true
+            let before = (score: scene.totalScore + scene.levelScore, multiplier: scene.multiplier)
+            scene.saveCurrentGame()
+
+            GameScene.settingsStore.set(true, forKey: SavedGame.resumeFlagKey)
+            let resumed = try PaddleFamilySweep.present(theme: 0, keeping: &resumedWindow,
+                                                        resuming: true, mode: mode,
+                                                        level: level, pack: pack, intoPlay: false)
+            GameScene.settingsStore.set(false, forKey: SavedGame.resumeFlagKey)
+            resumed.physicsWorld.speed = 0
+            resumed.gameState.enter(Playing.self)
+            PaddleFamilySweep.settle(0.5)
+            // Into play with the physics stopped, as the round trip does, for long enough that the
+            // first tick puts the standing power-up back - and nothing the ball does can score
+            let after = (score: resumed.totalScore + resumed.levelScore, multiplier: resumed.multiplier)
+            if abs(after.multiplier - before.multiplier) > 0.001 || after.score != before.score {
+                failures.append("\(mode) \(day.dateKey): score \(before.score) x\(before.multiplier) "
+                                + "before the resume, \(after.score) x\(after.multiplier) after")
+            }
+            checked += 1
+            resumed.view?.presentScene(nil)
+            scene.view?.presentScene(nil)
+            DailyChallengeSession.shared.active = nil
+        }
+        XCTAssertGreaterThan(checked, 1, "no Always On days to resume")
+        XCTAssertTrue(failures.isEmpty, failures.joined(separator: "\n"))
+    }
+}

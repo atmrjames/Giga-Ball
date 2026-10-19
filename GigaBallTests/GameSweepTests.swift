@@ -1179,6 +1179,12 @@ enum ResumeCheck {
                 PaddleFamilySweep.settle(0.1)
             }
         }
+        guard scene.gameState.currentState is Playing else {
+            scene.view?.presentScene(nil)
+            return []
+        }
+        // Still a game to save: a field left to settle can reach the bottom and end the run, and
+        // a save made outside play keeps the last save's lists, which are another game's
         let reachable = scene.paddle.position.y + scene.brickHeight*4
         scene.enumerateChildNodes(withName: PowerUpCategoryName) { node, _ in
             if node.position.y < reachable { node.removeFromParent() }
@@ -1205,6 +1211,7 @@ enum ResumeCheck {
                 guard let bar = node as? SKSpriteNode, let countdown = bar.action(forKey: key),
                       Double(countdown.duration)*Double(bar.xScale) < 1 else { continue }
                 ending.insert(timer.key)
+                if bar === scene.paddleSizeIconBar { ending.insert("paddle resized") }
                 if let tray = scene.iconTimerArray.firstIndex(where: { $0 === bar }) {
                     ending.insert("tray\(tray)")
                 }

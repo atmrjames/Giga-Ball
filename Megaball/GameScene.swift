@@ -10898,7 +10898,11 @@ laserTimer?.invalidate()
 		}
 	}
 
+	/// Whether the next Always On put-back is the one a resume owes (see `tickDailyAlwaysOn`).
+	var dailyStandingPowerUpOwedByAResume = false
+
 	func resumeGame() {
+		dailyStandingPowerUpOwedByAResume = dailyAlwaysOnPowerUp != nil
 		guard let savedGame else { return }
 		// Bound once, shadowing the property, rather than force-unwrapped at each of the
 		// twenty-odd uses below. Nothing here is reachable without a save, but that was

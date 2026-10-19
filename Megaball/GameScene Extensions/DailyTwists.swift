@@ -384,6 +384,8 @@ extension GameScene {
         guard let index = dailyAlwaysOnPowerUp else { return }
         guard gameState.currentState is Playing, isPaused == false else { return }
         guard dailyStandingPowerUpIsRunning(index) == false else {
+            dailyStandingPowerUpOwedByAResume = false
+            // Came back running from the save (Mayhem's clocks are saved), so nothing is owed
             holdDailyStandingPowerUpFull(index)
             return
         }
@@ -391,7 +393,26 @@ extension GameScene {
 
         let before = classicPowerUpEndings
         let carrier = SKSpriteNode(texture: powerUpTextureArray[index])
+        let resuming = dailyStandingPowerUpOwedByAResume
+        let keptScore = levelScore, keptMultiplier = multiplier
         applyPowerUp(node: carrier, silently: true, standing: true)
+        if resuming {
+            dailyStandingPowerUpOwedByAResume = false
+            levelScore = keptScore
+            multiplier = keptMultiplier
+            scoreFactorString = Scoring.displayString(multiplier)
+            setMultiplierColour(Scoring.isAtCap(multiplier) ? #colorLiteral(red: 0.8235294118, green: 1, blue: 0, alpha: 1) : #colorLiteral(red: 1, green: 1, blue: 1, alpha: 1))
+            showMultiplier()
+            if endlessMode == false { showScoreLabel() }
+        }
+        // **A resume puts it back and changes nothing else** (round 398c, found by the soak: an
+        // Always On day's multiplier a tenth higher after a resume than before it). The standing
+        // power-up is held full rather than timed, so the save - which writes a power-up from its
+        // bar's countdown - has nothing to write for it, and the first tick after the resume puts
+        // it back as it does when it stops. Putting it back scores it and moves the multiplier,
+        // and the save had already brought back the score and multiplier it had earned; so the
+        // first put-back after a resume leaves both as the save left them. Every other put-back
+        // is as it has always been, which is how every Always On day so far has scored
         for (key, ending) in classicPowerUpEndings where before[key] !== ending {
             removeAction(forKey: key)
         }

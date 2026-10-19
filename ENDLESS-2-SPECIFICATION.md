@@ -2983,6 +2983,18 @@ seeds, so games run long and deep while the rest still lose balls. Every failure
   `DriftSurvivesAResumeTests` saves both Drifts at eight moments; on the old code the field came
   back elsewhere at every one. The round-trip check had agreed with the fault because it measured
   bricks in the same arithmetic; it measures where they stand now.
+- **An Always On day scored the standing power-up again on every resume** (all three modes). The
+  standing power-up is held full rather than timed, so the save - which writes a power-up from its
+  bar's countdown - has nothing for it, and the first tick after the resume put it back, scoring it
+  and moving the multiplier on top of the score and multiplier the save had already restored: a
+  Classic day went from x1.1 to x1.2 across one resume. The first put-back after a resume now leaves
+  both as the save left them; every other put-back is unchanged, which is how every Always On day
+  so far has scored. `AlwaysOnResumesWithoutScoringAgainTests`, on a real Always On day per mode.
+- **The test harness let the last game run on behind the next** (the soak's spare lives in Mayhem
+  dailies, and saves holding another game's power-ups). `PaddleFamilySweep.present` replaced the
+  window and left the old scene running; when it paused on losing its window it saved its own game
+  and set the resume flag, after the new one had cleared them, and on a busy Mac the new game read
+  it. The old scene leaves its view first now, as in the app. Not a fault in the game.
 - **A crash: a drop caught at the very bottom edge** (every mode; the soak's first crash, on an
   Always On daily). A falling power-up can meet the paddle and the bottom of the screen in the same
   physics step; the paddle's contact collected it and it was gone, and the bottom's contact then

@@ -249,6 +249,16 @@ enum PaddleFamilySweep {
                         frozen: Bool = true, level: Int? = nil,
                         pack: Int = 1, stats: TotalStats = TotalStats(),
                         intoPlay: Bool = true) throws -> GameScene {
+        if let old = window?.rootViewController?.view as? SKView, old.scene != nil {
+            old.presentScene(nil)
+            settle(0.05)
+        }
+        // **The last game leaves its view first, as it does in the app** (round 398c, the soak).
+        // Only the window used to be replaced, so the old scene could run on behind the new one -
+        // and when it paused on losing its window it saved its own game and set the resume flag,
+        // after this had cleared them. On a Mac busy enough, a fresh Mayhem daily read that flag
+        // and came up holding the last Classic day's spare balls. Taken off its view, a scene
+        // stops everything it has in flight (`willMove(from:)`)
         if resuming == false {
             GameScene.settingsStore.set(false, forKey: SavedGame.resumeFlagKey)
             SavedGame.clear(from: GameScene.settingsStore)
