@@ -52,7 +52,7 @@ background: piping `xcodebuild` straight into `grep` has hung twice.
 
 - Local builds need `DEVELOPER_DIR=/Applications/Xcode-beta.app/Contents/Developer`. Xcode
   26.6's `actool` **crashes** on the Icon Composer assets — see SPECIFICATION.md §13.
-- Anything destined for the App Store is built by **Xcode Cloud on `release-1.3`**, because
+- Anything destined for the App Store is built by **Xcode Cloud on its release branch** (see Branches below), because
   Apple rejects beta-toolchain uploads and this Mac runs a beta macOS.
 - **`xcodebuild test` does not always relink the app.** Round 62 compiled a changed file,
   passed 761 tests, installed, and showed the *old* UI on the simulator: the `.o` was ten
@@ -206,6 +206,24 @@ background: piping `xcodebuild` straight into `grep` has hung twice.
   them. The tell is `Dead/temp.` in the path the error prints. Building and running tests on
   the second simulator during a suite was fine all that day, several times over; the one run
   that broke was the one with a `simctl install` of the app beside it, so that is the suspect.
+
+## Branches
+
+Set up on 21 October 2026, the day 1.3 was released (James: "New features can go into 1.4. Fixes
+can be added to 1.3.1 and 1.4"):
+
+- **`release-1.3`** is 1.3 as it shipped. Nothing more goes on it.
+- **`release-1.3.1`** is the patch, version 1.3.1: **fixes only**, as play-testing and players'
+  reports call for them. It may ship quickly or gather several fixes first; James decides.
+- **`release-1.4`** is the next release, version 1.4: features, and every fix as well.
+- **A fix is committed to `release-1.3.1` and merged forward into `release-1.4`** (`git switch
+  release-1.4 && git merge release-1.3.1`), straight away, so the two never drift. Never the other
+  way: a merge from 1.4 into 1.3.1 would carry features into the patch. A fix that only makes sense
+  against 1.4's new code goes on `release-1.4` alone.
+- When unsure which a piece of work is, ask: a feature in a patch is the one mistake this structure
+  exists to prevent.
+- `master` is the repository's default branch on GitHub and has not moved since 2020; it is not
+  part of this flow.
 
 ## Adding a file
 

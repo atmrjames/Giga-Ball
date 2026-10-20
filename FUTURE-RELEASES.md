@@ -71,7 +71,14 @@ held back for a release that would follow immediately after. The foundations sti
 first within it, for the reason argued above: the player-visible work lands on top of
 them.
 
-### Where it stands (20 October 2026)
+### Released (21 October 2026)
+
+**1.3 is on the App Store.** What comes next is decided by players' feedback and James's own
+play-testing: fixes go to **1.3.1** (a quick patch or a gathering of small fixes, depending on
+severity) and are merged forward into **1.4**, where new features go. CLAUDE.md, "Branches", has
+the rules.
+
+### Where it stood (20 October 2026)
 
 **Submitted for App Review.** Built by Xcode Cloud from `release-1.3` as it stood at round 399b
 (the pre-release soak written down), uploaded to App Store Connect and submitted on 20 October,
