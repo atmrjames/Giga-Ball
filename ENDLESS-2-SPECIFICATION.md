@@ -2964,6 +2964,46 @@ testers:
   falling power-up's position by `brickWidth`, so a bare `GameScene()` with a power-up on
   screen traps converting NaN to Int. A real scene is always laid out before play.
 
+**Round 400: two faults the pre-release soak found, the start of 1.3.1.**
+
+James, reading the soak's results: "Are any of those issues that were found worth resolving in the
+meantime?", then "let's investigate", and once they were found: "let's get 1.3 ready for launch
+without those fixes for now - we can start a 1.3.1 release branch." So 1.3 ships as `release-1.3`
+stood at round 399b, and these are the first of `release-1.3.1`, whose version is 1.3.1. Neither
+fault is new in 1.3.
+
+- **A brick hidden for good by the paddle's flash** (Classic, Endless and Mayhem). The soak's "1x
+  hidden plain row 21", three Endless games in two hundred. Its five-second power-up window showed
+  Show Bricks and never Hide Bricks, which sent the first look elsewhere; a hunt that kept the whole
+  history - forty-six Endless games, five sightings - had Hide Bricks in every one. Hide Bricks hides
+  the normal bricks; a paddle hit with a hidden brick on the bottom row flashes it on for a fifth of
+  a second; Show Bricks collected in that fifth, or Hide Bricks running out, reveals every *hidden*
+  brick and passed over the flashed one, which was showing just then; and the flash's ending hid it
+  again at full alpha, solid, holding the field up from the bottom row with nothing left to show it.
+  A lost ball's reset had a second way in: clearing the scene's actions took the flash's ending with
+  it, and its bricks waited on the list for the next flash to hide. Every reveal now ends a flash
+  first (`endTheInvisibleBrickFlashNow`), so the flashed brick is hidden again and revealed with the
+  rest. Nothing it changes is a number: no score, speed or layout, and `GoldenValuesTests` passes
+  unchanged. `TheFlashCannotHideABrickForGoodTests`, all three modes, fails on the old code.
+- **An extra ball that stops dead stays stopped** (Mayhem). The soak's "a ball stopped dead", twice
+  in seventy Mayhem games, neither replaying. The first ball is held to the run's speed every frame
+  and cannot stand still; an extra is scaled to that speed along its own heading, and a stopped ball
+  has none, so the scaling passed it by and so did `breakHorizontalRuns`. Set still on purpose in a
+  test, an extra stayed exactly where it was for as long as it was watched - and a Mayhem run goes on
+  while any ball is in play, so losing the first ball would have left a run with nothing moving and
+  no way to end. An extra still for a quarter of a second in play is now sent back down the field
+  as if just served (`endlessIIRestartsAStoppedBall`); a ball held by a sticky catch, the one inside
+  a portal, and anything outside play are left alone. How a ball comes to lose all its speed is not
+  yet known - this makes sure it cannot stay that way. `AStoppedExtraBallIsSentOnTests`.
+- **Open: Halo can be gone after a resume** (Mayhem). `EveryPowerUpShowsSavesAndEndsTests` failed on
+  it twice ("Halo: saved [...PaddleHaloClock], resumed []"), and a test that only collects Halo,
+  saves 0.3 seconds later and resumes lost it 7 times in 40 - saved with nine seconds and more left,
+  and the resumed run still in play, its ball not lost and nothing collected. The restore is
+  unconditional and the only thing that resets Halo's clock is `powerUpsReset`, so something calls
+  that, or another way ends it, in the resumed game. It fails on `release-1.3` as well, so it is not
+  this round's. The first thing to find is who ends it: break on `endlessIIResetPaddlePowerUps` and
+  on Halo's clock reaching nought in a resumed scene.
+
 **Round 399b: the pre-release soak.** Eight hours on round 399's code before the 1.3 upload,
 then a fresh full suite: **2,946 and 33 sweeps passed, no relaunches.** The soak itself:
 

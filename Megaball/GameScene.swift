@@ -1404,6 +1404,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var endlessIIPortalKeepsHeading = false
 	/// Which ball is waiting to be moved to a portal's exit. Not always the first one.
 	weak var endlessIIPortalTraveller: SKSpriteNode?
+	/// How long each extra ball has stood still in play (`endlessIIRestartsAStoppedBall`).
+	var endlessIIStoppedFor: [ObjectIdentifier: TimeInterval] = [:]
 	/// What it should be travelling at when it gets there - the heading it arrived with,
 	/// turned round only if carrying on would have taken it out of the field.
 	var endlessIIPortalExitVelocity: CGVector?
@@ -6381,6 +6383,24 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		}
 		invisibleBrickFlashRevealed = []
 	}
+
+	/// Ends a flash at once, its bricks put back as they were, before anything reveals bricks for
+	/// good (round 400, found by the soak).
+	///
+	/// **Or the reveal skips them and the flash hides them again for ever.** Hide Bricks running,
+	/// a hidden brick on the bottom row, a paddle hit: the flash shows that brick for a fifth of
+	/// a second. Show Bricks collected in that fifth, or Hide Bricks running out, reveals every
+	/// *hidden* brick - and the flashed one was not hidden just then, so it was passed over. Then
+	/// the flash ended and hid it, at full alpha, and nothing was left to bring it back: a solid
+	/// brick nobody could see, holding the field up from the bottom row. The overnight soak met
+	/// it in three Endless games in two hundred, and a hunt of forty-six caught it five times.
+	/// Classic, Endless and Mayhem alike. A lost ball's reset had a second way in: clearing the
+	/// scene's actions takes the flash's ending with it, and the bricks it showed waited on the
+	/// list to be hidden by whatever flash came next
+	func endTheInvisibleBrickFlashNow() {
+		removeAction(forKey: "invisibleBrickFlash")
+		invisibleBrickFlashOff()
+	}
     
     func powerUpGenerator (sprite: SKSpriteNode) {
 		
@@ -7101,6 +7121,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			hiddenBricksIcon.texture = iconHiddenBlocksDisabledTexture
 			hiddenBricksIconBar.isHidden = true
 			// Show power-up icon timer for invisible bricks
+			endTheInvisibleBrickFlashNow()
+			// So a brick the flash is showing is hidden again first, and revealed with the rest
 			enumerateChildNodes(withName: BrickCategoryName) { (node, _) in
 				if node.isHidden == true {
 					let startingScale = SKAction.scale(to: 1, duration: 0)
@@ -7140,6 +7162,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			let timer: Double = 10 * multiplier
 			let waitDuration = SKAction.wait(forDuration: timer)
 			let completionBlock = SKAction.run {
+				self.endTheInvisibleBrickFlashNow()
 				self.enumerateChildNodes(withName: BrickCategoryName) { (node, _) in
 					let temporarySprite = node as! SKSpriteNode
 					if node.isHidden == true && temporarySprite.texture != self.brickInvisibleTexture {
@@ -8243,6 +8266,8 @@ laserTimer?.invalidate()
 		runBallSizeScale(to: 1.0, duration: 0.2)
 		// Ball size reset
 		
+		endTheInvisibleBrickFlashNow()
+		// The `removeAllActions` above took the flash's ending with it (round 400)
 		if dailyFogIsOn == false {
 			enumerateChildNodes(withName: BrickCategoryName) { (node, _) in
 				let temporarySprite = node as! SKSpriteNode

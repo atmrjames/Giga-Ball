@@ -2333,3 +2333,102 @@ final class TheWhistleScoresTheSettledHeightTests: XCTestCase {
         }
     }
 }
+
+/// Found by the pre-release soak, round 400: "bricks solid and unseen for two seconds: 1x hidden
+/// plain row 21" in three Endless games in two hundred - a brick on the bottom row, hidden at full
+/// alpha, holding the field up, that nothing would ever show again. Hide Bricks had hidden it, a
+/// paddle hit flashed it on, and Show Bricks arriving in the flash's fifth of a second passed it
+/// over because it was not hidden just then; the flash ended and hid it for good.
+final class TheFlashCannotHideABrickForGoodTests: XCTestCase {
+    private var window: UIWindow?
+
+    private func scene(_ mode: GameMode) throws -> (GameScene, SKSpriteNode) {
+        let setup = LevelPackSetup.shared
+        let scene = try PaddleFamilySweep.present(theme: 0, keeping: &window, mode: mode,
+                                                  level: mode == .classic ? setup.startLevelNumber[2] : nil,
+                                                  pack: mode == .classic ? 2 : 1)
+        scene.enumerateChildNodes(withName: BrickCategoryName) { node, _ in node.removeFromParent() }
+        let brick = BrickSweep.brick("normal", texture: scene.brickNormalTexture, in: scene,
+                                     rowY: scene.finalBrickRowHeight, column: 0)
+        return (scene, brick)
+    }
+
+    private func apply(_ texture: SKTexture, to scene: GameScene) {
+        let carrier = SKSpriteNode(texture: texture)
+        scene.addChild(carrier)
+        scene.applyPowerUp(node: carrier, silently: true)
+    }
+
+    func testShowBricksDuringTheFlashShowsTheFlashedBrick() throws {
+        for mode in [GameMode.classic, .endless, .endlessII] {
+            let (scene, brick) = try scene(mode)
+            apply(scene.powerUpNormalToInvisibleBricks, to: scene)
+            PaddleFamilySweep.settle(0.1)
+            XCTAssertTrue(brick.isHidden, "\(mode): Hide Bricks hid it")
+            scene.invisibleBrickFlash()
+            XCTAssertFalse(brick.isHidden, "\(mode): the paddle hit's flash shows it")
+            apply(scene.powerUpShowInvisibleBricks, to: scene)
+            PaddleFamilySweep.settle(0.8)
+            XCTAssertFalse(brick.isHidden, "\(mode): Show Bricks in the flash leaves it shown")
+            XCTAssertEqual(brick.alpha, 1, accuracy: 0.01, "\(mode)")
+            XCTAssertTrue(scene.phantomBrickPositions().isEmpty, "\(mode): nothing solid and unseen")
+            scene.view?.presentScene(nil)
+        }
+    }
+
+    func testALostBallsResetDuringTheFlashShowsTheFlashedBrick() throws {
+        for mode in [GameMode.classic, .endless] {
+            let (scene, brick) = try scene(mode)
+            apply(scene.powerUpNormalToInvisibleBricks, to: scene)
+            PaddleFamilySweep.settle(0.1)
+            scene.invisibleBrickFlash()
+            scene.powerUpsReset()
+            PaddleFamilySweep.settle(0.8)
+            XCTAssertFalse(brick.isHidden, "\(mode): Hide Bricks ends with the ball, flash or not")
+            XCTAssertTrue(scene.invisibleBrickFlashRevealed.isEmpty,
+                          "\(mode): no flashed brick left waiting for the next flash to hide it")
+            scene.view?.presentScene(nil)
+        }
+    }
+}
+
+/// Found by the pre-release soak, round 400: "a ball stopped dead" in two Mayhem games in seventy.
+/// The first ball is held to the run's speed every frame; an extra is scaled along its own
+/// heading, and a stopped one has none - set still, it stayed still for as long as it was watched.
+final class AStoppedExtraBallIsSentOnTests: XCTestCase {
+    private var window: UIWindow?
+
+    func testAnExtraBallThatStopsIsSentBackDownTheField() throws {
+        let scene = try PaddleFamilySweep.present(theme: 0, keeping: &window, frozen: false)
+        PaddleFamilySweep.settle(0.3)
+        XCTAssertTrue(scene.endlessIIAddBall())
+        let extra = try XCTUnwrap(scene.endlessIIExtraBalls.last)
+        PaddleFamilySweep.settle(0.2)
+        scene.enumerateChildNodes(withName: BrickCategoryName) { node, _ in node.removeFromParent() }
+        // Nothing for it to bounce off on the way down before it is looked at
+        extra.position = CGPoint(x: -100, y: 120)
+        extra.physicsBody?.velocity = .zero
+        PaddleFamilySweep.settle(0.5)
+        // Long enough for the quarter-second grace, short enough that the ball sent down is not
+        // yet past the paddle and gone - which is what a full second gave it
+        XCTAssertNotNil(extra.parent)
+        let v = extra.physicsBody?.velocity ?? .zero
+        XCTAssertGreaterThan(hypot(v.dx, v.dy), scene.ballSpeedLimit*0.5, "moving again")
+        XCTAssertLessThan(v.dy, 0, "down the field, as if just served")
+        scene.view?.presentScene(nil)
+    }
+
+    func testAnExtraBallHeldOnTheStickyPaddleStaysHeld() throws {
+        let scene = try PaddleFamilySweep.present(theme: 0, keeping: &window, frozen: false)
+        PaddleFamilySweep.settle(0.3)
+        XCTAssertTrue(scene.endlessIIAddBall())
+        let extra = try XCTUnwrap(scene.endlessIIExtraBalls.last)
+        scene.stickyPaddleCatches = 5
+        XCTAssertTrue(scene.endlessIICatchExtraBall(extra), "caught")
+        PaddleFamilySweep.settle(0.6)
+        let v = extra.physicsBody?.velocity ?? .zero
+        XCTAssertLessThan(hypot(v.dx, v.dy), 1, "a sticky catch stops its ball on purpose")
+        XCTAssertTrue(scene.endlessIIHeldBalls.contains { $0 === extra }, "still held")
+        scene.view?.presentScene(nil)
+    }
+}

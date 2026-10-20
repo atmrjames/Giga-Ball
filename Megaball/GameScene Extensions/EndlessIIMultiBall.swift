@@ -347,6 +347,45 @@ extension GameScene {
         }
     }
 
+    /// How long an extra ball may stand still in play before it is sent on its way.
+    static let stoppedBallGrace: TimeInterval = 0.25
+
+    /// Sends an extra ball that has come to a dead stop in play back down the field (round 400,
+    /// found by the soak).
+    ///
+    /// **Nothing else ever would.** The first ball is held to the run's speed every frame
+    /// (`ballSpeedControl`), so it cannot stand still; an extra is scaled to the first ball's
+    /// speed along its own heading, and a ball with no speed has no heading to scale - so the
+    /// scaling passed it by, and so did `breakHorizontalRuns`, for the same reason. The soak saw
+    /// a Mayhem ball stopped dead twice in seventy games; set still on purpose, an extra stayed
+    /// exactly where it was for as long as anyone watched, and the run - which goes on while any
+    /// ball is in play - would have gone on round it for ever once the first ball was lost.
+    ///
+    /// Not a held ball (a sticky catch stops its balls on purpose), not the one inside a portal,
+    /// not outside play, and only after a quarter of a second, so the frame a bounce takes the
+    /// speed out of a ball is left to the engine. Down, a little either side of straight, as if
+    /// it had just been served: the one heading that cannot be into whatever it stopped under.
+    func endlessIIRestartsAStoppedBall(_ extra: SKSpriteNode, speed: CGFloat,
+                                       wanted: CGFloat) -> Bool {
+        let id = ObjectIdentifier(extra)
+        guard speed < 1, wanted > 0, gameState.currentState is Playing, isPaused == false,
+              endlessIIHeldBalls.contains(where: { $0 === extra }) == false,
+              extra !== endlessIIPortalTraveller else {
+            endlessIIStoppedFor[id] = nil
+            return false
+        }
+        let still = (endlessIIStoppedFor[id] ?? 0) + frameDelta
+        guard still >= GameScene.stoppedBallGrace else {
+            endlessIIStoppedFor[id] = still
+            return false
+        }
+        endlessIIStoppedFor[id] = nil
+        let angle = -Double.pi/2 + Double.random(in: -0.35...0.35)
+        extra.physicsBody?.velocity = CGVector(dx: CGFloat(cos(angle))*wanted,
+                                               dy: CGFloat(sin(angle))*wanted)
+        return true
+    }
+
     /// Keeps the extras in step with the ball each frame.
     ///
     /// Ball speed is one shared value across every ball in play (§5.5), so a speed power-up
@@ -369,8 +408,13 @@ extension GameScene {
             // The ball's own look and size are shared too: a Giga-Ball or an Expand Ball that
             // only applied to one of four would read as three balls that had gone wrong
 
-            guard let body = extra.physicsBody, wanted > 0 else { continue }
+            guard let body = extra.physicsBody else { continue }
             let speed = hypot(body.velocity.dx, body.velocity.dy)
+            if endlessIIRestartsAStoppedBall(extra, speed: speed,
+                                             wanted: wanted > 0 ? wanted : ballSpeedLimit) {
+                continue
+            }
+            guard wanted > 0 else { continue }
             guard speed > 0.001, abs(speed - wanted) > 1 else { continue }
             body.velocity = CGVector(dx: body.velocity.dx/speed*wanted,
                                      dy: body.velocity.dy/speed*wanted)
