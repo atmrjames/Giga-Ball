@@ -516,6 +516,7 @@ extension GameScene {
     static let endlessIIBuildInCoverGrace: TimeInterval = 0.75
 
     func runEndlessIIBuildIn() {
+        placeInvisibleBricksWithoutAnEntrance()
         guard endlessIIBuildInBricks.isEmpty == false else { return }
         noteForHitchWatch("build-in")
         guard endlessMode else { return runClassicBuildIn() }
@@ -562,6 +563,33 @@ extension GameScene {
         // Cleared on a timer rather than by counting bricks finishing, because the flag only
         // exists to know whether a tap should skip - and once everything has arrived there is
         // nothing left to skip
+    }
+
+    /// Puts the level's Invisible bricks straight into place, out of the opening's way (James,
+    /// round 400: "Don't make a sound or animation on level intro for invisible bricks").
+    ///
+    /// Hidden, they never showed their entrance, but they were still counted in it: a row of
+    /// nothing but Invisible bricks had its own knock and haptic as it "landed", and its own
+    /// beat in the row-by-row cascade - a sound with nothing arriving, and a pause where a row
+    /// should be. So they arrive where they belong, as they would have been at the end, and the
+    /// rows and the knocks are reckoned from the bricks the player can see. Only the Invisible
+    /// brick: a brick the fog hides is hidden *after* it lands (`scheduleDailyFog`), and a fogged
+    /// day's field still builds in.
+    func placeInvisibleBricksWithoutAnEntrance() {
+        let invisible = endlessIIBuildInBricks.filter {
+            $0.texture === brickInvisibleTexture && $0.isHidden
+        }
+        guard invisible.isEmpty == false else { return }
+        for brick in invisible {
+            if let finalY = endlessIIBuildInFinalY.removeValue(forKey: ObjectIdentifier(brick)) {
+                brick.position.y = finalY
+            }
+            brick.alpha = 1
+            if endlessMode == false { brick.setScale(1) }
+            // Classic holds its bricks a little small as well as clear (`prepareClassicBuildIn`);
+            // the endless modes only hold them clear and above the field
+        }
+        endlessIIBuildInBricks.removeAll { brick in invisible.contains { $0 === brick } }
     }
 
     /// When each brick of the opening field leaves and how long it falls, when each row lands,

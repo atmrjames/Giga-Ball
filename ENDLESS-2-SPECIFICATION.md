@@ -2964,6 +2964,48 @@ testers:
   falling power-up's position by `brickWidth`, so a bare `GameScene()` with a power-up on
   screen traps converting NaN to Int. A real scene is always laid out before play.
 
+**Round 401: James's 1.3.1 list.**
+
+James, with 1.3 in review: "write it up and start on the 1.3.1 bugs". The plan is in
+FUTURE-RELEASES.md (1.3.1, 1.4, 1.5); three of his four bugs are fixed here, and the fourth would
+not happen on the simulator.
+
+- **Invisible bricks make no entrance** ("Don't make a sound or animation on level intro for
+  invisible bricks"). Hidden, they never showed their entrance, but they were counted in it: a row
+  of nothing but Invisible bricks had its own knock and haptic as it landed, and its own beat in the
+  row-by-row cascade. They are put straight into place now (`placeInvisibleBricksWithoutAnEntrance`)
+  and the rows and knocks are reckoned from the bricks that can be seen; a brick the fog hides is
+  hidden after it lands, so a fogged field still builds in. All three modes.
+  `InvisibleBricksMakeNoEntranceTests`.
+- **Auto-Aim aims at an Indestructible 1** ("It should. It shouldn't aim at an indestructible 2
+  brick"). One hit strikes an Indestructible 1 down to a 2 and counts as clearing it, so a free shot
+  at it does something; only the 2 is left out. The test that pinned the old rule, from the note
+  that first said to skip indestructibles, now pins his new one. `EndlessIIAutoAimTargetTests`.
+- **A Wedge Portal no longer turns round as it comes back** ("a graphics glitch after a ball goes
+  through it - like the flipped wedge portal brick appears and then disappears"). When the cooldown
+  ends, `showEndlessIIPortalsReady` pulses each Portal's picture, and the pulse was `scale(to:)`: a
+  mirrored or flipped Wedge draws its picture reflected, at a scale of -1, and watched frame by frame
+  the pulse took it from -1 through nothing to +1.24 and left it the wrong way round until the next
+  redraw. The pulse keeps each scale's sign now. Symmetrical shapes look the same either way round,
+  which is why only the Wedge showed it. The first version of the test sampled twice and passed on
+  the old code; it samples every 20 milliseconds through the pulse now, and fails there.
+  `APortalWedgeKeepsItsFacingTests`.
+- **Not reproduced: an inactive Portal silent when hit** ("Portal brick doesn't make a haptic or
+  sounds when it's hit when it's inactive after recently being used - it should"). Round 393 gave
+  the cooling Portal its knock and haptic, and `EveryBrickHitIsHeardTests` calls the hit directly.
+  This round sent a real ball into a cooling Portal - with the cooldown set by hand, straight after a
+  genuine jump, and on a Portal of every shape from below and above - and every one knocked. The
+  knock and the haptic are in the same branch, so a silent one would be silent both ways. Asked of
+  James: which Portal (shape, Big or Square), what had just happened, and whether it was every time.
+- **Seen in the round's checks and not reproduced.** The full suite failed
+  `AlwaysOnResumesWithoutScoringAgainTests` once (the Classic day for 30 October, standing on Lasers:
+  "score 11 x1.1 before the resume, 325 x1.0 after", which is a fresh game rather than the saved
+  one), and two solo runs straight afterwards had the test host go silent for 23 seconds after the
+  Always On collection and be relaunched, with no crash report. Since then the class has passed ten
+  times on this round's code and nine without it, six of each alternated so both met the same
+  simulator; the two hangs came a minute apart. Recorded as the simulator, beside the three
+  `libRPAC` crashes the soak met the same day - and worth a look if it comes back.
+
 **Round 400: two faults the pre-release soak found, the start of 1.3.1.**
 
 James, reading the soak's results: "Are any of those issues that were found worth resolving in the

@@ -560,13 +560,15 @@ are a release's work on their own.
 
 **James's list (20 October 2026):**
 
-- Don't make a sound or animation on the level intro for invisible bricks.
+- ~~Don't make a sound or animation on the level intro for invisible bricks.~~ **Fixed, round 401.**
 - A Portal brick that is inactive after recently being used makes no haptic or sound when hit. It
-  should.
-- Auto-Aim does not aim at an Indestructible 1 brick even when it is the lowest available brick.
-  It should. It should not aim at an Indestructible 2 brick.
-- The Portal wedge brick has a graphics glitch after a ball goes through it - as if the flipped
-  wedge portal brick appears and then disappears.
+  should. **Not reproduced (round 401)**: every cooling Portal knocked on the simulator, whatever
+  its shape or however it got there. Waiting on which Portal and what had just happened.
+- ~~Auto-Aim does not aim at an Indestructible 1 brick even when it is the lowest available brick.
+  It should. It should not aim at an Indestructible 2 brick.~~ **Fixed, round 401.**
+- ~~The Portal wedge brick has a graphics glitch after a ball goes through it - as if the flipped
+  wedge portal brick appears and then disappears.~~ **Fixed, round 401**: the ready pulse turned
+  a reflected Wedge's picture the wrong way round.
 
 **Open, from the soak:**
 

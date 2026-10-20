@@ -1437,9 +1437,19 @@ extension GameScene {
     func showEndlessIIPortalsReady() {
         for portal in endlessIIPortals() {
             endlessIIShowPortal(portal, cooling: false)
-            endlessIIPortalMark(on: portal)?
-                .run(.sequence([.scale(to: 1.25, duration: 0.08),
-                                .scale(to: 1, duration: 0.12)]))
+            if let mark = endlessIIPortalMark(on: portal) {
+                let across: CGFloat = mark.xScale < 0 ? -1 : 1
+                let up: CGFloat = mark.yScale < 0 ? -1 : 1
+                mark.run(.sequence([.scaleX(to: 1.25*across, y: 1.25*up, duration: 0.08),
+                                    .scaleX(to: across, y: up, duration: 0.12)]))
+            }
+            // **Pulsed the way it is facing** (James, round 400: "Portal wedge brick has a
+            // graphics glitch after a ball goes through it - like the flipped wedge portal brick
+            // appears and then disappears"). The mark is the face's picture where there is one,
+            // and a mirrored or flipped Wedge draws its picture reflected, by a scale of -1;
+            // `scale(to:)` set both scales positive, so for the length of the pulse the Wedge
+            // pointed the other way, until the next refresh turned it back. Symmetrical shapes
+            // look the same either way round, which is why only the Wedge showed it
             // A small pulse as well as the colour. The two ends can be off screen from each
             // other, and coming back to life is the thing worth noticing
         }

@@ -895,8 +895,13 @@ extension GameScene {
         // is the one the player cannot aim at themselves. The body check below is what actually
         // answers "is there a brick here".
         guard brick.endlessIIRole != .portal else { return false }
-        guard brick.texture != brickIndestructible1Texture,
-              brick.texture != brickIndestructible2Texture else { return false }
+        guard brick.texture != brickIndestructible2Texture else { return false }
+        // **Only the Indestructible that cannot be broken** (James, round 400: "Auto aim does
+        // not aim at an indestructible 1 brick even if it's the lowest available brick. It
+        // should. It shouldn't aim at an indestructible 2 brick"). An Indestructible 1 takes a
+        // hit - it is struck down to an Indestructible 2 and counts as cleared - so a free shot
+        // at it does something, which is the whole question this function asks. The 2 is the
+        // one a shot is wasted on
         if let held = brick.endlessIIPowerUpIndex,
            GameScene.endlessIIHarmfulPowerUps.contains(held) { return false }
         if let body = brick.physicsBody, body.categoryBitMask == 0 { return false }

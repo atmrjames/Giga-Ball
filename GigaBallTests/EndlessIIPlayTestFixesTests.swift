@@ -636,11 +636,16 @@ final class EndlessIIAutoAimTargetTests: XCTestCase {
         XCTAssertFalse(scene.endlessIIWorthAimingAt(portal))
     }
 
-    func testAnIndestructibleIsNot() {
+    /// James, round 400: "Auto aim does not aim at an indestructible 1 brick even if it's the
+    /// lowest available brick. It should. It shouldn't aim at an indestructible 2 brick."
+    func testAnIndestructible1IsWorthTheShotAndAn2IsNot() {
         let scene = scene()
+        let struckDown = brick(in: scene)
+        struckDown.texture = scene.brickIndestructible1Texture
+        XCTAssertTrue(scene.endlessIIWorthAimingAt(struckDown), "a hit does something to it")
         let solid = brick(in: scene)
-        solid.texture = scene.brickIndestructible1Texture
-        XCTAssertFalse(scene.endlessIIWorthAimingAt(solid))
+        solid.texture = scene.brickIndestructible2Texture
+        XCTAssertFalse(scene.endlessIIWorthAimingAt(solid), "a hit does nothing to it")
     }
 
     func testABrickHoldingABadPowerUpIsNot() {
@@ -683,11 +688,21 @@ final class EndlessIIAutoAimTargetTests: XCTestCase {
     func testTheShotGoesToTheLowestBrickWorthHitting() {
         let scene = scene()
         let lowIndestructible = brick(in: scene, at: CGPoint(x: 0, y: 10))
-        lowIndestructible.texture = scene.brickIndestructible1Texture
+        lowIndestructible.texture = scene.brickIndestructible2Texture
         let worthIt = brick(in: scene, at: CGPoint(x: 40, y: 60))
 
         XCTAssertEqual(scene.endlessIIAutoAimTarget(from: .zero), worthIt.position,
                        "the lowest brick was one the shot cannot change")
+    }
+
+    /// James, round 400: "Auto aim does not aim at an indestructible 1 brick even if it's the
+    /// lowest available brick. It should."
+    func testAnIndestructible1ThatIsLowestGetsTheShot() {
+        let scene = scene()
+        let lowest = brick(in: scene, at: CGPoint(x: 0, y: 10))
+        lowest.texture = scene.brickIndestructible1Texture
+        _ = brick(in: scene, at: CGPoint(x: 40, y: 60))
+        XCTAssertEqual(scene.endlessIIAutoAimTarget(from: .zero), lowest.position)
     }
 
     func testNearestWinsAmongBricksOnTheSameRow() {
@@ -2429,6 +2444,83 @@ final class AStoppedExtraBallIsSentOnTests: XCTestCase {
         let v = extra.physicsBody?.velocity ?? .zero
         XCTAssertLessThan(hypot(v.dx, v.dy), 1, "a sticky catch stops its ball on purpose")
         XCTAssertTrue(scene.endlessIIHeldBalls.contains { $0 === extra }, "still held")
+        scene.view?.presentScene(nil)
+    }
+}
+
+/// James, round 400: "Don't make a sound or animation on level intro for invisible bricks." A row
+/// of Invisible bricks had its own knock and haptic as it landed, and its own beat in the cascade,
+/// with nothing to see arrive.
+final class InvisibleBricksMakeNoEntranceTests: XCTestCase {
+    private var window: UIWindow?
+
+    func testInvisibleBricksArriveInPlaceAndOutOfTheIntro() throws {
+        for mode in [GameMode.classic, .endless, .endlessII] {
+            let setup = LevelPackSetup.shared
+            let scene = try PaddleFamilySweep.present(theme: 0, keeping: &window, mode: mode,
+                                                      level: mode == .classic ? setup.startLevelNumber[2] : nil,
+                                                      pack: mode == .classic ? 2 : 1)
+            scene.enumerateChildNodes(withName: BrickCategoryName) { node, _ in node.removeFromParent() }
+            let rowY = scene.finalBrickRowHeight + scene.brickHeight*4
+            let seen = BrickSweep.brick("normal", texture: scene.brickNormalTexture, in: scene,
+                                        rowY: rowY, column: 1)
+            let unseen = BrickSweep.brick("normal", texture: scene.brickInvisibleTexture, in: scene,
+                                          rowY: rowY + scene.brickHeight, column: 1)
+            unseen.isHidden = true
+            scene.endlessIIBuildInBricks.removeAll()
+            scene.prepareBuildIn(seen)
+            scene.prepareBuildIn(unseen)
+
+            scene.placeInvisibleBricksWithoutAnEntrance()
+            XCTAssertFalse(scene.endlessIIBuildInBricks.contains { $0 === unseen },
+                           "\(mode): the Invisible brick is not part of the intro")
+            XCTAssertTrue(scene.endlessIIBuildInBricks.contains { $0 === seen },
+                          "\(mode): a brick that can be seen still arrives")
+            XCTAssertEqual(unseen.position.y, rowY + scene.brickHeight, accuracy: 0.01,
+                           "\(mode): already where it belongs")
+            XCTAssertEqual(unseen.alpha, 1, "\(mode): as it would have been at the end")
+            XCTAssertEqual(unseen.xScale, 1, "\(mode)")
+            XCTAssertTrue(unseen.isHidden, "\(mode): and still invisible")
+            scene.view?.presentScene(nil)
+        }
+    }
+}
+
+/// James, round 400: "Portal wedge brick has a graphics glitch after a ball goes through it - like
+/// the flipped wedge portal brick appears and then disappears." The ready pulse scaled the face's
+/// picture to positive values, and a mirrored or flipped Wedge's picture is drawn reflected.
+final class APortalWedgeKeepsItsFacingTests: XCTestCase {
+    private var window: UIWindow?
+
+    func testTheReadyPulseKeepsEveryWayAWedgeCanFace() throws {
+        let scene = try PaddleFamilySweep.present(theme: 0, keeping: &window, frozen: false)
+        scene.enumerateChildNodes(withName: BrickCategoryName) { node, _ in node.removeFromParent() }
+        var marks: [(String, SKNode, CGFloat, CGFloat)] = []
+        for (index, (mirrored, flipped)) in [(false, false), (true, false), (false, true), (true, true)].enumerated() {
+            let brick = BrickSweep.brick("normal", texture: scene.brickNormalTexture, in: scene,
+                                         rowY: scene.finalBrickRowHeight + scene.brickHeight*CGFloat(4 + 2*index),
+                                         column: 3)
+            brick.endlessIIFaceMirrored = mirrored
+            brick.endlessIIFaceFlipped = flipped
+            scene.applyEndlessIIStyle(.wedge, to: brick)
+            scene.makePortal(brick)
+            PaddleFamilySweep.settle(0.05)
+            let mark = try XCTUnwrap(scene.endlessIIPortalMark(on: brick))
+            marks.append(("mirrored \(mirrored), flipped \(flipped)", mark, mark.xScale, mark.yScale))
+        }
+        XCTAssertTrue(marks.contains { $0.2 < 0 || $0.3 < 0 },
+                      "some of the four draw their picture reflected, which is what is at stake")
+        scene.showEndlessIIPortalsReady()
+        for step in 0..<20 {
+            PaddleFamilySweep.settle(0.02)
+            // Every frame or two through the pulse and past it: the old pulse took a reflected
+            // picture from -1 through nothing to +1.24, and two samples either side missed it
+            for (label, mark, x, y) in marks {
+                XCTAssertEqual(mark.xScale.sign, x.sign, "\(label): facing across, step \(step)")
+                XCTAssertEqual(mark.yScale.sign, y.sign, "\(label): facing up, step \(step)")
+                XCTAssertGreaterThan(abs(mark.xScale), 0.9, "\(label): never squashed flat")
+            }
+        }
         scene.view?.presentScene(nil)
     }
 }
