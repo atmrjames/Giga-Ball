@@ -2964,6 +2964,26 @@ testers:
   falling power-up's position by `brickWidth`, so a bare `GameScene()` with a power-up on
   screen traps converting NaN to Int. A real scene is always laid out before play.
 
+**Round 399b: the pre-release soak.** Eight hours on round 399's code before the 1.3 upload,
+then a fresh full suite: **2,946 and 33 sweeps passed, no relaunches.** The soak itself:
+
+- **The coming year of dailies:** 368 days, every one clean.
+- **The play soak:** 214 of 220 games clean. Three Mayhem games noted a ball running flat or
+  stopped dead (seeds 21, 40, 154) and three a hidden plain brick unseen in row 21 (Endless seeds
+  80 and 170, and the endless daily of 23 May 2027, seed 215). The three Mayhem seeds replayed clean.
+- **The resume soak:** 727 of 777 seeds clean. The failures are mostly one brick lost and one hit
+  scored in the resumed game's still moment, or a power-up set read differently; five of six
+  replayed seeds passed and the sixth failed differently, so they follow timing rather than seed.
+  **Not this round:** the same sixty seeds on round 398c's code and on round 399's, side by side,
+  failed 3 of 28 (before its simulator relaunched) and 4 of 60. Whether any of it is the game
+  rather than the check is open - the check stops the resumed scene's physics, so a brick struck
+  in it is worth one more look after 1.3.
+- **Three relaunches,** each a crash inside `libRPAC.dylib` - the debugger's interposed
+  diagnostics - under Metal, the audio queue and Core Image, with no Giga-Ball frame in any.
+- **Release check:** a Release build with Xcode 27.0 (27A266a) succeeds and is 1.3 (83),
+  encryption exempt, with its privacy manifest and without the debug-only strings. Xcode Cloud
+  numbers its own builds.
+
 **Round 399: James's nine notes after the soak build.**
 
 James: "This is much better. I still have some notes after playing, but no more silly mistakes yet."
