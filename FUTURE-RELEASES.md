@@ -71,7 +71,15 @@ held back for a release that would follow immediately after. The foundations sti
 first within it, for the reason argued above: the player-visible work lands on top of
 them.
 
-### Where it stands (25 September 2026, evening)
+### Where it stands (20 October 2026)
+
+**Submitted for App Review.** Built by Xcode Cloud from `release-1.3` as it stood at round 399b
+(the pre-release soak written down), uploaded to App Store Connect and submitted on 20 October,
+set to release manually so James can announce it the same day. Two faults the soak found were
+left out on purpose (James: "let's get 1.3 ready for launch without those fixes for now - we can
+start a 1.3.1 release branch"); they are the start of **1.3.1** below.
+
+### Where it stood (25 September 2026, evening)
 
 **iOS 27 has shipped, so 1.3 is no longer timed to it** (James: "that is now released, so the
 app update will come later"), and the website says only that it is in testing. What is left:
@@ -537,6 +545,39 @@ the pack selection view.
 
 ---
 
+## 1.3.1
+
+**A bug-fix follow-up, on `release-1.3.1`** (version 1.3.1, branched from 1.3 as submitted). Fixes
+only: the features James first listed under 1.3.1 are in 1.4, which his own plan already defines
+as bug fixes, refinements and quality of life, and some of them - localisation, accessibility -
+are a release's work on their own.
+
+**Fixed (round 400, found by the pre-release soak):**
+
+- A brick flashed on by a paddle hit while Hide Bricks ran, hidden for good if Show Bricks arrived
+  or Hide Bricks ended during the flash. Classic, Endless and Mayhem.
+- An extra Mayhem ball that stopped dead stayed stopped.
+
+**James's list (20 October 2026):**
+
+- Don't make a sound or animation on the level intro for invisible bricks.
+- A Portal brick that is inactive after recently being used makes no haptic or sound when hit. It
+  should.
+- Auto-Aim does not aim at an Indestructible 1 brick even when it is the lowest available brick.
+  It should. It should not aim at an Indestructible 2 brick.
+- The Portal wedge brick has a graphics glitch after a ball goes through it - as if the flipped
+  wedge portal brick appears and then disappears.
+
+**Open, from the soak:**
+
+- **Halo can be gone after a resume** (Mayhem): lost in 7 of 40 save-and-resume cycles in a test,
+  with the run still in play. Not new in 1.3. See ENDLESS-2 round 400.
+- **A brick can be struck in the resumed game's first moment** (the resume soak's most common
+  failure, about one seed in twenty, on 1.3 and on round 398's code alike). Not yet known whether it is
+  the game or the check.
+
+---
+
 ## 1.4
 
 Moved here from the 1.3 plan (James, round 344: "never built and never cut - push these out to
@@ -565,6 +606,55 @@ daily's notifications and share card, Mayhem Rules in the other modes, and the d
 - **The slow and fast ball power-ups reaching the other timers and the drop rate** - see
   "Power-up interactions" below for why they were deferred.
 
+**James's definition (20 October 2026):** "No major new game modes, functions or changes. Bug
+fixes, refinements, optimisations, QoL features." His notes for it, as he wrote them:
+
+*Moved from his 1.3.1 list:*
+
+- Themed backstops.
+- Sort achievements on the info view by percentage complete (pairs with round 399's percentage
+  in the tick's corner).
+- A power-up that takes all the bricks on screen and mixes up their positions randomly.
+- A Brick Swap power-up that swaps brick types around.
+- Independent volume sliders for music and sounds.
+- Localisation.
+- iPad and Mac cursor support: hover to move the paddle, and the cursor morphing into buttons on
+  hover.
+- Keyboard support: arrow keys to move the paddle.
+- Check Mac compatibility; check Vision Pro compatibility (see "Mac and Vision Pro" below).
+- An accessibility focus: how many items on Apple's accessibility checklist can be covered.
+- Custom brick design layouts for Endless Mayhem phases, rows and sections.
+- New Classic Mode pack(s), with new power-ups such as one that resets the level to its starting
+  condition. New packs, so the existing eleven and their scores are untouched.
+
+*Descoped from 1.3:*
+
+- Game backgrounds: scrolling (`EndlessMayhemBackdrop`), and the Grid background scaled to the
+  marker grid, which needs the artwork's pitch measured and pairs with the background art.
+- Liquid Glass round the game mode icons instead of the olive circles.
+- A new main menu background graphic behind the blur.
+- A small ball-and-paddle graphic on the launch splash that animates in with the glow and the
+  logo's emboss and settles into the app icon, above the Giga-Ball logo (also in ENDLESS-2
+  §12.0's backlog).
+- Animations around the app; the glowing light theme carried through graphics, sounds and
+  animations; SF Symbols wherever possible.
+- A playable tutorial on first start, and from the info menus.
+- An animated loading graphic on the resume splash screen.
+- An option to play the next pack from Classic's pack complete screen.
+- The multiplier label animating as it reaches 2.0.
+- The Giga-Ball logo or title somewhere on the game scene.
+- Subtle shadows or glows behind the ball, bricks, power-ups, lasers, paddle and power-up icons.
+- Updated Game Center achievement and leaderboard images.
+- A giant widget app icon whose action the player sets in settings - a shortcut to a menu or a
+  game mode.
+- A better animation when the ball hits a level's last brick, and a ball animation at the end of
+  a level.
+- A tidier animation when a ball is lost and the new ball goes to the paddle.
+- An icon for each daily challenge including its theme, paddle, ball and background.
+- A swoosh between the ball and paddle on the theme icons.
+- A score breakdown: tap the score at the end of a level or game to see where the points came
+  from and how they were worked out.
+
 #### Power-up interactions — deferred, and why
 Two of three requested interactions between the ball-speed power-ups and everything else
 are **not built**. The third is: slow ball makes lasers fire faster, fast ball slower
@@ -583,6 +673,41 @@ Green power-ups are the good ones and award points; red ones deduct.
 ---
 
 ## 1.5 and beyond
+
+**James's plan (20 October 2026):** "1.5 - Zen mode, multiplayer mode, speed runner mode." Every
+one of them a new mode with its own leaderboards, so nothing existing is touched. His notes:
+
+- **Speed runners.** Pack time leaderboards, separate for time and score with power-ups off; an
+  option to turn power-ups on or off, with non-power-up leaderboards; an option to turn level
+  intro screens off completely, and other things that help a speed run; best time per pack on
+  Game Center.
+- **Zen / forever mode.** Power-ups on or off, and each one available, unavailable or always on
+  (with the stage chosen for staged ones like paddle size); choose which bricks, styles, shapes
+  and movements can appear, at least one; a softer, slower soundtrack and sounds; no Game Center
+  or score board, the score logged in the game.
+- **Multiplayer, pong style, bricks in the middle.** First to get their ball past the other wins;
+  first to 10 goals. Each player has their own ball, in their own colour, which reappears on their
+  paddle after a goal. Bricks in the middle to break before scoring, some reappearing after each
+  goal, a new row on each side after a goal, and bricks in each player's colour that their own ball
+  passes over. A time limit on the sticky paddle. Multiplayer power-ups: move bricks closer to the
+  opponent, power-ups collected applied to the opponent, a backstop. Lasers can rebound the
+  opponent's ball, in each player's colour. Unlockable paddle and ball designs in home and away
+  colours. An own goal takes a goal off, never below nought. Local multiplayer on iPad, and play
+  against the computer. Open: can the two balls touch?
+- **Classic Mode 2.0**, with the new bricks and power-ups.
+- **A continuously falling brick mode** until you crash, like Tetris, starting at the top row.
+- **User level creation.** Place bricks, pick their types and colours and paint them in, choose
+  the power-ups available and how often; a cloud library of user levels and packs with ranking,
+  sorting and shuffle.
+- **A simplified widescreen mode** for Apple TV, Mac, Vision Pro, a foldable iPhone and CarPlay,
+  shown when the view is wide enough, with widescreen levels in landscape on iPad and iPhone.
+  The fixed play-zone ratio is the constraint here: a widescreen mode is a new mode with its own
+  zone, not the existing zone reshaped.
+- **Foldable iPhone compatibility**, and **a Watch game mode**.
+
+**Since built, in 1.3:** the second endless mode (Endless Mayhem), the new power-ups and brick
+types listed below, the daily challenge, and themed game backgrounds. The rest of the list below
+is as written in August.
 
 Substantial but coherent — each is a release theme in its own right.
 
@@ -642,7 +767,9 @@ Substantial but coherent — each is a release theme in its own right.
 ## Needs a decision before it can be planned
 
 ### Monetisation — deferred, low priority
-Not for the next release. "Option to tip the creator" means reintroducing StoreKit, which
+**Still on James's list (20 October 2026) as "option to tip the creator".** A tip is an in-app
+purchase, so it would end "no ads and no in-app purchases", which is how 1.3 is described on the
+App Store and in James's launch post, and bring back StoreKit code 1.3 removed. Not for the next release. "Option to tip the creator" means reintroducing StoreKit, which
 is a reasonable eventual choice, but nothing should be built that depends on it until the
 model is decided. Several older notes assume a premium tier that no longer exists and are
 dead as written.
@@ -657,6 +784,12 @@ Wanted, and a genuinely appealing direction. "Add compatibility" hides a large f
 
 The cheap option is genuinely viable for a game like this and worth trying first. All of
 them depend on the safe-area work in 1.3, and all must preserve the fixed play-zone ratio.
+
+### A Daily Challenge mini pack
+James (20 October 2026): a daily format of three random Classic levels, three spare balls, highest
+score wins, the twists still applying (perhaps not Time Trial). A new daily format scores
+differently from the existing daily, so it needs leaderboards of its own, and a decision on how it
+sits beside the one-level daily: instead of it on some days, or as a second challenge each day.
 
 ### Understanding player drop-off without collecting data
 Do **not** add an analytics SDK — it would cost the "Data Not Collected" privacy label
