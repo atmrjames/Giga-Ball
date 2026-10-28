@@ -2942,8 +2942,11 @@ final class SafetyPaddleParityTests: XCTestCase {
         scene.paddle.xScale = 1.5
         scene.tickEndlessIISafetyPaddle()
 
-        XCTAssertEqual(bar(scene)?.xScale ?? 0, 1.5, accuracy: 0.001,
+        XCTAssertEqual(bar(scene)?.frame.width ?? 0, scene.paddle.frame.width, accuracy: 0.5,
                        "the paddle expanded and its safety net did not")
+        XCTAssertEqual(bar(scene)?.xScale ?? 0, 1,
+                       "grown by its size, not its scale - a scale stretches the grip it holds "
+                       + "(1.3 play test, `TheSafetyPaddleGripKeepsItsEndsTests`)")
     }
 
     /// It takes the paddle's shape while one is running, and its body is traced from it.

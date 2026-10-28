@@ -260,12 +260,20 @@ extension GameScene {
         guard endlessIISafetyPaddleClock.isRunning == false else {
             if bar.position.y != endlessIISafetyPaddleY { bar.position.y = endlessIISafetyPaddleY }
             // Every frame, so it glides down with a Quicksand and back up when it ends
-            if bar.xScale != paddle.xScale || bar.yScale != paddle.yScale {
-                bar.xScale = paddle.xScale
-                bar.yScale = paddle.yScale
-                // Expand and Shrink animate `xScale` and never touch `size`, so the check
-                // above never fired for them - the same miss the mirror had until round 216
+            if bar.xScale != 1 || bar.yScale != 1 {
+                bar.xScale = 1
+                bar.yScale = 1
             }
+            // **The paddle's width as a size, never as a scale** (James, 1.3 play test: "ball
+            // spin graphic expands and shrinks incorrectly on the safety paddle"). The bar used to
+            // copy Expand and Shrink as the paddle wears them, an animated `xScale` - and a scale
+            // stretches everything the bar holds. Its grip strip is a nine-slice inside it, so
+            // under two Expands the grip's rounded ends were drawn twice their width, swelling and
+            // shrinking as the paddle did, while the paddle's own grip, a sibling with a scale of
+            // its own, kept them (§8.6: "a parent's scale stretches a child's slices again"). The
+            // size check below already follows the paddle every frame, because `paddle.size`
+            // carries the paddle's scale (§8.6), so the bar is the paddle's width on screen with
+            // nothing inside it stretched - and its body, made from that size, is not scaled again
             // **The paddle's twin follows the paddle** (round 203, the first cell of the
             // parity matrix James asked for): Expand and Shrink write the paddle's width
             // directly, and a bar that kept its birth width was the same object at a

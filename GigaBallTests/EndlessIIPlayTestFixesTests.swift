@@ -2615,3 +2615,41 @@ final class PictureBackgroundsHaveNoSeamTests: XCTestCase {
         XCTAssertGreaterThan(checked, 0, "no picture backgrounds found to check")
     }
 }
+
+/// James, 1.3 play test: "ball spin graphic expands and shrinks incorrectly on the safety paddle."
+/// The bar copied Expand as a scale, which stretched the grip's nine-slice inside it: two Expands
+/// drew its rounded ends at twice their width.
+final class TheSafetyPaddleGripKeepsItsEndsTests: XCTestCase {
+    private var window: UIWindow?
+
+    func testUnderExpandTheBarIsThePaddlesWidthAndScalesNothingItHolds() throws {
+        let scene = try PaddleFamilySweep.present(theme: 0, keeping: &window, frozen: false)
+        scene.physicsWorld.speed = 0
+        scene.endlessIICollectBallSpin()
+        scene.endlessIICollectSafetyPaddle()
+        let expand = try XCTUnwrap(LevelPackSetup.shared.powerUpNameArray.firstIndex(of: "Expand Paddle"))
+        var checks = 0
+        for _ in 0..<2 {
+            let carrier = SKSpriteNode(texture: scene.powerUpTextureArray[expand])
+            scene.addChild(carrier)
+            scene.applyPowerUp(node: carrier, silently: true)
+            for _ in 0..<12 {
+                PaddleFamilySweep.settle(0.05)
+                let bar = try XCTUnwrap(scene.childNode(withName: GameScene.endlessIISafetyPaddleName)
+                                        as? SKSpriteNode)
+                XCTAssertEqual(bar.xScale, 1, "a scale would stretch the grip's ends")
+                checks += 1
+            }
+            PaddleFamilySweep.settle(0.3)
+            let bar = try XCTUnwrap(scene.childNode(withName: GameScene.endlessIISafetyPaddleName)
+                                    as? SKSpriteNode)
+            XCTAssertEqual(bar.frame.width, scene.paddle.frame.width, accuracy: 0.5,
+                           "still the paddle's twin on screen")
+            // Once the paddle has finished growing: mid-animation the bar is a frame behind,
+            // because it reads the paddle before that frame's actions run - as it always has
+        }
+        XCTAssertGreaterThan(scene.paddle.xScale, 1.5, "the paddle did expand")
+        XCTAssertGreaterThan(checks, 0)
+        scene.view?.presentScene(nil)
+    }
+}
