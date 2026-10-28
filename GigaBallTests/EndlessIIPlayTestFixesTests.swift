@@ -2701,3 +2701,53 @@ final class ShapedGripsFitTheirPaddleTests: XCTestCase {
         scene.view?.presentScene(nil)
     }
 }
+
+/// James, 1.3 play test: "Time trial twist should be made more obvious at the start. Maybe a big
+/// 90s in the middle at the start which animates down to the location of the countdown timer at
+/// the top of the screen when the ball is first released from the paddle."
+final class TheTimeTrialOpensWithItsNinetySecondsTests: XCTestCase {
+    private var window: UIWindow?
+
+    override func tearDown() {
+        DailyChallengeSession.shared.active = nil
+        super.tearDown()
+    }
+
+    private func trial() throws -> GameScene {
+        DailyChallengeSession.shared.active = DailyChallenge(
+            dateKey: "2026-10-05", mode: .endlessII, classicLevel: nil, twists: [.timeTrial])
+        let scene = try PaddleFamilySweep.present(theme: 0, keeping: &window, frozen: false,
+                                                  intoPlay: false)
+        if !(scene.gameState.currentState is Playing) { scene.gameState.enter(Playing.self) }
+        for _ in 0..<3 where scene.finishEndlessIIBuildIn() {}
+        return scene
+    }
+
+    func testAFreshRunShowsNinetyUntilTheServeAndTheClockTakesOver() throws {
+        let scene = try trial()
+        PaddleFamilySweep.settle(0.5)
+        XCTAssertTrue(scene.ballIsOnPaddle)
+        XCTAssertNotNil(scene.dailyTimeTrialOpening, "a big 90s in the middle at the start")
+        XCTAssertEqual(scene.dailyClockLabel?.alpha, 0, "the corner clock waits for it")
+        XCTAssertEqual(scene.dailyTimeTrialRemaining, DailyTwist.timeTrialSeconds,
+                       "and no time is spent while it waits")
+
+        let opening = try XCTUnwrap(scene.dailyTimeTrialOpening)
+        scene.releaseBall()
+        PaddleFamilySweep.settle(0.8)
+        XCTAssertNil(scene.dailyTimeTrialOpening, "sent to the countdown timer at the serve")
+        XCTAssertNil(opening.parent, "and gone once it has arrived, nothing left in the middle")
+        XCTAssertEqual(scene.dailyClockLabel?.alpha ?? 0, 1, accuracy: 0.01,
+                       "and the clock counting from there")
+        scene.view?.presentScene(nil)
+    }
+
+    func testARunPartWayThroughHasNoOpening() throws {
+        let scene = try trial()
+        scene.dailyTimeTrialRemaining = 60
+        PaddleFamilySweep.settle(0.5)
+        XCTAssertNil(scene.dailyTimeTrialOpening, "a resume part-way through is told by its clock")
+        XCTAssertEqual(scene.dailyClockLabel?.alpha ?? 0, 1, accuracy: 0.01)
+        scene.view?.presentScene(nil)
+    }
+}

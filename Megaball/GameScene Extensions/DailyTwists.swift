@@ -616,6 +616,10 @@ extension GameScene {
         DailyChallengeSession.shared.lastRunPosted = false
         dailyTimeTrialRemaining = DailyTwist.timeTrialSeconds
         dailyTimeTrialUnderway = false
+        dailyTimeTrialOpened = false
+        dailyTimeTrialOpening?.removeFromParent()
+        dailyTimeTrialOpening = nil
+        // A run started again gets its opening again
         dailyCountdownShown = -1
         showDailyClock()
         prepareDailyComparison()
@@ -866,9 +870,12 @@ extension GameScene {
     func tickDailyTimeTrial(_ delta: TimeInterval) {
         guard dailyTimeTrial, gameoverStatus == false,
               gameState.currentState is Playing, isPaused == false else { return }
+        if dailyTimeTrialUnderway == false { showTheTimeTrialOpening() }
+        let wasUnderway = dailyTimeTrialUnderway
         dailyTimeTrialUnderway = GameScene.timeTrialUnderway(already: dailyTimeTrialUnderway,
                                                             ballOnPaddle: ballIsOnPaddle,
                                                             remaining: dailyTimeTrialRemaining)
+        if wasUnderway == false, dailyTimeTrialUnderway { sendTheTimeTrialOpeningToTheClock() }
         guard dailyTimeTrialUnderway else { return }
         guard spendDailyTimeTrial(delta) else { return }
 
@@ -1008,6 +1015,63 @@ extension GameScene {
 
     /// How many of the last seconds are counted aloud.
     static let dailyCountdownFrom = 3
+
+    /// A big "90s" in the middle of a fresh Time Trial, until the ball is served (James, 1.3 play
+    /// test: "Time trial twist should be made more obvious at the start. Maybe a big 90s in the
+    /// middle at the start which animates down to the location of the countdown timer at the
+    /// top of the screen when the ball is first released from the paddle").
+    ///
+    /// The clock in the corner said it from the first frame, in the corner, where nobody is
+    /// looking before a serve. This says it where the ball is, in the READY countdown's own
+    /// lettering, and the corner clock waits for it to arrive. Only for a run with all ninety
+    /// seconds still to come: a resume part-way through has had its opening, and is told what
+    /// is left by the clock it comes back to.
+    func showTheTimeTrialOpening() {
+        guard dailyTimeTrialOpened == false, dailyTimeTrialOpening == nil,
+              dailyTimeTrialRemaining >= DailyTwist.timeTrialSeconds,
+              let clock = dailyClockLabel else { return }
+        dailyTimeTrialOpened = true
+        let picture = GameScene.countdownDigit("\(Int(DailyTwist.timeTrialSeconds))s",
+                                               height: readyCountdown.size.height)
+        let opening = SKSpriteNode(texture: SKTexture(image: picture), size: picture.size)
+        opening.zPosition = readyCountdown.zPosition
+        opening.position = readyCountdown.position
+        opening.alpha = 0
+        opening.setScale(1.6)
+        addChild(opening)
+        opening.run(.group([.fadeIn(withDuration: 0.25), .scale(to: 1, duration: 0.25)]))
+        // In as READY comes in, from larger and clear
+        dailyTimeTrialOpening = opening
+        clock.alpha = 0
+        // The clock waits for its number to arrive, or the run would open on two of them
+    }
+
+    /// Sends the opening up to the clock the moment the ball leaves the paddle, and lets the
+    /// clock take over as it lands.
+    func sendTheTimeTrialOpeningToTheClock() {
+        guard let opening = dailyTimeTrialOpening else {
+            dailyClockLabel?.alpha = 1
+            return
+        }
+        dailyTimeTrialOpening = nil
+        guard let clock = dailyClockLabel else {
+            opening.removeFromParent()
+            return
+        }
+        let target = clock.calculateAccumulatedFrame()
+        let landing = CGPoint(x: target.midX, y: target.midY)
+        let scale = opening.size.height > 0 && target.height > 0
+            ? target.height/opening.size.height : 0.3
+        opening.removeAllActions()
+        opening.alpha = 1
+        let flight = SKAction.group([.move(to: landing, duration: 0.45),
+                                     .scale(to: scale, duration: 0.45)])
+        flight.timingMode = .easeIn
+        opening.run(.sequence([flight, .removeFromParent()]))
+        clock.run(.sequence([.wait(forDuration: 0.35), .fadeIn(withDuration: 0.1)]))
+        // The clock comes up under it in the flight's last tenth, so the number never goes out
+        // and comes back - it shrinks into the place it is counting from
+    }
 
     /// A number drawn the way READY and GO! are drawn: pale lime, a lime edge, a lime glow,
     /// in the face the game's own numbers wear.

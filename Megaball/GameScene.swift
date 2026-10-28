@@ -1455,6 +1455,10 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	var dailyClockLabel: SKLabelNode?
 	/// The Time Trial's closing three, two, one, and which of them was last shown.
 	var dailyCountdownNode: SKSpriteNode?
+	/// The big "90s" a fresh Time Trial opens with, until the first serve sends it to the clock.
+	var dailyTimeTrialOpening: SKSpriteNode?
+	/// Whether this run has had its opening, so it is shown once and never after a serve.
+	var dailyTimeTrialOpened = false
 	var dailyCountdownShown = -1
 	var dailyFogTaking: [SKSpriteNode] = []
 	// What the fog is mid-way through taking - scheduled or fading - so an early launch can
