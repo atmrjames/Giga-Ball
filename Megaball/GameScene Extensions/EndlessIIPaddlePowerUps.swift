@@ -357,8 +357,19 @@ extension GameScene {
         paddleLaser.size = CGSize(width: paddle.size.width,
                                   height: ballSize*laser.size().height/base)
         paddleSticky.texture = sticky
-        paddleSticky.size = CGSize(width: paddle.size.width,
+        let baseWidth = paddleTexture.size().width
+        paddleSticky.size = CGSize(width: suffix != nil && baseWidth > 0
+                                       ? paddle.size.width*sticky.size().width/baseWidth
+                                       : paddle.size.width,
                                    height: ballSize*sticky.size().height/base)
+        // **Its width read off the art as well as its height** (James, 1.3 play test: "ball
+        // spin graphic doesn't show up correctly on a shaped paddle"). Every shaped grip and
+        // sticky face is drawn at the paddle's own width, 75 points, except Retro's shaped
+        // grips, which are 87 - drawn to reach over the decorated Retro layer, which is wider
+        // than the paddle. Forced to the paddle's width they were squeezed by a sixth, and the
+        // Retro dome came out narrower than the dome under it and floated above it. A picture
+        // the paddle's width is unchanged by this; the plain face keeps the paddle's width as
+        // it always has, because its nine-slice is what fits that one
 
         if suffix != nil {
             let whole = CGRect(x: 0, y: 0, width: 1, height: 1)

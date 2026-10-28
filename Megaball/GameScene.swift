@@ -2939,6 +2939,17 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
         let underside = paddle.position.y - paddle.size.height/2
         paddleLaser.position = CGPoint(x: paddle.position.x, y: underside)
         paddleSticky.position = CGPoint(x: paddle.position.x, y: underside)
+        if endlessIIGripIsDrawnForTheRetroLayer {
+            paddleSticky.position.y = underside + paddleHeight/2
+                - paddleRetroTexture.size.height/2
+        }
+        // **Retro's shaped grip stands where Retro's layer stands** (James, 1.3 play test: "ball
+        // spin graphic doesn't show up correctly on a shaped paddle"). Every other grip is drawn
+        // over the paddle and stands on its underside. Retro's five shaped grips are drawn over
+        // the decorated Retro layer (`positionRetroPaddleLayers`), which is taller than the
+        // paddle and hangs below it, so stood on the paddle's underside the black dome sat a
+        // third of a paddle above the pink dome it covers. On the layer's own bottom edge, as
+        // the layer is placed, the two domes meet
         refreshEndlessIISplitDress()
         // After the strips have been placed, because the pieces take their height and their
         // line from them - and from here rather than from the split's own refresh, which

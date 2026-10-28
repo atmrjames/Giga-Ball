@@ -2653,3 +2653,51 @@ final class TheSafetyPaddleGripKeepsItsEndsTests: XCTestCase {
         scene.view?.presentScene(nil)
     }
 }
+
+/// James, 1.3 play test: "ball spin graphic doesn't show up correctly on a shaped paddle." Retro's
+/// shaped grips are drawn over the decorated Retro layer, wider than the paddle and hanging below
+/// it; sized to the paddle and stood on its underside, the black dome was squeezed and floated
+/// above the pink dome it covers.
+final class ShapedGripsFitTheirPaddleTests: XCTestCase {
+    private var window: UIWindow?
+
+    func testRetrosShapedGripStandsOnItsLayerAtItsOwnWidth() throws {
+        for surface in PaddleBounce.Surface.allCases {
+            let scene = try PaddleFamilySweep.present(theme: LevelPackSetup.retroThemeIndex,
+                                                      keeping: &window, frozen: false)
+            scene.physicsWorld.speed = 0
+            scene.endlessIICollectPaddleSurface(surface)
+            PaddleFamilySweep.settle(0.3)
+            scene.endlessIICollectBallSpin()
+            PaddleFamilySweep.settle(0.5)
+            guard let suffix = scene.endlessIIPaddleShapeSuffix(surface) else {
+                scene.view?.presentScene(nil)
+                continue
+                // A surface with no picture of its own wears the plain paddle, and the plain grip
+            }
+            let art = scene.endlessIIThemedShapeArt("Grip", suffix)
+            let drawn = try XCTUnwrap(UIImage(named: art)?.size.width)
+            let plain = try XCTUnwrap(UIImage(named: "retroPaddle")?.size.width)
+            XCTAssertEqual(scene.paddleSticky.frame.width, scene.paddle.frame.width*drawn/plain,
+                           accuracy: 0.5, "\(surface): \(art) at its own width, as it was drawn")
+            let stands = art.hasPrefix("retro") ? scene.paddleRetroTexture.frame.minY
+                                                : scene.paddle.frame.minY
+            XCTAssertEqual(scene.paddleSticky.frame.minY, stands, accuracy: 0.5,
+                           "\(surface): \(art) standing on what it was drawn over")
+            XCTAssertEqual(scene.endlessIIGripIsDrawnForTheRetroLayer, art.hasPrefix("retro"))
+            scene.view?.presentScene(nil)
+        }
+    }
+
+    func testEveryOtherThemesShapedGripIsThePaddlesWidthOnItsUnderside() throws {
+        let scene = try PaddleFamilySweep.present(theme: 0, keeping: &window, frozen: false)
+        scene.physicsWorld.speed = 0
+        scene.endlessIICollectPaddleSurface(.convex)
+        PaddleFamilySweep.settle(0.3)
+        scene.endlessIICollectBallSpin()
+        PaddleFamilySweep.settle(0.5)
+        XCTAssertEqual(scene.paddleSticky.frame.width, scene.paddle.frame.width, accuracy: 0.5)
+        XCTAssertEqual(scene.paddleSticky.frame.minY, scene.paddle.frame.minY, accuracy: 0.5)
+        scene.view?.presentScene(nil)
+    }
+}

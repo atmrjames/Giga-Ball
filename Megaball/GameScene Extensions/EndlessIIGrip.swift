@@ -57,6 +57,17 @@ extension GameScene {
         gameMode == .endlessII && endlessIIBallSpinClock.isRunning
     }
 
+    /// Whether the grip being worn is one of Retro's own shaped pictures, drawn over the Retro
+    /// layer rather than over the paddle (1.3 play test). Asked of the picture, not of the theme
+    /// and the shape: a shape Retro has no grip of its own for wears the ordinary one, which is
+    /// drawn for the paddle and stands where every other grip stands.
+    var endlessIIGripIsDrawnForTheRetroLayer: Bool {
+        guard paddleTexture == retroPaddle, endlessIIWearsGrip, endlessIIShapeOwnsTheBounce,
+              let suffix = endlessIIPaddleSurface.flatMap({ endlessIIPaddleShapeSuffix($0) })
+        else { return false }
+        return endlessIIThemedShapeArt("Grip", suffix).hasPrefix("retro")
+    }
+
     /// Which overlay picture the paddle's top wants: the grip's or the sticky's.
     ///
     /// The one place the choice is made, so every caller that dresses the paddle - the shaped
