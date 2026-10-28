@@ -2568,3 +2568,50 @@ final class FallingPowerUpsDrawOverBricksTests: XCTestCase {
         scene.view?.presentScene(nil)
     }
 }
+
+/// James, 1.3 play test: "weird horizontal line on the prism background near the bottom". It was
+/// in the picture: one row of pixels, 83% of the way down, brighter than the rows either side, in
+/// all three sizes of the artwork. Every picture background is asked, so the next one is too.
+final class PictureBackgroundsHaveNoSeamTests: XCTestCase {
+
+    /// How much brighter the brightest single row is than the average of its two neighbours, in
+    /// levels out of 255. A smooth gradient answers well under one.
+    private func brightestSingleRow(of image: CGImage) -> (excess: Double, row: Int) {
+        let width = image.width, height = image.height
+        var pixels = [UInt8](repeating: 0, count: width*height*4)
+        let context = CGContext(data: &pixels, width: width, height: height, bitsPerComponent: 8,
+                                bytesPerRow: width*4, space: CGColorSpaceCreateDeviceRGB(),
+                                bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue)!
+        context.draw(image, in: CGRect(x: 0, y: 0, width: width, height: height))
+        let means = (0..<height).map { row -> Double in
+            var total = 0
+            let start = row*width*4
+            for x in 0..<width {
+                let p = start + x*4
+                total += Int(pixels[p]) + Int(pixels[p + 1]) + Int(pixels[p + 2])
+            }
+            return Double(total)/Double(width*3)
+        }
+        var worst = (excess: 0.0, row: 0)
+        for row in 1..<(height - 1) {
+            let excess = means[row] - (means[row - 1] + means[row + 1])/2
+            if excess > worst.excess { worst = (excess, row) }
+        }
+        return worst
+    }
+
+    func testNoPictureBackgroundHasALineAcrossIt() throws {
+        let bundle = Bundle(for: GameViewController.self)
+        var checked = 0
+        for background in GameBackground.allCases {
+            guard case .picture(let named) = background.paint else { continue }
+            let image = try XCTUnwrap(UIImage(named: named, in: bundle, with: nil)?.cgImage,
+                                      "\(named) is in the app")
+            let worst = brightestSingleRow(of: image)
+            XCTAssertLessThan(worst.excess, 3, "\(named): row \(worst.row) of \(image.height) "
+                              + "stands out by \(worst.excess) levels")
+            checked += 1
+        }
+        XCTAssertGreaterThan(checked, 0, "no picture backgrounds found to check")
+    }
+}
