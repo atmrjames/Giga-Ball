@@ -695,14 +695,193 @@ extension GameScene {
         let occupancy = endlessIIOccupancy()
         // Read once and asked of every brick, rather than rebuilt for each of the four sides
         // of each of them
+        let walls = endlessIIWallCells(in: occupancy)
+        guard let bottom = endlessIIBottomRow(in: occupancy) else { return }
         for brick in directionals {
+            let reachable = endlessIIReachableCells(walls: walls.union(endlessIICells(of: brick)),
+                                                    bottom: bottom)
+            // With this brick as a wall: the way to its open face cannot be through itself
             guard let side = brick.endlessIIVulnerableSide,
-                  endlessIISideIsReachable(side, from: brick, in: occupancy) == false,
-                  let open = endlessIIOpenSides(from: brick, in: occupancy).randomElement()
+                  endlessIISideFacesTheOpen(side, from: brick, in: occupancy,
+                                            reachable: reachable) == false,
+                  let open = EndlessIISide.allCases.filter({
+                      endlessIISideFacesTheOpen($0, from: brick, in: occupancy,
+                                                reachable: reachable)
+                  }).randomElement()
             else { continue }
             brick.endlessIIVulnerableSide = open
             endlessIIDrawVulnerableEdge(on: brick, side: open)
         }
+        // **A face the ball can get to, not only a face with no wall against it** (James, 1.3
+        // play test: "Too many enclosed spaces with the indestructible bricks and difficult to
+        // access directional bricks"). The rule since round 233 looked one cell out, so an open
+        // face over an empty cell passed - even when that cell was itself shut in by
+        // Indestructible bricks and the ball could never reach it
+    }
+
+    /// Whether a brick is a wall: something the ball can neither break nor pass.
+    ///
+    /// An Indestructible brick of either kind - a struck Indestructible 1 becomes a 2 and stays.
+    /// Not a Portal or a power-up brick, which wear the Indestructible picture underneath their
+    /// own and are respectively a way through and spent by a hit.
+    func endlessIIIsWall(_ brick: SKSpriteNode) -> Bool {
+        (brick.texture == brickIndestructible1Texture || brick.texture == brickIndestructible2Texture)
+            && brick.endlessIIRole != .portal && brick.endlessIIPowerUpIndex == nil
+    }
+
+    /// The lowest row any brick stands in, counted as every cell is, from the top - the row
+    /// the open space under the field begins beneath.
+    ///
+    /// Read off the bricks rather than off `finalBrickRowHeight`: the ball always plays below
+    /// the lowest brick, whatever the layout says, and a scene part-way through being laid out
+    /// or resumed has a floor that is not yet where its bricks are. Taken from the floor, the
+    /// search began among rows still full of bricks, read them as open space, and a resumed
+    /// game lost walls it should have kept. Nil when there is nothing to search, or when the
+    /// rows are not a field's rows at all.
+    func endlessIIBottomRow(in occupancy: [EndlessIICell: [SKSpriteNode]]) -> Int? {
+        guard let lowest = occupancy.keys.map(\.row).max(), lowest >= 0,
+              lowest <= GameScene.endlessIIDeepestFieldRow else { return nil }
+        return lowest
+    }
+
+    /// No field is anywhere near this deep; a row past it is a scene not laid out as a field.
+    static let endlessIIDeepestFieldRow = 80
+
+    /// Every cell the ball can get to: the open space under the field, and everything joined to
+    /// it through cells no wall stands in (1.3 play test).
+    ///
+    /// A breakable brick does not stop the search - the ball breaks its way through those - so
+    /// what is left out is exactly what Indestructible bricks have shut in. Rows above the top
+    /// are not the field; the ceiling closes it there.
+    func endlessIIReachableCells(in occupancy: [EndlessIICell: [SKSpriteNode]],
+                                 around brick: SKSpriteNode? = nil) -> Set<EndlessIICell> {
+        var walls = endlessIIWallCells(in: occupancy)
+        if let brick { walls.formUnion(endlessIICells(of: brick)) }
+        guard let bottom = endlessIIBottomRow(in: occupancy) else { return [] }
+        return endlessIIReachableCells(walls: walls, bottom: bottom)
+    }
+
+    /// The cells a wall stands in, read once so a search can be asked many times cheaply - a
+    /// Mayhem row is built inside a frame (`MayhemRowCostTests`), and every Directional brick
+    /// asks its own search.
+    func endlessIIWallCells(in occupancy: [EndlessIICell: [SKSpriteNode]]) -> Set<EndlessIICell> {
+        Set(occupancy.compactMap { cell, bricks in
+            bricks.contains(where: endlessIIIsWall) ? cell : nil
+        })
+    }
+
+    /// The cells a brick covers, as the occupancy map counts them.
+    func endlessIICells(of brick: SKSpriteNode) -> [EndlessIICell] {
+        let geometry = endlessIIGeometry
+        let origin = geometry.cell(at: brick.position)
+        let size = geometry.footprint(of: brick.size)
+        return (0..<size.rows).flatMap { row in
+            (0..<size.columns).map {
+                EndlessIICell(column: origin.column + $0, row: origin.row + row)
+            }
+        }
+    }
+
+    /// The search itself, against walls already found.
+    func endlessIIReachableCells(walls: Set<EndlessIICell>, bottom: Int) -> Set<EndlessIICell> {
+        let columns = numberOfBrickColumns
+        var reached = Set((0..<columns).map { EndlessIICell(column: $0, row: bottom + 1) })
+        var waiting = Array(reached)
+        while let cell = waiting.popLast() {
+            for (across, down) in [(1, 0), (-1, 0), (0, 1), (0, -1)] {
+                let next = EndlessIICell(column: cell.column + across, row: cell.row + down)
+                guard next.column >= 0, next.column < columns, next.row >= 0,
+                      next.row <= bottom + 1, walls.contains(next) == false,
+                      reached.insert(next).inserted
+                else { continue }
+                waiting.append(next)
+            }
+        }
+        return reached
+    }
+
+    /// Whether a Directional brick's open face looks onto a cell the ball can get to.
+    func endlessIISideFacesTheOpen(_ side: EndlessIISide, from brick: SKSpriteNode,
+                                   in occupancy: [EndlessIICell: [SKSpriteNode]],
+                                   reachable: Set<EndlessIICell>) -> Bool {
+        guard endlessIISideIsReachable(side, from: brick, in: occupancy) else { return false }
+        let cell = endlessIICell(of: brick)
+        let beyond: EndlessIICell
+        switch side {
+        case .top: beyond = EndlessIICell(column: cell.column, row: cell.row - 1)
+        case .bottom: beyond = EndlessIICell(column: cell.column, row: cell.row + 1)
+        case .left: beyond = EndlessIICell(column: cell.column - 1, row: cell.row)
+        case .right: beyond = EndlessIICell(column: cell.column + 1, row: cell.row)
+        }
+        return reachable.contains(beyond) || beyond.row < 0
+        // Above the top row is where the next rows come from, and an open top face up there is
+        // one the descent will bring a way to
+    }
+
+    /// Opens any pocket of the field that walls have shut a breakable brick inside (James, 1.3
+    /// play test: "Too many enclosed spaces with the indestructible bricks").
+    ///
+    /// A brick nothing can reach is a brick nothing can break, and in a mode that descends only
+    /// when its bottom row is clear, one of those low enough holds the whole field up. The field
+    /// is read after every row, as the Directional faces are, because it is a new row arriving
+    /// that closes a pocket. Each sealed pocket loses one of its walls: the lowest that stands
+    /// between it and the open field, so the way in is the one nearest the paddle. Taken away
+    /// rather than broken, so nothing is scored for it, and faded so it is seen to go.
+    ///
+    /// Returns how many walls it opened, for the tests.
+    @discardableResult
+    func endlessIIOpenSealedPockets() -> Int {
+        guard gameMode == .endlessII else { return 0 }
+        var opened = 0
+        for _ in 0..<8 {
+            let occupancy = endlessIIOccupancy()
+            guard let bottom = endlessIIBottomRow(in: occupancy) else { break }
+            let reachable = endlessIIReachableCells(walls: endlessIIWallCells(in: occupancy),
+                                                    bottom: bottom)
+            let sealed = occupancy.filter { cell, bricks in
+                cell.row >= 0 && cell.row <= bottom && reachable.contains(cell) == false
+                    && bricks.contains { endlessIIIsWall($0) == false }
+            }.keys
+            guard let pocket = sealed.max(by: { $0.row < $1.row }) else { break }
+            // One pocket at a time, lowest first, then the field is read again: opening one wall
+            // can open more than one pocket, and a second wall should only go if it is needed
+            var door: (brick: SKSpriteNode, row: Int)?
+            var region: Set<EndlessIICell> = [pocket]
+            var frontier = [pocket]
+            while let cell = frontier.popLast() {
+                for (across, down) in [(1, 0), (-1, 0), (0, 1), (0, -1)] {
+                    let next = EndlessIICell(column: cell.column + across, row: cell.row + down)
+                    guard next.column >= 0, next.column < numberOfBrickColumns,
+                          next.row >= 0, next.row <= bottom + 1 else { continue }
+                    let walls = (occupancy[next] ?? []).filter(endlessIIIsWall)
+                    if walls.isEmpty {
+                        if region.insert(next).inserted { frontier.append(next) }
+                        continue
+                    }
+                    let opensOut = [(1, 0), (-1, 0), (0, 1), (0, -1)].contains { across, down in
+                        reachable.contains(EndlessIICell(column: next.column + across,
+                                                         row: next.row + down))
+                    }
+                    guard opensOut, let wall = walls.first else { continue }
+                    if door == nil || next.row > door!.row { door = (wall, next.row) }
+                }
+            }
+            guard let wall = door?.brick ?? (occupancy.first { cell, bricks in
+                region.contains(cell) == false && bricks.contains(where: endlessIIIsWall)
+                    && [(1, 0), (-1, 0), (0, 1), (0, -1)].contains { across, down in
+                        region.contains(EndlessIICell(column: cell.column + across,
+                                                      row: cell.row + down))
+                    }
+            }?.value.first(where: endlessIIIsWall)) else { break }
+            // A pocket two walls deep has no single wall onto the open field; then any wall of
+            // its own goes, and the next pass finds the one beyond
+            wall.physicsBody = nil
+            wall.name = BrickRemovalCategoryName
+            wall.run(.sequence([.fadeOut(withDuration: 0.2), .removeFromParent()]))
+            opened += 1
+        }
+        if opened > 0 { countBricks() }
+        return opened
     }
 
     /// Whether the ball could actually reach a given face of a brick.

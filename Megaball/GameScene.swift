@@ -5532,6 +5532,15 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			return
 		}
 		endlessFieldSettleElapsed = 0
+		if gameMode == .endlessII, endlessMoveInProgress == false, endlessIIFieldIsHeld == false {
+			if endlessIIOpenSealedPockets() > 0 { endlessIIRepointBlockedDirectionals() }
+		}
+		// **Pockets read while the field stands still** (1.3 play test, `endlessIIOpenSealedPockets`).
+		// A new row is built while the rows under it are still stepping down, a row above where
+		// they will land, so the field read at that moment is two rows on top of each other -
+		// fine for turning a Directional face, which the next row checks again, and not for
+		// taking a wall away. Four times a second is soon enough for a pocket the ball has not
+		// yet reached
 		countBricks()
 	}
 

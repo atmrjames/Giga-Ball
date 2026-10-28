@@ -577,6 +577,14 @@ are a release's work on their own.
   wedge portal brick appears and then disappears.~~ **Fixed, round 401**: the ready pulse turned
   a reflected Wedge's picture the wrong way round.
 
+**James's 1.3 play test (28 October 2026), round 402:** fixed - falling power-ups behind
+Directional bricks, the daily board hiding the player's own score, the same daily twice running
+(from 1 December, so **1.3.1 must ship by 17 November**), the line on the prism background, Ball
+Spin's grip on the Safety Paddle and on Retro's shaped paddles, a big 90s opening for the Time
+Trial, and no brick shut away by Indestructible walls in Mayhem. Investigated and waiting on James:
+the ball near the paddle's ends (where a fix applies), and details for the Giga-Ball through the
+Safety Paddle, the results pop-up timing and the 1,998m score. See ENDLESS-2 round 402.
+
 **Open, from the soak:**
 
 - **Halo can be gone after a resume** (Mayhem): lost in 7 of 40 save-and-resume cycles in a test,

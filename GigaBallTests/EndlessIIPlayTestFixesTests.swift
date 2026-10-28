@@ -2751,3 +2751,76 @@ final class TheTimeTrialOpensWithItsNinetySecondsTests: XCTestCase {
         scene.view?.presentScene(nil)
     }
 }
+
+/// James, 1.3 play test: "Too many enclosed spaces with the indestructible bricks and difficult to
+/// access directional bricks." A breakable brick shut in by Indestructible bricks can never be
+/// broken, and a Directional face looking into such a pocket can never be struck.
+final class NoBrickIsShutAwayTests: XCTestCase {
+    private var window: UIWindow?
+
+    private func field() throws -> GameScene {
+        let scene = try PaddleFamilySweep.present(theme: 0, keeping: &window)
+        scene.enumerateChildNodes(withName: BrickCategoryName) { node, _ in node.removeFromParent() }
+        return scene
+    }
+
+    private func place(_ scene: GameScene, _ texture: SKTexture, column: Int, rowsUp: Int) -> SKSpriteNode {
+        BrickSweep.brick("normal", texture: texture, in: scene,
+                         rowY: scene.finalBrickRowHeight + scene.brickHeight*CGFloat(rowsUp),
+                         column: column)
+    }
+
+    func testABreakableBrickShutInByWallsIsGivenAWayIn() throws {
+        let scene = try field()
+        let wall = scene.brickIndestructible2Texture
+        let inside = place(scene, scene.brickNormalTexture, column: 5, rowsUp: 3)
+        let below = place(scene, wall, column: 5, rowsUp: 2)
+        let left = place(scene, wall, column: 4, rowsUp: 3)
+        let right = place(scene, wall, column: 6, rowsUp: 3)
+        let above = place(scene, wall, column: 5, rowsUp: 4)
+        _ = place(scene, scene.brickNormalTexture, column: 0, rowsUp: 0)
+        let occupancy = scene.endlessIIOccupancy()
+        XCTAssertFalse(scene.endlessIIReachableCells(in: occupancy)
+                        .contains(scene.endlessIICell(of: inside)), "shut in to begin with")
+
+        XCTAssertEqual(scene.endlessIIOpenSealedPockets(), 1, "one wall is enough")
+        XCTAssertTrue([below, left, right, above].contains { $0.physicsBody == nil },
+                      "one of its walls has gone")
+        XCTAssertNil(below.physicsBody, "the lowest, the one nearest the paddle")
+        XCTAssertTrue(scene.endlessIIReachableCells(in: scene.endlessIIOccupancy())
+                        .contains(scene.endlessIICell(of: inside)), "and it can be reached")
+        XCTAssertNotNil(inside.parent, "the brick itself is left to be broken")
+        scene.view?.presentScene(nil)
+    }
+
+    func testAnEmptyPocketIsLeftAlone() throws {
+        let scene = try field()
+        let wall = scene.brickIndestructible2Texture
+        for (column, up) in [(5, 2), (4, 3), (6, 3), (5, 4)] { _ = place(scene, wall, column: column, rowsUp: up) }
+        XCTAssertEqual(scene.endlessIIOpenSealedPockets(), 0,
+                       "nothing to break in there, so no wall needs to go")
+        scene.view?.presentScene(nil)
+    }
+
+    func testADirectionalFaceLookingIntoAPocketIsTurnedToTheOpen() throws {
+        let scene = try field()
+        let wall = scene.brickIndestructible2Texture
+        // An empty pocket at column 5, three rows up, walled on every side but its left, where
+        // the Directional brick stands with its open face looking in
+        for (column, up) in [(5, 2), (6, 3), (5, 4)] { _ = place(scene, wall, column: column, rowsUp: up) }
+        let directional = place(scene, scene.brickNormalTexture, column: 4, rowsUp: 3)
+        scene.makeDirectional(directional)
+        directional.endlessIIVulnerableSide = .right
+        scene.endlessIIDrawVulnerableEdge(on: directional, side: .right)
+        _ = place(scene, scene.brickNormalTexture, column: 0, rowsUp: 0)
+
+        scene.endlessIIRepointBlockedDirectionals()
+        let side = try XCTUnwrap(directional.endlessIIVulnerableSide)
+        XCTAssertNotEqual(side, .right, "its face looked into a pocket the ball cannot reach")
+        let occupancy = scene.endlessIIOccupancy()
+        XCTAssertTrue(scene.endlessIISideFacesTheOpen(
+            side, from: directional, in: occupancy,
+            reachable: scene.endlessIIReachableCells(in: occupancy, around: directional)))
+        scene.view?.presentScene(nil)
+    }
+}

@@ -2964,6 +2964,84 @@ testers:
   falling power-up's position by `brickWidth`, so a bare `GameScene()` with a power-up on
   screen traps converting NaN to Int. A real scene is always laid out before play.
 
+**Round 402: James's 1.3 play test, on `release-1.3.1`.**
+
+His first list from the released 1.3, thirteen notes and five screenshots. Asked which way the
+borderline ones went: "Fewer enclosed spaces", the Time Trial opening and the leaderboard before
+playing are 1.3.1; the paddle ends are "Investigate first". Each fix is tested from his words.
+
+- **Falling power-ups over every brick** ("Falling Power ups are going behind indestructible
+  directional bricks"). A brick is layer 1 and wears its decorations as children above it; a
+  Directional brick's armour panels came to layer 2, which tied with the drop's 2 and left the order
+  to chance, and a style overlay reached 2.5. Drops are drawn at `fallingPowerUpZ`, 2.7: over the
+  tallest of them, under the ball and paddle at 3. `FallingPowerUpsDrawOverBricksTests` builds a brick
+  of every style and fails at the old 2 on exactly the tie.
+- **The board's "2 players" with one name** ("I was the other player but didn't finish before the
+  time cut off. My score is showing in the game centre leaderboard though"). The menu hid the
+  player's own row whenever their record said they had not posted - round 361's guard against Game
+  Center's invented nought - and a post that landed after the app wrote the day off left a real
+  score hidden. `isOnTheBoard` shows a score above nought whatever the record says; the invented
+  entry is always nought and stays hidden.
+- **The same daily twice running** ("Endless mode monochromatic same daily challenge 2 days in a
+  row" - 27 and 28 October). The two-day look-back stepped today away from yesterday *as it would
+  have been* had the day before not moved; when it had moved, that was not the yesterday anyone
+  played. From `realYesterdayKey`, **1 December 2026**, a day is stepped from the yesterday really
+  dealt, walked forward from that date and kept: over fourteen months that leaves 2 rhyming pairs
+  and no identical one, against 24 and one. A date rather than a switch, because every phone works
+  the daily out for itself (§2.1) and a player a version behind would be dealt different days; it
+  holds its fourteen days only if **1.3.1 is on the App Store by 17 November**, and moves with it.
+- **The line across the prism background** - in the artwork. One row of pixels 83% of the way down
+  every size of `backgroundPrism` stood 10 to 30 levels brighter than its neighbours; it is now their
+  average and nothing else changed. `PictureBackgroundsHaveNoSeamTests` asks every picture
+  background, and fails on the old art at row 5,501.
+- **Ball Spin's grip on the Safety Paddle grew and shrank** - with Expand and Shrink. The bar copied
+  them as a scale, which stretched the grip's nine-slice inside it: two Expands drew its rounded ends
+  twice as wide (§8.6's "a parent's scale stretches a child's slices again", met a third time). The bar
+  now takes the paddle's on-screen size at a scale of one, so nothing it holds is stretched and its
+  body is not scaled twice. Undoing the scale on the child instead was tried first and drew the
+  strip pinched: SpriteKit's slicing misbehaves below a scale of one.
+- **Ball Spin's grip on a shaped paddle** - on Retro. Its five shaped grips (87 by 28) are drawn over
+  the decorated Retro layer, wider than the paddle and hanging below it, where every other shaped
+  grip is drawn at the paddle's 75; sized to the paddle and stood on its underside the black dome was
+  squeezed and floated a third of a paddle above the pink dome it covers. A shaped grip takes its
+  width from its art as its height already did, and one drawn for the Retro layer
+  (`endlessIIGripIsDrawnForTheRetroLayer`, asked of the picture, so Retro's jagged paddle, which wears
+  the ordinary grip, is unchanged) stands where the layer stands. Looked at in every shape.
+- **A Time Trial opens with a big 90s** ("animates down to the location of the countdown timer ...
+  when the ball is first released"). In the READY countdown's lettering, in the middle, while the ball
+  waits; the corner clock hides until the first serve sends the 90s shrinking into its place. A run
+  resumed part-way has none.
+- **No brick shut away** (Mayhem; "Too many enclosed spaces with the indestructible bricks and
+  difficult to access directional bricks"). `endlessIIReachableCells` floods the field from the open
+  space under it through every cell no wall stands in - walls being Indestructible bricks, not
+  Portals or power-up bricks - and two rules read it. A breakable brick in a cell the flood never
+  reached is shut away for good, so `endlessIIOpenSealedPockets` takes away one wall of its pocket,
+  the lowest onto the open field, faded and unscored, and reads again; it runs on the settle clock
+  while the field stands still, because a new row is built while the rows under it are still a
+  row high. And a Directional face must look onto a cell the ball can reach *without passing through
+  the brick itself*, not merely a cell with no wall in it. `NoBrickIsShutAwayTests`.
+- **The leaderboard before playing** - already there, waiting for someone else to post. The screen
+  asks Game Center for today's board on every visit and shows it whenever it has rows; with two or
+  three players a day James has usually been the first. Asked of him rather than changed.
+- **Investigated, not changed: the ball near the paddle's ends.** Measured by dropping a ball at
+  every tenth of the paddle and at its ends, straight down and at 45 degrees, in all three modes. The
+  formula (`PaddleBounce.angleDegrees`) runs only while the ball's centre is over the paddle and above
+  its top, and is smooth there - about 4.5 degrees a tenth. At the very end the engine's rounded end
+  takes over: straight down onto the end leaves at 35 degrees where the trend says 45, and a ball
+  coming from outside that clips the end's shoulder goes back the way it came at 131 to 151 degrees,
+  where just inside it would leave at 98. That last ball's radius at each end is the inconsistency
+  he felt. Clamping the landing spot to the end and letting the formula answer every top-face hit, as
+  the square paddle already does, would make it predictable. Classic and Endless play it too, so
+  where it applies is his to say.
+- **Not reproduced: a Giga-Ball through the Safety Paddle.** Dropped onto the bar at every spot
+  along it, with Giga-Ball and without, it bounced every time; the masks include the bar and the
+  per-frame pass-through for a climbing ball restores itself. Asked what else was running.
+- **Not explained yet: yesterday's results pop-up after midnight, and the 1,998m.** The pop-up
+  reads the UTC day like everything else - after 11am in Sydney - and Game Center's board is set to
+  00:00 UTC (James checked). The Endless day's board held 2,348 and 1,998, raw heights by every
+  path that posts, and nothing posts outside the UTC day. Both asked of him: when he saw the pop-up
+  and which day it named, and how high his run actually went.
+
 **Round 401: James's 1.3.1 list.**
 
 James, with 1.3 in review: "write it up and start on the 1.3.1 bugs". The plan is in
