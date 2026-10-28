@@ -892,6 +892,7 @@ enum DailyChallengeGenerator {
     /// resolved bottom-up, is bounded, cheap, and identical on every device - which is the
     /// property the whole daily rests on (§2.1).
     static func challenge(forKey key: String) -> DailyChallenge {
+        if key >= realYesterdayKey { return challengeAfterRealYesterday(forKey: key) }
         guard let yesterday = previousKey(of: key),
               let dayBefore = previousKey(of: yesterday) else {
             return rawChallenge(forKey: key)
@@ -899,6 +900,54 @@ enum DailyChallengeGenerator {
         let settledYesterday = stepped(rawChallenge(forKey: yesterday),
                                        from: rawChallenge(forKey: dayBefore))
         return stepped(rawChallenge(forKey: key), from: settledYesterday)
+    }
+
+    /// **From this day, a day is stepped away from yesterday as it was really dealt** (James,
+    /// 1.3 play test: "Endless mode monochromatic same daily challenge 2 days in a row" - 27
+    /// and 28 October 2026).
+    ///
+    /// The two-day look-back above stepped today away from yesterday *as it would be if the day
+    /// before had not moved* - and when the day before had moved, that was not the yesterday
+    /// anybody played. On the 28th it believed yesterday was a Classic day wearing a theme,
+    /// stepped the 28th away from that, and landed on Endless Monochromatic: the 27th exactly,
+    /// because the real 27th had itself been stepped there. Over the fourteen months from
+    /// September 2026 the look-back left 24 pairs reading the same and one pair identical; a
+    /// chain from the real yesterday leaves 2 and none.
+    ///
+    /// **A date, not a switch, and at least fourteen days after the release that ships it.**
+    /// Every phone works the daily out for itself (§2.1), so a player still on the version
+    /// before this one would be dealt a different day from a player on this one. The days
+    /// before it are dealt exactly as they always were, which the golden days already pinned
+    /// check (`testTheDaysAlreadyPlayedStillReadExactlyTheSame`); 1.3.1 must be on the App
+    /// Store by 17 November 2026 for this date to keep its fourteen days, and moves later with
+    /// it if it is not.
+    ///
+    /// The chain the comment above was written to avoid is affordable from a starting date: it
+    /// walks forward from here once, and keeps what it has dealt.
+    static let realYesterdayKey = "2026-12-01"
+
+    private static var realYesterdayDealt: [String: DailyChallenge] = [:]
+    private static let realYesterdayLock = NSLock()
+
+    static func challengeAfterRealYesterday(forKey key: String) -> DailyChallenge {
+        realYesterdayLock.lock()
+        defer { realYesterdayLock.unlock() }
+        if let dealt = realYesterdayDealt[key] { return dealt }
+        guard let before = previousKey(of: realYesterdayKey) else { return rawChallenge(forKey: key) }
+        var day = realYesterdayKey
+        var yesterday = realYesterdayDealt[before] ?? challenge(forKey: before)
+        // The last day of the old rule is the first yesterday, so the change of rule is itself
+        // a step like any other
+        while true {
+            let today = realYesterdayDealt[day] ?? stepped(rawChallenge(forKey: day), from: yesterday)
+            realYesterdayDealt[day] = today
+            if day >= key { return today }
+            yesterday = today
+            guard let date = DailyDay.date(forKey: day),
+                  let next = DailyDay.utcCalendar.date(byAdding: .day, value: 1, to: date)
+            else { return today }
+            day = DailyDay.key(for: next)
+        }
     }
 
     /// The day before, in the daily's own UTC calendar.
@@ -1891,10 +1940,10 @@ struct DailyBoardRow: Equatable {
     ///   the board as it stands, and a board nobody has posted to is empty, which hides it.
     static func shown(leaders: [DailyBoardRow], local: DailyBoardRow?,
                       limit: Int, localHasPosted: Bool = true) -> [DailyBoardRow] {
-        let others = localHasPosted ? leaders : leaders.filter { $0.isLocalPlayer == false }
+        let others = leaders.filter { $0.isOnTheBoard(localHasPosted: localHasPosted) }
         var rows = Array(others.sorted { $0.rank < $1.rank }.prefix(limit))
-        guard localHasPosted else { return rows }
-        if let local, rows.contains(where: { $0.rank == local.rank && $0.isLocalPlayer }) == false {
+        guard let local, local.isOnTheBoard(localHasPosted: localHasPosted) else { return rows }
+        if rows.contains(where: { $0.rank == local.rank && $0.isLocalPlayer }) == false {
             rows.removeAll { $0.isLocalPlayer }
             rows.append(local)
         }
@@ -1922,11 +1971,28 @@ struct DailyBoardRow: Equatable {
     static func menuBoard(leaders: [DailyBoardRow], local: DailyBoardRow?, limit: Int,
                           localHasPosted: Bool = true)
         -> (own: DailyBoardRow?, leaders: [DailyBoardRow]) {
-        let others = localHasPosted ? leaders : leaders.filter { $0.isLocalPlayer == false }
+        let others = leaders.filter { $0.isOnTheBoard(localHasPosted: localHasPosted) }
         let top = Array(others.sorted { $0.rank < $1.rank }.prefix(limit))
-        guard localHasPosted, let local,
+        guard let local, local.isOnTheBoard(localHasPosted: localHasPosted),
               top.contains(where: \.isLocalPlayer) == false else { return (nil, top) }
         return (local, top)
+    }
+
+    /// Whether a row is a real place on the board.
+    ///
+    /// Everyone else's always is. The player's own is when their record says they posted - or
+    /// when Game Center holds a score for them all the same (James, 1.3 play test: "Leaderboard
+    /// showing 2 players when there's only 1. I was the other player but didn't finish before
+    /// the time cut off. My score is showing in the game centre leaderboard though"). Round 361
+    /// hid an unposted player because Game Center invents an entry for them with a score of
+    /// nought, and a nought under their name read as a result. But the record can be wrong the
+    /// other way: a post that landed after the app had written the day off - a confirmation
+    /// lost in the last seconds of the window - leaves a real score on the board and a record
+    /// saying there is none, and the menu then counted the player among its players and left
+    /// their row out. A score above nought is one somebody posted, so it is shown; the invented
+    /// entry is still hidden, because it is always nought.
+    func isOnTheBoard(localHasPosted: Bool) -> Bool {
+        isLocalPlayer == false || localHasPosted || score > 0
     }
 
     /// "1. Name  12,340m", for a place with room for one line of text.

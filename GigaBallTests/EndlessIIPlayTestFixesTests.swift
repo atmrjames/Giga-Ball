@@ -2524,3 +2524,47 @@ final class APortalWedgeKeepsItsFacingTests: XCTestCase {
         scene.view?.presentScene(nil)
     }
 }
+
+/// James, 1.3 play test: "Falling Power ups are going behind indestructible directional bricks -
+/// they should always be on top of bricks." A Directional brick's armour panels are children a
+/// layer up from the brick, which tied with the drop's layer and left the order to chance.
+final class FallingPowerUpsDrawOverBricksTests: XCTestCase {
+    private var window: UIWindow?
+
+    /// The highest layer anything in this node's tree is drawn at, measured in the scene.
+    private func topLayer(of node: SKNode, base: CGFloat = 0) -> CGFloat {
+        let own = base + node.zPosition
+        return node.children.reduce(own) { max($0, topLayer(of: $1, base: own)) }
+    }
+
+    func testADropIsAboveEveryKindOfBrickAndUnderTheBall() throws {
+        let scene = try PaddleFamilySweep.present(theme: 0, keeping: &window)
+        scene.enumerateChildNodes(withName: BrickCategoryName) { node, _ in node.removeFromParent() }
+        var column = 0
+        var row: CGFloat = 4
+        for texture in [scene.brickNormalTexture, scene.brickIndestructible2Texture,
+                        scene.brickMultiHit3Texture] {
+            for style in EndlessIIStyle.allCases {
+                let brick = BrickSweep.brick("normal", texture: texture, in: scene,
+                                             rowY: scene.finalBrickRowHeight + scene.brickHeight*row,
+                                             column: column)
+                if scene.endlessIICanTake(style, brick) { scene.applyEndlessIIStyle(style, to: brick) }
+                column += 1
+                if column >= GameSceneLayout.brickColumns { column = 0; row += 1 }
+            }
+        }
+        PaddleFamilySweep.settle(0.2)
+        var highest: CGFloat = 0
+        scene.enumerateChildNodes(withName: BrickCategoryName) { node, _ in
+            highest = max(highest, self.topLayer(of: node))
+        }
+        let anyBrick = try XCTUnwrap(scene.children.compactMap { $0 as? SKSpriteNode }
+            .first { $0.name == BrickCategoryName })
+        scene.powerUpGenerator(sprite: anyBrick)
+        let drop = try XCTUnwrap(scene.children.first { $0.name == PowerUpCategoryName })
+        XCTAssertGreaterThan(drop.zPosition, highest, "drawn over every brick and what it wears")
+        XCTAssertLessThan(drop.zPosition, GameScene.ballLayer, "and never over the ball")
+        XCTAssertLessThan(drop.zPosition, scene.paddle.zPosition)
+        scene.view?.presentScene(nil)
+    }
+}

@@ -4051,6 +4051,46 @@ final class DailyBoardRowTests: XCTestCase {
         XCTAssertEqual(board.leaders.map(\.rank), [1, 2, 3])
     }
 
+    /// James, 1.3 play test: "Endless mode monochromatic same daily challenge 2 days in a row" -
+    /// 27 and 28 October 2026, both plain Endless Monochromatic. From `realYesterdayKey` a day is
+    /// stepped away from the yesterday that was really dealt, so it cannot be dealt again.
+    func testFromTheRealYesterdayKeyNoDayIsDealtTwiceRunning() {
+        typealias G = DailyChallengeGenerator
+        let calendar = DailyDay.utcCalendar
+        let start = DailyDay.date(forKey: G.realYesterdayKey)!
+        var previous = G.challenge(forKey: G.previousKey(of: G.realYesterdayKey)!)
+        var rhymes: [String] = []
+        for offset in 0..<730 {
+            let key = DailyDay.key(for: calendar.date(byAdding: .day, value: offset, to: start)!)
+            let day = G.challenge(forKey: key)
+            let identical = day.mode == previous.mode && Set(day.twists) == Set(previous.twists)
+                && day.classicLevel == previous.classicLevel
+            XCTAssertFalse(identical, "\(key) deals \(previous.dateKey) again")
+            if G.readsTheSame(day, previous) { rhymes.append(key) }
+            previous = day
+        }
+        XCTAssertLessThanOrEqual(rhymes.count, 8,
+                                 "only when four re-rolls all rhyme, which is rare: \(rhymes)")
+    }
+
+    /// James, 1.3 play test: "Leaderboard showing 2 players when there's only 1. I was the other
+    /// player but didn't finish before the time cut off. My score is showing in the game centre
+    /// leaderboard though." His record said the day was missed; Game Center had his score.
+    func testAScoreOnTheBoardIsShownEvenWhenTheRecordMissedIt() {
+        let casa = DailyBoardRow(rank: 1, name: "CasaObtusa38", score: 2_348, isLocalPlayer: false)
+        let me = DailyBoardRow(rank: 2, name: "atmrjames", score: 1_998, isLocalPlayer: true)
+        let board = DailyBoardRow.menuBoard(leaders: [casa, me], local: me, limit: 10,
+                                            localHasPosted: false)
+        XCTAssertEqual(board.leaders, [casa, me], "two players counted, two players shown")
+        XCTAssertEqual(DailyBoardRow.shown(leaders: [casa, me], local: me, limit: 5,
+                                           localHasPosted: false), [casa, me])
+
+        let phantom = DailyBoardRow(rank: 2, name: "atmrjames", score: 0, isLocalPlayer: true)
+        XCTAssertEqual(DailyBoardRow.menuBoard(leaders: [casa, phantom], local: phantom,
+                                               limit: 10, localHasPosted: false).leaders, [casa],
+                       "Game Center's invented entry, always nought, is still left out")
+    }
+
     func testTheCardPinsThePlayerAboveAGapAndScrollsTheRest() {
         let card = DailyCardView()
         let me = DailyBoardRow(rank: 37, name: "Me", score: 3_000, isLocalPlayer: true)

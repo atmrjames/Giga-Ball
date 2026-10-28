@@ -247,6 +247,17 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     /// The ball's layer. Named because the landing marker is drawn just under it (round 387).
     static let ballLayer: CGFloat = 3
 
+    /// Where a falling power-up is drawn: over every brick and everything a brick wears, under
+    /// the ball and the paddle (James, 1.3 play test: "Falling Power ups are going behind
+    /// indestructible directional bricks - they should always be on top of bricks").
+    ///
+    /// It was 2, and a brick is 1 with its decorations as children above it - a Directional
+    /// brick's armour panels at 1 more, so 2 overall, which tied with the drop and left which
+    /// one was drawn on top to chance; a style overlay at 1.5 more, so 2.5, which won outright.
+    /// 2.7 clears the tallest of them and stays below the ball and paddle at 3, so a drop never
+    /// hides the ball it is falling past.
+    static let fallingPowerUpZ: CGFloat = 2.7
+
 	/// Records that something legitimate moved the main ball this frame. Free in Release
 	/// builds; every deliberate velocity or position writer outside the engine calls it,
 	/// so a tripwire log with no notes means a writer nobody knows about.
@@ -6438,7 +6449,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		powerUp.physicsBody!.contactTestBitMask = CollisionTypes.paddleCategory.rawValue | CollisionTypes.bottomScreenBlockCategory.rawValue | CollisionTypes.mirrorPaddleCategory.rawValue
 		// The mirror catches drops too (round 209) - it needs the bit on both sides of the
 		// contact, and the drop is where the two creation sites for one are
-        powerUp.zPosition = 2
+        powerUp.zPosition = GameScene.fallingPowerUpZ
 		
         addChild(powerUp)
 		
@@ -11065,7 +11076,7 @@ laserTimer?.invalidate()
 					powerUp.physicsBody!.collisionBitMask = CollisionTypes.paddleCategory.rawValue | CollisionTypes.bottomScreenBlockCategory.rawValue | CollisionTypes.mirrorPaddleCategory.rawValue
 					powerUp.physicsBody!.contactTestBitMask = CollisionTypes.paddleCategory.rawValue | CollisionTypes.bottomScreenBlockCategory.rawValue | CollisionTypes.mirrorPaddleCategory.rawValue
 					// The mirror catches a resumed drop as it catches a fresh one (round 209)
-					powerUp.zPosition = 2
+					powerUp.zPosition = GameScene.fallingPowerUpZ
 					addChild(powerUp)
 					
 					powerUp.texture = powerUpTextureArray[savedGame.fallingPowerUps[i]]
