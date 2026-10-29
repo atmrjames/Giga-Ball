@@ -2438,6 +2438,9 @@ final class AStoppedExtraBallIsSentOnTests: XCTestCase {
         PaddleFamilySweep.settle(0.3)
         XCTAssertTrue(scene.endlessIIAddBall())
         let extra = try XCTUnwrap(scene.endlessIIExtraBalls.last)
+        scene.physicsWorld.speed = 0
+        // The first ball stays where it is: lost, it would end the hold with the run's reset,
+        // which is not the question here
         scene.stickyPaddleCatches = 5
         XCTAssertTrue(scene.endlessIICatchExtraBall(extra), "caught")
         PaddleFamilySweep.settle(0.6)
