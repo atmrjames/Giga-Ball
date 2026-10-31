@@ -160,4 +160,47 @@ final class FixedWidthNumberNodeTests: XCTestCase {
         XCTAssertEqual(label.text, "9", "written into what was already there")
         XCTAssertFalse(label.isHidden)
     }
+
+    /// James, 1.3 play test: "Used fixed width numbers in the leaderboard for the rank and score
+    /// so the numbers align" - his screenshot had 2263 over 2094, in Fugaz One, not lining up.
+    /// Asked of where the text system actually puts each digit, not of a measured width.
+    func testABoardsNumbersSitInTheirColumns() {
+        let font = UIViewController.gameScoreFont(ofSize: 15)
+        let column = FixedWidthDigits.columnWidth(in: font)
+        let wide: CGFloat = 1000
+        func centres(_ text: String, alignment: NSTextAlignment) -> [CGFloat] {
+            let paragraph = NSMutableParagraphStyle()
+            paragraph.alignment = alignment
+            let storage = NSTextStorage(attributedString: FixedWidthDigits.attributed(
+                text, attributes: [.font: font, .paragraphStyle: paragraph]))
+            let manager = NSLayoutManager()
+            let container = NSTextContainer(size: CGSize(width: wide, height: 100))
+            container.lineFragmentPadding = 0
+            manager.addTextContainer(container)
+            storage.addLayoutManager(manager)
+            let characters = Array(text)
+            return (0..<manager.numberOfGlyphs).map { glyph in
+                let line = manager.lineFragmentRect(forGlyphAt: glyph, effectiveRange: nil)
+                let own = (String(characters[glyph]) as NSString).size(withAttributes: [.font: font])
+                return line.minX + manager.location(forGlyphAt: glyph).x + own.width/2
+            }
+            // Where each glyph starts plus half its own width: a glyph's bounding rect takes in
+            // the spacing after it, which is the very thing being placed
+        }
+        for text in ["1111", "0000", "2263", "2094", "17"] {
+            let left = centres(text, alignment: .left)
+            for (index, centre) in left.enumerated() {
+                XCTAssertEqual(centre, column*(CGFloat(index) + 0.5), accuracy: 0.05,
+                               "\(text), set left as a place is: digit \(index) in its column")
+            }
+            let right = centres(text, alignment: .right)
+            for (index, centre) in right.enumerated() {
+                let fromTheEnd = CGFloat(right.count - index) - 0.5
+                XCTAssertEqual(wide - centre, column*fromTheEnd, accuracy: 0.05,
+                               "\(text), set right as a score is: digit \(index) in its column")
+            }
+        }
+        XCTAssertEqual(FixedWidthDigits.attributed("2094", attributes: [.font: font]).string, "2094",
+                       "and the text is the number and nothing else")
+    }
 }

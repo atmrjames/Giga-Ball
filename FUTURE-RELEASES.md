@@ -585,6 +585,14 @@ Trial, and no brick shut away by Indestructible walls in Mayhem. Investigated an
 the ball near the paddle's ends (where a fix applies), and details for the Giga-Ball through the
 Safety Paddle, the results pop-up timing and the 1,998m score. See ENDLESS-2 round 402.
 
+**James's second list (31 October 2026), round 403:** fixed - the ball at the paddle's very ends
+now takes the angle formula in every mode ("clamp it the way the square paddle already does.
+Let's try it out" - **a change to how Classic and Endless play, for James to play-test before it
+ships**), an Always On power-up waits for the serve, the boards' places and scores sit in digit
+columns, and the end screen's board never skips a single place. **The 1,998m, most likely
+James's to fix in App Store Connect**: everything points to the board's window not starting at
+00:00 UTC (see ENDLESS-2 round 403); the app now logs the window it is given, which settles it.
+
 **Open, from the soak:**
 
 - **Halo can be gone after a resume** (Mayhem): lost in 7 of 40 save-and-resume cycles in a test,

@@ -2621,6 +2621,8 @@ final class DailyAlwaysOnTests: XCTestCase {
         }
         scene.gameState.enter(Playing.self)
         scene.isPaused = false
+        scene.ballIsOnPaddle = false
+        // In flight: the day's power-up waits for the serve (James, 1.3 play test)
 
         XCTAssertTrue(scene.classicPowerUpEndings.isEmpty)
         let tallies = scene.totalStatsArray[0].powerupsCollected
@@ -4089,6 +4091,44 @@ final class DailyBoardRowTests: XCTestCase {
         XCTAssertEqual(DailyBoardRow.menuBoard(leaders: [casa, phantom], local: phantom,
                                                limit: 10, localHasPosted: false).leaders, [casa],
                        "Game Center's invented entry, always nought, is still left out")
+    }
+
+    /// James, 1.3 play test, with a screenshot of a Classic day's Complete screen listing 1 and
+    /// 3: "Post game leaderboard shows 1st and 3rd but not 2nd." That screen lists one leader to
+    /// save room, and a player in third read as a board with no second.
+    func testASinglePlaceBetweenTheLeadersAndThePlayerIsShown() {
+        let first = DailyBoardRow(rank: 1, name: "ali_79r", score: 2_263, isLocalPlayer: false)
+        let second = DailyBoardRow(rank: 2, name: "CasaObtusa38", score: 2_120, isLocalPlayer: false)
+        let me = DailyBoardRow(rank: 3, name: "8lossom", score: 2_094, isLocalPlayer: true)
+        XCTAssertEqual(DailyBoardRow.fetched(forShowing: 1), 2,
+                       "asked for one more than it lists, so there is a second to show")
+        XCTAssertEqual(DailyBoardRow.shown(leaders: [first, second], local: me, limit: 1),
+                       [first, second, me], "1, 2 and 3, not 1 and 3")
+
+        let fifth = DailyBoardRow(rank: 5, name: "8lossom", score: 1_500, isLocalPlayer: true)
+        XCTAssertEqual(DailyBoardRow.shown(leaders: [first, second], local: fifth, limit: 1),
+                       [first, fifth], "a wider gap is still a gap")
+        let grid = PauseMenuViewController.boardGrid([first, fifth], unit: "")
+        XCTAssertEqual(grid.size.height, PauseMenuViewController.boardGridRowHeight*2
+                       + PauseMenuViewController.boardGridGap,
+                       "and the end screen's board sets the player apart below it, as the menu does")
+        XCTAssertEqual(PauseMenuViewController.boardGrid([first, second, me], unit: "").size.height,
+                       PauseMenuViewController.boardGridRowHeight*3, "no gap where none is missing")
+    }
+
+    /// James, 1.3 play test: "Endless mode daily challenge score is showing as >1000m which is
+    /// wrong" - his run reached "more like 100m". The board held two Classic-sized scores on an
+    /// Endless day, which is what a board window not starting at the day's UTC midnight gives.
+    /// The log says so when one does not; this is its rule.
+    func testTheDailyBoardsWindowIsTheDayFromItsUTCMidnight() throws {
+        let midnight = try XCTUnwrap(DailyDay.date(forKey: "2026-10-28"))
+        XCTAssertTrue(DailyChallengeSession.occurrence(starting: midnight, isTheDay: "2026-10-28"))
+        XCTAssertTrue(DailyChallengeSession.occurrence(starting: midnight.addingTimeInterval(30),
+                                                       isTheDay: "2026-10-28"))
+        XCTAssertFalse(DailyChallengeSession.occurrence(starting: midnight.addingTimeInterval(-11*3600),
+                                                        isTheDay: "2026-10-28"),
+                       "midnight in Sydney is eleven hours early: two days on one board")
+        XCTAssertFalse(DailyChallengeSession.occurrence(starting: midnight, isTheDay: "2026-10-27"))
     }
 
     func testTheCardPinsThePlayerAboveAGapAndScrollsTheRest() {

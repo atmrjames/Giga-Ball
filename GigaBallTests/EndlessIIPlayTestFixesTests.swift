@@ -2827,3 +2827,107 @@ final class NoBrickIsShutAwayTests: XCTestCase {
         scene.view?.presentScene(nil)
     }
 }
+
+// MARK: - Round 403: James's second 1.3 list
+
+/// James, 1.3 play test: "When bouncing near the end of the paddle, the ball doesn't always seem
+/// to be angled correctly. I think this is because the paddle position angle calculator is turned
+/// off near the ends in case the ball hits the curved section of the paddle. Perhaps we can tighten
+/// up this logic so it feels more natural, works more consistently and gives the players more
+/// control over the angle of the ball." Then, round 403: "clamp it the way the square paddle
+/// already does. Let's try it out."
+///
+/// Measured before the change: straight down onto the end left at 35 degrees where the paddle's
+/// trend says 45, and a ball crossing from outside went back the way it came at 131 to 151. A ball
+/// over the paddle's top now takes the formula out to the end, in every mode.
+final class ThePaddleEndsBendTheBallTests: XCTestCase {
+    private var window: UIWindow?
+
+    /// Drops a ball onto the paddle at `landing` (-1 to 1 across it, past 1 off its end) and
+    /// returns the angle it leaves at, in degrees from the +x axis.
+    private func leaving(_ mode: GameMode, landing: CGFloat, from heading: CGFloat) throws -> Double? {
+        let setup = LevelPackSetup.shared
+        let scene = try PaddleFamilySweep.present(theme: 0, keeping: &window, mode: mode, frozen: false,
+                                                  level: mode == .classic ? setup.startLevelNumber[2] : nil,
+                                                  pack: mode == .classic ? 2 : 1)
+        defer { scene.view?.presentScene(nil) }
+        scene.enumerateChildNodes(withName: BrickCategoryName) { node, _ in node.removeFromParent() }
+        let half = scene.paddle.size.width/2
+        let speed = scene.ballSpeedLimit
+        let rise: CGFloat = 40
+        // `heading` is the arriving dx as a share of the fall: 0 straight down, 1 at 45 degrees
+        scene.ball.position = CGPoint(x: scene.paddle.position.x + landing*half - heading*rise,
+                                      y: scene.paddle.position.y + scene.paddle.size.height/2
+                                        + scene.ball.size.height/2 + rise)
+        let fall = speed/sqrt(1 + heading*heading)
+        scene.ball.physicsBody?.velocity = CGVector(dx: heading*fall, dy: -fall)
+        for _ in 0..<40 {
+            PaddleFamilySweep.settle(1.0/60)
+            if let out = scene.ball.physicsBody?.velocity, out.dy > 0 {
+                return Double(atan2(out.dy, out.dx))*180/Double.pi
+            }
+        }
+        return nil
+    }
+
+    func testStraightDownOntoTheEndLeavesAtTheEndsAngle() throws {
+        for mode in [GameMode.classic, .endless, .endlessII] {
+            let right = try XCTUnwrap(try leaving(mode, landing: 1.05, from: 0), "\(mode): no bounce")
+            let left = try XCTUnwrap(try leaving(mode, landing: -1.05, from: 0), "\(mode): no bounce")
+            XCTAssertEqual(right, 90 - PaddleBounce.adjustmentK, accuracy: 4,
+                           "\(mode): the right end bends a straight drop by the full amount")
+            XCTAssertEqual(left, 90 + PaddleBounce.adjustmentK, accuracy: 4,
+                           "\(mode): and the left end the other way")
+        }
+    }
+
+    func testABallCrossingTheEndCarriesOnRatherThanTurningBack() throws {
+        for mode in [GameMode.classic, .endlessII] {
+            let angle = try XCTUnwrap(try leaving(mode, landing: 1, from: 1), "\(mode): no bounce")
+            // On the end itself: a 45-degree ball aimed past it clears the paddle altogether
+            XCTAssertLessThan(angle, 90, "\(mode): a ball heading right off the right end still "
+                              + "goes right, as it does just inside the end - it went back at 131 to 151")
+        }
+    }
+}
+
+/// James, 1.3 play test: "Always on twist with lasers started before the first ball was released
+/// from the paddle. Make sure always on power ups don't start before the ball is released. Their
+/// graphics can be there but they shouldn't be active."
+final class AlwaysOnWaitsForTheServeTests: XCTestCase {
+    private var window: UIWindow?
+
+    override func tearDown() {
+        DailyChallengeSession.shared.active = nil
+        super.tearDown()
+    }
+
+    func testALasersDayFiresNothingUntilTheBallIsReleased() throws {
+        let lasers = try XCTUnwrap(LevelPackSetup.shared.powerUpNameArray.firstIndex(of: "Lasers"))
+        let calendar = DailyDay.utcCalendar
+        let start = try XCTUnwrap(DailyDay.date(forKey: "2026-11-01"))
+        var key: String?
+        for offset in 0..<2000 {
+            let day = DailyDay.key(for: try XCTUnwrap(calendar.date(byAdding: .day, value: offset, to: start)))
+            if DailyTwist.alwaysOnPowerUp(forKey: day, mode: .classic) == lasers { key = day; break }
+        }
+        let dateKey = try XCTUnwrap(key, "no Classic day stands on Lasers")
+        DailyChallengeSession.shared.active = DailyChallenge(
+            dateKey: dateKey, mode: .classic, classicLevel: 1, twists: [.alwaysOn])
+        let level = DailyChallengeGenerator.levelNumber(forClassicLevel: 1)
+        let pack = DailyChallengeGenerator.pack(forClassicLevel: 1)
+        let scene = try PaddleFamilySweep.present(theme: 0, keeping: &window, mode: .classic,
+                                                  frozen: false, level: level, pack: pack)
+        defer { scene.view?.presentScene(nil) }
+        XCTAssertEqual(scene.dailyAlwaysOnPowerUp, lasers)
+        PaddleFamilySweep.settle(1.5)
+        XCTAssertTrue(scene.ballIsOnPaddle, "the ball is waiting to be served")
+        XCTAssertFalse(scene.laserPowerUpIsOn, "so the lasers have not started")
+        XCTAssertTrue(scene.children.filter { $0.name == LaserCategoryName }.isEmpty,
+                      "and nothing has been fired")
+
+        scene.releaseBall()
+        PaddleFamilySweep.settle(0.5)
+        XCTAssertTrue(scene.laserPowerUpIsOn, "served: the day's lasers are on")
+    }
+}

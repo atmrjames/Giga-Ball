@@ -1688,6 +1688,13 @@ final class DailyChallengeSession {
     /// Which occurrence of the recurring daily board holds a day: today's is the open one,
     /// yesterday's the one that closed last. Game Center keeps no older occurrence to ask.
     enum BoardOccurrence { case current, previous }
+    /// Whether a window of the daily board that starts at `start` is the day `key` - beginning
+    /// at that day's 00:00 UTC, give or take a minute. See `GameCenterHandler.noteTheOccurrence`.
+    static func occurrence(starting start: Date, isTheDay key: String) -> Bool {
+        guard let midnight = DailyDay.date(forKey: key) else { return false }
+        return abs(start.timeIntervalSince(midnight)) <= 60
+    }
+
     static func boardOccurrence(forKey key: String, todayKey: String) -> BoardOccurrence? {
         if key == todayKey { return .current }
         guard let today = DailyDay.date(forKey: todayKey),
@@ -1945,9 +1952,26 @@ struct DailyBoardRow: Equatable {
         guard let local, local.isOnTheBoard(localHasPosted: localHasPosted) else { return rows }
         if rows.contains(where: { $0.rank == local.rank && $0.isLocalPlayer }) == false {
             rows.removeAll { $0.isLocalPlayer }
+            if let last = rows.last?.rank, local.rank == last + 2,
+               let between = others.first(where: { $0.rank == last + 1 && $0.isLocalPlayer == false }) {
+                rows.append(between)
+            }
+            // **Never one place missing** (James, 1.3 play test, with a screenshot of 1 and 3
+            // on a daily's Complete screen: "Post game leaderboard shows 1st and 3rd but not
+            // 2nd"). The fullest ending lists one leader to save room (round 378), and a player
+            // in third then read as a board with no second. When a single place stands between
+            // the leaders and the player it is shown - a gap to say a place is missing costs
+            // about as much room as the place. Wider gaps are still a gap. Possible because the
+            // board is asked for one more than it lists (`fetched(forShowing:)`)
             rows.append(local)
         }
         return rows
+    }
+
+    /// How many leading places to ask Game Center for, to list `limit` of them: one more, so
+    /// `shown` has the place between the leaders and a player one below them.
+    static func fetched(forShowing limit: Int) -> Int {
+        limit + 1
     }
 
     /// The daily menu's board: the player's own place on its own, then the leading places.

@@ -390,6 +390,15 @@ extension GameScene {
             return
         }
         guard powerUpTextureArray.indices.contains(index) else { return }
+        guard ballIsOnPaddle == false || stickyCaughtTheFirstBall else { return }
+        // **Not before the ball is served** (James, 1.3 play test: "Always on twist with lasers
+        // started before the first ball was released from the paddle. Make sure always on power
+        // ups don't start before the ball is released"). The tick put the power-up on the moment
+        // play began, and again the moment a lost ball's reset had taken it off, so a Lasers day
+        // was firing at the field while the ball still sat on the paddle waiting to be launched.
+        // It starts with the serve now: a ball on the paddle that Sticky did not catch is a ball
+        // not yet released. One that Sticky caught is mid-play, and a power-up already running
+        // is held as it always was
 
         let before = classicPowerUpEndings
         let carrier = SKSpriteNode(texture: powerUpTextureArray[index])

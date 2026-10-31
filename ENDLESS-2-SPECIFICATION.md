@@ -2964,6 +2964,57 @@ testers:
   falling power-up's position by `brickWidth`, so a bare `GameScene()` with a power-up on
   screen traps converting NaN to Int. A real scene is always laid out before play.
 
+**Round 403: James's second 1.3 list, and his answers to round 402.**
+
+On `release-1.3.1`, merged into `release-1.4`, where the Zen notes are answered. Each fix is tested
+from his words.
+
+- **The ball at the paddle's very ends** ("clamp it the way the square paddle already does. Let's
+  try it out"). Round 402 measured it: the formula ran only while the ball's centre was over the
+  paddle, and past that the engine's rounded end answered - straight down onto the end left at 35
+  degrees where the trend says 45, a ball crossing from outside went back the way it came at 131 to
+  151. `paddleHit` now clamps the landing spot to the end for any ball over the paddle's top and
+  lets the formula answer, and bends every top-face bounce from the heading the ball arrived with
+  (`ballStateBeforeStep`) rather than the engine's bounce. That second half mattered in Mayhem,
+  whose traced paddle had already turned a straight drop at the very end to 16 degrees before the
+  formula saw it. The square paddle's clamp, there since 2020, had never reached the formula at
+  all: it landed on exactly 1, and every test after it asked for less than 1. Measured afterwards,
+  a straight drop runs 90 to 45 degrees smoothly across the half-paddle in all three modes, and a
+  ball crossing an end carries on. A ball below the top line is a side hit and is still the
+  engine's. **This changes how Classic and the original Endless play**, which James asked for; it
+  wants his play-testing before 1.3.1 ships. `GoldenValuesTests` does not move, because it records
+  the formula and not the engine. `ThePaddleEndsBendTheBallTests`.
+- **Always On waits for the serve** ("Always on twist with lasers started before the first ball was
+  released from the paddle... Their graphics can be there but they shouldn't be active").
+  `tickDailyAlwaysOn` put the power-up on as play began and again after every lost ball's reset,
+  so a Lasers day fired at the field with the ball still on the paddle. It now waits while the ball
+  sits there uncaught; a ball Sticky caught is mid-play, and a power-up already on is held as
+  before. `AlwaysOnWaitsForTheServeTests`.
+- **Digit columns on the boards** ("Used fixed width numbers in the leaderboard for the rank and
+  score so the numbers align"). Fugaz One has no tabular figures (round 18's
+  `FixedWidthDigits`). `FixedWidthDigits.attributed` puts each digit in a column the widest
+  digit's width as kerning, with the first digit's leading half as the paragraph's indent so a
+  label's text is still the number. The menu card's rows and the end screen's drawn board both use
+  it.
+- **No single place left out** ("Post game leaderboard shows 1st and 3rd but not 2nd", with a
+  screenshot). The fullest ending lists one leader (round 378) and a player in third read as a
+  board with no second. `DailyBoardRow.shown` now lists a single place between the leaders and the
+  player - the board is asked for one more than it lists (`fetched(forShowing:)`) - and the end
+  screen's drawn board sets the player apart below a wider gap, as the menu card and the pop-up
+  already did.
+- **The 1,998m: most likely the board's window, in App Store Connect.** His run reached "more like
+  100m". Every daily posts to the one recurring board, and Game Center keeps each player's best
+  within a window. The board he saw held 2,348 and 1,998 - two Classic-sized scores - and the
+  calendar fits: 26 October was Classic, 27 October Endless. A window starting anywhere but the
+  day's 00:00 UTC spans the end of one daily and the start of the next, so a Classic score posted
+  before the app's day turned out-scores the Endless run after it, and shows as metres. Nothing in
+  the posting path can put 1,998 there for a 100m run; each path posts the run's own figure. The app
+  cannot move the window, so it now says when the window is wrong:
+  `GameCenterHandler.noteTheOccurrence` logs the window's start each time a day's board is loaded,
+  as an error when it is not that day's 00:00 UTC (Console, `subsystem:com.atmrjames.Megaball
+  category:gameCenter`). Asked of James: the start time App Store Connect holds for the daily
+  board, and which time zone it is in.
+
 **Round 402: James's 1.3 play test, on `release-1.3.1`.**
 
 His first list from the released 1.3, thirteen notes and five screenshots. Asked which way the

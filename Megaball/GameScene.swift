@@ -6070,15 +6070,25 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		var angleDeg = Double(atan2(Double(abs(ySpeed)), Double(xSpeed)))/Double.pi*180
 		// The angle it arrived at. Vertical taken as an absolute: the answer always goes up
 		
-		if paddleTexture == squarePaddle && ball.position.y >= paddle.position.y + paddleHeight/2 {
-			if collisionPercentage < -1.0 {
-				collisionPercentage = -1.0
-			}
-			if collisionPercentage > 1.0 {
-				collisionPercentage = 1.0
-			}
+		let landedOnTheEnd = ball.position.y >= paddle.position.y + paddleHeight/2
+			&& abs(collisionPercentage) > 1.0
+		if landedOnTheEnd {
+			collisionPercentage = min(max(collisionPercentage, -1.0), 1.0)
 		}
-		// Paddle bounce angle rules are slightly different for square paddle due to lack of round edges
+		// **A ball over the paddle's top takes the formula at its very end too** (James, 1.3 play
+		// test: "When bouncing near the end of the paddle, the ball doesn't always seem to be
+		// angled correctly... Perhaps we can tighten up this logic so it feels more natural, works
+		// more consistently and gives the players more control over the angle of the ball"; then,
+		// round 403: "clamp it the way the square paddle already does").
+		//
+		// A ball whose centre is past the end but above the top line is meeting the rounded end's
+		// shoulder, and the engine's reflection off that curve was the answer: straight down onto
+		// the end left at 35 degrees where the formula says 45, and a ball crossing from outside
+		// went back the way it came at 131 to 151 degrees where just inside it left at 98. Its
+		// spot is the end now, and the formula answers - the square paddle's rule since 2020,
+		// which had never actually reached the formula, because the clamp landed on exactly 1 and
+		// every test below asked for less than 1. A ball below the top line is a side hit and is
+		// still the engine's
 				
 		let aimedCatchComing = isOnPaddle == false
 			&& ball.position.y >= paddle.position.y + paddleHeight/2
@@ -6168,11 +6178,19 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		// after the step resolves, at the angle the bounce off this spot would have given.
 		// Past the catches, so a held ball is held first
 
-		if isOnPaddle == false && ball.position.y >= paddle.position.y + paddleHeight/2 && (collisionPercentage < 1.0 && collisionPercentage > -1.0) {
-		// Only applies if the ball hits the top surface of the paddle
+		if isOnPaddle == false && ball.position.y >= paddle.position.y + paddleHeight/2 && (collisionPercentage <= 1.0 && collisionPercentage >= -1.0) {
+		// Only applies if the ball hits the top surface of the paddle - its ends included
 			
+			let arriving = ballStateBeforeStep[ObjectIdentifier(ball)]?.velocity
+				?? CGVector(dx: xSpeed, dy: ySpeed)
+			// The heading it came in on (§8.6), not the velocity read above, which is the
+			// engine's bounce. On the flat top the two give the same angle, so nothing there moves;
+			// on the rounded ends they do not - the engine has reflected the ball off the curve,
+			// and a ball crossing an end has already been turned round - and that was the second
+			// half of the inconsistency: in Mayhem a straight drop onto the very end left at 16
+			// degrees where the formula says 45
 			angleDeg = PaddleBounce.angleDegrees(
-				arriving: CGVector(dx: xSpeed, dy: ySpeed),
+				arriving: arriving,
 				collision: PaddleBounce.shaped(collisionPercentage,
 											   by: endlessIIPaddleSurface),
 				adjustmentK: angleAdjustmentK,
@@ -6204,8 +6222,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		// A power-up whose whole promise is "this shot goes where I say" must not quietly stop
 		// being true because the paddle is wearing a different face
 
-		if isOnPaddle == false && collisionPercentage < 1.0 && collisionPercentage > -1.0 {
-		// Only control the ball's angle if it in the centre of the paddle
+		if isOnPaddle == false && collisionPercentage <= 1.0 && collisionPercentage >= -1.0 {
+		// Only control the ball's angle if it is over the paddle - or on its end, clamped above
 			if ball.position.y > paddle.position.y {
 				ballHorizontalControl(angleDegInput: angleDeg, for: ball)
 			}

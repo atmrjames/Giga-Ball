@@ -231,7 +231,7 @@ class MenuViewController: UIViewController, MenuViewControllerDelegate, UITableV
         askingForTheDailyReport = true
         let unit = DailyChallengeGenerator.challenge(forKey: key).mode == .classic ? "" : "m"
         GameCenterHandler().loadDailyBoardTop(forKey: key,
-                                              count: DailyResultReport.leadersShown) {
+                                              count: DailyBoardRow.fetched(forShowing: DailyResultReport.leadersShown)) {
             [weak self] answer in
             guard let self else { return }
             self.askingForTheDailyReport = false

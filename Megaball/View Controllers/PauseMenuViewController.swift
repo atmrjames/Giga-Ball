@@ -546,18 +546,33 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
     /// card's label does the same with `adjustsFontSizeToFitWidth`.
     static func boardGridRankSize(_ rank: String, width: CGFloat) -> CGFloat {
         var size: CGFloat = 11
-        while size > 6, (rank as NSString).size(
-            withAttributes: [.font: UIViewController.gameScoreFont(ofSize: size)]).width > width {
+        while size > 6, FixedWidthDigits.layout(
+            rank, font: UIViewController.gameScoreFont(ofSize: size)).width > width {
             size -= 0.5
         }
         return size
     }
     static let boardGridRowHeight: CGFloat = 16
+    /// The space above the player's own row when places between it and the leaders are not
+    /// listed - the menu card's and the pop-up's gap, which this grid did not have.
+    static let boardGridGap: CGFloat = 6
+
+    /// Whether a row sits below a gap: the player's own, further down than the row above it.
+    static func boardGridGapAbove(_ rows: [DailyBoardRow], at position: Int) -> Bool {
+        position > 0 && rows[position].isLocalPlayer
+            && rows[position].rank > rows[position - 1].rank + 1
+    }
 
     static func boardGrid(_ rows: [DailyBoardRow], unit: String) -> UIImage {
         let width = boardGridWidth
         let rowHeight = boardGridRowHeight
-        let size = CGSize(width: width, height: rowHeight*CGFloat(rows.count))
+        let gaps = rows.indices.filter { boardGridGapAbove(rows, at: $0) }.count
+        let size = CGSize(width: width,
+                          height: rowHeight*CGFloat(rows.count) + boardGridGap*CGFloat(gaps))
+        // **A gap where places are left out** (James, 1.3 play test: "Post game leaderboard
+        // shows 1st and 3rd but not 2nd"). `DailyBoardRow.shown` now lists a single missing
+        // place; a wider one is set apart here as on the menu card, so a 1 over a 5 says that
+        // there are places between rather than that there are none
         let lime = #colorLiteral(red: 0.8235294118, green: 1, blue: 0, alpha: 1)
         return UIGraphicsImageRenderer(size: size).image { context in
             let backing = UIBezierPath(roundedRect: CGRect(origin: .zero, size: size),
@@ -568,35 +583,40 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
 
             let rankWidth: CGFloat = 26
             let inset: CGFloat = 8
+            var top: CGFloat = 0
             for (position, row) in rows.enumerated() {
-                let top = rowHeight*CGFloat(position)
+                if position > 0 { top += rowHeight }
+                if boardGridGapAbove(rows, at: position) { top += boardGridGap }
                 if row.isLocalPlayer {
                     lime.withAlphaComponent(0.14).setFill()
                     context.fill(CGRect(x: 0, y: top, width: width, height: rowHeight))
                 }
-                if position > 0 {
+                if position > 0, boardGridGapAbove(rows, at: position) == false {
                     UIColor(white: 1, alpha: 0.08).setFill()
                     context.fill(CGRect(x: inset, y: top, width: width - inset*2, height: 0.5))
                 }
                 let colour = row.isLocalPlayer ? lime : UIColor(white: 1, alpha: 0.8)
                 func draw(_ string: String, font: UIFont, in rect: CGRect,
-                          alignment: NSTextAlignment, colour: UIColor) {
+                          alignment: NSTextAlignment, colour: UIColor, fixed: Bool = false) {
                     let paragraph = NSMutableParagraphStyle()
                     paragraph.alignment = alignment
                     paragraph.lineBreakMode = .byTruncatingTail
                     let attributes: [NSAttributedString.Key: Any] =
                         [.font: font, .foregroundColor: colour, .paragraphStyle: paragraph]
-                    let height = (string as NSString).size(withAttributes: attributes).height
-                    (string as NSString).draw(
-                        with: CGRect(x: rect.minX, y: rect.midY - height/2,
-                                     width: rect.width, height: height),
-                        options: [.usesLineFragmentOrigin, .truncatesLastVisibleLine],
-                        attributes: attributes, context: nil)
+                    let text = fixed ? FixedWidthDigits.attributed(string, attributes: attributes)
+                        : NSAttributedString(string: string, attributes: attributes)
+                    let height = text.size().height
+                    text.draw(with: CGRect(x: rect.minX, y: rect.midY - height/2,
+                                           width: rect.width, height: height),
+                              options: [.usesLineFragmentOrigin, .truncatesLastVisibleLine],
+                              context: nil)
                 }
+                // The place and the score in digit columns, so they line up down the board
+                // (James, 1.3 play test: "Used fixed width numbers in the leaderboard for the
+                // rank and score so the numbers align")
                 let score = "\(row.score)" + unit
                 let scoreFont = UIViewController.gameScoreFont(ofSize: 12)
-                let scoreWidth = ceil((score as NSString)
-                    .size(withAttributes: [.font: scoreFont]).width) + 2
+                let scoreWidth = ceil(FixedWidthDigits.layout(score, font: scoreFont).width) + 2
                 let band = CGRect(x: 0, y: top, width: width, height: rowHeight)
                 let rankText = "\(row.rank)"
                 let rankSize = PauseMenuViewController.boardGridRankSize(rankText,
@@ -605,7 +625,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
                      in: CGRect(x: inset, y: band.minY, width: rankWidth - 6, height: rowHeight),
                      alignment: .left,
                      // **Left in its cell, as the menu card has it** (James, round 380)
-                     colour: row.isLocalPlayer ? lime : UIColor(white: 1, alpha: 0.5))
+                     colour: row.isLocalPlayer ? lime : UIColor(white: 1, alpha: 0.5), fixed: true)
                 draw(row.name, font: .systemFont(ofSize: 12,
                                                  weight: row.isLocalPlayer ? .bold : .regular),
                      in: CGRect(x: inset + rankWidth, y: band.minY,
@@ -615,7 +635,7 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
                 draw(score, font: scoreFont,
                      in: CGRect(x: width - inset - scoreWidth, y: band.minY,
                                 width: scoreWidth, height: rowHeight),
-                     alignment: .right, colour: colour)
+                     alignment: .right, colour: colour, fixed: true)
             }
         }
     }
@@ -843,7 +863,8 @@ class PauseMenuViewController: UIViewController, UICollectionViewDelegate,
         guard sender != "Pause", isDailyChallenge,
               let key = DailyChallengeSession.shared.active?.dateKey else { return }
         let shown = dailyBoardRowsWanted
-        GameCenterHandler().loadDailyBoardTop(forKey: key, count: shown) { [weak self] answer in
+        GameCenterHandler().loadDailyBoardTop(forKey: key,
+                                              count: DailyBoardRow.fetched(forShowing: shown)) { [weak self] answer in
             guard let self, let answer else { return }
             self.dailyBoard = DailyBoardRow.shown(
                 leaders: answer.leaders, local: answer.local, limit: shown,

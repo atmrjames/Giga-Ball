@@ -292,12 +292,34 @@ final class GameCenterHandler: NSObject {
             }
             switch occurrence {
             case .current:
+                GameCenterHandler.noteTheOccurrence(board, forKey: key)
                 DispatchQueue.main.async { completion(board) }
             case .previous:
                 board.loadPreviousOccurrence { previous, _ in
+                    previous.map { GameCenterHandler.noteTheOccurrence($0, forKey: key) }
                     DispatchQueue.main.async { completion(previous) }
                 }
             }
+        }
+    }
+
+    /// Says so in the log when the board's window is not the day the app thinks it is.
+    ///
+    /// **James, 1.3 play test: "Endless mode daily challenge score is showing as >1000m which is
+    /// wrong"** - his run had reached "more like 100m". Every daily, whatever its mode, posts to
+    /// the one recurring board, and Game Center keeps each player's best within a window; the
+    /// board he saw held 2,348 and 1,998, two Classic-sized scores on an Endless day. A window
+    /// that began anywhere but the day's UTC midnight would do exactly that - it spans the end of
+    /// one day and the start of the next, and a Classic run posted before the app's day turned
+    /// out-scores the Endless run after it. The app cannot move the window, which is set in App
+    /// Store Connect; it can say when one does not match, in Console under
+    /// `subsystem:com.atmrjames.Megaball category:gameCenter`.
+    static func noteTheOccurrence(_ board: GKLeaderboard, forKey key: String) {
+        guard let start = board.startDate else { return }
+        if DailyChallengeSession.occurrence(starting: start, isTheDay: key) {
+            Log.gameCenter.info("daily board window for \(key, privacy: .public) starts \(start, privacy: .public), as it should")
+        } else {
+            Log.gameCenter.error("daily board window for \(key, privacy: .public) starts \(start, privacy: .public), not at that day's 00:00 UTC - its scores span two days")
         }
     }
 

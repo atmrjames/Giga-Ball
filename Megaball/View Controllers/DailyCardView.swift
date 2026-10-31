@@ -490,10 +490,12 @@ final class DailyCardView: UIView {
         let own = leading ? onLime : lime
         let colour = row.isLocalPlayer ? own : (leading ? onLime : UIColor.white)
         let rank = UILabel()
-        rank.text = "\(row.rank)"
-        rank.font = UIViewController.gameScoreFont(ofSize: 14)
-        rank.textColor = row.isLocalPlayer || leading
-            ? colour : UIColor(white: 1, alpha: 0.55)
+        rank.attributedText = FixedWidthDigits.attributed("\(row.rank)", attributes: [
+            .font: UIViewController.gameScoreFont(ofSize: 14),
+            .foregroundColor: row.isLocalPlayer || leading
+                ? colour : UIColor(white: 1, alpha: 0.55)])
+        // The place and the score in digit columns (James, 1.3 play test: "Used fixed width
+        // numbers in the leaderboard for the rank and score so the numbers align")
         rank.adjustsFontSizeToFitWidth = true
         rank.minimumScaleFactor = 0.6
         rank.widthAnchor.constraint(equalToConstant: 30).isActive = true
@@ -506,9 +508,11 @@ final class DailyCardView: UIView {
         name.lineBreakMode = .byTruncatingTail
         name.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
         let score = UILabel()
-        score.text = "\(row.score)" + unit
-        score.font = UIViewController.gameScoreFont(ofSize: 15)
-        score.textColor = colour
+        let paragraph = NSMutableParagraphStyle()
+        paragraph.alignment = .right
+        score.attributedText = FixedWidthDigits.attributed("\(row.score)" + unit, attributes: [
+            .font: UIViewController.gameScoreFont(ofSize: 15), .foregroundColor: colour,
+            .paragraphStyle: paragraph])
         score.textAlignment = .right
         score.setContentHuggingPriority(.required, for: .horizontal)
         score.setContentCompressionResistancePriority(.required, for: .horizontal)
