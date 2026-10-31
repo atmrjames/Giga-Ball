@@ -2964,6 +2964,33 @@ testers:
   falling power-up's position by `brickWidth`, so a bare `GameScene()` with a power-up on
   screen traps converting NaN to Int. A real scene is always laid out before play.
 
+**Round 405: the 1,998m, found in the app after all.**
+
+James answered round 403's question with App Store Connect itself: the daily board starts "Aug 11,
+2026 10:00 AM AEST", one day long, restarting every day - 00:00 UTC, as the app assumes - and the
+log round 403 added read "daily board window for 2026-10-31 starts 2026-10-31 00:00:00 +0000, as
+it should". So round 403's suspect was wrong. Looking at his round 402 screenshots again: the card
+is YESTERDAY, an Endless day, and Game Center's own screen calls the window it holds "Ended
+yesterday", with 2,348 and 1,998 on it - a Classic day's scores.
+
+- **The cause:** every reader of a closed day asked Game Center for "the window before the
+  current one" and took what came back. When the current window Game Center hands back is still
+  yesterday's, the one before it is the day before yesterday - the Classic day - and its points
+  were read as metres. `DailyChallengeSession.stepToTheDay` now finds the day by the window's
+  start: a current window that is still yesterday's *is* yesterday's board, one that is not yet
+  today's has nothing to say about today, and a window from neither day is nothing rather than
+  another day's scores. `loadDailyBoardOccurrence` is the one door, and the board's top score, the
+  closed day's landed-post check and the results pop-up all go through it now; `loadRank` refuses
+  the daily's current window when it is not today's.
+- **The landed-post check had the same fault in a worse place**: an entry on the day before
+  yesterday, the player's own, would have confirmed a post that never landed.
+- **The results pop-up read the same wrong window**, so whatever it showed may not have been the
+  day it named. Whether that was all of "after midnight rather than after the time that the daily
+  challenge finishes" is for the next play test to say: the pop-up is asked on every launch and
+  every return to the app, and the day it asks for turns at 11am in Sydney.
+- **Closed without a fix:** the silent inactive Portal ("close the portal one, haven't seen it
+  since"). **Still open:** the Giga-Ball through the Safety Paddle, until it happens again.
+
 **Round 404: the soak's open items - a resume that lost its power-ups, and the pocket opener misfiring.**
 
 On `release-1.3.1`. James: "continue with the open items". The two the soak had left open were

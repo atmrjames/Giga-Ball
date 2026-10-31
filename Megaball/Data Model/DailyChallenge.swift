@@ -1703,6 +1703,38 @@ final class DailyChallengeSession {
         return key == DailyDay.key(for: yesterday) ? .previous : nil
     }
 
+    /// How to reach the day `key` from the window Game Center handed back as the board's
+    /// current one: that window itself, the one before it, or nil when neither is the day.
+    ///
+    /// **James, 1.3 play test: "Endless mode daily challenge score is showing as >1000m which is
+    /// wrong"** - his run reached "more like 100m" (round 405). The board was set right all
+    /// along: App Store Connect holds 10:00 AEST, which is 00:00 UTC, and the log round 403
+    /// added read "starts 2026-10-31 00:00:00 +0000, as it should". What his screenshots show is
+    /// yesterday's card, an Endless day, over a window Game Center itself called "Ended
+    /// yesterday" holding 2,348 and 1,998 - a Classic day's scores. The app asked for "the
+    /// window before the current one" and took whatever came back, so when Game Center's current
+    /// window was still yesterday's, "the one before" was the day before that, and its Classic
+    /// points were read as metres. Now the windows are matched by their start, the only thing
+    /// that names a day: a current window that is still yesterday's *is* yesterday's board, and
+    /// one that is not yet today's has nothing to say about today.
+    ///
+    /// A window that carries no start falls back to counting days from today, as it always did.
+    static func stepToTheDay(_ key: String, fromWindowStarting start: Date?,
+                             todayKey: String) -> BoardOccurrence? {
+        guard let start else { return boardOccurrence(forKey: key, todayKey: todayKey) }
+        if occurrence(starting: start, isTheDay: key) { return .current }
+        guard let midnight = DailyDay.date(forKey: key),
+              let next = DailyDay.utcCalendar.date(byAdding: .day, value: 1, to: midnight),
+              occurrence(starting: start, isTheDay: DailyDay.key(for: next)) else { return nil }
+        return .previous
+    }
+
+    /// Whether a window Game Center handed back is the day `key`. One with no start is taken on
+    /// trust, which is all the app could do before.
+    static func window(starting start: Date?, isTheDay key: String) -> Bool {
+        start.map { occurrence(starting: $0, isTheDay: key) } ?? true
+    }
+
     /// Whether the run that just ended posted to today's board - the game-over screen's
     /// question. Written by `recordDailyResult` as it settles the run, so the screen
     /// never has to re-derive what the scene already decided.

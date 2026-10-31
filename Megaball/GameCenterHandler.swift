@@ -150,30 +150,22 @@ final class GameCenterHandler: NSObject {
     /// board, no entry - because the record is already written off as a miss by then and false
     /// simply leaves it there. Only a yes changes anything.
     func dailyScoreLanded(on dateKey: String, completion: @escaping (Bool) -> Void) {
-        guard GKLocalPlayer.local.isAuthenticated else { completion(false); return }
-        GKLeaderboard.loadLeaderboards(IDs: [DailyChallengeBoards.daily]) { boards, _ in
-            guard let board = boards?.first else {
-                DispatchQueue.main.async { completion(false) }
-                return
-            }
-            board.loadPreviousOccurrence { previous, _ in
-                guard let previous else {
-                    DispatchQueue.main.async { completion(false) }
-                    return
-                }
-                previous.loadEntries(for: [GKLocalPlayer.local],
-                                     timeScope: .allTime) { localEntry, _, _ in
-                    let landed = localEntry != nil
-                    Log.gameCenter.notice("""
-                        DAILY \(dateKey, privacy: .public) on the closed board: \
-                        \(landed ? "found" : "not found", privacy: .public)
-                        """)
-                    DispatchQueue.main.async { completion(landed) }
-                    // An entry at all is the answer, not a score comparison. The only thing
-                    // this app ever submits to the daily board is that day's attempt, so an
-                    // entry on that occurrence *is* the attempt - and a score posted from the
-                    // player's other device is just as landed as one posted from this one
-                }
+        loadDailyBoardOccurrence(forKey: dateKey) { closed in
+            guard let closed else { completion(false); return }
+            // The day's own window, found by its start (round 405). Taking "the one before the
+            // current one" could ask the day before yesterday, and an entry there - the
+            // player's, from that day - would confirm a post that never landed
+            closed.loadEntries(for: [GKLocalPlayer.local], timeScope: .allTime) { localEntry, _, _ in
+                let landed = localEntry != nil
+                Log.gameCenter.notice("""
+                    DAILY \(dateKey, privacy: .public) on the closed board: \
+                    \(landed ? "found" : "not found", privacy: .public)
+                    """)
+                DispatchQueue.main.async { completion(landed) }
+                // An entry at all is the answer, not a score comparison. The only thing this
+                // app ever submits to the daily board is that day's attempt, so an entry on
+                // that occurrence *is* the attempt - and a score posted from the player's other
+                // device is just as landed as one posted from this one
             }
         }
     }
@@ -186,34 +178,14 @@ final class GameCenterHandler: NSObject {
     /// not the local player has an entry, which `loadRank` cannot do: it answers only for a
     /// player on the board.
     func loadDailyBoardBest(forKey key: String, completion: @escaping (Int?) -> Void) {
-        let session = DailyChallengeSession.shared
-        guard GKLocalPlayer.local.isAuthenticated,
-              let occurrence = DailyChallengeSession.boardOccurrence(forKey: key,
-                                                                    todayKey: session.todayKey)
-        else { completion(nil); return }
-        func top(of board: GKLeaderboard) {
+        loadDailyBoardOccurrence(forKey: key) { board in
+            guard let board else { completion(nil); return }
             board.loadEntries(for: .global, timeScope: .allTime,
                               range: NSRange(location: 1, length: 1)) { _, entries, _, _ in
                 DispatchQueue.main.async { completion(entries?.first?.score) }
             }
         }
-        GKLeaderboard.loadLeaderboards(IDs: [DailyChallengeBoards.daily]) { boards, _ in
-            guard let board = boards?.first else {
-                DispatchQueue.main.async { completion(nil) }
-                return
-            }
-            switch occurrence {
-            case .current: top(of: board)
-            case .previous:
-                board.loadPreviousOccurrence { previous, _ in
-                    guard let previous else {
-                        DispatchQueue.main.async { completion(nil) }
-                        return
-                    }
-                    top(of: previous)
-                }
-            }
-        }
+        // Through the one door that finds a day's own window (round 405)
     }
 
     /// The leading places on a day's board, and the local player's own (round 354).
@@ -282,37 +254,43 @@ final class GameCenterHandler: NSObject {
                                   completion: @escaping (GKLeaderboard?) -> Void) {
         let session = DailyChallengeSession.shared
         guard GKLocalPlayer.local.isAuthenticated,
-              let occurrence = DailyChallengeSession.boardOccurrence(forKey: key,
-                                                                    todayKey: session.todayKey)
+              DailyChallengeSession.boardOccurrence(forKey: key,
+                                                    todayKey: session.todayKey) != nil
         else { completion(nil); return }
         GKLeaderboard.loadLeaderboards(IDs: [DailyChallengeBoards.daily]) { boards, _ in
             guard let board = boards?.first else {
                 DispatchQueue.main.async { completion(nil) }
                 return
             }
-            switch occurrence {
+            switch DailyChallengeSession.stepToTheDay(key, fromWindowStarting: board.startDate,
+                                                      todayKey: session.todayKey) {
             case .current:
                 GameCenterHandler.noteTheOccurrence(board, forKey: key)
                 DispatchQueue.main.async { completion(board) }
             case .previous:
                 board.loadPreviousOccurrence { previous, _ in
                     previous.map { GameCenterHandler.noteTheOccurrence($0, forKey: key) }
-                    DispatchQueue.main.async { completion(previous) }
+                    let theDay = previous.flatMap {
+                        DailyChallengeSession.window(starting: $0.startDate, isTheDay: key) ? $0 : nil
+                    }
+                    DispatchQueue.main.async { completion(theDay) }
                 }
+            case nil:
+                GameCenterHandler.noteTheOccurrence(board, forKey: key)
+                DispatchQueue.main.async { completion(nil) }
+                // Neither this window nor the one before it is the day: nothing to show is
+                // the truth, where another day's scores are not (round 405)
             }
         }
     }
 
     /// Says so in the log when the board's window is not the day the app thinks it is.
     ///
-    /// **James, 1.3 play test: "Endless mode daily challenge score is showing as >1000m which is
-    /// wrong"** - his run had reached "more like 100m". Every daily, whatever its mode, posts to
-    /// the one recurring board, and Game Center keeps each player's best within a window; the
-    /// board he saw held 2,348 and 1,998, two Classic-sized scores on an Endless day. A window
-    /// that began anywhere but the day's UTC midnight would do exactly that - it spans the end of
-    /// one day and the start of the next, and a Classic run posted before the app's day turned
-    /// out-scores the Endless run after it. The app cannot move the window, which is set in App
-    /// Store Connect; it can say when one does not match, in Console under
+    /// Added in round 403 for James's 1,998m, when a misset window in App Store Connect was the
+    /// suspect. It was not - his log read "starts 2026-10-31 00:00:00 +0000, as it should" -
+    /// and the cause was the app taking the wrong window (see
+    /// `DailyChallengeSession.stepToTheDay`). Kept, because it is the one place that would say
+    /// so if Game Center and the app ever disagreed about a day again. Console, under
     /// `subsystem:com.atmrjames.Megaball category:gameCenter`.
     static func noteTheOccurrence(_ board: GKLeaderboard, forKey key: String) {
         guard let start = board.startDate else { return }
@@ -355,10 +333,16 @@ final class GameCenterHandler: NSObject {
                   completion: @escaping ((rank: Int, players: Int, best: Int?)?) -> Void) {
         guard GKLocalPlayer.local.isAuthenticated else { completion(nil); return }
         GKLeaderboard.loadLeaderboards(IDs: [leaderboardID]) { boards, _ in
-            guard let board = boards?.first else {
+            guard let board = boards?.first,
+                  leaderboardID != DailyChallengeBoards.daily
+                    || DailyChallengeSession.window(starting: board.startDate,
+                                                    isTheDay: DailyChallengeSession.shared.todayKey)
+            else {
                 DispatchQueue.main.async { completion(nil) }
                 return
             }
+            // The daily's current window, only while it is today's (round 405): a place on
+            // yesterday's board, said as today's, is the 1,998m again
             board.loadEntries(for: .global, timeScope: .allTime,
                               range: NSRange(location: 1, length: 1)) {
                 localEntry, entries, players, _ in
@@ -377,8 +361,8 @@ final class GameCenterHandler: NSObject {
                     // 185. Optional because a board with no entries yet answers with none
                 }
                 // A recurring board's current occurrence is what loads by default, which
-                // for the daily is exactly today's window; a classic board has only the
-                // one occurrence and reads the same way
+                // for the daily should be today's window and is checked above; a classic
+                // board has only the one occurrence and reads the same way
             }
         }
     }

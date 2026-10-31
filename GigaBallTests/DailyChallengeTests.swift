@@ -4131,6 +4131,44 @@ final class DailyBoardRowTests: XCTestCase {
         XCTAssertFalse(DailyChallengeSession.occurrence(starting: midnight, isTheDay: "2026-10-27"))
     }
 
+    /// Round 405, the same report with its cause: the board's window was right all along
+    /// (James's log: "daily board window for 2026-10-31 starts 2026-10-31 00:00:00 +0000, as it
+    /// should"). His screenshots show yesterday's card, an Endless day, over a window Game Center
+    /// called "Ended yesterday" holding 2,348 and 1,998 - a Classic day's scores. The app took
+    /// "the window before the current one" for yesterday, and while Game Center's current
+    /// window was still yesterday's, that was the day before. Windows are matched by their start.
+    func testAWindowStillOnYesterdayIsYesterdaysBoardAndNotTodays() throws {
+        let today = "2026-10-28", yesterday = "2026-10-27"
+        let todaysStart = try XCTUnwrap(DailyDay.date(forKey: today))
+        let yesterdaysStart = try XCTUnwrap(DailyDay.date(forKey: yesterday))
+
+        XCTAssertEqual(DailyChallengeSession.stepToTheDay(today, fromWindowStarting: todaysStart,
+                                                          todayKey: today), .current)
+        XCTAssertEqual(DailyChallengeSession.stepToTheDay(yesterday,
+                                                          fromWindowStarting: todaysStart,
+                                                          todayKey: today), .previous,
+                       "an up-to-date board: yesterday is the window before")
+
+        XCTAssertEqual(DailyChallengeSession.stepToTheDay(yesterday,
+                                                          fromWindowStarting: yesterdaysStart,
+                                                          todayKey: today), .current,
+                       "a board still on yesterday is yesterday's - the one before it is the "
+                       + "Classic day, whose 1,998 points read as 1,998m")
+        XCTAssertNil(DailyChallengeSession.stepToTheDay(today, fromWindowStarting: yesterdaysStart,
+                                                        todayKey: today),
+                     "and it has nothing to say about today")
+        XCTAssertNil(DailyChallengeSession.stepToTheDay(
+            yesterday, fromWindowStarting: todaysStart.addingTimeInterval(86_400), todayKey: today),
+                     "a window two days on reaches neither")
+
+        XCTAssertEqual(DailyChallengeSession.stepToTheDay(yesterday, fromWindowStarting: nil,
+                                                          todayKey: today), .previous,
+                       "a window with no start is counted from today, as before")
+        XCTAssertTrue(DailyChallengeSession.window(starting: nil, isTheDay: today))
+        XCTAssertFalse(DailyChallengeSession.window(starting: yesterdaysStart, isTheDay: today),
+                       "today's rank is not read off yesterday's window")
+    }
+
     func testTheCardPinsThePlayerAboveAGapAndScrollsTheRest() {
         let card = DailyCardView()
         let me = DailyBoardRow(rank: 37, name: "Me", score: 3_000, isLocalPlayer: true)

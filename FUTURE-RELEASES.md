@@ -568,9 +568,8 @@ are a release's work on their own.
 **James's list (20 October 2026):**
 
 - ~~Don't make a sound or animation on the level intro for invisible bricks.~~ **Fixed, round 401.**
-- A Portal brick that is inactive after recently being used makes no haptic or sound when hit. It
-  should. **Not reproduced (round 401)**: every cooling Portal knocked on the simulator, whatever
-  its shape or however it got there. Waiting on which Portal and what had just happened.
+- ~~A Portal brick that is inactive after recently being used makes no haptic or sound when hit.~~
+  **Closed, round 405**: not reproduced in round 401, and James has not seen it since.
 - ~~Auto-Aim does not aim at an Indestructible 1 brick even when it is the lowest available brick.
   It should. It should not aim at an Indestructible 2 brick.~~ **Fixed, round 401.**
 - ~~The Portal wedge brick has a graphics glitch after a ball goes through it - as if the flipped
@@ -592,6 +591,7 @@ ships**), an Always On power-up waits for the serve, the boards' places and scor
 columns, and the end screen's board never skips a single place. **The 1,998m, most likely
 James's to fix in App Store Connect**: everything points to the board's window not starting at
 00:00 UTC (see ENDLESS-2 round 403); the app now logs the window it is given, which settles it.
+**It did, the other way: the window was right and the fault was the app's - round 405.**
 
 **From the soak, round 404:** fixed - a resumed endless run past 10m losing every running
 power-up (the lost Halo), an endless run saved with an empty field coming back at 0m, a
@@ -600,6 +600,12 @@ pocket opener taking down walls for bricks off the side of the field or sharing 
 **Still open:** a brick struck and scored in the resumed game's still moment, now and then deep in
 a long Mayhem run (3 seeds in 60, before and after this round); not yet known whether it is the
 game or the check. See ENDLESS-2 round 404.
+
+**The 1,998m, round 405:** fixed, and it was the app. App Store Connect's window was right
+(10:00 AEST, 00:00 UTC); the app read a closed day as "the window before the current one", which
+is the day before yesterday whenever Game Center's current window is still yesterday's, and a
+Classic day's points showed as metres. Days are found by their window's start now. The results
+pop-up read the same window; whether its timing is fixed with it is for the next play test.
 
 ---
 
