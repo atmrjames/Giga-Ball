@@ -1002,10 +1002,13 @@ enum GameSnapshot {
             let tint = tinted ? String(format: " tint %.2f,%.2f,%.2f", r, g, b) : ""
             // White on a white picture is no tint at all, whichever way it is written
             let place = wanders ? "wandering" : String(format: "at %.0f,%.0f",
-                brick.position.x,
+                brick.position.x.rounded() + 0,
                 scene.endlessIICanonicalRestingY(scene.endlessIIBuildInFinalY[ObjectIdentifier(brick)]
-                    ?? brick.descentRestingY ?? brick.position.y))
-            // A brick still raining in is where it will land, which is what the save writes
+                    ?? brick.descentRestingY ?? brick.position.y).rounded() + 0)
+            // A brick still raining in is where it will land, which is what the save writes.
+            // **Rounded, and nought added, so a hair either side of the middle reads the same**
+            // (round 404): `%.0f` writes -0.3 as "-0", and the resume soak failed seeds on bricks
+            // "at -0,103" against "at 0,103" - the same place
             found.append([
                 brick.texture.flatMap { names[ObjectIdentifier($0)] } ?? "no picture",
                 brick.isHidden ? "hidden" : "shown",

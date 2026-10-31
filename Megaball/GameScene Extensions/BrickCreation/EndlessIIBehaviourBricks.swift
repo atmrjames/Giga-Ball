@@ -766,8 +766,22 @@ extension GameScene {
     /// asks its own search.
     func endlessIIWallCells(in occupancy: [EndlessIICell: [SKSpriteNode]]) -> Set<EndlessIICell> {
         Set(occupancy.compactMap { cell, bricks in
-            bricks.contains(where: endlessIIIsWall) ? cell : nil
+            let real = bricks.filter { $0.texture !== brickNullTexture }
+            return real.isEmpty == false && real.allSatisfy(endlessIIIsWall) ? cell : nil
         })
+        // **A cell is a wall only when everything in it is** (round 404, found by the soak). A
+        // moving brick passing over a wall, or the quarters of a Tiny set beside one, share its
+        // cell for a moment; counted as wall, that cell could never be reached, so the brick in
+        // it read as shut in, and the opener took down every wall it could find trying to reach
+        // it - nineteen in one seed. The ball can strike a breakable brick in a shared cell, so
+        // the cell is open. A placeholder is not a brick and decides nothing
+    }
+
+    /// Whether a cell is one the field's own search covers - inside its columns and below its
+    /// top. A brick outside it is on its way somewhere (sliding with Drift, arriving above the
+    /// field) and is never shut in, whatever surrounds it.
+    func endlessIIFieldHolds(_ cell: EndlessIICell, bottom: Int) -> Bool {
+        cell.column >= 0 && cell.column < numberOfBrickColumns && cell.row >= 0 && cell.row <= bottom
     }
 
     /// The cells a brick covers, as the occupancy map counts them.
@@ -833,16 +847,26 @@ extension GameScene {
     func endlessIIOpenSealedPockets() -> Int {
         guard gameMode == .endlessII else { return 0 }
         var opened = 0
+        var lastPocket: EndlessIICell?
         for _ in 0..<8 {
             let occupancy = endlessIIOccupancy()
             guard let bottom = endlessIIBottomRow(in: occupancy) else { break }
             let reachable = endlessIIReachableCells(walls: endlessIIWallCells(in: occupancy),
                                                     bottom: bottom)
             let sealed = occupancy.filter { cell, bricks in
-                cell.row >= 0 && cell.row <= bottom && reachable.contains(cell) == false
-                    && bricks.contains { endlessIIIsWall($0) == false }
+                endlessIIFieldHolds(cell, bottom: bottom) && reachable.contains(cell) == false
+                    && bricks.contains { endlessIIIsWall($0) == false && $0.texture !== brickNullTexture }
             }.keys
-            guard let pocket = sealed.max(by: { $0.row < $1.row }) else { break }
+            // **Only inside the field** (round 404, found by the soak). A brick half off the side
+            // while Drift slides the field sits in column -1 or 11, which the search never covers,
+            // so it read as shut in for as long as it was there and the opener kept taking walls
+            // down to reach it. Placeholders hold a cell and are nothing to reach
+            guard let pocket = sealed.max(by: { $0.row < $1.row }),
+                  pocket != lastPocket else { break }
+            lastPocket = pocket
+            // **And never the same pocket twice running.** A wall onto the open field reaches the
+            // pocket by construction, so a pocket still sealed after its door has gone is one this
+            // search is reading wrongly - and the answer to that is to stop, not to keep opening
             // One pocket at a time, lowest first, then the field is read again: opening one wall
             // can open more than one pocket, and a second wall should only go if it is needed
             var door: (brick: SKSpriteNode, row: Int)?
@@ -867,7 +891,8 @@ extension GameScene {
                 }
             }
             guard let wall = door?.brick ?? (occupancy.first { cell, bricks in
-                region.contains(cell) == false && bricks.contains(where: endlessIIIsWall)
+                region.contains(cell) == false && endlessIIFieldHolds(cell, bottom: bottom)
+                    && bricks.contains(where: endlessIIIsWall)
                     && [(1, 0), (-1, 0), (0, 1), (0, -1)].contains { across, down in
                         region.contains(EndlessIICell(column: cell.column + across,
                                                       row: cell.row + down))

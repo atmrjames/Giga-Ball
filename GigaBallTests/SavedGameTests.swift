@@ -425,14 +425,17 @@ final class SavedGameTests: XCTestCase {
         }
     }
 
-    func testExtraBallsWithoutAFirstBallAreRejected() {
-        // The ball was on the paddle, so there is nothing for the others to be extra to
+    func testExtraBallsBesideAFirstBallOnThePaddleAreKept() {
+        // **Round 404, from the resume soak.** This used to be rejected - "the ball was on the
+        // paddle, so there is nothing for the others to be extra to" - but a Sticky Paddle holds
+        // the first ball while a Multi-Ball's extras are still in play, and a run paused then
+        // came back without them
         var game = sampleGame()
         game.ballProperties = []
         game.extraBallProperties = [1, 2, 3, 4]
         game.save(to: defaults)
 
-        XCTAssertNil(SavedGame.load(from: defaults))
+        XCTAssertEqual(SavedGame.load(from: defaults)?.extraBallProperties, [1, 2, 3, 4])
     }
 
     // MARK: - Sticky paddle

@@ -264,7 +264,7 @@ class Playing: GKState {
             // from the same moment
         }
 
-        if (scene.savedGame?.brickXPositions.isEmpty == false) {
+        if Playing.buildsFromTheSave(scene.savedGame, levelNumber: scene.levelNumber) {
             scene.resumeBrickCreation()
             // Load saved level
             NotificationCenter.default.post(name: .levelDidBuild, object: nil)
@@ -317,5 +317,19 @@ class Playing: GKState {
             return false
         }
     }
+
+    /// Whether a level is built from the save rather than fresh.
+    ///
+    /// **An endless save is a resume whatever its field holds** (round 404, found chasing the
+    /// soak's lost Halo). The test was whether the save held any bricks, which is right for
+    /// Classic - a level with none left is a level complete, and is never saved - and wrong for
+    /// an endless run (level 0), whose field can be empty for a moment after a Cull or a Wipe.
+    /// Paused in that moment, the run came back as a fresh field at 0m with the saved run's
+    /// power-ups laid on top of it.
+    static func buildsFromTheSave(_ saved: SavedGame?, levelNumber: Int) -> Bool {
+        guard let saved else { return false }
+        return saved.brickXPositions.isEmpty == false || levelNumber == 0
+    }
 }
+
 

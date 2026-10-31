@@ -10320,7 +10320,10 @@ laserTimer?.invalidate()
 				let ballDYVelocity = Double(pauseBallVelocityY)
 				let paddleXPosition = Double(paddle.position.x)
 				ballPropertiesArray = [ballXPosition, ballYPosition, ballDXVelocity, ballDYVelocity, paddleXPosition]
+			}
+			// Only save ball properties if ball is in play and not on paddle
 
+			if gameState.currentState is Playing || gameState.currentState is Paused {
 				extraBallPropertiesArray = EndlessIIBalls.flattened(
 					endlessIIExtraBalls.filter { $0.parent != nil }.enumerated().map { index, extra in
 						EndlessIIBalls.Saved(position: extra.position,
@@ -10331,8 +10334,13 @@ laserTimer?.invalidate()
 				// The velocity recorded at the pause where there is one, and the live one where
 				// there is not - the game also saves itself on backgrounding, which does not go
 				// through the pause menu
+				//
+				// **Whether or not the first ball is in flight** (round 404, found by the resume
+				// soak). These were written only beside a first ball in flight, so a Mayhem run
+				// paused with that ball held on a Sticky Paddle - and a Multi-Ball's extras still
+				// in play - came back with the extras gone. An extra a Sticky Paddle holds is
+				// saved with no heading and caught again on the way back in
 			}
-			// Only save ball properties if ball is in play and not on paddle
 			
 			enumerateChildNodes(withName: LaserCategoryName) { (node, _) in
 				laserXPositionArray.append(Int(node.position.x))
@@ -10393,9 +10401,14 @@ laserTimer?.invalidate()
 		let savedColours: [Int] = hasField ? brickColourArray! : previous?.brickColours ?? []
 		let savedXs: [Int] = hasField ? brickXPositionArray! : previous?.brickXPositions ?? []
 		let savedYs: [Int] = hasField ? brickYPositionArray! : previous?.brickYPositions ?? []
-		let hasBall = ballPropertiesArray != []
-		let savedBall: [Double] = hasBall ? ballPropertiesArray! : previous?.ballProperties ?? []
-		let savedExtras: [Double]? = hasBall ? extraBallPropertiesArray : previous?.extraBallProperties
+		let savedBall: [Double] = collected ? ballPropertiesArray ?? [] : previous?.ballProperties ?? []
+		let savedExtras: [Double]? = collected ? extraBallPropertiesArray : previous?.extraBallProperties
+		// **Whether this save looked, for the balls too** (round 404, found by the resume soak).
+		// These fell back to the last save whenever the first ball was not in flight - which is
+		// also what a ball held on the paddle is. So a run autosaved with the ball moving and
+		// then paused with it caught on a Sticky Paddle came back with the ball in flight where
+		// the autosave had it, and with the autosave's extras or none, losing a Multi-Ball's
+		// extras still in play. Round 398c's rule, which the lists above already follow
 		let savedSchedule: EndlessIIProgression? = gameMode == .endlessII ? endlessIIProgression : nil
 		// Hoisted out of the initializer below: with the ternaries inline it had grown past
 		// what the type-checker will take in one expression, and round 197's one extra
@@ -11083,6 +11096,11 @@ laserTimer?.invalidate()
 				// the player moved, which is the kind of bug that never gets reported because
 				// it is gone by the time anybody looks
 			} else {
+				endlessIIRestoreExtraBalls(from: EndlessIIBalls.unflattened(savedGame.extraBallProperties)
+					.map { EndlessIIBalls.Saved(position: resumeGeometry(for: savedGame).point($0.position),
+												velocity: $0.velocity) })
+				// The extras of a run saved with its first ball on the paddle (round 404): they
+				// were not saved at all, and so lost
 				saveCurrentGame()
 			}
 			// Load ball position and velocity if it has been saved

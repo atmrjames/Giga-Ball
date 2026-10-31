@@ -593,13 +593,13 @@ columns, and the end screen's board never skips a single place. **The 1,998m, mo
 James's to fix in App Store Connect**: everything points to the board's window not starting at
 00:00 UTC (see ENDLESS-2 round 403); the app now logs the window it is given, which settles it.
 
-**Open, from the soak:**
-
-- **Halo can be gone after a resume** (Mayhem): lost in 7 of 40 save-and-resume cycles in a test,
-  with the run still in play. Not new in 1.3. See ENDLESS-2 round 400.
-- **A brick can be struck in the resumed game's first moment** (the resume soak's most common
-  failure, about one seed in twenty, on 1.3 and on round 398's code alike). Not yet known whether it is
-  the game or the check.
+**From the soak, round 404:** fixed - a resumed endless run past 10m losing every running
+power-up (the lost Halo), an endless run saved with an empty field coming back at 0m, a
+Multi-Ball's extras lost when paused with the first ball on a Sticky Paddle, and round 402's
+pocket opener taking down walls for bricks off the side of the field or sharing a wall's cell.
+**Still open:** a brick struck and scored in the resumed game's still moment, now and then deep in
+a long Mayhem run (3 seeds in 60, before and after this round); not yet known whether it is the
+game or the check. See ENDLESS-2 round 404.
 
 ---
 

@@ -16,6 +16,10 @@ extension GameScene {
         endlessMoveInProgress = false
         resetEndlessIIBricks()
         endlessHeight = height
+        endlessLastAutosaveHeight = height
+        // **A resumed run counts its autosaves from where it resumed** (round 404). The mark
+        // started at nought in every scene, so a run resumed at 11m was a whole autosave
+        // overdue the moment its field first stepped. Nought for a fresh run, as it always was
         endlessFieldIsLaidOut = true
         // The field is laid out in this same call, so the settle clock may watch it from here
 

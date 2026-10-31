@@ -2964,6 +2964,49 @@ testers:
   falling power-up's position by `brickWidth`, so a bare `GameScene()` with a power-up on
   screen traps converting NaN to Int. A real scene is always laid out before play.
 
+**Round 404: the soak's open items - a resume that lost its power-ups, and the pocket opener misfiring.**
+
+On `release-1.3.1`. James: "continue with the open items". The two the soak had left open were
+Halo lost across a resume and a brick struck in the resumed game's first moment; chasing them
+found four faults, two of them mine from round 402.
+
+- **A resumed endless run past 10m could lose every running power-up.** Lost Halo reproduced 14
+  times in 40. The resumed field is laid out and counted (`resumeBrickCreation` ->
+  `countBricks`) before `resumeGame` puts the running power-ups back; the count can step the
+  field, a step can autosave, and a new scene's autosave mark started at nought - so a run
+  resumed at 11m was a whole autosave overdue on its first step, saved itself with nothing
+  running over the save being resumed, and then restored that. Not Halo's alone: every running
+  power-up, in both endless modes. `prepEndlessMode` sets `endlessLastAutosaveHeight` to the
+  height it lays the field at. Lost in 0 of 40 afterwards, and in 0 of 20 at 25m.
+- **An endless run saved with an empty field came back at 0m.** Found on the way: `Playing` took a
+  save with no bricks in it for one with nothing to resume - right for Classic, where a level with
+  none left is complete and is never saved, wrong for an endless field emptied for a moment by a
+  Cull or a Wipe. `Playing.buildsFromTheSave` resumes any level-0 save.
+- **The extra balls of a run paused with its first ball held.** The resume soak's "lost 2 balls":
+  extras were saved only beside a first ball in flight, and the save fell back to the *previous*
+  save's ball and extras whenever the first ball was not in flight - round 398c's mistake, which
+  the other lists had already been cured of. So a Mayhem run autosaved with the ball moving and
+  then paused with it on a Sticky Paddle came back with the ball in flight where the autosave had
+  it, and with a Multi-Ball's extras gone. Both now follow whether the save looked, extras are
+  saved whatever the first ball is doing and restored on either branch, and `SavedGame` no longer
+  rejects extras without a first ball in flight (the test that pinned that rule now pins the
+  opposite, with the reason).
+- **Round 402's pocket opener was taking down walls it had no reason to.** Logged in the resume
+  soak: a brick half off the side while Drift slides the field sits in column -1 or 11, outside
+  the search, and read as shut in for as long as it was there; and a breakable brick sharing a
+  wall's cell - a moving brick passing over it, a Tiny quarter - made the cell a wall, so it could
+  never be reached. One seed lost nineteen walls one after another. In play, Indestructible walls
+  vanishing for no reason. The opener now only asks about cells inside the field, a cell is a wall
+  only when everything in it is, placeholders count for nothing, and a pocket still sealed after
+  its door has gone stops the pass rather than costing another wall.
+- **The check's own fault:** `%.0f` writes -0.3 as "-0", and the soak failed seeds on bricks "at
+  -0,103" against "at 0,103". Rounded before it is written.
+- **The resume soak, 60 seeds:** 3 failed on round 403's code and 3 with all of this. What is left
+  is a brick struck and scored in the resumed game's still moment, deep in a long Mayhem run, and a
+  brick's size read differently; neither replays reliably, and neither is any of the above. The
+  first run with this round's code failed 8, sharing the Mac with the baseline and with the opener
+  still misfiring.
+
 **Round 403: James's second 1.3 list, and his answers to round 402.**
 
 On `release-1.3.1`, merged into `release-1.4`, where the Zen notes are answered. Each fix is tested

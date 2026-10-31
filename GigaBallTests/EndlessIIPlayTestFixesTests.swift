@@ -2796,6 +2796,39 @@ final class NoBrickIsShutAwayTests: XCTestCase {
         scene.view?.presentScene(nil)
     }
 
+    /// Round 404, from the soak's logs: a brick half off the side while Drift slides the field
+    /// sits in column -1, which the search never covers. It read as shut in, and the opener took
+    /// wall after wall down trying to reach it.
+    func testABrickOffTheSideOfTheFieldCostsNoWalls() throws {
+        let scene = try field()
+        let wall = scene.brickIndestructible2Texture
+        let walls = [(0, 2), (1, 3), (0, 4)].map { place(scene, wall, column: $0.0, rowsUp: $0.1) }
+        _ = place(scene, scene.brickNormalTexture, column: -1, rowsUp: 3)
+        _ = place(scene, scene.brickNormalTexture, column: 5, rowsUp: 0)
+        XCTAssertEqual(scene.endlessIIOpenSealedPockets(), 0, "nothing in the field is shut in")
+        XCTAssertTrue(walls.allSatisfy { $0.physicsBody != nil }, "and every wall still stands")
+        scene.view?.presentScene(nil)
+    }
+
+    /// Round 404, from the soak's logs: a breakable brick sharing a wall's cell - a moving brick
+    /// passing over it, a Tiny quarter beside it - made the whole cell a wall, so the brick could
+    /// never be reached and the opener stripped nineteen walls in one seed.
+    func testABrickSharingAWallsCellIsNotShutIn() throws {
+        let scene = try field()
+        let wall = scene.brickIndestructible2Texture
+        let shared = place(scene, wall, column: 5, rowsUp: 3)
+        let passing = place(scene, scene.brickNormalTexture, column: 5, rowsUp: 3)
+        passing.position.x += scene.brickWidth*0.25
+        // In the same cell, a quarter of a brick along, as a moving brick passes
+        let others = [(4, 3), (6, 3), (5, 4)].map { place(scene, wall, column: $0.0, rowsUp: $0.1) }
+        _ = place(scene, scene.brickNormalTexture, column: 0, rowsUp: 0)
+        XCTAssertFalse(scene.endlessIIWallCells(in: scene.endlessIIOccupancy())
+                        .contains(scene.endlessIICell(of: shared)), "a cell the ball can strike in")
+        XCTAssertEqual(scene.endlessIIOpenSealedPockets(), 0, "and nothing needs opening")
+        XCTAssertTrue((others + [shared]).allSatisfy { $0.physicsBody != nil })
+        scene.view?.presentScene(nil)
+    }
+
     func testAnEmptyPocketIsLeftAlone() throws {
         let scene = try field()
         let wall = scene.brickIndestructible2Texture
@@ -2929,5 +2962,106 @@ final class AlwaysOnWaitsForTheServeTests: XCTestCase {
         scene.releaseBall()
         PaddleFamilySweep.settle(0.5)
         XCTAssertTrue(scene.laserPowerUpIsOn, "served: the day's lasers are on")
+    }
+}
+
+// MARK: - Round 404: the soak's open items
+
+/// Found by the pre-release soak (round 400): "Halo: saved [...PaddleHaloClock], resumed []" -
+/// a running Halo gone after a save and resume, 7 times in 40, with the resumed run still in
+/// play. The resumed field is laid out and counted before `resumeGame` puts the running
+/// power-ups back, the count can step the field, and a step autosaves - and a resumed scene
+/// started its autosave count at nought, so a run resumed past 10m saved itself there and then,
+/// holding none of what was running, over the save it was resuming. Not Halo's alone: every
+/// running power-up of a resumed endless run past 10m.
+final class AResumePastTenMetresKeepsItsPowerUpsTests: XCTestCase {
+    private var window: UIWindow?
+
+    override func tearDown() {
+        GameScene.settingsStore.set(false, forKey: SavedGame.resumeFlagKey)
+        SavedGame.clear(from: GameScene.settingsStore)
+        super.tearDown()
+    }
+
+    /// Saves a Mayhem run at 25m with Halo running and resumes it. `keep` decides which bricks
+    /// stay in the saved field.
+    private func resumedAt25m(keeping keep: @escaping (SKNode, GameScene) -> Bool) throws -> GameScene {
+        let halo = try XCTUnwrap(LevelPackSetup.shared.powerUpNameArray.firstIndex(of: "Halo"))
+        let scene = try PaddleFamilySweep.present(theme: 0, keeping: &window)
+        scene.endlessHeight = 25
+        let carrier = SKSpriteNode(texture: scene.powerUpTextureArray[halo])
+        scene.addChild(carrier)
+        scene.applyPowerUp(node: carrier, silently: true)
+        PaddleFamilySweep.settle(0.2)
+        scene.enumerateChildNodes(withName: BrickCategoryName) { node, _ in
+            if keep(node, scene) == false { node.removeFromParent() }
+        }
+        scene.saveCurrentGame()
+        // Cleared straight before the save, so no new row can arrive in between
+        GameScene.settingsStore.set(true, forKey: SavedGame.resumeFlagKey)
+        return try PaddleFamilySweep.present(theme: 0, keeping: &window, resuming: true)
+    }
+
+    func testAHaloRunningAt25MetresIsStillRunningAfterTheResume() throws {
+        let resumed = try resumedAt25m { node, scene in
+            node.position.y >= scene.yBrickOffsetEndless - scene.brickHeight*1.5
+        }
+        // Only the top row kept, so the resumed field steps the moment it is counted
+        XCTAssertGreaterThanOrEqual(resumed.endlessHeight, 25, "the run resumed where it was")
+        XCTAssertTrue(resumed.endlessIIPaddleHaloClock.isRunning, "and Halo is still running")
+        XCTAssertGreaterThanOrEqual(resumed.endlessLastAutosaveHeight, 25,
+                                    "its autosaves count from where it resumed")
+        resumed.view?.presentScene(nil)
+    }
+
+    /// Found on the way: an endless run saved with its field empty for a moment - just after a
+    /// Cull or a Wipe - came back as a fresh field at 0m, because a save with no bricks in it
+    /// was taken for one with nothing to resume.
+    func testAnEndlessSaveWithAnEmptyFieldIsStillResumed() throws {
+        let scene = try PaddleFamilySweep.present(theme: 0, keeping: &window)
+        scene.enumerateChildNodes(withName: BrickCategoryName) { node, _ in node.removeFromParent() }
+        scene.endlessHeight = 25
+        scene.saveCurrentGame()
+        let saved = try XCTUnwrap(SavedGame.load(from: GameScene.settingsStore))
+        XCTAssertTrue(saved.brickXPositions.isEmpty, "a field with nothing in it")
+        XCTAssertEqual(saved.endlessHeight, 25)
+        XCTAssertTrue(Playing.buildsFromTheSave(saved, levelNumber: 0),
+                      "is still the run to come back to, at its height")
+        XCTAssertFalse(Playing.buildsFromTheSave(saved, levelNumber: 12),
+                       "where a Classic level with no bricks left is a level complete")
+        XCTAssertFalse(Playing.buildsFromTheSave(nil, levelNumber: 0), "and no save is no resume")
+        scene.view?.presentScene(nil)
+    }
+}
+
+/// Found by the resume soak (round 404): "running - lost ["2 balls"]". A run saved its extra
+/// balls only beside a first ball in flight, so a Mayhem run paused with that ball held on a
+/// Sticky Paddle came back without the Multi-Ball's extras still in play.
+final class ExtraBallsSurviveAResumeWithTheBallHeldTests: XCTestCase {
+    private var window: UIWindow?
+
+    override func tearDown() {
+        GameScene.settingsStore.set(false, forKey: SavedGame.resumeFlagKey)
+        SavedGame.clear(from: GameScene.settingsStore)
+        super.tearDown()
+    }
+
+    func testAnExtraInPlayComesBackWhileTheFirstBallIsHeld() throws {
+        let scene = try PaddleFamilySweep.present(theme: 0, keeping: &window)
+        XCTAssertTrue(scene.endlessIIAddBall(), "a second ball in play")
+        let extra = try XCTUnwrap(scene.endlessIIExtraBalls.first)
+        extra.position = CGPoint(x: 60, y: 120)
+        extra.physicsBody?.velocity = CGVector(dx: 150, dy: 300)
+        scene.ballIsOnPaddle = true
+        scene.stickyCaughtTheFirstBall = true
+        // The first ball held, as a Sticky Paddle holds it
+        scene.saveCurrentGame()
+        XCTAssertEqual(EndlessIIBalls.unflattened(SavedGame.load(from: GameScene.settingsStore)?
+                        .extraBallProperties).count, 1, "the extra is in the save")
+        GameScene.settingsStore.set(true, forKey: SavedGame.resumeFlagKey)
+
+        let resumed = try PaddleFamilySweep.present(theme: 0, keeping: &window, resuming: true)
+        XCTAssertEqual(resumed.endlessIIBallsInPlay.count, 2, "both balls came back")
+        resumed.view?.presentScene(nil)
     }
 }

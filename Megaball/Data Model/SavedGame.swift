@@ -421,14 +421,13 @@ struct SavedGame: Codable, Equatable {
             || ballProperties.count == SavedGame.ballPropertiesCount
         let lasersAgree = (laserXPositions?.count ?? 0) == (laserYPositions?.count ?? 0)
         // The extras are read in whole groups of four, so a ragged array is a save that was
-        // written by something other than this game. They also cannot outlive the ball they
-        // are extra to: a save with no primary ball but three secondary ones has nothing to
-        // restore them alongside
+        // written by something other than this game. **They no longer need the first ball in
+        // flight beside them** (round 404): a run paused with that ball held on a Sticky Paddle
+        // has extras still in play, and they are restored either way
         let extrasAreWholeGroups = (extraBallProperties?.count ?? 0)
             .isMultiple(of: EndlessIIBalls.savedPropertiesCount)
-        let extrasHaveABall = (extraBallProperties?.isEmpty ?? true) || ballProperties.isEmpty == false
         return brickCounts.count == 1 && fallingCounts.count == 1 && activeCounts.count == 1
-            && ballIsWholeOrAbsent && lasersAgree && extrasAreWholeGroups && extrasHaveABall
+            && ballIsWholeOrAbsent && lasersAgree && extrasAreWholeGroups
     }
 
     // MARK: - Legacy migration
