@@ -213,13 +213,22 @@ Set up on 21 October 2026, the day 1.3 was released (James: "New features can go
 can be added to 1.3.1 and 1.4"):
 
 - **`release-1.3`** is 1.3 as it shipped. Nothing more goes on it.
-- **`release-1.3.1`** is the patch, version 1.3.1: **fixes only**, as play-testing and players'
-  reports call for them. It may ship quickly or gather several fixes first; James decides.
+- **`release-1.3.1`** is the patch, version 1.3.1, and **since 1 November 2026 the release
+  candidate**: James is play-testing it on his iPhone, iPad and Mac that week, to launch the
+  weekend after. Only a fix his play-test finds that must not wait goes on it now; once it is
+  released it is frozen as 1.3 is.
+- **`release-1.3.2`** is the next patch, version 1.3.2, started 1 November 2026: **fixes only**,
+  everything 1.3.1 does not need to launch. James: "This may get rolled into 1.4 if there's no
+  major issues with 1.3.1" - so it may never ship on its own, which costs nothing, because
+  everything on it is already on 1.4.
 - **`release-1.4`** is the next release, version 1.4: features, and every fix as well.
-- **A fix is committed to `release-1.3.1` and merged forward into `release-1.4`** (`git switch
-  release-1.4 && git merge release-1.3.1`), straight away, so the two never drift. Never the other
-  way: a merge from 1.4 into 1.3.1 would carry features into the patch. A fix that only makes sense
-  against 1.4's new code goes on `release-1.4` alone.
+- **A fix goes on the oldest branch that needs it and is merged forward at once**, so none of them
+  drift: `release-1.3.1` into `release-1.3.2`, and `release-1.3.2` into `release-1.4` (`git switch
+  release-1.3.2 && git merge release-1.3.1`, then `git switch release-1.4 && git merge
+  release-1.3.2`). Never the other way: a merge from 1.4 into a patch would carry features into it.
+  A fix that only makes sense against 1.4's new code goes on `release-1.4` alone. The version
+  number differs on each branch, so a forward merge keeps the receiving branch's
+  `MARKETING_VERSION`.
 - When unsure which a piece of work is, ask: a feature in a patch is the one mistake this structure
   exists to prevent.
 - `master` is the repository's default branch on GitHub and has not moved since 2020; it is not

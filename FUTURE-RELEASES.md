@@ -611,6 +611,22 @@ pop-up read the same window; whether its timing is fixed with it is for the next
 
 ---
 
+## 1.3.2
+
+**The next patch, on `release-1.3.2`** (version 1.3.2, from 1.3.1 as it went to James's devices
+for its last play-test, 1 November 2026). Fixes only. James: "We should also start on a 1.3.2
+release. This may get rolled into 1.4 if there's no major issues with 1.3.1." Whatever 1.3.1 does
+not need to launch comes here, and is merged forward into 1.4 as it lands, so rolling it into 1.4
+loses nothing.
+
+**Candidates, for James to choose from:** the fixes queued under 1.4 that are fixes rather than
+features - the live bugs never reproduced (the paddle growing after a resume; textures parting
+from the paddle slammed into the frame; iPad stutter and pixelation; a ball meeting the paddle
+straight after the backstop; low-speed bounce gliding) - and whatever this week's play-test of
+1.3.1 finds that can wait for it.
+
+---
+
 ## 1.4
 
 Moved here from the 1.3 plan (James, round 344: "never built and never cut - push these out to
