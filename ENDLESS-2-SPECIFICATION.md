@@ -2964,6 +2964,15 @@ testers:
   falling power-up's position by `brickWidth`, so a bare `GameScene()` with a power-up on
   screen traps converting NaN to Int. A real scene is always laid out before play.
 
+**Round 406: the 1.3.1 build to James's phone.**
+
+James: "I'd like to release the 1.3.1 fixes to the app store soon." A clean Release build of
+`release-1.3.1` (1.3.1, build 83) went to his iPhone for a last play-test. Checking the build
+found one more fault for it: **the What's New note asked for "1.3" exactly**, so it would never
+have shown on 1.3.1 - and with 1.3 in the store for under a month, most players will update from
+1.2 straight to the patch without being told what 1.3 brought. `WhatsNew.isAbout` takes a patch
+of the release as the release, and a player who read the note on 1.3 is not shown it again.
+
 **Round 405c: drops the paddle could not catch, and a fogged field that flashes.**
 
 - **"The paddle isn't able to collect power-ups any more. They just pass right under it without

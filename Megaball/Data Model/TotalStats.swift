@@ -35,12 +35,24 @@ enum WhatsNew {
     /// The two are told apart by whether they have played: somebody with levels behind them
     /// updated, somebody with none has just arrived and has nothing to be told is new.
     static func shouldShow(seen: String?, current: String, hasPlayedBefore: Bool) -> Bool {
-        guard current == version else { return false }
+        guard isAbout(current) else { return false }
         // Only for the release it was written about. A 1.4 build must not show 1.3's note
         // just because the key still says 1.2
 
         guard let seen else { return hasPlayedBefore }
-        return seen != current
+        return isAbout(seen) == false
+    }
+
+    /// Whether a version is the release this note is about, or a patch of it.
+    ///
+    /// **1.3.1 is 1.3, as far as the note goes** (round 406, checking the 1.3.1 build before it
+    /// went to James's phone). The note was asked about one exact string, so on 1.3.1 it was
+    /// never shown - and 1.3 was in the store for under a month, so most players will come
+    /// straight from 1.2 to the patch and would never have been told about the release the patch
+    /// is part of. And the other way round: a player who read it on 1.3 is not shown it again
+    /// on 1.3.1, where the plain "is the stored version different" would have.
+    static func isAbout(_ release: String) -> Bool {
+        release == version || release.hasPrefix(version + ".")
     }
 
     /// What it says.

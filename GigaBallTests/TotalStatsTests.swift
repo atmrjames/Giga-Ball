@@ -155,6 +155,21 @@ final class TotalStatsTests: XCTestCase {
     func testALaterReleaseDoesNotShowThisNote() {
         XCTAssertFalse(WhatsNew.shouldShow(seen: "1.2", current: "1.4", hasPlayedBefore: true))
     }
+
+    /// Round 406: most players will come straight from 1.2 to 1.3.1, and the note was asked
+    /// about "1.3" exactly, so none of them would have been told what 1.3 brought. A patch of
+    /// the release shows its note; a player who read it on 1.3 is not shown it again.
+    func testAPatchOfTheReleaseShowsItsNoteOnce() {
+        XCTAssertTrue(WhatsNew.shouldShow(seen: "1.2", current: "1.3.1", hasPlayedBefore: true),
+                      "from 1.2 straight to the patch")
+        XCTAssertTrue(WhatsNew.shouldShow(seen: nil, current: "1.3.1", hasPlayedBefore: true),
+                      "from 1.2, which never wrote the key")
+        XCTAssertFalse(WhatsNew.shouldShow(seen: "1.3", current: "1.3.1", hasPlayedBefore: true),
+                       "already read on 1.3")
+        XCTAssertFalse(WhatsNew.shouldShow(seen: "1.3.1", current: "1.3.1", hasPlayedBefore: true))
+        XCTAssertFalse(WhatsNew.shouldShow(seen: "1.2", current: "1.30", hasPlayedBefore: true),
+                       "a different release that merely starts with the same characters")
+    }
 }
 
 /// **What an updating player is told about 1.3** (round 325, found drafting the TestFlight notes).
