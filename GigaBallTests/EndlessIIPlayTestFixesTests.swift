@@ -2006,7 +2006,7 @@ final class AnEmptySaveIsNotTheLastSaveTests: XCTestCase {
             scene.applyPowerUp(node: carrier, silently: true)
             let drop = SKSpriteNode(texture: scene.powerUpTextureArray[3])
             drop.name = PowerUpCategoryName
-            drop.zPosition = 2
+            drop.zPosition = GameScene.fallingPowerUpZ
             drop.position = CGPoint(x: 0, y: 100)
             scene.addChild(drop)
             PaddleFamilySweep.settle(0.3)
@@ -3063,5 +3063,68 @@ final class ExtraBallsSurviveAResumeWithTheBallHeldTests: XCTestCase {
         let resumed = try PaddleFamilySweep.present(theme: 0, keeping: &window, resuming: true)
         XCTAssertEqual(resumed.endlessIIBallsInPlay.count, 2, "both balls came back")
         resumed.view?.presentScene(nil)
+    }
+}
+
+/// A drop made by the game, falling onto the paddle, is collected - in every mode.
+///
+/// **James, round 405: "The paddle isn't able to collect power-ups any more. They just pass right
+/// under it without interacting."** Round 402 lifted falling drops to `fallingPowerUpZ` so they
+/// draw over a Directional brick's armour, and the collector still asked for a drop at layer 2,
+/// so no drop was ever collected. Nothing noticed, because every test that dropped a power-up
+/// built its own drop and set it to layer 2 by hand - the number the collector wanted rather than
+/// the one the game makes. This one asks the generator for a real drop and lets it fall through
+/// the real contact.
+final class TheGamesOwnDropIsCollectedTests: XCTestCase {
+    private var window: UIWindow?
+
+    func testADropFromABrickIsCaughtByThePaddle() throws {
+        var failures: [String] = []
+        for mode in [GameMode.endlessII, .classic, .endless] {
+            let level = mode == .classic ? LevelPackSetup.shared.startLevelNumber[2] : nil
+            let veteran = TotalStats()
+            veteran.powerUpUnlockedArray = veteran.powerUpUnlockedArray.map { _ in true }
+            // A player with everything unlocked, so the generator has a pool in every mode -
+            // Mayhem's starts locked for a new player
+            let scene = try PaddleFamilySweep.present(theme: 0, keeping: &window, mode: mode,
+                                                      frozen: false, level: level,
+                                                      pack: mode == .classic ? 2 : 1,
+                                                      stats: veteran)
+            let source = SKSpriteNode(color: .white, size: CGSize(width: scene.brickWidth,
+                                                                  height: scene.brickHeight))
+            source.position = CGPoint(x: scene.paddle.position.x,
+                                      y: scene.paddle.position.y + scene.brickHeight*4)
+            var drop: SKNode?
+            for _ in 0..<40 where drop == nil {
+                scene.powerUpGeneratorCycles = 0
+                if scene.endlessMode { scene.applyEndlessRowPowerUpWeights() }
+                scene.powerUpGenerator(sprite: source)
+                scene.enumerateChildNodes(withName: PowerUpCategoryName) { node, stop in
+                    guard GameScene.isStillFalling(node) else { return }
+                    drop = node
+                    stop.pointee = true
+                }
+            }
+            // The generator draws from the mode's own odds and may decline; asked again until it
+            // gives one, with its give-up count cleared and an endless mode's weights put back as
+            // the next row would put them, since a hit brick is what clears the one and a new row
+            // the other
+            guard let drop else {
+                failures.append("\(mode): the generator made no drop")
+                continue
+            }
+            let collected = scene.powerUpsCollectedPerLevel
+            for _ in 0..<60 where scene.powerUpsCollectedPerLevel == collected {
+                scene.paddle.position.x = drop.position.x
+                PaddleFamilySweep.settle(0.05)
+            }
+            if scene.powerUpsCollectedPerLevel == collected {
+                failures.append("\(mode): the drop fell past the paddle (now at y \(Int(drop.position.y)) "
+                                + "against the paddle's \(Int(scene.paddle.position.y)), "
+                                + "layer \(drop.zPosition))")
+            }
+            scene.view?.presentScene(nil)
+        }
+        XCTAssertTrue(failures.isEmpty, failures.joined(separator: "\n"))
     }
 }

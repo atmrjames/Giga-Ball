@@ -1133,7 +1133,7 @@ final class MissedPowerUpTests: XCTestCase {
         func drop(_ index: Int) -> SKSpriteNode {
             let node = SKSpriteNode(texture: scene.powerUpTexturesInOrder[index])
             node.name = PowerUpCategoryName
-            node.zPosition = 2
+            node.zPosition = GameScene.fallingPowerUpZ
             node.physicsBody = SKPhysicsBody(circleOfRadius: 8)
             scene.addChild(node)
             node.run(SKAction.moveBy(x: 0, y: -800, duration: 5), withKey: GameScene.powerUpDropKey)

@@ -598,9 +598,9 @@ extension GameScene {
 
         var landed: [SKNode] = []
         enumerateChildNodes(withName: PowerUpCategoryName) { node, _ in
-            guard node.zPosition == 2 else { return }
-            // Two is "still falling" - `collectPowerUpDrop` drops it to one as it takes it, and
-            // asking here as well keeps a drop from being collected twice in one frame
+            guard GameScene.isStillFalling(node) else { return }
+            // `collectPowerUpDrop` drops it to layer one as it takes it, and asking here as well
+            // keeps a drop from being collected twice in one frame
             if catchers.contains(where: { node.frame.intersects($0) }) { landed.append(node) }
         }
         for drop in landed { collectPowerUpDrop(drop) }

@@ -3500,9 +3500,27 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     /// a paddle at two points in one frame is rare and real, and without the flag it would be
     /// applied twice. The node is fetched defensively for the same reason the Cluster contact
     /// is - by the second contact of a pair, the first may already have taken the node away.
+    /// Whether a drop is still falling, and so still there to be caught.
+    ///
+    /// **James, round 405: "The paddle isn't able to collect power-ups any more. They just pass
+    /// right under it without interacting."** Round 402 lifted falling drops from layer 2 to
+    /// `fallingPowerUpZ`, 2.7, so they draw over a Directional brick's armour - and this
+    /// question was asked as "is its layer exactly 2" in two places, the paddle's collector and
+    /// the Mirror Paddle's. Every drop failed it, and none was ever collected. Asked against the
+    /// layer the drop is made at, in one place, so the two halves of the decision cannot part
+    /// again.
+    ///
+    /// **Near it, not equal to it.** SpriteKit keeps a node's `zPosition` as a 32-bit float, so a
+    /// drop set to 2.7 reads back as 2.700000047683716, and `==` against the 2.7 it was set from
+    /// is false for every drop there is. Two happened to survive the trip, which is the only
+    /// reason the old test ever worked. A collected drop goes to layer 1, far outside this.
+    static func isStillFalling(_ drop: SKNode) -> Bool {
+        abs(drop.zPosition - fallingPowerUpZ) < 0.01
+    }
+
     func collectPowerUpDrop(_ node: SKNode?) {
         guard let powerUpNode = node, let powerUpBody = powerUpNode.physicsBody else { return }
-        guard powerUpNode.zPosition == 2 else { return }
+        guard GameScene.isStillFalling(powerUpNode) else { return }
         powerUpNode.removeAllActions()
         powerUpNode.zPosition = 1
         powerUpBody.collisionBitMask = 0
@@ -6362,7 +6380,42 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 		dailyFogIsOn && sprite.isHidden && sprite.texture !== brickInvisibleTexture
 	}
 
+	/// Whether a fogged day's field shows nothing at all: no brick on it, of any kind, visible.
+	var dailyFogLeavesNothingVisible: Bool {
+		guard dailyFogIsOn, dailyFogHasClosed else { return false }
+		var fogged = false, visible = false
+		enumerateChildNodes(withName: BrickCategoryName) { node, stop in
+			guard let sprite = node as? SKSpriteNode, sprite.texture != self.brickNullTexture else { return }
+			if self.brickIsOnlyFogged(sprite) {
+				fogged = true
+			} else if sprite.isHidden == false, sprite.alpha > 0.01 {
+				visible = true
+				stop.pointee = true
+			}
+		}
+		return fogged && visible == false
+	}
+
 	func invisibleBrickFlash() {
+		if dailyFogLeavesNothingVisible {
+			enumerateChildNodes(withName: BrickCategoryName) { node, _ in
+				guard let sprite = node as? SKSpriteNode, self.brickIsOnlyFogged(sprite) else { return }
+				sprite.alpha = 0.75
+				sprite.isHidden = false
+				self.invisibleBrickFlashRevealed.append(sprite)
+			}
+			run(.sequence([.wait(forDuration: 0.2), .run { self.invisibleBrickFlashOff() }]),
+				withKey: "invisibleBrickFlash")
+			return
+		}
+		// **A fogged day flashes its field when there is nothing left to see** (James, round 405:
+		// "Flash bricks if the ball bounces on the paddle and no bricks are visible during the
+		// foggy twist"). Every fogged brick, in every mode, for the same fifth of a second and
+		// through the same remembered list as the Invisible bricks' flash, so the fog closes again
+		// exactly as it was. Only when *nothing* is visible: round 184 stood the bottom-row clue
+		// down on fogged days because it fired on every landing and handed the twist back, and
+		// that still holds while any brick shows - this is for the blank screen, where the next
+		// shot would otherwise be a guess at nothing
 		if classicFieldIsAllHidden || endlessIIBottomZoneIsAllHidden {
 		// **One rule for each kind of mode** (James, round 384: "no destructible bricks visible
 		// in classic mode and no destructible bricks visible in the bottom row in endless mode

@@ -1770,6 +1770,37 @@ final class DailyFogRevealTests: XCTestCase {
         super.tearDown()
     }
 
+    /// James, round 405: "Flash bricks if the ball bounces on the paddle and no bricks are
+    /// visible during the foggy twist". Every fogged brick shows for the flash and the fog closes
+    /// again after it - asked, on his choice, of every fogged brick in every mode.
+    func testABlankFoggedFieldFlashesOnAPaddleBounceAndFogsAgain() {
+        let scene = fogScene()
+        XCTAssertTrue(scene.dailyFogIsOn, "the fixture is a Foggy day")
+        scene.dailyFogHasClosed = true
+        let fogged = (0..<3).map { _ in brick(in: scene) }
+        for brick in fogged { brick.isHidden = true }
+
+        scene.invisibleBrickFlash()
+        XCTAssertTrue(fogged.allSatisfy { $0.isHidden == false }, "the whole field shows")
+        scene.invisibleBrickFlashOff()
+        XCTAssertTrue(fogged.allSatisfy { $0.isHidden }, "and the fog closes again")
+    }
+
+    /// Round 184 still holds while anything shows: the clue is for the blank screen, not for a
+    /// fog the player can see the edge of.
+    func testAFoggedFieldWithABrickInSightDoesNotFlash() {
+        let scene = fogScene()
+        XCTAssertTrue(scene.dailyFogIsOn, "the fixture is a Foggy day")
+        scene.dailyFogHasClosed = true
+        let fogged = (0..<3).map { _ in brick(in: scene) }
+        for brick in fogged { brick.isHidden = true }
+        _ = brick(in: scene)
+        // Struck and revealed, so in sight
+
+        scene.invisibleBrickFlash()
+        XCTAssertTrue(fogged.allSatisfy { $0.isHidden }, "nothing is handed back")
+    }
+
     func testTheOpeningFieldIsNotHiddenAsItIsBuilt() {
         let scene = fogScene()
         XCTAssertTrue(scene.dailyFogIsOn, "the fixture is a Foggy day")

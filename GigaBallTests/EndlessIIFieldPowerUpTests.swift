@@ -3235,7 +3235,7 @@ final class MirrorPaddleCatchTests: XCTestCase {
         let node = SKSpriteNode(color: .white, size: CGSize(width: 20, height: 20))
         node.name = PowerUpCategoryName
         node.position = CGPoint(x: x, y: y)
-        node.zPosition = 2
+        node.zPosition = GameScene.fallingPowerUpZ
         node.physicsBody = SKPhysicsBody(rectangleOf: node.size)
         node.physicsBody!.isDynamic = false
         node.physicsBody!.categoryBitMask = CollisionTypes.powerUpCategory.rawValue
@@ -3289,8 +3289,8 @@ final class MirrorPaddleCatchTests: XCTestCase {
         let elsewhere = drop(in: game, x: -200, y: -198)
         game.endlessIIMirrorCollectsDrops(mirror)
 
-        XCTAssertEqual(falling.zPosition, 2, "still on its way down")
-        XCTAssertEqual(elsewhere.zPosition, 2, "and this one is nowhere near it")
+        XCTAssertTrue(GameScene.isStillFalling(falling), "still on its way down")
+        XCTAssertTrue(GameScene.isStillFalling(elsewhere), "and this one is nowhere near it")
     }
 
     /// A drop is not taken twice in one frame, or by a second tick before it is cleaned up.

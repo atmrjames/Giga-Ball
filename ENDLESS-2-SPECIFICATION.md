@@ -2964,6 +2964,28 @@ testers:
   falling power-up's position by `brickWidth`, so a bare `GameScene()` with a power-up on
   screen traps converting NaN to Int. A real scene is always laid out before play.
 
+**Round 405c: drops the paddle could not catch, and a fogged field that flashes.**
+
+- **"The paddle isn't able to collect power-ups any more. They just pass right under it without
+  interacting."** Round 402 lifted falling drops from layer 2 to `fallingPowerUpZ`, 2.7, so they
+  draw over a Directional brick's armour, and `collectPowerUpDrop` - and the Mirror Paddle's catch
+  beside it - still asked for a drop at exactly layer 2. No drop was collected in any mode from
+  round 402 on: pushed on `release-1.3.1`, never in a released build. Two lessons, both now in the
+  code. *A decision asked in two places parts the first time one changes*: `isStillFalling` is
+  the one question. *SpriteKit keeps `zPosition` as a 32-bit float*, so 2.7 reads back as
+  2.700000047683716 and `==` against it is false for every drop - the question is "within a
+  hundredth". And why nothing noticed: every test that dropped a power-up built its own and set
+  it to layer 2 by hand, the collector's number rather than the game's. They take
+  `fallingPowerUpZ` now, and `TheGamesOwnDropIsCollectedTests` asks the generator for a real drop
+  and lets it fall onto the paddle through the real contact, in all three modes - it fails exactly
+  as reported with the old line put back.
+- **A blank fogged field flashes on a paddle bounce** (James: "Flash bricks if the ball bounces
+  on the paddle and no bricks are visible during the foggy twist"; 1.3.1, every fogged brick, his
+  choices). Only when no brick at all is in sight - round 184's ruling, that the bottom-row clue
+  stands down on fogged days, still holds whenever anything shows. The same fifth of a second and
+  the same remembered list as the Invisible bricks' flash, so the fog closes exactly as it was.
+  Not looked at on the simulator: it is the existing flash, shown to a different set of bricks.
+
 **Round 405: the 1,998m, found in the app after all.**
 
 James answered round 403's question with App Store Connect itself: the daily board starts "Aug 11,

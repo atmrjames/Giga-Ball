@@ -560,7 +560,7 @@ final class EveryFallingPowerUpSurvivesAResumeTests: XCTestCase {
                     let drop = SKSpriteNode(texture: scene.powerUpTextureArray[index])
                     drop.size = CGSize(width: scene.brickWidth*0.85, height: scene.brickWidth*0.85)
                     drop.name = PowerUpCategoryName
-                    drop.zPosition = 2
+                    drop.zPosition = GameScene.fallingPowerUpZ
                     drop.position = CGPoint(
                         x: -scene.gameWidth/2 + scene.brickWidth*(CGFloat(slot) + 1.5),
                         y: scene.yBrickOffset - scene.brickHeight*CGFloat(10 + slot))
@@ -1165,7 +1165,7 @@ enum ResumeCheck {
                     let drop = SKSpriteNode(texture: scene.powerUpTextureArray[index])
                     drop.size = CGSize(width: scene.brickWidth*0.85, height: scene.brickWidth*0.85)
                     drop.name = PowerUpCategoryName
-                    drop.zPosition = 2
+                    drop.zPosition = GameScene.fallingPowerUpZ
                     drop.position = CGPoint(x: CGFloat.random(in: -150...150, using: &random),
                                             y: CGFloat.random(in: -100...200, using: &random))
                     scene.addChild(drop)

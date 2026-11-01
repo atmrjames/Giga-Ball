@@ -2156,7 +2156,7 @@ final class EndlessIIMirrorPaddleTests: XCTestCase {
         scene.tickEndlessIIMirrorPaddle()
         let drop = SKSpriteNode(color: .white, size: CGSize(width: 20, height: 20))
         drop.name = PowerUpCategoryName
-        drop.zPosition = 2
+        drop.zPosition = GameScene.fallingPowerUpZ
         drop.position = mirror.position
         drop.physicsBody = SKPhysicsBody(rectangleOf: drop.size)
         drop.physicsBody?.isDynamic = false
