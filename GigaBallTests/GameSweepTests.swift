@@ -980,8 +980,8 @@ enum GameSnapshot {
     ///
     /// Where it *stands*, not where the save would call it: the save's own arithmetic
     /// (`endlessIICanonicalRestingX`) once put a drifted field a column back, and a comparison
-    /// made in that arithmetic agreed with it (round 398b). Both scenes are given a still moment
-    /// first, so a slide in progress has finished.
+    /// made in that arithmetic agreed with it (round 398b). A slide in progress is finished by
+    /// the game's own tick before the field is read (`ResumeCheck.run`, round 405).
     ///
     /// An empty cell's placeholder is not a brick - hidden, bodiless and on its way out - so it
     /// is left out; one that came back from a save as a real brick is exactly what this is for.
@@ -1127,6 +1127,15 @@ enum ResumeCheck {
             scene.endlessHeight = startHeight ?? Int.random(in: 40...400, using: &random)
         }
         // Deep enough for the field to hold the kinds a deep run meets
+        for _ in 0..<3 where scene.finishEndlessIIBuildIn() {}
+        // **The opening field finished, as a player's tap finishes it** (round 405). This plays
+        // by releasing the ball itself, which a player cannot do while the level is arriving -
+        // their tap is spent on the field instead. The waits here are the wall clock's and the
+        // field's arrival is the scene's, which only moves as frames are drawn: on a Mac running
+        // a second simulator, the Classic check took 119 seconds against its usual 75, saved
+        // with the bottom rows still waiting to pop in at 0.82 of their size, and read the
+        // resumed field - correctly whole - as four bricks grown by a fifth. Twice, because the
+        // first call starts an opening still waiting for its moment and the second finishes it
         let playFor = chosen ?? Double.random(in: 3...9, using: &random)
         var clock = 0.0, nextPowerUp = 0.7
         while clock < playFor, scene.gameState.currentState is Playing {
@@ -1212,7 +1221,12 @@ enum ResumeCheck {
         var ending: Set<String> = []
         for path in GameScene.endlessIIWipeableClockPaths {
             let clock = scene[keyPath: path]
-            guard clock.isRunning, clock.countsTurns == false, clock.remaining < 1 else { continue }
+            guard clock.isRunning,
+                  clock.countsTurns ? clock.remaining.rounded() < 1 : clock.remaining < 1
+            else { continue }
+            // **A turn-counting one with no turn left as well** (round 405, the sweeps' seed 6: a
+            // Paddle Surface "0 turns" not in the resumed game). It has nothing left to give, and
+            // whether it is still listed is a question about the instant, not about the save
             let name = "\(path)"
             ending.insert(name)
             ending.insert(name.replacingOccurrences(of: "\\GameScene.", with: "")
@@ -1234,12 +1248,22 @@ enum ResumeCheck {
         // can run out in the resumed game's still moment, which is the clock doing its job, and
         // it read as the resume losing it - a Drift, a Wrap Around, their rings
         let label = "\(mode)\(daily.map { " daily \($0.dateKey) \($0.twists)" } ?? "") theme \(theme) seed \(seed)\(keeper ? " kept up" : "") after \(String(format: "%.1f", clock))s"
+        scene.saveCurrentGame()
+        let wrote = SavedGame.load(from: GameScene.settingsStore)?.activePowerUps ?? []
+        if scene.endlessIIDriftClock.isRunning, scene.endlessIIDriftMoved > 0,
+           scene.endlessIIDriftMoved < scene.brickWidth - 0.01 {
+            scene.tickEndlessIIDrift(GameScene.endlessIIDriftSlideSeconds)
+        }
+        // **A Drift's slide finished by the game's own tick, after the save** (round 405). The
+        // scene is paused for its still moment, so a save that lands in the twentieth of a
+        // second a step takes - or while an aim holds the field - leaves the field part of the
+        // way across, and the resumed game is right to bring it back where the step ends.
+        // Finished here by the tick that moves it, never by the save's own arithmetic, which is
+        // the arithmetic being checked
         let before = (bricks: GameSnapshot.bricks(in: scene), drops: GameSnapshot.drops(in: scene),
                       running: GameSnapshot.running(in: scene),
                       rings: scene.activePowerUpEntries().map(\.id).sorted(),
                       numbers: GameSnapshot.numbers(in: scene))
-        scene.saveCurrentGame()
-        let wrote = SavedGame.load(from: GameScene.settingsStore)?.activePowerUps ?? []
 
         GameScene.settingsStore.set(true, forKey: SavedGame.resumeFlagKey)
         let resumed = try PaddleFamilySweep.present(theme: theme, keeping: &resumedWindow,

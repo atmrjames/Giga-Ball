@@ -2990,6 +2990,29 @@ yesterday", with 2,348 and 1,998 on it - a Classic day's scores.
   every return to the app, and the day it asks for turns at 11am in Sydney.
 - **Closed without a fix:** the silent inactive Portal ("close the portal one, haven't seen it
   since"). **Still open:** the Giga-Ball through the Safety Paddle, until it happens again.
+- **Round 404's two open resume items, settled** ("continue with the open items"):
+  - *Four Classic bricks a fifth bigger after a resume* was the check. It plays by releasing the
+    ball itself, which a player cannot do while the level is still arriving - their tap is spent
+    finishing it - and it waits by the wall clock while the opening runs on the scene's, which
+    only moves as frames are drawn. The one failure took 119 seconds against a usual 72 to 86,
+    on the evening a second simulator ran beside it: the save caught the bottom rows still
+    waiting to pop in at 0.82 of their size, and the resumed field, rightly whole, read as grown.
+    `ResumeCheck` now finishes the opening as a tap does, so the Mac's load no longer matters.
+  - *Bricks struck in the resumed still moment* (seed 4) no longer happens on this round's code:
+    the seed passes alone and the soak's sixty did not meet it.
+  - *A Drift caught mid-slide came back a column behind* - found by the soak's seed 13, and a real
+    if small fault. Round 334 saved a brick part-way through a step at the column it left, and
+    the resume restores a Drift as a step just finished, so the step was never made and the field
+    stood a column behind for the rest of the Drift. `endlessIICanonicalRestingX` now saves it
+    where the step ends, which is where the field was a frame from being; the check finishes the
+    slide with the game's own tick after the save, never with the save's arithmetic.
+- **The soak, sixty seeds:** one relaunch (seed 8, CoreAudio's overload burst before it, no crash
+  report, passed on the re-run) and one failure, seed 13, above. 59 of 60 before the Drift fix.
+- **Quick and sweeps after it:** `quick` 2,659 passed. The sweeps ran on a Mac so loaded that one
+  sweep took 6,723 seconds, and two Mayhem checks failed that both passed alone: a long-play run
+  starting with the last scene's spare lives (round 398c's late save, under load), and a Paddle
+  Surface at "0 turns" missing after a resume. The check now leaves a turn-counting power-up with
+  no turn left out of both sides, as it already did a timed one within a second of its end.
 
 **Round 404: the soak's open items - a resume that lost its power-ups, and the pocket opener misfiring.**
 

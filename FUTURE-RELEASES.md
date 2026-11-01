@@ -597,9 +597,11 @@ James's to fix in App Store Connect**: everything points to the board's window n
 power-up (the lost Halo), an endless run saved with an empty field coming back at 0m, a
 Multi-Ball's extras lost when paused with the first ball on a Sticky Paddle, and round 402's
 pocket opener taking down walls for bricks off the side of the field or sharing a wall's cell.
-**Still open:** a brick struck and scored in the resumed game's still moment, now and then deep in
+~~**Still open:** a brick struck and scored in the resumed game's still moment, now and then deep in
 a long Mayhem run (3 seeds in 60, before and after this round); not yet known whether it is the
-game or the check. See ENDLESS-2 round 404.
+game or the check.~~ **Settled, round 405**: the brick-size difference was the check, the struck
+brick no longer happens, and the soak found one real fault in their place - a Drift saved
+mid-slide came back a column behind - now fixed. See ENDLESS-2 rounds 404 and 405.
 
 **The 1,998m, round 405:** fixed, and it was the app. App Store Connect's window was right
 (10:00 AEST, 00:00 UTC); the app read a closed day as "the window before the current one", which

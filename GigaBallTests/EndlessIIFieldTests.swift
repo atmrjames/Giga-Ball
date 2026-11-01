@@ -435,56 +435,58 @@ final class ResumedBrickAlignmentTests: XCTestCase {
         XCTAssertEqual(record.x, Double(column), accuracy: 0.001)
     }
 
-    /// A brick caught part-way through a drift step is saved at the column it left.
+    /// A brick caught part-way through a drift step is saved at the column it was going to.
     ///
     /// The step takes a twentieth of a second and nothing finishes it on the way back in, so a
     /// save written during one used to bring the whole field back a fraction of a column out -
-    /// and leave it there until the drift ended.
-    func testABrickMidDriftIsSavedAtTheColumnItLeft() {
+    /// and leave it there until the drift ended. Round 334 saved it at the column it left, and
+    /// the resume restores a Drift as a step just finished, so the step was never made and the
+    /// field stood a column behind for the rest of the Drift (round 405, the resume soak's seed
+    /// 13, caught 12 points into a 37-point step). Forward is where it was a frame from being.
+    func testABrickMidDriftIsSavedAtTheColumnItWasGoingTo() {
         let scene = self.scene()
         let column = scene.endlessIIColumnCentre(nearest: 37)
-        let subject = brick(scene, at: column)
+        let subject = brick(scene, at: column + scene.brickWidth/3)
 
         scene.endlessIIDriftDirection = 1
         scene.endlessIIDriftMoved = scene.brickWidth/3
-        subject.position.x = column + scene.brickWidth/3
 
         let record = scene.savedBrick(for: subject, texture: 0, colour: 0, restingY: 0)
-        XCTAssertEqual(record.x, Double(column), accuracy: 0.001,
-                       "a third of a column out is where it was, not where it belongs")
+        XCTAssertEqual(record.x, Double(column + scene.brickWidth), accuracy: 0.001,
+                       "a third of the way across is saved where the step ends, not where it began")
     }
 
     /// The same going the other way.
-    func testADriftToTheLeftIsUndoneToo() {
+    func testADriftToTheLeftIsFinishedToo() {
         let scene = self.scene()
         let column = scene.endlessIIColumnCentre(nearest: -75)
-        let subject = brick(scene, at: column)
+        let subject = brick(scene, at: column - scene.brickWidth*0.8)
 
         scene.endlessIIDriftDirection = -1
         scene.endlessIIDriftMoved = scene.brickWidth*0.8
-        subject.position.x = column - scene.brickWidth*0.8
 
         let record = scene.savedBrick(for: subject, texture: 0, colour: 0, restingY: 0)
-        XCTAssertEqual(record.x, Double(column), accuracy: 0.001)
+        XCTAssertEqual(record.x, Double(column - scene.brickWidth), accuracy: 0.001)
     }
 
-    /// A brick that went round the side during the step comes back round it.
+    /// A brick whose step takes it round the side is saved round it.
     ///
-    /// Defensive rather than everyday: the tick only wraps a brick once it is *entirely* past
-    /// the wall, so a partial step rarely crosses that line. When it does, undoing the step
-    /// without undoing the wrap would put the brick outside the field altogether.
-    func testABrickThatWrappedMidStepIsUnwrapped() {
+    /// The tick wraps a brick once it is *entirely* past the wall, so a brick finishing its step
+    /// there belongs at the other wall - finishing the step without the wrap would put it
+    /// outside the field altogether.
+    func testABrickWhoseStepGoesRoundTheSideIsWrapped() {
         let scene = self.scene()
-        let subject = brick(scene, at: -175)
-        // Just inside the left wall, having come round it during this step
+        let half = scene.brickWidth/2
+        let start = scene.gameWidth/2 + half - 2
+        // Two points short of being wholly past the right wall
+        let subject = brick(scene, at: start)
 
         scene.endlessIIDriftDirection = 1
-        scene.endlessIIDriftMoved = 30
+        scene.endlessIIDriftMoved = scene.brickWidth/2
 
         let record = scene.savedBrick(for: subject, texture: 0, colour: 0, restingY: 0)
-        XCTAssertEqual(record.x, Double(-175 - 30 + scene.gameWidth), accuracy: 0.001,
-                       "un-stepped to -205, which is outside the field, so it belongs at the "
-                       + "other wall")
+        XCTAssertEqual(record.x, Double(start + scene.brickWidth/2 - scene.gameWidth),
+                       accuracy: 0.001, "finished past the right wall, so it belongs at the left")
     }
 
     /// An anchored brick is left alone, because the drift leaves it alone.

@@ -271,7 +271,7 @@ extension GameScene {
         return removed
     }
 
-    /// Where a brick belongs across the field: where it was when the current step began.
+    /// Where a brick belongs across the field: where the current step is taking it.
     ///
     /// **James, round 334, with a screenshot: "on returning to a game from Resume, some bricks
     /// are not aligned with the main brick grid."** A Drift moves the field a column at a time
@@ -279,14 +279,21 @@ extension GameScene {
     /// twentieth of a second, spread over frames, and a save written during one records every
     /// brick part of the way across. Nothing finishes that move on the way back in: the restore
     /// puts each brick where the record says and the progress it was part of is gone, so the
-    /// whole field comes back a fraction of a column out and stays there until the drift ends.
+    /// whole field came back a fraction of a column out and stayed there until the drift ended.
     ///
     /// This is the same answer `restingY` gives in the other axis - where the brick belongs
-    /// rather than where it is - and it is the step's *own* progress that is subtracted rather
-    /// than a snap to the nearest column: a Tiny brick sits at a quarter of a cell and a Big
-    /// one hangs off its top-left, so snapping would move the very bricks that are allowed to
-    /// be between columns. A brick that wrapped round the side during this step is wrapped
-    /// back, by the width the tick shifted it.
+    /// rather than where it is - and it is the step's *own* remainder that is added rather than
+    /// a snap to the nearest column: a Tiny brick sits at a quarter of a cell and a Big one
+    /// hangs off its top-left, so snapping would move the very bricks that are allowed to be
+    /// between columns. A brick that goes round the side to get there is wrapped, by the width
+    /// the tick would have shifted it.
+    ///
+    /// **Forward, not back** (round 405, found by the resume soak). Round 334 took the step's
+    /// progress off instead, putting the field on the columns it was leaving - and the resume
+    /// brings a Drift back "as a step just finished", so the step was never made: the resumed
+    /// field stood a column behind the one it left, for the rest of the Drift. Seed 13 met it
+    /// mid-slide at 12 points of 37. The step's end is where the field was a frame from being,
+    /// and what the resume already assumes.
     ///
     /// Anchored bricks are left alone, because the drift already leaves them alone.
     func endlessIICanonicalRestingX(of sprite: SKSpriteNode) -> CGFloat {
@@ -296,16 +303,14 @@ extension GameScene {
               endlessIIStaysPut(sprite) == false, gameWidth > 0 else { return x }
         // **Only a slide still in progress** (round 398b, found by the overnight soak). A step
         // leaves `endlessIIDriftMoved` at a whole column until the next one begins, and the field
-        // waits there on its new columns for most of the step - so taking it off whenever it was
-        // above nothing put every brick a column back, in any save made between slides. The
-        // resume then slid them forward again, a jump the player could see; and when the Drift
-        // ran out across the resume they stayed a column out for good
+        // waits there on its new columns for most of the step - so moving it whenever it was
+        // above nothing put every brick a column out, in any save made between slides
 
-        var back = x - CGFloat(endlessIIDriftDirection)*endlessIIDriftMoved
+        var ahead = x + CGFloat(endlessIIDriftDirection)*(brickWidth - endlessIIDriftMoved)
         let half = sprite.size.width/2
-        if back - half > gameWidth/2 { back -= gameWidth }
-        if back + half < -gameWidth/2 { back += gameWidth }
-        return back
+        if ahead - half > gameWidth/2 { ahead -= gameWidth }
+        if ahead + half < -gameWidth/2 { ahead += gameWidth }
+        return ahead
     }
 
     /// The nearest place across the field this brick is allowed to stand: a column centre, or
