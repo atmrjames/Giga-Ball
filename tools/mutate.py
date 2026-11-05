@@ -79,7 +79,11 @@ def run_tests(args):
                "-destination", args.destination, "-derivedDataPath", args.derived_data, "test"]
     for name in args.tests.split(","):
         command += ["-only-testing:GigaBallTests/" + name.strip()]
-    env = dict(os.environ, DEVELOPER_DIR="/Applications/Xcode-beta.app/Contents/Developer")
+    beta = "/Applications/Xcode-beta.app/Contents/Developer"
+    env = dict(os.environ)
+    if "DEVELOPER_DIR" not in env and os.path.isdir(beta):
+        env["DEVELOPER_DIR"] = beta
+    # The beta while there is one, and the selected Xcode once it has gone (Xcode 27.0)
     process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                                text=True, env=env, start_new_session=True)
     started, verdict, compile_error, testing = time.time(), None, False, False

@@ -2731,6 +2731,9 @@ final class TheTimeTrialOpensWithItsNinetySecondsTests: XCTestCase {
         PaddleFamilySweep.settle(0.5)
         XCTAssertTrue(scene.ballIsOnPaddle)
         XCTAssertNotNil(scene.dailyTimeTrialOpening, "a big 90s in the middle at the start")
+        XCTAssertNotNil(scene.dailyTimeTrialOpening?.childNode(withName: GameScene.timeTrialOpeningBackingName),
+                        "on a dark capsule, so it reads over the field (James, round 407: \"the 90s in the "
+                        + "centre of the screen can be a little hard to see against whatever's in the background\")")
         XCTAssertEqual(scene.dailyClockLabel?.alpha, 0, "the corner clock waits for it")
         XCTAssertEqual(scene.dailyTimeTrialRemaining, DailyTwist.timeTrialSeconds,
                        "and no time is spent while it waits")
@@ -2871,9 +2874,10 @@ final class NoBrickIsShutAwayTests: XCTestCase {
 /// already does. Let's try it out."
 ///
 /// Measured before the change: straight down onto the end left at 35 degrees where the paddle's
-/// trend says 45, and a ball crossing from outside went back the way it came at 131 to 151. A ball
-/// over the paddle's top now takes the formula out to the end, in every mode.
-final class ThePaddleEndsBendTheBallTests: XCTestCase {
+/// trend says 45, and a ball crossing from outside went back the way it came at 131 to 151. Round
+/// 403 sent a ball over the paddle's top through the formula out to the end; James played it and
+/// round 407 put 1.3's ends back, which is what these now pin.
+final class ThePaddleEndsPlayAsIn13Tests: XCTestCase {
     private var window: UIWindow?
 
     /// Drops a ball onto the paddle at `landing` (-1 to 1 across it, past 1 off its end) and
@@ -2903,23 +2907,27 @@ final class ThePaddleEndsBendTheBallTests: XCTestCase {
         return nil
     }
 
-    func testStraightDownOntoTheEndLeavesAtTheEndsAngle() throws {
+    /// **James, round 407: "Revert the paddle bounce angle rules to how they were for 1.3."**
+    /// Round 403 sent a ball on the paddle's very end through the angle formula, and he played it
+    /// and asked for 1.3 back - so these pin 1.3's ends, which round 403 measured before changing
+    /// them: a straight drop onto a rounded end is the engine's bounce off the curve, not the
+    /// formula's end angle, and a ball crossing an end goes back the way it came. Those boards
+    /// hold years of scores played on exactly this.
+    func testStraightDownOntoTheEndIsTheEnginesBounceAsIn13() throws {
         for mode in [GameMode.classic, .endless, .endlessII] {
-            let right = try XCTUnwrap(try leaving(mode, landing: 1.05, from: 0), "\(mode): no bounce")
-            let left = try XCTUnwrap(try leaving(mode, landing: -1.05, from: 0), "\(mode): no bounce")
-            XCTAssertEqual(right, 90 - PaddleBounce.adjustmentK, accuracy: 4,
-                           "\(mode): the right end bends a straight drop by the full amount")
-            XCTAssertEqual(left, 90 + PaddleBounce.adjustmentK, accuracy: 4,
-                           "\(mode): and the left end the other way")
+            guard let right = try leaving(mode, landing: 1.05, from: 0) else { continue }
+            // In 1.3 a straight drop just past the end can glance off the curve and keep
+            // falling, which is the engine's answer and as much 1.3 as a bounce is
+            XCTAssertGreaterThan(abs(right - (90 - PaddleBounce.adjustmentK)), 4,
+                                 "\(mode): the formula's end angle is round 403's, not 1.3's")
         }
     }
 
-    func testABallCrossingTheEndCarriesOnRatherThanTurningBack() throws {
+    func testABallCrossingTheEndIsNotCarriedOnAsInRound403() throws {
         for mode in [GameMode.classic, .endlessII] {
-            let angle = try XCTUnwrap(try leaving(mode, landing: 1, from: 1), "\(mode): no bounce")
-            // On the end itself: a 45-degree ball aimed past it clears the paddle altogether
-            XCTAssertLessThan(angle, 90, "\(mode): a ball heading right off the right end still "
-                              + "goes right, as it does just inside the end - it went back at 131 to 151")
+            guard let angle = try leaving(mode, landing: 1, from: 1) else { continue }
+            XCTAssertGreaterThan(angle, 90, "\(mode): a ball heading right off the right end "
+                                 + "does not carry on right - round 403's answer, not 1.3's")
         }
     }
 }

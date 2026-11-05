@@ -62,7 +62,13 @@ extension GameScene {
 
         case 15:
             // Show Bricks, only where something is hidden
-            return bricksMatching { $0.isHidden } >= 3
+            return bricksMatching { $0.isHidden && $0.texture != self.brickNullTexture } >= 3
+            // **A brick, not an empty cell** (James, round 407: "show all bricks power up falling
+            // when there are no invisible bricks"). An endless row arrives with a hidden,
+            // bodiless placeholder in every empty cell, taken away when its build-in ends - so a
+            // brick broken while a row was arriving counted a row's worth of hidden nothing, and
+            // Show Bricks dropped onto a field with nothing to show. Mayhem brings a row in at
+            // every step, which is why it was seen there
 
         case 16:
             // Hide Bricks, only where there are ordinary bricks to hide

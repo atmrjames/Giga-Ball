@@ -2964,6 +2964,32 @@ testers:
   falling power-up's position by `brickWidth`, so a bare `GameScene()` with a power-up on
   screen traps converting NaN to Int. A real scene is always laid out before play.
 
+**Round 407: James's play-test of the 1.3.1 candidate.**
+
+Four notes from a week on his devices, all on `release-1.3.1`, because each is about what that
+build does:
+
+- **"Revert the paddle bounce angle rules to how they were for 1.3."** Round 403's change is
+  undone exactly - its three hunks in `paddleHit` reversed - so Classic and Endless play their
+  ends as they have for years. `ThePaddleEndsPlayAsIn13Tests` pins it: a straight drop onto an
+  end is not given the formula's end angle, and a ball crossing an end does not carry on the way
+  it was going. Both fail with round 403's rule put back.
+- **"show all bricks power up falling when there are no invisible bricks"**: Show Bricks counted
+  every hidden brick node, and an arriving endless row holds a hidden, bodiless placeholder in
+  each empty cell until its build-in ends. A brick broken while a row arrived counted a row's
+  worth of nothing. Real bricks only now.
+- **The Time Trial's 90s on a dark capsule** ("can be a little hard to see against whatever's in
+  the background"). The capsule covers the number and its glow, and fades as the number flies to
+  the clock. Looked at over white bricks on the 4 November day he played, Monochromatic and all.
+- **Not yet found: "this row of horizontal bricks appeared that the ball didn't interact with"**,
+  Endless Mayhem, 4 November (Monochromatic, Time Trial), at 30m with 58 seconds left. His
+  screenshot shows a band exactly one row of cells, the field's full width with no seams, and the
+  first cell of the row below. Ruled out: the milestone marker (a 1-point line), Brick Infill (six
+  random cells, each with a body), and every transient flash (gone in a quarter of a second).
+  A replay of the day for three minutes in the harness found nothing like it. Asked of James.
+- **Xcode 27.0 replaced Xcode-beta on this Mac.** `tools/test.sh`, `soak.sh` and `mutate.py`
+  take the beta while there is one and the selected Xcode once it has gone.
+
 **Round 406: the 1.3.1 build to James's phone.**
 
 James: "I'd like to release the 1.3.1 fixes to the app store soon." A clean Release build of
