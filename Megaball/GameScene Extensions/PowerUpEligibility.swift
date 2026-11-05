@@ -62,7 +62,7 @@ extension GameScene {
 
         case 15:
             // Show Bricks, only where something is hidden
-            return bricksMatching { $0.isHidden && $0.texture != self.brickNullTexture } >= 3
+            return bricksMatching { $0.isHidden && self.isEmptyCellStandIn($0) == false } >= 3
             // **A brick, not an empty cell** (James, round 407: "show all bricks power up falling
             // when there are no invisible bricks"). An endless row arrives with a hidden,
             // bodiless placeholder in every empty cell, taken away when its build-in ends - so a

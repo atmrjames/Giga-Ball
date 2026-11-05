@@ -2981,12 +2981,20 @@ build does:
 - **The Time Trial's 90s on a dark capsule** ("can be a little hard to see against whatever's in
   the background"). The capsule covers the number and its glow, and fades as the number flies to
   the clock. Looked at over white bricks on the 4 November day he played, Monochromatic and all.
-- **Not yet found: "this row of horizontal bricks appeared that the ball didn't interact with"**,
-  Endless Mayhem, 4 November (Monochromatic, Time Trial), at 30m with 58 seconds left. His
-  screenshot shows a band exactly one row of cells, the field's full width with no seams, and the
-  first cell of the row below. Ruled out: the milestone marker (a 1-point line), Brick Infill (six
-  random cells, each with a body), and every transient flash (gone in a quarter of a second).
-  A replay of the day for three minutes in the harness found nothing like it. Asked of James.
+- **"this row of horizontal bricks appeared that the ball didn't interact with"** (Endless
+  Mayhem, 4 November: Monochromatic, Time Trial; round 407b). His screenshot shows a seamless
+  band one row deep across the field and the first cell of the row below, a shade off white. That
+  is an arriving row's **empty-cell stand-ins** - hidden, bodiless bricks wearing `BrickNull`, a
+  solid yellow rectangle, which Monochromatic turns pale grey. Two faults met:
+  - **Everything that reveals hidden bricks revealed them too**: Show Bricks, the end of Hide
+    Bricks (three copies: its timer, the power-up reset, a resumed Hide Bricks) and round 405c's
+    fog flash. `isEmptyCellStandIn` is the one question, and every one of them asks it.
+  - **A stand-in could outlive its row.** It is taken away by its own build-in's completion, and
+    anything that clears a brick's actions takes the completion with it. `sweepDyingBricks` now
+    also takes away a stand-in with nothing left running, every frame.
+  The Show Bricks note in the same list was this fault's other face: the stand-ins were counted
+  as hidden bricks, so Show Bricks dropped - and when collected, showed them.
+  `AnEmptyCellIsNeverShownTests` and `testTheFogFlashNeverShowsAnEmptyCell` fail without it.
 - **Xcode 27.0 replaced Xcode-beta on this Mac.** `tools/test.sh`, `soak.sh` and `mutate.py`
   take the beta while there is one and the selected Xcode once it has gone.
 

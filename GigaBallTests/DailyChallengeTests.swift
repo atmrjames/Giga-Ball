@@ -1786,6 +1786,24 @@ final class DailyFogRevealTests: XCTestCase {
         XCTAssertTrue(fogged.allSatisfy { $0.isHidden }, "and the fog closes again")
     }
 
+    /// An empty cell's stand-in is hidden on every day, fogged or not, and the fog never shows
+    /// it (round 407: a revealed stand-in is a bodiless yellow brick the ball goes through).
+    func testTheFogFlashNeverShowsAnEmptyCell() {
+        let scene = fogScene()
+        XCTAssertTrue(scene.dailyFogIsOn, "the fixture is a Foggy day")
+        scene.dailyFogHasClosed = true
+        let fogged = brick(in: scene)
+        fogged.isHidden = true
+        let empty = SKSpriteNode(texture: scene.brickNullTexture)
+        empty.name = BrickCategoryName
+        empty.isHidden = true
+        scene.addChild(empty)
+
+        scene.invisibleBrickFlash()
+        XCTAssertFalse(fogged.isHidden, "the fogged brick flashes")
+        XCTAssertTrue(empty.isHidden, "the empty cell does not")
+    }
+
     /// Round 184 still holds while anything shows: the clue is for the blank screen, not for a
     /// fog the player can see the edge of.
     func testAFoggedFieldWithABrickInSightDoesNotFlash() {

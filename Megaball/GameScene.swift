@@ -3540,7 +3540,27 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
     ///
     /// Rather than find every path that could strand one, the removal is made unconditional:
     /// anything still wearing the dying name half a second later goes, action or no action.
+    /// Whether a node is an empty cell's stand-in: the hidden, bodiless brick an arriving endless
+    /// row holds in each cell it leaves empty, wearing the null texture, until its build-in ends.
+    func isEmptyCellStandIn(_ node: SKNode) -> Bool {
+        (node as? SKSpriteNode)?.texture == brickNullTexture
+    }
+
     func sweepDyingBricks() {
+        enumerateChildNodes(withName: BrickCategoryName) { node, _ in
+            guard self.isEmptyCellStandIn(node), node.hasActions() == false else { return }
+            node.removeFromParent()
+        }
+        // **And an empty cell's stand-in that has outlived its row** (James, round 407, a
+        // Monochromatic Mayhem daily: "this row of horizontal bricks appeared that the ball didn't
+        // interact with", with a screenshot of a seamless band one row deep). A stand-in is taken
+        // away by its own build-in's completion, and anything that clears a brick's actions - a
+        // lost ball's reset, a skipped opening - takes the completion with it, leaving a hidden
+        // yellow rectangle with no body in the field for good. Hidden it does nothing; revealed by
+        // Show Bricks or the end of Hide Bricks it is a row the ball goes straight through, and
+        // under Monochromatic the yellow is the pale grey in his picture. A stand-in always has
+        // its arrival running while its row arrives, so one with nothing running is stale
+
         let now = CACurrentMediaTime()
         enumerateChildNodes(withName: BrickRemovalCategoryName) { node, _ in
             let since = node.userData?["dyingSince"] as? CFTimeInterval ?? 0
@@ -6360,6 +6380,8 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 	/// and not an Invisible brick, which is hidden on any day.
 	func brickIsOnlyFogged(_ sprite: SKSpriteNode) -> Bool {
 		dailyFogIsOn && sprite.isHidden && sprite.texture !== brickInvisibleTexture
+			&& isEmptyCellStandIn(sprite) == false
+		// Never an empty cell's stand-in, which is hidden on every day (round 407)
 	}
 
 	/// Whether a fogged day's field shows nothing at all: no brick on it, of any kind, visible.
@@ -7212,7 +7234,9 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 			endTheInvisibleBrickFlashNow()
 			// So a brick the flash is showing is hidden again first, and revealed with the rest
 			enumerateChildNodes(withName: BrickCategoryName) { (node, _) in
-				if node.isHidden == true {
+				if node.isHidden == true && self.isEmptyCellStandIn(node) == false {
+				// Never an empty cell's stand-in (round 407): revealed, it is a bodiless yellow
+				// brick the ball passes through
 					let startingScale = SKAction.scale(to: 1, duration: 0)
 					let startingFade = SKAction.fadeOut(withDuration: 0)
 					let scaleUp = SKAction.scale(to: 1, duration: 0)
@@ -7253,7 +7277,7 @@ class GameScene: SKScene, SKPhysicsContactDelegate {
 				self.endTheInvisibleBrickFlashNow()
 				self.enumerateChildNodes(withName: BrickCategoryName) { (node, _) in
 					let temporarySprite = node as! SKSpriteNode
-					if node.isHidden == true && temporarySprite.texture != self.brickInvisibleTexture {
+					if node.isHidden == true && temporarySprite.texture != self.brickInvisibleTexture && self.isEmptyCellStandIn(node) == false {
 						let startingScale = SKAction.scale(to: 1, duration: 0)
 						let startingFade = SKAction.fadeOut(withDuration: 0)
 						let scaleUp = SKAction.scale(to: 1, duration: 0)
@@ -8359,7 +8383,7 @@ laserTimer?.invalidate()
 		if dailyFogIsOn == false {
 			enumerateChildNodes(withName: BrickCategoryName) { (node, _) in
 				let temporarySprite = node as! SKSpriteNode
-				if node.isHidden == true && temporarySprite.texture != self.brickInvisibleTexture {
+				if node.isHidden == true && temporarySprite.texture != self.brickInvisibleTexture && self.isEmptyCellStandIn(node) == false {
 					let startingScale = SKAction.scale(to: 1, duration: 0)
 					let startingFade = SKAction.fadeOut(withDuration: 0)
 					let scaleUp = SKAction.scale(to: 1, duration: 0)
@@ -11325,7 +11349,7 @@ laserTimer?.invalidate()
 						let completionBlock = SKAction.run {
 							self.enumerateChildNodes(withName: BrickCategoryName) { (node, _) in
 								let temporarySprite = node as! SKSpriteNode
-								if node.isHidden == true && temporarySprite.texture != self.brickInvisibleTexture {
+								if node.isHidden == true && temporarySprite.texture != self.brickInvisibleTexture && self.isEmptyCellStandIn(node) == false {
 									let startingScale = SKAction.scale(to: 1, duration: 0)
 									let startingFade = SKAction.fadeOut(withDuration: 0)
 									let scaleUp = SKAction.scale(to: 1, duration: 0)
