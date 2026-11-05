@@ -337,6 +337,19 @@ final class PowerUpEligibilityTests: XCTestCase {
         XCTAssertFalse(self.scene(endless: true).powerUpCanAppear(1))
     }
 
+    /// James, round 407: "show all bricks power up falling when there are no invisible bricks".
+    /// An arriving endless row holds a hidden, bodiless placeholder in each empty cell until its
+    /// build-in ends, and those were counted as hidden bricks.
+    func testShowBricksNeedsHiddenBricksNotEmptyCells() throws {
+        let show = try XCTUnwrap(LevelPackSetup.shared.powerUpNameArray.firstIndex(of: "Show Bricks"))
+        let scene = scene(endless: true)
+        bricks(scene, 5, texture: scene.brickNormalTexture)
+        bricks(scene, 8, texture: scene.brickNullTexture, hidden: true, y: 300)
+        XCTAssertFalse(scene.powerUpCanAppear(show), "a row's empty cells are not hidden bricks")
+        bricks(scene, 3, texture: scene.brickInvisibleTexture, hidden: true, y: 100)
+        XCTAssertTrue(scene.powerUpCanAppear(show), "three Invisible bricks are")
+    }
+
     func testPointsOnlyFallWhereThereIsAScore() {
         for index in [8, 10] {
             XCTAssertTrue(scene().powerUpCanAppear(index))

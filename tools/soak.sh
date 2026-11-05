@@ -22,7 +22,10 @@
 #   TEST_RUNNER_SOAK_FROM=<seed> TEST_RUNNER_SOAK_COUNT=1 tools/test.sh only SoakTests/<test>
 set -u
 cd "$(dirname "$0")/.."
-export DEVELOPER_DIR=/Applications/Xcode-beta.app/Contents/Developer
+BETA=/Applications/Xcode-beta.app/Contents/Developer
+export DEVELOPER_DIR="${DEVELOPER_DIR:-$([ -d "$BETA" ] && echo "$BETA" || xcode-select -p)}"
+# Xcode-beta while there is one (Xcode 26.6's actool crashed on the Icon Composer assets), and
+# the selected Xcode once the beta has gone - Xcode 27.0, from November 2026
 FULL_DEST='id=6C4F510D-FAC7-42B0-98CE-258809ABA4B7'
 WORK_DEST='id=5E5D91D9-3BAE-4A61-AE34-CBFD2361FBB9'
 hours=${1:-8}

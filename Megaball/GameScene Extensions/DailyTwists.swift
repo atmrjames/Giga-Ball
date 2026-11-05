@@ -1045,6 +1045,19 @@ extension GameScene {
         let opening = SKSpriteNode(texture: SKTexture(image: picture), size: picture.size)
         opening.zPosition = readyCountdown.zPosition
         opening.position = readyCountdown.position
+        let backing = SKShapeNode(rectOf: GameScene.timeTrialOpeningBacking(for: picture.size),
+                                  cornerRadius: GameScene.timeTrialOpeningBacking(for: picture.size).height/2)
+        backing.name = GameScene.timeTrialOpeningBackingName
+        backing.fillColor = UIColor(white: 0, alpha: 0.75)
+        backing.strokeColor = .clear
+        backing.zPosition = -0.1
+        opening.addChild(backing)
+        // **On a dark capsule** (James, round 407: "the 90s in the centre of the screen can be a
+        // little hard to see against whatever's in the background. Can we add something between
+        // the 90s and the background to make it easier to see?"). It stands where the ball is,
+        // which is in the middle of the field, and pale lettering over white bricks has nothing
+        // to stand out from. The capsule is the HUD's own shape, dark enough to carry the
+        // lettering over a brick and clear enough to keep the field readable through it
         opening.alpha = 0
         opening.setScale(1.6)
         addChild(opening)
@@ -1073,6 +1086,9 @@ extension GameScene {
             ? target.height/opening.size.height : 0.3
         opening.removeAllActions()
         opening.alpha = 1
+        opening.childNode(withName: GameScene.timeTrialOpeningBackingName)?
+            .run(.fadeOut(withDuration: 0.2))
+        // The backing goes as the number leaves, so what lands on the clock is only the number
         let flight = SKAction.group([.move(to: landing, duration: 0.45),
                                      .scale(to: scale, duration: 0.45)])
         flight.timingMode = .easeIn
@@ -1081,6 +1097,15 @@ extension GameScene {
         // The clock comes up under it in the flight's last tenth, so the number never goes out
         // and comes back - it shrinks into the place it is counting from
     }
+
+    /// The capsule behind the opening's number: the whole picture and a margin, glow included.
+    /// Drawn to the lettering alone at first, and the glow spilt over its edges onto whatever
+    /// was behind - which was the very thing it was there to hide.
+    static func timeTrialOpeningBacking(for picture: CGSize) -> CGSize {
+        CGSize(width: picture.width + picture.height*0.5, height: picture.height*1.1)
+    }
+
+    static let timeTrialOpeningBackingName = "timeTrialOpeningBacking"
 
     /// A number drawn the way READY and GO! are drawn: pale lime, a lime edge, a lime glow,
     /// in the face the game's own numbers wear.
