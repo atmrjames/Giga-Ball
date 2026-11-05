@@ -3136,3 +3136,61 @@ final class TheGamesOwnDropIsCollectedTests: XCTestCase {
         XCTAssertTrue(failures.isEmpty, failures.joined(separator: "\n"))
     }
 }
+
+/// James, round 407, on an Endless Mayhem daily (4 November: Monochromatic, Time Trial): "this row
+/// of horizontal bricks appeared that the ball didn't interact with". His screenshot shows a
+/// seamless band one row deep, the field's full width, and the first cell of the row below - the
+/// empty cells of an arriving row, whose stand-ins are hidden yellow rectangles with no body. They
+/// were revealed by what reveals hidden bricks, and one whose build-in had been cut short was never
+/// taken away.
+final class AnEmptyCellIsNeverShownTests: XCTestCase {
+    private var window: UIWindow?
+
+    private func standIn(in scene: GameScene, row: CGFloat) -> SKSpriteNode {
+        let node = SKSpriteNode(texture: scene.brickNullTexture)
+        node.size = CGSize(width: scene.brickWidth, height: scene.brickHeight)
+        node.name = BrickCategoryName
+        node.isHidden = true
+        node.zPosition = 1
+        node.position = CGPoint(x: 0, y: scene.paddle.position.y + scene.brickHeight*row)
+        scene.addChild(node)
+        return node
+    }
+
+    func testAStandInWhoseRowHasArrivedIsTakenAway() throws {
+        let scene = try PaddleFamilySweep.present(theme: 0, keeping: &window, mode: .endlessII,
+                                                  frozen: false)
+        defer { scene.view?.presentScene(nil) }
+        let stale = standIn(in: scene, row: 8)
+        // Its build-in's completion cleared, as a lost ball's reset or a skipped opening clears it
+        PaddleFamilySweep.settle(0.1)
+        XCTAssertNil(stale.parent, "a stand-in with nothing left to arrive is gone")
+    }
+
+    func testShowBricksAndHideBricksEndingNeverShowAStandIn() throws {
+        let setup = LevelPackSetup.shared
+        let show = try XCTUnwrap(setup.powerUpNameArray.firstIndex(of: "Show Bricks"))
+        let scene = try PaddleFamilySweep.present(theme: 0, keeping: &window, mode: .endlessII,
+                                                  frozen: false)
+        defer { scene.view?.presentScene(nil) }
+        let arriving = standIn(in: scene, row: 8)
+        arriving.run(.wait(forDuration: 10))
+        // Still arriving, as a row's stand-ins are for the length of its build-in
+        let invisible = SKSpriteNode(texture: scene.brickInvisibleTexture)
+        invisible.name = BrickCategoryName
+        invisible.isHidden = true
+        invisible.position = CGPoint(x: 0, y: scene.paddle.position.y + scene.brickHeight*10)
+        scene.addChild(invisible)
+
+        let carrier = SKSpriteNode(texture: scene.powerUpTextureArray[show])
+        scene.addChild(carrier)
+        scene.applyPowerUp(node: carrier, silently: true)
+        PaddleFamilySweep.settle(0.4)
+        XCTAssertFalse(invisible.isHidden, "Show Bricks shows the Invisible brick")
+        XCTAssertTrue(arriving.isHidden, "and never an empty cell")
+
+        scene.powerUpsReset()
+        PaddleFamilySweep.settle(0.4)
+        XCTAssertTrue(arriving.isHidden, "nor does Hide Bricks ending, by way of the reset")
+    }
+}

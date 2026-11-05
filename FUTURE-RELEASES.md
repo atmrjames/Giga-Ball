@@ -584,10 +584,11 @@ Trial, and no brick shut away by Indestructible walls in Mayhem. Investigated an
 the ball near the paddle's ends (where a fix applies), and details for the Giga-Ball through the
 Safety Paddle, the results pop-up timing and the 1,998m score. See ENDLESS-2 round 402.
 
-**James's second list (31 October 2026), round 403:** fixed - the ball at the paddle's very ends
+**James's second list (31 October 2026), round 403:** fixed - ~~the ball at the paddle's very ends
 now takes the angle formula in every mode ("clamp it the way the square paddle already does.
 Let's try it out" - **a change to how Classic and Endless play, for James to play-test before it
-ships**), an Always On power-up waits for the serve, the boards' places and scores sit in digit
+ships**)~~ **reverted in round 407 after his play-test: "Revert the paddle bounce angle rules to how
+they were for 1.3"**, an Always On power-up waits for the serve, the boards' places and scores sit in digit
 columns, and the end screen's board never skips a single place. **The 1,998m, most likely
 James's to fix in App Store Connect**: everything points to the board's window not starting at
 00:00 UTC (see ENDLESS-2 round 403); the app now logs the window it is given, which settles it.
@@ -608,6 +609,12 @@ mid-slide came back a column behind - now fixed. See ENDLESS-2 rounds 404 and 40
 is the day before yesterday whenever Game Center's current window is still yesterday's, and a
 Classic day's points showed as metres. Days are found by their window's start now. The results
 pop-up read the same window; whether its timing is fixed with it is for the next play test.
+
+**James's play-test of the candidate (5 November 2026), round 407:** the paddle's ends back to
+1.3's, the Time Trial's 90s on a dark capsule, and one fault with two faces - an arriving row's
+empty-cell stand-ins, counted as hidden bricks (so Show Bricks fell with nothing to show) and
+revealed by Show Bricks and the end of Hide Bricks as a bodiless row the ball went through. Fixed
+in every place that reveals hidden bricks, and a stand-in that outlives its row is swept away.
 
 ---
 
