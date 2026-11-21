@@ -2964,6 +2964,15 @@ testers:
   falling power-up's position by `brickWidth`, so a bare `GameScene()` with a power-up on
   screen traps converting NaN to Int. A real scene is always laid out before play.
 
+**Round 408: getting 1.3.1 ready to submit.**
+
+James, 14 November: "I think we should release it. Can we start getting prepared for the app
+store submission." On 22 November the App Store still showed 1.3, so the daily's no-repeat rule,
+which had to start at least fourteen days after the release that ships it, could no longer start
+on 1 December. `DailyChallengeGenerator.realYesterdayKey` moves to 15 December 2026, as its own
+note always said it would; the tests read the date off it. Nothing else about 1.3.1 changes:
+no permission, entitlement or privacy file differs from 1.3, only the prism background's art.
+
 **Round 407: James's play-test of the 1.3.1 candidate.**
 
 Four notes from a week on his devices, all on `release-1.3.1`, because each is about what that

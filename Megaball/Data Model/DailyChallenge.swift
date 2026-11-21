@@ -918,13 +918,15 @@ enum DailyChallengeGenerator {
     /// Every phone works the daily out for itself (§2.1), so a player still on the version
     /// before this one would be dealt a different day from a player on this one. The days
     /// before it are dealt exactly as they always were, which the golden days already pinned
-    /// check (`testTheDaysAlreadyPlayedStillReadExactlyTheSame`); 1.3.1 must be on the App
-    /// Store by 17 November 2026 for this date to keep its fourteen days, and moves later with
-    /// it if it is not.
+    /// check (`testTheDaysAlreadyPlayedStillReadExactlyTheSame`). 1.3.1 had to be on the App
+    /// Store by 17 November 2026 for 1 December to keep its fourteen days, and on 22 November it
+    /// was still waiting to be submitted - so the date moved, as this note always said it would,
+    /// to 15 December (round 408): fourteen days from a release in the last week of November,
+    /// with a few spare for review.
     ///
     /// The chain the comment above was written to avoid is affordable from a starting date: it
     /// walks forward from here once, and keeps what it has dealt.
-    static let realYesterdayKey = "2026-12-01"
+    static let realYesterdayKey = "2026-12-15"
 
     private static var realYesterdayDealt: [String: DailyChallenge] = [:]
     private static let realYesterdayLock = NSLock()

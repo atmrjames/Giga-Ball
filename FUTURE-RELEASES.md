@@ -578,7 +578,7 @@ are a release's work on their own.
 
 **James's 1.3 play test (28 October 2026), round 402:** fixed - falling power-ups behind
 Directional bricks, the daily board hiding the player's own score, the same daily twice running
-(from 1 December, so **1.3.1 must ship by 17 November**), the line on the prism background, Ball
+(from 1 December, so **1.3.1 must ship by 17 November** - it did not, and round 408 moved the date to 15 December, so **1.3.1 must ship by 1 December**), the line on the prism background, Ball
 Spin's grip on the Safety Paddle and on Retro's shaped paddles, a big 90s opening for the Time
 Trial, and no brick shut away by Indestructible walls in Mayhem. Investigated and waiting on James:
 the ball near the paddle's ends (where a fix applies), and details for the Giga-Ball through the
