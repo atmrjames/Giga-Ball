@@ -616,6 +616,33 @@ empty-cell stand-ins, counted as hidden bricks (so Show Bricks fell with nothing
 revealed by Show Bricks and the end of Hide Bricks as a bodiless row the ball went through. Fixed
 in every place that reveals hidden bricks, and a stand-in that outlives its row is swept away.
 
+**The App Store notes (drafted round 407, dated round 408)** - for the "What's New in This Version"
+box, in players' words, only what changed since 1.3:
+
+```
+Giga-Ball 1.3.1 fixes and polishes the 1.3 update.
+
+Daily Challenge
+• The leaderboard always shows the right day's scores. An Endless day could show the previous Classic day's points as metres.
+• Leaderboards line up their places and scores, list every place between the leaders and you, and always show your own score.
+• Time Trial days open with a big 90 seconds, so you know the clock is about to start.
+• Always On power-ups wait until you serve.
+• From 15 December, the same challenge is never dealt two days running.
+• On a Foggy day, if nothing is left in sight, a bounce off the paddle briefly shows the field.
+
+Endless Mayhem
+• Resuming a run brings back everything you left: running power-ups, extra balls and a drifting field.
+• Bricks are never sealed away behind Indestructible walls.
+• Falling power-ups are drawn in front of Directional bricks.
+• Fixed a row of bricks the ball could pass straight through.
+• Show Bricks only falls when there is something to show.
+
+Everywhere
+• Invisible bricks no longer make a sound or animate as a level opens.
+• Auto-Aim targets the lowest brick it can break.
+• Fixes for Portal bricks, Ball Spin on the Safety Paddle and shaped paddles, and the prism background.
+```
+
 ---
 
 ## 1.3.2
